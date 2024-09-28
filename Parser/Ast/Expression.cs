@@ -11,6 +11,8 @@ public abstract record UnaryExpression(Expression Inner) : Expression;
 
 public abstract record BinaryExpression(Expression Left, Expression Right) : Expression;
 
+public record EmptyExpression() : Expression;
+
 public record ValueExpression(string Value) : Expression;
 
 public record ConstructorExpression(TypeDescription Type) : Expression;

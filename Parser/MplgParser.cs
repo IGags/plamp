@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using Parser.Assembly;
 using Parser.Ast;
 using Parser.Token;
+using Expression = System.Linq.Expressions.Expression;
 
 namespace Parser;
 
@@ -59,6 +60,7 @@ public class MplgParser
     
     private void ParseFunction(List<FuncExpression> expressions, List<IAssemblyDescription> assemblyDescriptions)
     {
+        using var scope = new VariableScope(null);
         var returnType = new TypeDescription(ParseType(assemblyDescriptions));
         var functionNameToken = _tokenSequence.GetNextToken();
         if (functionNameToken is not Word wordToken)
@@ -69,6 +71,16 @@ public class MplgParser
         var functionName = wordToken.GetString();
         var args = ParseCommaSeparated<ParameterDescription, OpenBracket, CloseBracket>(() =>
             ParseParameter(assemblyDescriptions)); 
+        args.ForEach(x => scope.AddVariable(new VariableDefinition(x.TypeName, x.Name)));
+        //TODO: eof
+        var body = ParseBody(scope, assemblyDescriptions);
+        var expression = new FuncExpression(functionName, returnType, args.ToArray(), body);
+        expressions.Add(expression);
+    }
+
+    private BodyExpression ParseBody(VariableScope scope, List<IAssemblyDescription> assemblyDescriptions)
+    {
+        
     }
 
     private ParameterDescription ParseParameter(List<IAssemblyDescription> assemblyDescriptions)
@@ -128,6 +140,15 @@ public class MplgParser
         }
     }
 
+    private bool TryParseScopedWithDepth<TReturn>(Func<TReturn> parserFunc, VariableScope currentScope, out TReturn result)
+    {
+        var currentDepth = 0;
+        do
+        {
+            
+        } while (expression);
+    }
+    
     private List<TReturn> ParseCommaSeparated<TReturn, TOpen, TClose>(Func<TReturn> parserFunc) where TOpen : TokenBase where TClose : TokenBase
     {
         var token = _tokenSequence.PeekNextNonWhiteSpace();
