@@ -16,7 +16,7 @@ public class VariableScope : IDisposable
     public VariableScope(VariableScope parent)
     {
         _parent = parent;
-        Depth = (parent?.Depth ?? 0) + 1;
+        Depth = parent?.Depth == null ? 0 : parent.Depth + 1;
     }
 
     public bool TryGetVariable(string name, out VariableDefinition variable)
@@ -36,12 +36,22 @@ public class VariableScope : IDisposable
         variable = null;
         return false;
     }
+
+    public VariableDefinition GetVariable(string name)
+    {
+        if (TryGetVariable(name, out var variable))
+        {
+            return variable;
+        }
+
+        throw new ParserException($"variable with name {name} is not found");
+    }
     
     public void AddVariable(VariableDefinition variable)
     {
         if (TryGetVariable(variable.Name, out _))
         {
-            throw new ParserException($"variable with name {variable.Name} was defined above or in parent scope");
+            throw new ParserException($"variable with name {variable.Name} was defined above or in a parent scope");
         }
 
         _variablesInScope.Add(variable);

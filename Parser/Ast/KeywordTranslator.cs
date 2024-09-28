@@ -7,7 +7,12 @@ public static class KeywordTranslator
 {
     public static Keywords ToKeyword(this Word word)
     {
-        return word.GetString() switch
+        return word.GetString().ToKeyword();
+    }
+    
+    public static Keywords ToKeyword(this string word)
+    {
+        return word switch
         {
             "use" => Keywords.Use,
             "def" => Keywords.Def,
@@ -23,6 +28,8 @@ public static class KeywordTranslator
             "null" => Keywords.Null,
             "return" => Keywords.Return,
             "break" => Keywords.Break,
+            "continue" => Keywords.Continue,
+            "model" => Keywords.Model,
             _ => Keywords.Unknown
         };
     }

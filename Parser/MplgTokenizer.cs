@@ -141,10 +141,6 @@ public static class MplgTokenizer
                     @operator = new Operator("/=");
                     position+=2;
                     return true;
-                case "^=":
-                    @operator = new Operator("^=");
-                    position+=2;
-                    return true;
                 case "==":
                     @operator = new Operator("==");
                     position+=2;

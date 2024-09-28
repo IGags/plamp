@@ -15,7 +15,7 @@ public class TokenSequence
     
     public TokenBase GetNextToken()
     {
-        _position = _position == _tokenList.Count ? _position : _position++;
+        _position = _position == _tokenList.Count ? _position : ++_position;
         return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
     }
 
@@ -23,7 +23,7 @@ public class TokenSequence
     {
         do
         {
-            _position = _position == _tokenList.Count ? _position : _position++;
+            _position = _position == _tokenList.Count ? _position : ++_position;
             if (_tokenList.Count <= _position)
             {
                 return null;
@@ -38,24 +38,37 @@ public class TokenSequence
         return null;
     }
 
-    public TokenBase PeekNextNonWhiteSpace()
+    public TokenBase PeekNextNonWhiteSpace(int shift = 0)
     {
         var pos = _position;
         do
         {
-            pos = pos == _tokenList.Count ? pos : pos++;
+            pos = pos == _tokenList.Count ? pos : ++pos;
             if (_tokenList.Count <= pos)
             {
                 return null;
             }
 
-            if (_tokenList[pos].GetType() != typeof(WhiteSpace))
+            if (_tokenList[pos].GetType() == typeof(WhiteSpace))
+            {
+                continue;
+            }
+            if (shift == 0)
             {
                 return _tokenList[pos];
             }
+
+            shift--;
         } while (_tokenList.Count > pos);
 
         return null;
+    }
+
+    public TokenBase PeekNext(int shift = 0)
+    {
+        var pos = _position + shift;
+        pos = pos == _tokenList.Count ? pos : ++pos;
+        return _tokenList.Count <= pos ? null : _tokenList[pos];
     }
 
     public TokenBase Current()
@@ -63,9 +76,13 @@ public class TokenSequence
         return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
     }
 
-    public TokenBase RollBack()
+    public TokenBase RollBack(int count = 1)
     {
-        _position = _position == 0 ? 0 : _position--;
+        for (int i = 0; i < count && _position > 0; i++)
+        {
+            _position = _position == 0 ? 0 : --_position;
+            
+        }
         return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
     }
 
@@ -73,7 +90,7 @@ public class TokenSequence
     {
         do
         {
-            _position = _position == -1 ? -1 : _position--;
+            _position = _position == -1 ? -1 : --_position;
             if (_position < 0)
             {
                 return null;

@@ -17,4 +17,7 @@ public enum Keywords
     Null,
     Return,
     Break,
+    Continue,
+    //Reserved
+    Model
 }

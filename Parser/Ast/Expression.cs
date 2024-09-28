@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace Parser.Ast;
 
 public abstract record Expression
 {
     public abstract System.Linq.Expressions.Expression Compile();
+
+    public abstract Type GetReturnType();
 }
 
 public abstract record UnaryExpression(Expression Inner) : Expression;
@@ -13,23 +17,25 @@ public abstract record BinaryExpression(Expression Left, Expression Right) : Exp
 
 public record EmptyExpression() : Expression;
 
-public record ValueExpression(string Value) : Expression;
+public record ConstantExpression(object Value, Type Type) : Expression;
 
 public record ConstructorExpression(TypeDescription Type) : Expression;
 
-public record VariableExpression(VariableDefinition VariableDefinition) : Expression;
+public abstract record BaseVariableExpression(VariableDefinition VariableDefinition) : Expression;
 
-public record CreateVariableExpression(VariableDefinition VariableDefinition) : VariableExpression(VariableDefinition);
+public record VariableExpression(VariableDefinition VariableDefinition) : BaseVariableExpression(VariableDefinition);
 
-public record CallExpression(FunctionDefinition Function, List<Expression> Arguments) : Expression
+public record CreateVariableExpression(VariableDefinition VariableDefinition) : BaseVariableExpression(VariableDefinition);
+
+public record CallExpression(MethodInfo Method, List<Expression> Arguments) : Expression
 {
 }
 
-public record ForExpression(VariableDefinition IterableItem, Expression Array, BodyExpression Body) : Expression
+public record ForExpression(CreateVariableExpression IterableItem, Expression Array, BodyExpression Body) : Expression
 {
 }
 
-public record AssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
+public record AssignExpression(BaseVariableExpression VariableDefinition, Expression Right) : Expression;
 
 public record WhileExpression(Expression Condition, BodyExpression Body) : Expression
 {
@@ -46,15 +52,13 @@ public record ConditionExpression(
 {
 }
 
-public record AddAndAssignExpression(VariableDefinition VariableDefinition, Expression Right) : Expression;
+public record AddAndAssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
 
-public record SubAndAssignExpression(VariableDefinition VariableDefinition, Expression Right) : Expression;
+public record SubAndAssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
 
-public record MulAndAssignExpression(VariableDefinition VariableDefinition, Expression Right) : Expression;
+public record MulAndAssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
 
-public record DivAndAssignExpression(VariableDefinition VariableDefinition, Expression Right) : Expression;
-
-public record PowAndAssignExpression(VariableDefinition VariableDefinition, Expression Right) : Expression;
+public record DivAndAssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
 
 public record Increment(Expression Inner) : UnaryExpression(Inner);
 

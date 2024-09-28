@@ -16,4 +16,6 @@ public interface IAssemblyDescription
     public IReadOnlyList<KeyValuePair<Type, string>> TypeMap { get; }
     
     public IReadOnlyDictionary<string, IReadOnlyList<MethodInfo>> MethodDescriptions { get; }
+
+    public bool TryMatchSignature(string name, Type returnType, List<Type> argumentTypes, out MethodInfo method);
 }
