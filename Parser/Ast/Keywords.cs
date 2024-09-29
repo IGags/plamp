@@ -19,5 +19,6 @@ public enum Keywords
     Break,
     Continue,
     //Reserved
-    Model
+    Model,
+    Var
 }

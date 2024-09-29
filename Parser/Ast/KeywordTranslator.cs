@@ -30,6 +30,7 @@ public static class KeywordTranslator
             "break" => Keywords.Break,
             "continue" => Keywords.Continue,
             "model" => Keywords.Model,
+            "var" => Keywords.Var,
             _ => Keywords.Unknown
         };
     }

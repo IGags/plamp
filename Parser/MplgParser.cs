@@ -341,24 +341,32 @@ public class MplgParser
     private Expression ParseNud(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions)
     {
-        if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        if (_tokenSequence.PeekNextNonWhiteSpace() is OpenBracket)
         {
-            var op = token.ToOperator();
-            return op switch
-            {
-                Ast.Operator.Minus => new UnaryMinus(ParseWithPrecedence(scope, assemblyDescriptions,
-                    op.GetPrecedence(true))),
-                Ast.Operator.Not =>
-                    new Negate(ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(true))),
-                Ast.Operator.Increment => new PrefixIncrement(ParseWithPrecedence(scope, assemblyDescriptions,
-                    op.GetPrecedence(true))),
-                Ast.Operator.Decrement => new PrefixDecrement(ParseWithPrecedence(scope, assemblyDescriptions,
-                    op.GetPrecedence(true))),
-                _ => throw new ParserException($"Invalid operator {op} in current context")
-            };
+            return ParseInParen<Expression, OpenBracket, CloseBracket>(
+                () => ParseWithPrecedence(scope, assemblyDescriptions),
+                () => throw new ParserException($"Empty paren pair"));
         }
 
-        return ParsePostfixIfExist(ParseVariableConstantOrCall(scope, assemblyDescriptions));
+        if (!TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        {
+            return ParsePostfixIfExist(ParseVariableConstantOrCall(scope, assemblyDescriptions));
+        }
+        
+        var op = token.ToOperator();
+        return op switch
+        {
+            Ast.Operator.Minus => new UnaryMinus(ParseWithPrecedence(scope, assemblyDescriptions,
+                op.GetPrecedence(true))),
+            Ast.Operator.Not =>
+                new Negate(ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(true))),
+            Ast.Operator.Increment => new PrefixIncrement(ParseWithPrecedence(scope, assemblyDescriptions,
+                op.GetPrecedence(true))),
+            Ast.Operator.Decrement => new PrefixDecrement(ParseWithPrecedence(scope, assemblyDescriptions,
+                op.GetPrecedence(true))),
+            _ => throw new ParserException($"Invalid operator {op} in current context")
+        };
+
     }
 
     private Expression ParsePostfixIfExist(Expression inner)
