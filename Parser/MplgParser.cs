@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Parser.Assembly;
 using Parser.Ast;
 using Parser.Token;
+using ConstantExpression = Parser.Ast.ConstantExpression;
+using Expression = Parser.Ast.Expression;
 using Operator = Parser.Token.Operator;
 
 namespace Parser;
@@ -179,7 +182,7 @@ public class MplgParser
         {
             return ParseAssign(scope, assemblyDescriptions);
         }
-
+        //TODO: адекватная ошибка
         return ParseCall(scope, assemblyDescriptions);
     }
 
@@ -319,8 +322,147 @@ public class MplgParser
         {
             return ParseCtor(scope, assemblyDescriptions);
         }
+
+        return ParseWithPrecedence(scope, assemblyDescriptions);
     }
 
+    
+    private Expression ParseWithPrecedence(VariableScope scope,
+        List<IAssemblyDescription> assemblyDescriptions, 
+        int rbp = 0)
+    {
+        var left = ParseNud(scope, assemblyDescriptions);
+        while (TryParseLed(scope, assemblyDescriptions, rbp, left, out left))
+        { }
+
+        return left;
+    }
+
+    private Expression ParseNud(VariableScope scope,
+        List<IAssemblyDescription> assemblyDescriptions)
+    {
+        if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        {
+            var op = token.ToOperator();
+            return op switch
+            {
+                Ast.Operator.Minus => new UnaryMinus(ParseWithPrecedence(scope, assemblyDescriptions,
+                    op.GetPrecedence(true))),
+                Ast.Operator.Not =>
+                    new Negate(ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(true))),
+                Ast.Operator.Increment => new PrefixIncrement(ParseWithPrecedence(scope, assemblyDescriptions,
+                    op.GetPrecedence(true))),
+                Ast.Operator.Decrement => new PrefixDecrement(ParseWithPrecedence(scope, assemblyDescriptions,
+                    op.GetPrecedence(true))),
+                _ => throw new ParserException($"Invalid operator {op} in current context")
+            };
+        }
+
+        return ParsePostfixIfExist(ParseVariableConstantOrCall(scope, assemblyDescriptions));
+    }
+
+    private Expression ParsePostfixIfExist(Expression inner)
+    {
+        if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        {
+            var op = token.ToOperator();
+            return op switch
+            {
+                Ast.Operator.Increment => new PostfixIncrement(inner),
+                Ast.Operator.Decrement => new PostfixDecrement(inner)
+            };
+        }
+
+        return inner;
+    }
+    
+    private bool TryParseLed(VariableScope scope,
+        List<IAssemblyDescription> assemblyDescriptions,
+        int rbp, Expression left, out Expression output)
+    {
+        if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        {
+            var op = token.ToOperator();
+            switch (op)
+            {
+                case Ast.Operator.Multiply:
+                    output = new Multiply(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Divide:
+                    output = new Divide(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Plus:
+                    output = new Plus(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Minus:
+                    output = new Minus(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Lesser:
+                    output = new Less(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Greater:
+                    output = new Greater(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.LesserOrEquals:
+                    output = new LessOrEquals(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.GreaterOrEquals:
+                    output = new GreaterOrEquals(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Equals:
+                    output = new Equals(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.NotEquals:
+                    output = new NotEquals(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.And:
+                    output = new And(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Or:
+                    output = new Or(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+            }
+        }
+
+        output = left;
+        return false;
+    }
+
+    private Expression ParseVariableConstantOrCall(VariableScope scope,
+        List<IAssemblyDescription> assemblyDescriptions)
+    {
+        if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() != Keywords.Unknown, out var word))
+        {
+            var keyword = word.ToKeyword();
+            return keyword switch
+            {
+                Keywords.True => new ConstantExpression(true, typeof(bool)),
+                Keywords.False => new ConstantExpression(false, typeof(bool)),
+                Keywords.Null => new ConstantExpression(null, typeof(void)),
+                _ => throw new ParserException($"Invalid keyword usage {keyword}")
+            };
+        }
+
+        if (TryConsumeNextNonWhiteSpace<StringLiteral>(_ => true, out var literal))
+        {
+            return new ConstantExpression(literal.GetString(), typeof(string));
+        }
+        
+        
+    }
+    
     private Expression ParseCtor(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions)
     {

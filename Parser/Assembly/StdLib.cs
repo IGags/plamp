@@ -32,4 +32,9 @@ public class StdLib : IAssemblyDescription
     };
 
     public IReadOnlyDictionary<string, IReadOnlyList<MethodInfo>> MethodDescriptions => _methodDescriptions;
+    
+    public bool TryMatchSignature(string name, Type returnType, List<Type> argumentTypes, out MethodInfo method)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -19,8 +19,6 @@ public record EmptyExpression() : Expression;
 
 public record ConstantExpression(object Value, Type Type) : Expression;
 
-public record ConstructorExpression(TypeDescription Type) : Expression;
-
 public abstract record BaseVariableExpression(VariableDefinition VariableDefinition) : Expression;
 
 public record VariableExpression(VariableDefinition VariableDefinition) : BaseVariableExpression(VariableDefinition);
@@ -60,9 +58,13 @@ public record MulAndAssignExpression(VariableExpression VariableDefinition, Expr
 
 public record DivAndAssignExpression(VariableExpression VariableDefinition, Expression Right) : Expression;
 
-public record Increment(Expression Inner) : UnaryExpression(Inner);
+public record PrefixIncrement(Expression Inner) : UnaryExpression(Inner);
 
-public record Decrement(Expression Inner) : UnaryExpression(Inner);
+public record PrefixDecrement(Expression Inner) : UnaryExpression(Inner);
+
+public record PostfixIncrement(Expression Inner) : UnaryExpression(Inner);
+
+public record PostfixDecrement(Expression Inner) : UnaryExpression(Inner);
 
 public record Negate(Expression Inner) : UnaryExpression(Inner);
 
