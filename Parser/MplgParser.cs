@@ -313,6 +313,7 @@ public class MplgParser
     private Expression ParseCall(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions)
     {
+        
     }
 
     private Expression ParseExpression(VariableScope scope, 
@@ -468,7 +469,19 @@ public class MplgParser
             return new ConstantExpression(literal.GetString(), typeof(string));
         }
         
-        
+        if (_tokenSequence.PeekNextNonWhiteSpace(1) is not OpenBracket or Operator
+            && TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, out var token))
+        {
+            var variable = scope.GetVariable(token.GetString());
+            return new VariableExpression(variable);
+        }
+
+        if (TryConsumeNextNonWhiteSpace(_ => true, out token))
+        {
+            return ParseCall(scope, assemblyDescriptions);
+        }
+
+        throw new ParserException($"invalid variable constant or call expresion");
     }
     
     private Expression ParseCtor(VariableScope scope,
