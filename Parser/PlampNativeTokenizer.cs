@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Parser.Assembly;
 using Parser.Ast;
@@ -12,11 +11,11 @@ using Operator = Parser.Token.Operator;
 
 namespace Parser;
 
-public class MplgParser
+public class PlampNativeTokenizer
 {
     private readonly TokenSequence _tokenSequence;
     
-    public MplgParser(string code)
+    public PlampNativeTokenizer(string code)
     {
         _tokenSequence = code.Tokenize();
     }
@@ -25,11 +24,11 @@ public class MplgParser
     public List<FuncExpression> Parse(List<IAssemblyDescription> assemblies)
     {
         var expressionList = new List<FuncExpression>();
-        
-        while (_tokenSequence.Current() != null)
+
+        do
         {
             ParseTopLevel(expressionList, assemblies);
-        }
+        } while (_tokenSequence.Current() != null && _tokenSequence.PeekNext() != null);
 
         return expressionList;
     }
@@ -64,17 +63,19 @@ public class MplgParser
     private void ParseFunction(List<FuncExpression> expressions, List<IAssemblyDescription> assemblyDescriptions)
     {
         using var scope = new VariableScope(null);
-        var returnType = new TypeDescription(ParseType(assemblyDescriptions));
+        var returnType = ParseType(assemblyDescriptions);
         var wordToken = ParseNonWhiteSpaceWithException<Word>(_ => true);
 
         var functionName = wordToken.GetString();
-        var args = ParseInParen<List<ParameterDescription>, OpenBracket, CloseBracket>(
+        var args = ParseInParen<List<VariableDefinition>, OpenBracket, CloseBracket>(
             () => ParseCommaSeparated(() => ParseParameter(assemblyDescriptions)),
             () => []);
-        args.ForEach(x => scope.AddVariable(new VariableDefinition(x.TypeName, x.Name)));
+
+        var @params = args.Select(x => new ParameterExpression(x)).ToList();
+        @params.ForEach(x => scope.AddVariable(x));
         ParseNonWhiteSpaceWithException<EOF>(_ => true);
         var body = ParseBody(scope, assemblyDescriptions);
-        var expression = new FuncExpression(functionName, returnType, args.ToArray(), body);
+        var expression = new FuncExpression(functionName, returnType, @params.ToArray(), body);
         expressions.Add(expression);
     }
 
@@ -88,17 +89,17 @@ public class MplgParser
             ParseNonWhiteSpaceWithException<EOF>(_ => true);
         }
 
-        var body = new BodyExpression(expressions);
+        var body = new BodyExpression(expressions, inner.GetAllVariables());
         return body;
     }
 
-    private ParameterDescription ParseParameter(List<IAssemblyDescription> assemblyDescriptions)
+    private VariableDefinition ParseParameter(List<IAssemblyDescription> assemblyDescriptions)
     {
-        var type = new TypeDescription(ParseType(assemblyDescriptions));
+        var type = ParseType(assemblyDescriptions);
 
         var nameToken = ParseNonWhiteSpaceWithException<Word>(_ => true);
         //TODO: валидация имени параметра
-        return new ParameterDescription(type, nameToken.GetString());
+        return new VariableDefinition(type, nameToken.GetString());
     }
     
     //TODO: более детальные ошибки парсинга
@@ -285,16 +286,15 @@ public class MplgParser
     {
         var variable = ParseNonWhiteSpaceWithException<Word>(_ => true);
         var definition = scope.GetVariable(variable.GetString());
-        var varExpression = new VariableExpression(definition);
         var op = ParseNonWhiteSpaceWithException<Operator>(_ => true);
         var right = ParseExpression(scope, assemblyDescriptions);
         return op.ToOperator() switch
         {
-            Ast.Operator.Assign => new AssignExpression(varExpression, right),
-            Ast.Operator.PlusAndAssign => new AddAndAssignExpression(varExpression, right),
-            Ast.Operator.MinusAndAssign => new SubAndAssignExpression(varExpression, right),
-            Ast.Operator.MultiplyAndAssign => new MulAndAssignExpression(varExpression, right),
-            Ast.Operator.DivideAndAssign => new DivAndAssignExpression(varExpression, right),
+            Ast.Operator.Assign => new AssignExpression(definition, right),
+            Ast.Operator.PlusAndAssign => new AddAndAssignExpression(definition, right),
+            Ast.Operator.MinusAndAssign => new SubAndAssignExpression(definition, right),
+            Ast.Operator.MultiplyAndAssign => new MulAndAssignExpression(definition, right),
+            Ast.Operator.DivideAndAssign => new DivAndAssignExpression(definition, right),
             _ => throw new ParserException($"invalid assign expression")
         };
     }
@@ -304,16 +304,111 @@ public class MplgParser
     {
         var type = ParseType(assemblyDescriptions);
         var variable = ParseNonWhiteSpaceWithException<Word>(_ => true);
-        var variableDefinition = new VariableDefinition(new TypeDescription(type), variable.GetString());
-        scope.AddVariable(variableDefinition);
+        var variableDefinition = new VariableDefinition(type, variable.GetString());
         var createVariable = new CreateVariableExpression(variableDefinition);
+        scope.AddVariable(createVariable);
         return createVariable;
     }
     
     private Expression ParseCall(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions)
     {
+        //TODO: метод чейнинг
+        if (TryParseDotSeparatedSequence(out var definition, 3))
+        {
+            var assembly = assemblyDescriptions.First(x => x.Name == definition[0].GetString());
+            //TODO: спиздил из ктора, это плохо
+            var expressions = ParseInParen<List<Expression>, OpenBracket, CloseBracket>(
+                () => ParseCommaSeparated(
+                    () => ParseExpression(scope, assemblyDescriptions)),
+                () => []);
+            var signature = expressions.Select(x => x.GetReturnType()).ToList();
+            //TODO: вся валидация в отдельном пакете
+            if (!assembly.TryMatchSignature(definition[2].GetString(), null, signature, out var methodInfo))
+            {
+                throw new ParserException($"Unexpected method {definition[2].GetString()}");
+            }
+
+            return new CallExpression(methodInfo, expressions);
+        }
+
+        if (TryParseDotSeparatedSequence(out definition, 2))
+        {
+            if (scope.TryGetVariable(definition[0].GetString(), out var variable))
+            {
+                //TODO: вызовы методов из переменных
+                throw new NotImplementedException();
+            }
+            var expressions = ParseInParen<List<Expression>, OpenBracket, CloseBracket>(
+                () => ParseCommaSeparated(
+                    () => ParseExpression(scope, assemblyDescriptions)),
+                () => []);
+            var signature = expressions.Select(x => x.GetReturnType()).ToList();
+            var ctorMethod = default(MethodInfo);
+            foreach (var assembly in assemblyDescriptions)
+            {
+                if (assembly.TryMatchSignature(definition[1].GetString(), null, signature, out var method))
+                {
+                    //TODO: зона ответственности сборок
+                    if (ctorMethod != default)
+                    {
+                        throw new ParserException($"ambugulous method invocation");
+                    }
+
+                    ctorMethod = method;
+                }
+            }
+        }
+
+        if (TryParseDotSeparatedSequence(out definition, 1))
+        {
+            //Вызовы методов из текщей сборки
+            throw new NotImplementedException();
+        }
         
+        throw new ParserException("Not method call");
+        //variable.method
+        //Type.method
+        //asm.Type.method
+    }
+
+    private bool TryParseDotSeparatedSequence(out Word[] tokenList, int length)
+    {
+        tokenList = new Word[length];
+        for (var i = 0; i < length; i++)
+        {
+            if (TryConsumeNextNonWhiteSpace<Word>(_ => true, out var token))
+            {
+                tokenList[i] = token;
+                if (i + 1 == length)
+                {
+                    return true;
+                }
+            }
+            else if(i > 0)
+            {
+                _tokenSequence.RollBackToNonWhiteSpace(i - 1);
+                return false;
+            }
+            else
+            {
+                return false;
+            }
+            if (TryConsumeNextNonWhiteSpace<Operator>(op => op.ToOperator() == Ast.Operator.Call, out var op))
+            {
+                continue;
+            }
+
+            if (i <= 0)
+            {
+                return false;
+            }
+            _tokenSequence.RollBackToNonWhiteSpace(i - 1);
+            return false;
+
+        }
+
+        return false;
     }
 
     private Expression ParseExpression(VariableScope scope, 
@@ -327,7 +422,7 @@ public class MplgParser
         return ParseWithPrecedence(scope, assemblyDescriptions);
     }
 
-    
+    //TODO: кривой приоритет операторов
     private Expression ParseWithPrecedence(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions, 
         int rbp = 0)
@@ -372,17 +467,21 @@ public class MplgParser
 
     private Expression ParsePostfixIfExist(Expression inner)
     {
-        if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
+        if (!TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
         {
-            var op = token.ToOperator();
-            return op switch
-            {
-                Ast.Operator.Increment => new PostfixIncrement(inner),
-                Ast.Operator.Decrement => new PostfixDecrement(inner)
-            };
+            return inner;
         }
-
-        return inner;
+        var op = token.ToOperator();
+        switch (op)
+        {
+            case Ast.Operator.Increment:
+                return new PostfixIncrement(inner);
+            case Ast.Operator.Decrement:
+                return new PostfixDecrement(inner);
+            default:
+                _tokenSequence.RollBackToNonWhiteSpace(0);
+                return inner;
+        }
     }
     
     private bool TryParseLed(VariableScope scope,
@@ -392,6 +491,13 @@ public class MplgParser
         if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, out var token))
         {
             var op = token.ToOperator();
+            var precedence = op.GetPrecedence(false);
+            if (precedence <= rbp)
+            {
+                output = left;
+                _tokenSequence.RollBackToNonWhiteSpace(0);
+                return false;
+            }
             switch (op)
             {
                 case Ast.Operator.Multiply:
@@ -427,7 +533,7 @@ public class MplgParser
                         ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
                     return true;
                 case Ast.Operator.Equals:
-                    output = new Equals(left,
+                    output = new Equal(left,
                         ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
                     return true;
                 case Ast.Operator.NotEquals:
@@ -464,6 +570,19 @@ public class MplgParser
             };
         }
 
+        if (TryConsumeNextNonWhiteSpace(x => int.TryParse(x.GetString(), out _), out word))
+        {
+            return new ConstantExpression(int.Parse(word.GetString()), typeof(int));
+        }
+        if (TryConsumeNextNonWhiteSpace(x => long.TryParse(x.GetString(), out _), out word))
+        {
+            return new ConstantExpression(long.Parse(word.GetString()), typeof(long));
+        }
+        if (TryConsumeNextNonWhiteSpace(x => double.TryParse(x.GetString(), out _), out word))
+        {
+            return new ConstantExpression(double.Parse(word.GetString()), typeof(double));
+        }
+        
         if (TryConsumeNextNonWhiteSpace<StringLiteral>(_ => true, out var literal))
         {
             return new ConstantExpression(literal.GetString(), typeof(string));
@@ -473,7 +592,7 @@ public class MplgParser
             && TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, out var token))
         {
             var variable = scope.GetVariable(token.GetString());
-            return new VariableExpression(variable);
+            return variable;
         }
 
         if (TryConsumeNextNonWhiteSpace(_ => true, out token))
@@ -515,7 +634,7 @@ public class MplgParser
     private TToken ParseNonWhiteSpaceWithException<TToken>(Func<TToken, bool> predicate)
     {
         var token = _tokenSequence.GetNextNonWhiteSpace();
-        if (token is not TToken typedToken || predicate(typedToken))
+        if (token is not TToken typedToken || !predicate(typedToken))
         {
             throw new ParserException(token, typeof(TToken).Name);
         }
@@ -538,7 +657,6 @@ public class MplgParser
     
     private List<TReturn> ParseCommaSeparated<TReturn>(Func<TReturn> parserFunc) 
     {
-        _tokenSequence.GetNextToken();
         var result = new List<TReturn>();
         while (true)
         {

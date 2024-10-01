@@ -9,7 +9,7 @@ public class VariableScope : IDisposable
 {
     private readonly VariableScope _parent;
 
-    private readonly List<VariableDefinition> _variablesInScope = new();
+    private readonly List<BaseVariableExpression> _variablesInScope = new();
 
     public int Depth { get; private set; }
     
@@ -19,9 +19,9 @@ public class VariableScope : IDisposable
         Depth = parent?.Depth == null ? 0 : parent.Depth + 1;
     }
 
-    public bool TryGetVariable(string name, out VariableDefinition variable)
+    public bool TryGetVariable(string name, out BaseVariableExpression variable)
     {
-        var variableDefinition = _variablesInScope.FirstOrDefault(x => x.Name == name);
+        var variableDefinition = _variablesInScope.FirstOrDefault(x => x.VariableDefinition.Name == name);
         if (variableDefinition != null)
         {
             variable = variableDefinition;
@@ -37,7 +37,7 @@ public class VariableScope : IDisposable
         return false;
     }
 
-    public VariableDefinition GetVariable(string name)
+    public BaseVariableExpression GetVariable(string name)
     {
         if (TryGetVariable(name, out var variable))
         {
@@ -47,11 +47,11 @@ public class VariableScope : IDisposable
         throw new ParserException($"variable with name {name} is not found");
     }
     
-    public void AddVariable(VariableDefinition variable)
+    public void AddVariable(BaseVariableExpression variable)
     {
-        if (TryGetVariable(variable.Name, out _))
+        if (TryGetVariable(variable.VariableDefinition.Name, out _))
         {
-            throw new ParserException($"variable with name {variable.Name} was defined above or in a parent scope");
+            throw new ParserException($"variable with name {variable.VariableDefinition.Name} was defined above or in a parent scope");
         }
 
         _variablesInScope.Add(variable);
@@ -64,4 +64,18 @@ public class VariableScope : IDisposable
 
     //Нужна, чтобы заворачивать в юзинг
     public void Dispose() {}
+
+    public IReadOnlyList<BaseVariableExpression> GetAllVariables(List<BaseVariableExpression> varList = null)
+    {
+        if (varList == null)
+        {
+            varList = new List<BaseVariableExpression>();
+            varList.AddRange(_variablesInScope);
+        }
+        else
+        {
+            varList.AddRange(_variablesInScope.Select(x => new VariableExpression(x.VariableDefinition)));
+        }
+        return _parent == null ? varList : _parent.GetAllVariables(varList);
+    }
 }

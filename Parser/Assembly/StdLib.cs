@@ -26,10 +26,7 @@ public class StdLib : IAssemblyDescription
 
     public IReadOnlyList<KeyValuePair<Type, string>> TypeMap => _typeMap;
     
-    private readonly Dictionary<string, IReadOnlyList<MethodInfo>> _methodDescriptions = new()
-    {
-        {"toString", [typeof(int).GetMethod("ToString")]}
-    };
+    private readonly Dictionary<string, IReadOnlyList<MethodInfo>> _methodDescriptions = new();
 
     public IReadOnlyDictionary<string, IReadOnlyList<MethodInfo>> MethodDescriptions => _methodDescriptions;
     

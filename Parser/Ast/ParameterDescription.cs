@@ -1,3 +1,5 @@
-﻿namespace Parser.Ast;
+﻿using System;
 
-public record ParameterDescription(TypeDescription TypeName, string Name);
+namespace Parser.Ast;
+
+public record ParameterDescription(Type TypeName, string Name);

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using Parser;
+using Parser.Assembly;
 
 namespace mplg;
 
@@ -7,17 +9,12 @@ class Program
 {
     static void Main(string[] args)
     {
-        var tokens = """
-                     output.Set(input.Get("x"), "a")
-                     output.Set("aaa" == input.Get("d").ToString(),"b")
-                     output.Set(false, "c")
-                     JsonArray x = new JsonArray
-                     for i in input.Get("a").AsArray()
-                         JsonObject value = new JsonObject
-                         value.Set(i.Get("b"), "r")
-                         x.Add(value)
-                     output.Set(x, "x")
-                     """.Tokenize();
-        Console.WriteLine("123");
+        var parser = new PlampNativeTokenizer("""
+                                         def int main(int a)
+                                             return a + 2 * 2
+                                         """);
+        var ast = parser.Parse([new StdLib()]);
+        var func = ast.First().Compile<Func<int, int>>();
+        Console.WriteLine(func(6));
     }
 }

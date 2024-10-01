@@ -1,19 +1,20 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace Parser.Ast;
 
 public record VariableDefinition
 {
-    private readonly TypeDescription _type;
+    public readonly Type Type;
     public string Name { get; }
 
-    public VariableDefinition(TypeDescription type, string name)
+    public VariableDefinition(Type type, string name)
     {
         if (name.ToKeyword() != Keywords.Unknown || !char.IsLetter(name.First()))
         {
             throw new VariableException(name);
         }
-        _type = type;
+        Type = type;
         Name = name;
     }
 }

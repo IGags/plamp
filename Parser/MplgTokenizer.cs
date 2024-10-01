@@ -22,7 +22,7 @@ public static class MplgTokenizer
             }
             else
             {
-                tokenList.Add(ParseCustom(code, ref i));
+                tokenList.Add(ParseCustom(code, ref i, tokenList.LastOrDefault()));
             }
         }
 
@@ -42,6 +42,10 @@ public static class MplgTokenizer
             if (char.IsLetterOrDigit(code[position]))
             {
                 builder.Append(code[position]);
+            }
+            else
+            {
+                return new Word(builder.ToString());
             }
         }
         return new Word(builder.ToString());
@@ -67,8 +71,16 @@ public static class MplgTokenizer
         throw new TokenizeException("Строка не закрыта", position);
     }
 
-    private static TokenBase ParseCustom(string code, ref int position)
+    private static TokenBase ParseCustom(string code, ref int position, TokenBase lastToken)
     {
+        if (code.Length > position + 4 && code[position..(position + 4)] == "    "
+                                       && (lastToken == null
+                                           || lastToken.GetType() == typeof(EOF)
+                                           || lastToken.GetType() == typeof(Scope)))
+        {
+            position += 4;
+            return new Scope();
+        }
         switch (code[position])
         {
             case '[':

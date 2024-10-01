@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Parser.Token;
 
 namespace Parser;
@@ -40,6 +41,10 @@ public class TokenSequence
 
     public TokenBase PeekNextNonWhiteSpace(int shift = 0)
     {
+        if (shift < 0)
+        {
+            throw new ArgumentException();
+        }
         var pos = _position;
         do
         {
@@ -53,7 +58,7 @@ public class TokenSequence
             {
                 continue;
             }
-            if (shift == 0)
+            if (shift <= 0)
             {
                 return _tokenList[pos];
             }
@@ -86,8 +91,12 @@ public class TokenSequence
         return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
     }
 
-    public TokenBase RollBackToNonWhiteSpace()
+    public TokenBase RollBackToNonWhiteSpace(int shift = 0)
     {
+        if (shift < 0)
+        {
+            throw new ArgumentException();
+        }
         do
         {
             _position = _position == -1 ? -1 : --_position;
@@ -96,10 +105,18 @@ public class TokenSequence
                 return null;
             }
 
-            if (_tokenList[_position].GetType() != typeof(WhiteSpace))
+            if (_tokenList[_position].GetType() == typeof(WhiteSpace))
+            {
+                continue;
+                
+            }
+
+            if (shift <= 0)
             {
                 return _tokenList[_position];
             }
+
+            shift--;
         } while (_position != -1);
 
         return null;
