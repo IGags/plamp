@@ -160,7 +160,6 @@ public record WhileExpression(Expression Condition, BodyExpression Body) : Expre
 
 public record ClauseExpression(Expression Condition, BodyExpression Body) : Expression
 {
-    //TODO: доделать
     public override System.Linq.Expressions.Expression Compile()
     {
         throw new NotImplementedException();
@@ -177,10 +176,39 @@ public record ConditionExpression(
     List<ClauseExpression> ElifClauseList,
     BodyExpression ElseClause) : Expression
 {
-    //TODO: доделать
+    //TODO: компилляция в отдельной сборке
     public override System.Linq.Expressions.Expression Compile()
     {
-        throw new NotImplementedException();
+        if (!ElifClauseList.Any() && ElseClause == null)
+        {
+            return System.Linq.Expressions.Expression.IfThen(IfClause.Condition.Compile(), IfClause.Body.Compile());
+        }
+        if (!ElifClauseList.Any())
+        {
+            return System.Linq.Expressions.Expression.IfThenElse(IfClause.Condition.Compile(), IfClause.Body.Compile(),
+                ElseClause.Compile());
+        }
+
+        //Чтобы не сломать при нескольких компилляциях
+        var clauses = ((IEnumerable<ClauseExpression>)ElifClauseList).Reverse();
+        var lastClause = clauses.First();
+        System.Linq.Expressions.Expression last;
+        if (ElseClause != null)
+        {
+            last = System.Linq.Expressions.Expression.IfThenElse(lastClause.Condition.Compile(),
+                lastClause.Body.Compile(), ElseClause.Compile());
+        }
+        else
+        {
+            last = System.Linq.Expressions.Expression.IfThen(lastClause.Condition.Compile(), lastClause.Body.Compile());
+        }
+
+        foreach (var clause in clauses.Skip(1))
+        {
+            last = System.Linq.Expressions.Expression.IfThenElse(clause.Condition.Compile(), clause.Body.Compile(),
+                last);
+        }
+        return System.Linq.Expressions.Expression.IfThenElse(IfClause.Condition.Compile(), IfClause.Body.Compile(), last);
     }
 
     public override Type GetReturnType()

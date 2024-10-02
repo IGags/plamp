@@ -208,7 +208,12 @@ public class PlampNativeParser
     {
         var baseClause = ParseConditionClause(scope, assemblyDescriptions);
         var elifClauses = new List<ClauseExpression>();
-        while (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Elif, out var word))
+        
+        //TODO кривое употребление кляуз
+        while (TryParseScopedWithDepth(
+                   sc => 
+                       TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Elif, out var word), 
+                   scope, out var res) && res)
         {
             var clause = ParseConditionClause(scope, assemblyDescriptions);
             elifClauses.Add(clause);
@@ -217,10 +222,11 @@ public class PlampNativeParser
         var elseBody = default(BodyExpression);
         if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Else, out _))
         {
-            using var child = scope.Enter();
-            elseBody = ParseBody(child, assemblyDescriptions);
+            ParseNonWhiteSpaceWithException<EOF>(_ => true);
+            elseBody = ParseBody(scope, assemblyDescriptions);
         }
-
+        _tokenSequence.RollBackToNonWhiteSpace();
+        
         return new ConditionExpression(baseClause, elifClauses, elseBody);
     }
 
@@ -358,6 +364,8 @@ public class PlampNativeParser
                     ctorMethod = method;
                 }
             }
+
+            return new CallExpression(ctorMethod, expressions);
         }
 
         if (TryParseDotSeparatedSequence(out definition, 1))
@@ -375,11 +383,13 @@ public class PlampNativeParser
     private bool TryParseDotSeparatedSequence(out Word[] tokenList, int length)
     {
         tokenList = new Word[length];
+        var counter = -1;
         for (var i = 0; i < length; i++)
         {
             if (TryConsumeNextNonWhiteSpace<Word>(_ => true, out var token))
             {
                 tokenList[i] = token;
+                counter++;
                 if (i + 1 == length)
                 {
                     return true;
@@ -387,7 +397,7 @@ public class PlampNativeParser
             }
             else if(i > 0)
             {
-                _tokenSequence.RollBackToNonWhiteSpace(i - 1);
+                _tokenSequence.RollBackToNonWhiteSpace(counter);
                 return false;
             }
             else
@@ -396,6 +406,7 @@ public class PlampNativeParser
             }
             if (TryConsumeNextNonWhiteSpace<Operator>(op => op.ToOperator() == Ast.Operator.Call, out var op))
             {
+                counter++;
                 continue;
             }
 
@@ -403,7 +414,7 @@ public class PlampNativeParser
             {
                 return false;
             }
-            _tokenSequence.RollBackToNonWhiteSpace(i - 1);
+            _tokenSequence.RollBackToNonWhiteSpace(counter);
             return false;
 
         }
@@ -587,16 +598,21 @@ public class PlampNativeParser
         {
             return new ConstantExpression(literal.GetString(), typeof(string));
         }
-        
+        //TODO: переменная перебьёт вызов
         if (_tokenSequence.PeekNextNonWhiteSpace(1) is not OpenBracket or Operator
             && TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, out var token))
         {
-            var variable = scope.GetVariable(token.GetString());
-            return variable;
+            if (scope.TryGetVariable(token.GetString(), out var variable))
+            {
+                return variable;
+            }
+
+            _tokenSequence.RollBackToNonWhiteSpace();
         }
 
         if (TryConsumeNextNonWhiteSpace(_ => true, out token))
         {
+            _tokenSequence.RollBackToNonWhiteSpace();
             return ParseCall(scope, assemblyDescriptions);
         }
 
@@ -683,5 +699,17 @@ public class PlampNativeParser
 
         token = null;
         return false;
+    }
+
+    private void RollBackToRequestedNonWhiteSpaceToken<T>() where T : TokenBase
+    {
+        while (true)
+        {
+            var token = _tokenSequence.RollBackToNonWhiteSpace();
+            if (token is null || token.GetType() == typeof(T))
+            {
+                return;
+            }
+        }
     }
 }
