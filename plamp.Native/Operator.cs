@@ -23,5 +23,7 @@ public enum Operator
     Increment,
     Decrement,
     Call,
+    Modulo,
+    ModuloAndAssign,
     None
 }

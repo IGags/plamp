@@ -177,6 +177,10 @@ public static class PlampNativeTokenizer
                     @operator = new Operator("||");
                     position+=2;
                     return true;
+                case "%=":
+                    @operator = new Operator("%=");
+                    position+=2;
+                    return true;
             }
         }
 
@@ -211,6 +215,9 @@ public static class PlampNativeTokenizer
                 break;
             case '!':
                 @operator = new Operator("!");
+                break;
+            case '%':
+                @operator = new Operator("%");
                 break;
             default:
                 @operator = null;

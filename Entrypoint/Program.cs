@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using Parser;
 using Parser.Assembly;
 
@@ -11,17 +12,15 @@ class Program
     {
         var parser = new PlampNativeParser("""
                                          def void main(int a)
-                                             if(a < 5)
-                                                 std.WriteLine("Переменная меньше 5")
-                                             elif(a < 10)
-                                                 std.WriteLine("Переменная меньше 10")
+                                             if(a % 2 == 0)
+                                                 std.WriteLine("Чёт!")
                                              else
-                                                 std.WriteLine("Дальше я считать не умею")
+                                                 std.WriteLine("Нечет")
                                          """);
         var ast = parser.Parse([new StdLib()]);
         var func = ast.First().Compile<Action<int>>();
         func(3);
-        func(9);
+        func(8);
         func(87);
     }
 }

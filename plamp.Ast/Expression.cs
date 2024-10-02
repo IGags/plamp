@@ -77,14 +77,10 @@ public record CreateVariableExpression(VariableDefinition VariableDefinition) : 
     public override Type GetReturnType() => VariableDefinition.Type;
 }
 
-public record CallExpression(MethodInfo Method, List<Expression> Arguments) : Expression
-{
-    public override System.Linq.Expressions.Expression Compile()
-    {
-        return System.Linq.Expressions.Expression.Call(Method, Arguments.Select(x => x.Compile()));
-    }
+public record MemberExpression(string Name) : Expression;
 
-    public override Type GetReturnType() => Method.ReturnType;
+public record CallExpression(Expression From, MemberExpression Member, List<Expression> Args) : Expression
+{
 }
 
 public record BodyExpression(List<Expression> Expressions, IReadOnlyList<BaseVariableExpression> Variables) : Expression
@@ -483,6 +479,32 @@ public record Minus(Expression Left, Expression Right) : BinaryExpression(Left, 
     public override System.Linq.Expressions.Expression Compile()
     {
         return System.Linq.Expressions.Expression.Subtract(Left.Compile(), Right.Compile());
+    }
+
+    public override Type GetReturnType()
+    {
+        return Left.GetReturnType();
+    }
+}
+
+public record Modulo(Expression Left, Expression Right) : BinaryExpression(Left, Right)
+{
+    public override System.Linq.Expressions.Expression Compile()
+    {
+        return System.Linq.Expressions.Expression.Modulo(Left.Compile(), Right.Compile());
+    }
+
+    public override Type GetReturnType()
+    {
+        return Left.GetReturnType();
+    }
+}
+
+public record ModuloAndAssign(BaseVariableExpression Left, Expression Right) : Expression
+{
+    public override System.Linq.Expressions.Expression Compile()
+    {
+        return System.Linq.Expressions.Expression.ModuloAssign(Left.Compile(), Right.Compile());
     }
 
     public override Type GetReturnType()

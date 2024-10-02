@@ -27,6 +27,8 @@ public static class OperatorTranslator
             "++" => Operator.Increment,
             "--" => Operator.Decrement,
             "." => Operator.Call,
+            "%" => Operator.Modulo,
+            "%=" => Operator.ModuloAndAssign,
             _ => Operator.None
         };
     }
@@ -47,18 +49,20 @@ public static class OperatorTranslator
 
         return op switch
         {
+            Operator.Call => 54,
             Operator.Multiply => 50,
             Operator.Divide => 49,
             Operator.Plus => 48,
             Operator.Minus => 47,
             Operator.Lesser => 46,
-            Operator.Greater => 45,
-            Operator.LesserOrEquals => 44,
-            Operator.GreaterOrEquals => 43,
-            Operator.Equals => 42,
-            Operator.NotEquals => 41,
-            Operator.And => 40,
-            Operator.Or => 39,
+            Operator.Modulo => 45,
+            Operator.Greater => 44,
+            Operator.LesserOrEquals => 43,
+            Operator.GreaterOrEquals => 42,
+            Operator.Equals => 41,
+            Operator.NotEquals => 40,
+            Operator.And => 39,
+            Operator.Or => 38,
             _ => throw new ParserException($"Invalid operator {op} in currnet context")
         };
     }

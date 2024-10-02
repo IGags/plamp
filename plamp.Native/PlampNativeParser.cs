@@ -301,6 +301,7 @@ public class PlampNativeParser
             Ast.Operator.MinusAndAssign => new SubAndAssignExpression(definition, right),
             Ast.Operator.MultiplyAndAssign => new MulAndAssignExpression(definition, right),
             Ast.Operator.DivideAndAssign => new DivAndAssignExpression(definition, right),
+            Ast.Operator.ModuloAndAssign => new ModuloAndAssign(definition, right),
             _ => throw new ParserException($"invalid assign expression")
         };
     }
@@ -511,6 +512,8 @@ public class PlampNativeParser
             }
             switch (op)
             {
+                case Ast.Operator.Call:
+                    output
                 case Ast.Operator.Multiply:
                     output = new Multiply(left,
                         ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
@@ -557,6 +560,10 @@ public class PlampNativeParser
                     return true;
                 case Ast.Operator.Or:
                     output = new Or(left,
+                        ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
+                    return true;
+                case Ast.Operator.Modulo:
+                    output = new Modulo(left,
                         ParseWithPrecedence(scope, assemblyDescriptions, op.GetPrecedence(false)));
                     return true;
             }
