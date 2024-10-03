@@ -6,6 +6,7 @@ using System.Reflection;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Body;
+using plamp.Ast.Node.ControlFlow;
 using plamp.Native.Enumerations;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
@@ -151,15 +152,10 @@ public class PlampNativeParser
         var isGetName = TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown, AddKeywordException, out var word);
 
         var isGetArgs =
-            TryParseInParen<List<ParameterNode>, OpenBracket, CloseBracket>(
+            TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
                 WrapParseCommaSeparated<ParameterNode>(TryParseParameter),
                 () => [], out var parameterNodes);
-        if (!TryConsumeNextNonWhiteSpace<EndOfLine>(_ => true, () => { }, out _))
-        {
-            var unexpectedStart = _tokenSequence.Position;
-            AdvanceToRequestedToken<EndOfLine>();
-            _exceptions.Add(new ParserException("End of line", unexpectedStart, _tokenSequence.Position));
-        }
+        AdvanceToEndOfLineAndAddException();
         
         var isParsedBody = TryParseBody(out var body);
         if (isGetReturnType && isGetName && isGetArgs && isParsedBody)
@@ -177,15 +173,10 @@ public class PlampNativeParser
         body = null;
         using var handle = _depth.EnterNewScope();
         var expressions = new List<NodeBase>();
-        while (TryParseScopedWithDepth(TryParseSingleLineExpression, out var expression))
+        while (TryParseScopedWithDepth<NodeBase>(TryParseSingleLineExpression, out var expression))
         {
             expressions.Add(expression);
-            if (!TryConsumeNextNonWhiteSpace<EndOfLine>(_ => true, () => { }, out _))
-            {
-                var unexpectedStart = _tokenSequence.Position;
-                AdvanceToRequestedToken<EndOfLine>();
-                _exceptions.Add(new ParserException("End of line", unexpectedStart, _tokenSequence.Position));
-            }
+            AdvanceToEndOfLineAndAddException();
         }
 
         body = new BodyNode(expressions);
@@ -213,7 +204,6 @@ public class PlampNativeParser
     private bool TryParseType(out TypeNode typeNode)
     {
         typeNode = null;
-        var start = _tokenSequence.Current();
         if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.Unknown,
                 AddKeywordException, 
                 () => _exceptions.Add(new ParserException("type name", _tokenSequence.Position, _tokenSequence.Position)),
@@ -277,289 +267,262 @@ public class PlampNativeParser
         return false;
     }
 
-    private Expression ParseSingleLineExpression(VariableScope scope, List<IAssemblyDescription> assemblyDescriptions)
+    private bool TryParseSingleLineExpression(out NodeBase expression)
     {
+        expression = null;
+        if (TryParseEmpty(out var emptyNode))
+        {
+            expression = emptyNode;
+            return true;
+        }
+        
         if (_tokenSequence.PeekNextNonWhiteSpace() is Word word
-            && word.ToKeyword() != Keywords.Unknown)
+            && word.ToKeyword() != Keywords.Unknown && word.ToKeyword() != Keywords.Var && word.ToKeyword() != Keywords.Await)
         {
-            return ParseKeywordExpression(scope, assemblyDescriptions);
-        }
-
-        if (_tokenSequence.PeekNextNonWhiteSpace(2) is Operator op
-            && op.ToOperator() == OperatorEnum.Assign)
-        {
-            return ParseCreateVariableAndAssign(scope, assemblyDescriptions);
-        }
-
-        if (_tokenSequence.PeekNextNonWhiteSpace(1) is Operator @operator
-            && (@operator.ToOperator() == OperatorEnum.Assign
-                || @operator.ToOperator() == OperatorEnum.PlusAndAssign
-                || @operator.ToOperator() == OperatorEnum.MinusAndAssign
-                || @operator.ToOperator() == OperatorEnum.MultiplyAndAssign
-                || @operator.ToOperator() == OperatorEnum.DivideAndAssign))
-        {
-            return ParseAssign(scope, assemblyDescriptions);
-        }
-
-        //TODO: адекватная ошибка
-        return ParseCall(scope, assemblyDescriptions);
-    }
-
-    private Expression ParseKeywordExpression(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var word = ParseNonWhiteSpaceWithException<Word>(_ => true).ToKeyword();
-        return word switch
-        {
-            Keywords.Break => new BreakExpression(),
-            Keywords.Return => new ReturnExpression(ParseExpression(scope, assemblyDescriptions)),
-            Keywords.Continue => new ContinueExpression(),
-            Keywords.If => ParseConditionalExpression(scope, assemblyDescriptions),
-            Keywords.For => ParseForLoop(scope, assemblyDescriptions),
-            Keywords.While => ParseWhileLoop(scope, assemblyDescriptions),
-            _ => throw new ParserException($"unexpected keyword {word}")
-        };
-    }
-
-    private Expression ParseConditionalExpression(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var baseClause = ParseConditionClause(scope, assemblyDescriptions);
-        var elifClauses = new List<ClauseExpression>();
-
-        //TODO кривое употребление кляуз
-        while (TryParseScopedWithDepth(
-                   sc =>
-                       TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Elif, out var word),
-                   scope, out var res) && res)
-        {
-            var clause = ParseConditionClause(scope, assemblyDescriptions);
-            elifClauses.Add(clause);
-        }
-
-        var elseBody = default(BodyExpression);
-        if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Else, out _))
-        {
-            ParseNonWhiteSpaceWithException<EndOfLine>(_ => true);
-            elseBody = ParseBody(scope, assemblyDescriptions);
-        }
-
-        _tokenSequence.RollBackToNonWhiteSpace();
-
-        return new ConditionExpression(baseClause, elifClauses, elseBody);
-    }
-
-    private ClauseExpression ParseConditionClause(VariableScope scope, List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var baseCondition = ParseInParen<Expression, OpenBracket, CloseBracket>(
-            () => ParseExpression(scope, assemblyDescriptions),
-            () => throw new ParserException("empty condition block"));
-        ParseNonWhiteSpaceWithException<EndOfLine>(_ => true);
-        using var child = scope.Enter();
-        var baseBody = ParseBody(scope, assemblyDescriptions);
-        var baseClause = new ClauseExpression(baseCondition, baseBody);
-        return baseClause;
-    }
-
-    private Expression ParseForLoop(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        using var child = scope.Enter();
-        var holder = ParseInParen<ForHeaderHolder, OpenBracket, CloseBracket>(
-            () =>
+            if (TryParseKeywordExpression(out var keywordExpression))
             {
-                var iteratorVar = ParseCreateVariable(child, assemblyDescriptions);
-                ParseNonWhiteSpaceWithException<Word>(w => w.ToKeyword() == Keywords.In);
-                var expression = ParseExpression(child, assemblyDescriptions);
-                return new ForHeaderHolder(iteratorVar, expression);
-            },
-            () => throw new ParserException("invalid for loop header"));
-        ParseNonWhiteSpaceWithException<EndOfLine>(_ => true);
-        var body = ParseBody(child, assemblyDescriptions);
-        return new ForExpression(holder.IteratorVar, holder.Iterable, body);
-    }
-
-    private record struct ForHeaderHolder(CreateVariableExpression IteratorVar, Expression Iterable);
-
-    private Expression ParseWhileLoop(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var predicate = ParseInParen<Expression, OpenBracket, CloseBracket>(
-            () => ParseExpression(scope, assemblyDescriptions),
-            () => throw new ParserException($"invalid while predicate"));
-        using var child = scope.Enter();
-        var body = ParseBody(scope, assemblyDescriptions);
-        return new WhileExpression(predicate, body);
-    }
-
-    private Expression ParseCreateVariableAndAssign(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var createVariable = ParseCreateVariable(scope, assemblyDescriptions);
-        var op = ParseNonWhiteSpaceWithException<Operator>(_ => true);
-        var right = ParseExpression(scope, assemblyDescriptions);
-        if (op.ToOperator() == OperatorEnum.Assign)
-        {
-            return new AssignNode(createVariable, right);
-        }
-
-        throw new ParserException("invalid create variable and assign expression");
-    }
-
-    private Expression ParseAssign(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var variable = ParseNonWhiteSpaceWithException<Word>(_ => true);
-        var definition = scope.GetVariable(variable.GetString());
-        var op = ParseNonWhiteSpaceWithException<Operator>(_ => true);
-        var right = ParseExpression(scope, assemblyDescriptions);
-        return op.ToOperator() switch
-        {
-            OperatorEnum.Assign => new AssignNode(definition, right),
-            OperatorEnum.PlusAndAssign => new AddAndAssignExpression(definition, right),
-            OperatorEnum.MinusAndAssign => new SubAndAssignExpression(definition, right),
-            OperatorEnum.MultiplyAndAssign => new MulAndAssignExpression(definition, right),
-            OperatorEnum.DivideAndAssign => new DivAndAssignExpression(definition, right),
-            OperatorEnum.ModuloAndAssign => new ModuloAndAssign(definition, right),
-            _ => throw new ParserException($"invalid assign expression")
-        };
-    }
-
-    private CreateVariableExpression ParseCreateVariable(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        var type = ParseType(assemblyDescriptions);
-        var variable = ParseNonWhiteSpaceWithException<Word>(_ => true);
-        var variableDefinition = new VariableDefinition(type, variable.GetString());
-        var createVariable = new CreateVariableExpression(variableDefinition);
-        scope.AddVariable(createVariable);
-        return createVariable;
-    }
-
-    private Expression ParseCall(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
-    {
-        //TODO: метод чейнинг
-        if (TryParseDotSeparatedSequence(out var definition, 3))
-        {
-            var assembly = assemblyDescriptions.First(x => x.Name == definition[0].GetString());
-            //TODO: спиздил из ктора, это плохо
-            var expressions = ParseInParen<List<Expression>, OpenBracket, CloseBracket>(
-                () => ParseCommaSeparated(
-                    () => ParseExpression(scope, assemblyDescriptions)),
-                () => []);
-            var signature = expressions.Select(x => x.GetReturnType()).ToList();
-            //TODO: вся валидация в отдельном пакете
-            if (!assembly.TryMatchSignature(definition[2].GetString(), null, signature, out var methodInfo))
-            {
-                throw new ParserException($"Unexpected method {definition[2].GetString()}");
+                expression = keywordExpression;
+                AdvanceToEndOfLineAndAddException();
+                return true;
             }
 
-            return new CallExpression(methodInfo, expressions);
+            TryParseSingleLineExpression(out expression);
+            return false;
         }
 
-        if (TryParseDotSeparatedSequence(out definition, 2))
-        {
-            if (scope.TryGetVariable(definition[0].GetString(), out var variable))
-            {
-                //TODO: вызовы методов из переменных
-                throw new NotImplementedException();
-            }
+        return TryParseExpression(out expression) || TryParseSingleLineExpression(out expression);
+    }
 
-            var expressions = ParseInParen<List<Expression>, OpenBracket, CloseBracket>(
-                () => ParseCommaSeparated(
-                    () => ParseExpression(scope, assemblyDescriptions)),
-                () => []);
-            var signature = expressions.Select(x => x.GetReturnType()).ToList();
-            var ctorMethod = default(MethodInfo);
-            foreach (var assembly in assemblyDescriptions)
+    private bool TryParseKeywordExpression(out NodeBase expression)
+    {
+        expression = null;
+        if (TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() != Keywords.Unknown,
+                () => _exceptions.Add(new ParserException("keyword", _tokenSequence.Position, _tokenSequence.Position)),
+                AddUnexpectedToken<Word>, out var keyword))
+        {
+            switch (keyword.ToKeyword())
             {
-                if (assembly.TryMatchSignature(definition[1].GetString(), null, signature, out var method))
-                {
-                    //TODO: зона ответственности сборок
-                    if (ctorMethod != default)
+                case Keywords.Break:
+                    expression = new BreakNode();
+                    return true;
+                case Keywords.Continue:
+                    expression = new ContinueNode();
+                    return true;
+                case Keywords.Return:
+                    if (!TryParseExpression(out expression))
                     {
-                        throw new ParserException($"ambugulous method invocation");
+                        return false;
+                    }
+                    expression = new ReturnNode(expression);
+                    return true;
+                case Keywords.If:
+                    _tokenSequence.RollBackToNonWhiteSpace();
+                    if (!TryParseConditionalExpression(out var node))
+                    {
+                        return false;
                     }
 
-                    ctorMethod = method;
-                }
+                    expression = node;
+                    return true;
+                case Keywords.For:
+                    _tokenSequence.RollBackToNonWhiteSpace();
+                    if (!TryParseForLoop(out var forNode))
+                    {
+                        return false;
+                    }
+
+                    expression = forNode;
+                    return true;
+                case Keywords.While:
+                    _tokenSequence.RollBackToNonWhiteSpace();
+                    if (!TryParseWhileLoop(out var whileNode))
+                    {
+                        return false;
+                    }
+
+                    expression = whileNode;
+                    return true;
+                default:
+                    _exceptions.Add(new ParserException("break, for, while, continue, if, return keyword", _tokenSequence.Position, _tokenSequence.Position));
+                    return false;
             }
-
-            return new CallExpression(ctorMethod, expressions);
         }
-
-        if (TryParseDotSeparatedSequence(out definition, 1))
-        {
-            //Вызовы методов из текщей сборки
-            throw new NotImplementedException();
-        }
-
-        throw new ParserException("Not method call");
-        //variable.method
-        //Type.method
-        //asm.Type.method
+        return false;
     }
 
-    private bool TryParseDotSeparatedSequence(out Word[] tokenList, int length)
+    private bool TryParseConditionalExpression(out ConditionNode conditionNode)
     {
-        tokenList = new Word[length];
-        var counter = -1;
-        for (var i = 0; i < length; i++)
+        var conditionStart = _tokenSequence.Position;
+        conditionNode = null;
+        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.If,
+                () => _exceptions.Add(new ParserException("if", _tokenSequence.Position, _tokenSequence.Position)),
+                AddUnexpectedToken<Word>, out _))
         {
-            if (TryConsumeNextNonWhiteSpace<Word>(_ => true, out var token))
+            return false;
+        }
+
+        var isConditionParsed = TryParseConditionClause(out var baseClause);
+        var elifClauses = new List<ClauseNode>();
+        Word word;
+        while (TryParseEmpty(out _) || TryParseScopedWithDepth(TryParseElifKeyword, out word))
+        {
+            var clauseStart = _tokenSequence.Position;
+            if (TryParseConditionClause(out var elifClause))
             {
-                tokenList[i] = token;
-                counter++;
-                if (i + 1 == length)
-                {
-                    return true;
-                }
-            }
-            else if (i > 0)
-            {
-                _tokenSequence.RollBackToNonWhiteSpace(counter);
-                return false;
+                elifClauses.Add(elifClause);
             }
             else
             {
-                return false;
+                _exceptions.Add(new ParserException("elif clause", clauseStart, _tokenSequence.Position));   
             }
+        }
 
-            if (TryConsumeNextNonWhiteSpace<Operator>(op => op.ToOperator() == OperatorEnum.Call, out var op))
+        var elseBody = default(BodyNode);
+        if (word.ToKeyword() == Keywords.Else)
+        {
+            AdvanceToEndOfLineAndAddException();
+            var elseStart = _tokenSequence.Position;
+            if (!TryParseBody(out elseBody))
             {
-                counter++;
-                continue;
+                _exceptions.Add(new ParserException("else body expression", elseStart, _tokenSequence.Position));
             }
+        }
+        else
+        {
+            RollBackToRequestedNonWhiteSpaceToken<EndOfLine>();
+        }
 
-            if (i <= 0)
+        if (isConditionParsed)
+        {
+            conditionNode = new ConditionNode(baseClause, elifClauses, elseBody);
+            return true;
+        }
+        _exceptions.Add(new ParserException("a valid condition expression", conditionStart, _tokenSequence.Position));
+        return false;
+
+        bool TryParseElifKeyword(out Word res)
+        {
+             return TryConsumeNextNonWhiteSpace(x => x.ToKeyword() == Keywords.Elif, () => { }, out res);
+        }
+    }
+
+    private bool TryParseConditionClause(out ClauseNode conditionNode)
+    {
+        var isPredicateParsed = TryParseInParen<NodeBase, OpenParen, CloseParen>(TryParseExpression,
+            () =>
             {
-                return false;
-            }
+                _exceptions.Add(new ParserException("conditional expression", _tokenSequence.Position,
+                    _tokenSequence.Position));
+                return null;
+            }, out var expression);
+        AdvanceToEndOfLineAndAddException();
+        var isParsedClause = TryParseBody(out var body);
+        if (isPredicateParsed && isParsedClause)
+        {
+            conditionNode = new ClauseNode(expression, body);
+            return true;
+        }
 
-            _tokenSequence.RollBackToNonWhiteSpace(counter);
+        conditionNode = null;
+        return false;
+    }
+
+    private bool TryParseForLoop(out ForNode forNode)
+    {
+        forNode = null;
+        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.For,
+                () => _exceptions.Add(new ParserException("for", _tokenSequence.Position, _tokenSequence.Position)),
+                AddUnexpectedToken<Word>, out _))
+        {
             return false;
+        }
 
+        var isHeaderParsed = TryParseInParen<ForHeaderHolder, OpenParen, CloseParen>(TryParseForHeader, () =>
+        {
+            _exceptions.Add(new ParserException("for header", _tokenSequence.Position, _tokenSequence.Position));
+            return default;
+        }, out var result);
+        AdvanceToEndOfLineAndAddException();
+        var isParseBody = TryParseBody(out var body);
+        if (isHeaderParsed && isParseBody)
+        {
+            forNode = new ForNode(result.IteratorVar, result.Iterable, body);
+            return true;
         }
 
         return false;
     }
 
-    private Expression ParseExpression(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions)
+    private record struct ForHeaderHolder(VariableDefinitionNode IteratorVar, NodeBase Iterable);
+
+    private bool TryParseForHeader(out ForHeaderHolder headerHolder)
     {
-        if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.New, out _))
+        var isDefinitionParsed = TryParseCreateVariable(out var node);
+        var isKeywordParsed = TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.In,
+            () => _exceptions.Add(new ParserException("in keyword", _tokenSequence.Position, _tokenSequence.Position)),
+            out _);
+        var isExpressionParsed = TryParseExpression(out var expression);
+        if (isDefinitionParsed && isExpressionParsed && isKeywordParsed)
         {
-            return ParseCtor(scope, assemblyDescriptions);
+            headerHolder = new ForHeaderHolder(node, expression);
+            return true;
         }
 
-        return ParseWithPrecedence(scope, assemblyDescriptions);
+        headerHolder = default;
+        return false;
+    }
+    
+    private bool TryParseWhileLoop(out WhileNode whileNode)
+    {
+        whileNode = null;
+        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.While,
+                () => _exceptions.Add(new ParserException("while", _tokenSequence.Position, _tokenSequence.Position)),
+                AddUnexpectedToken<Word>, out _))
+        {
+            return false;
+        }
+
+        var isParsedPredicate = TryParseInParen<NodeBase, OpenParen, CloseParen>(TryParseExpression, () =>
+        {
+            _exceptions.Add(new ParserException("conditional expression", _tokenSequence.Position,
+                _tokenSequence.Position));
+            return null;
+        }, out var expression);
+        AdvanceToEndOfLineAndAddException();
+        
+        var isBodyParsed = TryParseBody(out var body);
+        if (isBodyParsed && isParsedPredicate)
+        {
+            whileNode = new WhileNode(expression, body);
+            return true;
+        }
+
+        return false;
     }
 
-    //TODO: кривой приоритет операторов
-    private Expression ParseWithPrecedence(VariableScope scope,
-        List<IAssemblyDescription> assemblyDescriptions,
-        int rbp = 0)
+    private bool TryParseCreateVariable(out VariableDefinitionNode variableDefinitionNode)
+    {
+        var start = _tokenSequence.Position;
+        variableDefinitionNode = null;
+        var isTypeParsed = TryParseType(out var type);
+        var isWordParsed = TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown,
+            AddKeywordException, out var word);
+        
+        if (isTypeParsed && isWordParsed)
+        {
+            variableDefinitionNode = new VariableDefinitionNode(type, new MemberNode(word.GetString()));
+            return true;
+        }   
+        _exceptions.Add(new ParserException("variable defenition", start, _tokenSequence.Position));
+        return false;
+    }
+
+    private bool TryParseExpression(out NodeBase expression)
+    {
+        return TryParseWithPrecedence(out expression);
+    }
+
+    private bool TryParseWithPrecedence(out NodeBase node, int rbp = 0)
     {
         var left = ParseNud(scope, assemblyDescriptions);
         while (TryParseLed(scope, assemblyDescriptions, rbp, left, out left))
@@ -572,9 +535,9 @@ public class PlampNativeParser
     private Expression ParseNud(VariableScope scope,
         List<IAssemblyDescription> assemblyDescriptions)
     {
-        if (_tokenSequence.PeekNextNonWhiteSpace() is OpenBracket)
+        if (_tokenSequence.PeekNextNonWhiteSpace() is OpenParen)
         {
-            return ParseInParen<Expression, OpenBracket, CloseBracket>(
+            return ParseInParen<Expression, OpenParen, CloseParen>(
                 () => ParseWithPrecedence(scope, assemblyDescriptions),
                 () => throw new ParserException($"Empty paren pair"));
         }
@@ -734,7 +697,7 @@ public class PlampNativeParser
         }
 
         //TODO: переменная перебьёт вызов
-        if (_tokenSequence.PeekNextNonWhiteSpace(1) is not OpenBracket or Operator
+        if (_tokenSequence.PeekNextNonWhiteSpace(1) is not OpenParen or Operator
             && TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, out var token))
         {
             if (scope.TryGetVariable(token.GetString(), out var variable))
@@ -759,7 +722,7 @@ public class PlampNativeParser
     {
         var name = _tokenSequence.PeekNextNonWhiteSpace().GetString();
         var type = ParseType(assemblyDescriptions);
-        var expressions = ParseInParen<List<Expression>, OpenBracket, CloseBracket>(
+        var expressions = ParseInParen<List<Expression>, OpenParen, CloseParen>(
             () => ParseCommaSeparated(
                 () => ParseExpression(scope, assemblyDescriptions)),
             () => []);
@@ -782,17 +745,6 @@ public class PlampNativeParser
         return new CallExpression(ctorMethod, expressions);
     }
 
-    private TToken TryParseNonWhiteSpaceWithException<TToken>(Func<TToken, bool> predicate)
-    {
-        var token = _tokenSequence.GetNextNonWhiteSpace();
-        if (token is not TToken typedToken || !predicate(typedToken))
-        {
-            throw new ParserException(token, typeof(TToken).Name);
-        }
-
-        return typedToken;
-    }
-
     private bool TryParseInParen<TResult, TOpen, TClose>(TryParseInternal<TResult> parserFunc, Func<TResult> emptyCase, out TResult result)
         where TOpen : TokenBase where TClose : TokenBase
     {
@@ -809,8 +761,14 @@ public class PlampNativeParser
         }
 
         parserFunc(out result);
-        return TryConsumeNextNonWhiteSpaceWithoutRollback<TClose>(_ => true, () => { },
-            () => AddUnexpectedToken(typeof(TClose).Name), out _);
+        if (TryConsumeNextNonWhiteSpace<TClose>(_ => true, () => { }, out _))
+        {
+            return true;
+        }
+        var unexpectedStart = _tokenSequence.Position;
+        AdvanceToFirstOfTokens([typeof(EndOfLine), typeof(TClose)]);
+        _exceptions.Add(new ParserException("End of line", unexpectedStart, _tokenSequence.Position));
+        return false;
     }
 
     private bool TryParseCommaSeparated<TReturn>(TryParseInternal<TReturn> parserFunc, out List<TReturn> result)
@@ -821,7 +779,7 @@ public class PlampNativeParser
             parserFunc(out var res);
             result.Add(res);
 
-            if (!TryConsumeNextNonWhiteSpace<Comma>(_ => true, out _))
+            if (!TryConsumeNextNonWhiteSpace<Comma>(_ => true, () => {}, out _))
             {
                 return true;
             }
@@ -865,7 +823,7 @@ public class PlampNativeParser
         return false;
     }
 
-private void RollBackToRequestedNonWhiteSpaceToken<T>() where T : TokenBase
+    private void RollBackToRequestedNonWhiteSpaceToken<T>() where T : TokenBase
     {
         while (true)
         {
@@ -894,6 +852,26 @@ private void RollBackToRequestedNonWhiteSpaceToken<T>() where T : TokenBase
             _tokenSequence.GetNextToken();
         }
     }
+
+    private void AdvanceToFirstOfTokens(List<Type> tokenTypes)
+    {
+        while (true)
+        {
+            var token = _tokenSequence.PeekNext();
+            if (token == null)
+            {
+                return;
+            }
+
+            if (tokenTypes.Contains(token.GetType()))
+            {
+                _tokenSequence.GetNextToken();
+                return;
+            }
+
+            _tokenSequence.GetNextToken();
+        }
+    }
     
     private void AddKeywordException() =>
         _exceptions.Add(new ParserException("non keyword", _tokenSequence.Position, _tokenSequence.Position));
@@ -912,4 +890,15 @@ private void RollBackToRequestedNonWhiteSpaceToken<T>() where T : TokenBase
     
     private void AddUnexpectedToken<T>() where T : TokenBase =>
         _exceptions.Add(new ParserException(typeof(T).Name, _tokenSequence.Position, _tokenSequence.Position));
+
+    private void AdvanceToEndOfLineAndAddException()
+    {
+        if (_tokenSequence.Current().GetType() == typeof(EndOfLine))
+        {
+            return;
+        }
+        var unexpectedStart = _tokenSequence.Position;
+        AdvanceToRequestedToken<EndOfLine>();
+        _exceptions.Add(new ParserException("End of line", unexpectedStart, _tokenSequence.Position));
+    }
 }

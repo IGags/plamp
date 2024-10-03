@@ -163,11 +163,11 @@ public static class PlampNativeTokenizer
                 return true;
             case '(':
                 position++;
-                result = new OpenBracket(startPosition);
+                result = new OpenParen(startPosition);
                 return true;
             case ')':
                 position++;
-                result = new CloseBracket(startPosition);
+                result = new CloseParen(startPosition);
                 return true;
             case ',':
                 position++;

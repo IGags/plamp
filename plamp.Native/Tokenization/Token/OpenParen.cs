@@ -1,8 +1,8 @@
 ﻿namespace plamp.Native.Tokenization.Token;
 
-public class OpenBracket : TokenBase
+public class OpenParen : TokenBase
 {
-    public OpenBracket(int position) : base(position, position)
+    public OpenParen(int position) : base(position, position)
     {
     }
     
