@@ -1,6 +1,6 @@
-﻿using plamp.Native.Token;
+﻿using plamp.Native.Tokenization.Token;
 
-namespace plamp.Native;
+namespace plamp.Native.Enumerations;
 
 public static class KeywordTranslator
 {

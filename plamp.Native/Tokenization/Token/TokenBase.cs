@@ -1,4 +1,4 @@
-﻿namespace plamp.Native.Token;
+﻿namespace plamp.Native.Tokenization.Token;
 
 public abstract class TokenBase
 {

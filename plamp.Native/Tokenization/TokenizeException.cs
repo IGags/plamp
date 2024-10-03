@@ -1,13 +1,15 @@
 ﻿using System;
 
-namespace plamp.Native;
+namespace plamp.Native.Tokenization;
 
 public class TokenizeException : Exception
 {
-    public int Position { get; private set; }
+    public int StartPosition { get; }
+    public int EndPosition { get; }
 
-    public TokenizeException(string message, int position) : base(message)
+    public TokenizeException(string message, int startPosition, int endPosition) : base(message)
     {
-        Position = position;
+        StartPosition = startPosition;
+        EndPosition = endPosition;
     }
 }

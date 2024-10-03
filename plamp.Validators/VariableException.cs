@@ -1,6 +1,6 @@
 using System;
 
-namespace plamp.Native;
+namespace plamp.Validators;
 
 public class VariableException : Exception
 {

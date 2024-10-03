@@ -1,8 +1,11 @@
-namespace plamp.Native;
+using plamp.Native.Parsing;
+using plamp.Native.Tokenization.Token;
+
+namespace plamp.Native.Enumerations;
 
 public static class OperatorTranslator
 {
-    public static OperatorEnum ToOperator(this Token.Operator token)
+    public static OperatorEnum ToOperator(this Operator token)
     {
         return token.GetString() switch
         {

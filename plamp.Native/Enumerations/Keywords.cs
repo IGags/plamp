@@ -1,4 +1,4 @@
-﻿namespace plamp.Native;
+﻿namespace plamp.Native.Enumerations;
 
 public enum Keywords
 {

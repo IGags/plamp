@@ -1,41 +1,55 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using plamp.Native.Token;
+using plamp.Native.Tokenization.Token;
 
-namespace plamp.Native;
+namespace plamp.Native.Tokenization;
 
 public static class PlampNativeTokenizer
 {
-    public static TokenSequence Tokenize(this string code)
+    private const char EndOfLine = '\n';
+    private const string EndOfLineCrlf = "\r\n";
+    
+    public static TokenizationResult Tokenize(this string code)
     {
         var tokenList = new List<TokenBase>();
+        var exceptionList = new List<TokenizeException>();
         for(var i = 0; i < code.Length;)
         {
             if (char.IsLetterOrDigit(code[i]))
             {
-                tokenList.Add(ParseWord(code, ref i));
+                if (TryParseWord(code, ref i, out var word, exceptionList))
+                {
+                    tokenList.Add(word);
+                }
             }
             else if (code[i] == '"')
             {
-                tokenList.Add(ParseLiteral(code, ref i));
+                if (TryParseLiteral(code, ref i, out var literal, exceptionList))
+                {
+                    tokenList.Add(literal);
+                }
             }
             else
             {
-                tokenList.Add(ParseCustom(code, ref i, tokenList.LastOrDefault()));
+                if (TryParseCustom(code, ref i, tokenList.LastOrDefault(), out var result, exceptionList))
+                {
+                    tokenList.Add(result);
+                }
             }
         }
 
-        if (tokenList.Last().GetType() != typeof(EOF))
+        if (tokenList.Last().GetType() != typeof(EndOfLine))
         {
-            tokenList.Add(new EOF(code.Length));
+            tokenList.Add(new EndOfLine(code.Length));
         }
         
-        return new TokenSequence(tokenList);
+        return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
     }
 
-    private static Word ParseWord(string code, ref int position)
+    private static bool TryParseWord(string code, ref int position, out Word word, List<TokenizeException> exceptions)
     {
+        word = null;
         var builder = new StringBuilder();
         var start = position;
         for (; position < code.Length; position++)
@@ -46,80 +60,144 @@ public static class PlampNativeTokenizer
             }
             else
             {
-                return new Word(builder.ToString(), start);
+                word = new Word(builder.ToString(), start);
+                return true;
             }
         }
-        return new Word(builder.ToString(), start);
+        word = new Word(builder.ToString(), start);
+        return true;
     }
 
     //TODO: escape sequences
-    private static StringLiteral ParseLiteral(string code, ref int position)
+    private static bool TryParseLiteral(string code, ref int position, out StringLiteral literal, List<TokenizeException> exceptions)
     {
+        literal = null;
         var startPosition = position;
         var builder = new StringBuilder();
         position++;
         for (; position < code.Length; position++)
         {
-            if (code[position] == '"')
+            switch (code[position])
             {
-                position++;
-                return new StringLiteral(builder.ToString(), startPosition);
-            }
+                case EndOfLine:
+                    exceptions.Add(new TokenizeException("String is not closed", startPosition, position - 1));
+                    return false;
+                case '"':
+                    position++;
+                    literal = new StringLiteral(builder.ToString(), startPosition);
+                    return true;
+                case '\\':
+                    position++;
+                    TryParseEscapedSequence(code, ref position, builder, exceptions);
+                    break;
+                case '\r':
+                    if (code[position..(position + 2)] == EndOfLineCrlf)
+                    {
+                        exceptions.Add(new TokenizeException("String is not closed", startPosition, position));
+                        position += 2;
+                        return false;
+                    }
 
-            builder.Append(code[position]);
+                    builder.Append(code[position]);
+                    break;
+                default:
+                    builder.Append(code[position]);
+                    break;
+            }
         }
 
-        throw new TokenizeException("String is not closed", position);
+        exceptions.Add(new TokenizeException("String is not closed", startPosition, position - 1));
+        return false;
     }
 
-    private static TokenBase ParseCustom(string code, ref int position, TokenBase lastToken)
+    private static bool TryParseEscapedSequence(string code, ref int position, StringBuilder builder,
+        List<TokenizeException> exceptions)
     {
+        switch (code[position])
+        {
+            case 'n':
+                builder.Append('\n');
+                break;
+            case 'r':
+                builder.Append('\r');
+                break;
+            case '\\':
+                builder.Append('\\');
+                break;
+            case 't':
+                builder.Append('\t');
+                break;
+            case '"':
+                builder.Append('"');
+                break;
+            default:
+                exceptions.Add(new TokenizeException("invalid escape sequence", position - 1, position));
+                return false;
+        }
+        position++;
+        return true;
+    }
+    
+    private static bool TryParseCustom(string code, ref int position, TokenBase lastToken, out TokenBase result, List<TokenizeException> exceptions)
+    {
+        result = null;
         var startPosition = position;
         if (code.Length > position + 4 && code[position..(position + 4)] == "    "
                                        && (lastToken == null
-                                           || lastToken.GetType() == typeof(EOF)
+                                           || lastToken.GetType() == typeof(EndOfLine)
                                            || lastToken.GetType() == typeof(Scope)))
         {
             position += 4;
-            return new Scope(startPosition, 4);
+            result = new Scope(startPosition, 4);
+            return true;
         }
         switch (code[position])
         {
             case '[':
                 position++;
-                return new OpenSquareBracket(startPosition);
+                result = new OpenSquareBracket(startPosition);
+                return true;
             case ']':
                 position++;
-                return new CloseSquareBracket(startPosition);
+                result = new CloseSquareBracket(startPosition);
+                return true;
             case '(':
                 position++;
-                return new OpenBracket(startPosition);
+                result = new OpenBracket(startPosition);
+                return true;
             case ')':
                 position++;
-                return new CloseBracket(startPosition);
+                result = new CloseBracket(startPosition);
+                return true;
             case ',':
                 position++;
-                return new Comma(startPosition);
+                result = new Comma(startPosition);
+                return true;
             case '\t':
                 position++;
-                return new Scope(startPosition, 1);
-            case '\n':
+                result = new Scope(startPosition, 1);
+                return true;
+            case EndOfLine:
                 position++;
-                return new EOF(startPosition);
+                result = new EndOfLine(startPosition);
+                return true;
             case ' ':
                 position++;
-                return new WhiteSpace(startPosition);
+                result = new WhiteSpace(startPosition);
+                return true;
             case '\r':
                 position++;
-                //TODO: доопределить пробел
-                return new WhiteSpace(startPosition);
+                result = new WhiteSpace(startPosition);
+                return true;
             default:
                 if (TryParseOperator(code, ref position, out var @operator))
                 {
-                    return @operator;
+                    result = @operator;
+                    return true;
                 }
-
-                throw new TokenizeException("Unexpected token", position);
+                exceptions.Add(new TokenizeException("Unexpected token", position, position));
+                position++;
+                return false;
         }
     }
 

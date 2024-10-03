@@ -1,14 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
-using plamp.Native.Token;
+using plamp.Native.Tokenization.Token;
 
-namespace plamp.Native;
+namespace plamp.Native.Tokenization;
 
 public class TokenSequence
 {
     private readonly List<TokenBase> _tokenList;
     private int _position = -1;
 
+    public int Position
+    {
+        get => _position;
+        set
+        {
+            if (value < 0)
+            {
+                _position = -1;
+            }
+            else if(value > _tokenList.Count)
+            {
+                _position = _tokenList.Count;
+            }
+            else
+            {
+                _position = value;
+            }
+        }
+    }
+    
     public TokenSequence(List<TokenBase> tokenList)
     {
         _tokenList = tokenList;

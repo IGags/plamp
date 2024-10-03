@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Ast;
 
-namespace plamp.Native;
+namespace plamp.Validators;
 
 public class VariableScope : IDisposable
 {
