@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
-using plamp.Ast;
+using plamp.Ast.Node;
+using plamp.Ast.Node.Assign;
+using plamp.Ast.Node.Body;
 using plamp.Native.Token;
-using ConstantExpression = plamp.Ast.ConstantExpression;
-using Expression = plamp.Ast.Expression;
 
-namespace plamp.Native;
+namespace plamp.Native.Parsing;
 
 public class PlampNativeParser
 {
@@ -15,25 +16,21 @@ public class PlampNativeParser
     
     public PlampNativeParser(string code)
     {
-        _tokenSequence = code.Tokenize();
     }
     
-    //TODO: Несколько проходок парсером для независимости сигнатур компонентов
-    public List<FuncExpression> Parse(List<IAssemblyDescription> assemblies)
+    public List<NodeBase> Parse()
     {
-        var expressionList = new List<FuncExpression>();
+        var expressionList = new List<NodeBase>();
 
         do
         {
-            ParseTopLevel(expressionList, assemblies);
+            expressionList.Add(ParseTopLevel());
         } while (_tokenSequence.Current() != null && _tokenSequence.PeekNext() != null);
 
         return expressionList;
     }
 
-    //TODO: multi iteration parsing
-    //TODO: ambiguous assemblies
-    private void ParseTopLevel(List<FuncExpression> expressions, List<IAssemblyDescription> assemblyDescriptions)
+    private NodeBase ParseTopLevel()
     {
         var token = _tokenSequence.GetNextNonWhiteSpace();
         if (token is Word word)
@@ -41,11 +38,11 @@ public class PlampNativeParser
             switch (word.ToKeyword())
             {
                 case Keywords.Def:
-                    ParseFunction(expressions, assemblyDescriptions);
-                    return;
+                    return ParseFunction();
                 case Keywords.Use:
-                    ParseUsing(assemblyDescriptions);
-                    return;
+                    return ParseUsing();
+                default:
+                    
             }
                 
         }
@@ -53,12 +50,12 @@ public class PlampNativeParser
     }
 
     //TODO: using to expression tree
-    private void ParseUsing(List<IAssemblyDescription> assemblyDescriptions)
+    private UseNode ParseUsing()
     {
         throw new NotImplementedException();
     }
     
-    private void ParseFunction(List<FuncExpression> expressions, List<IAssemblyDescription> assemblyDescriptions)
+    private DefNode ParseFunction()
     {
         using var scope = new VariableScope(null);
         var returnType = ParseType(assemblyDescriptions);

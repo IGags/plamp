@@ -5,10 +5,14 @@ namespace plamp.Native;
 
 public class ParserException : Exception
 {
-    public ParserException(TokenBase tokenBase, string expected) 
-        : base($"Unhandled parsing exception expected {expected}, but was {tokenBase.GetType().Name} with value {tokenBase.GetString()}") {}
+    public int EndPosition { get; }
+    public int StartPosition { get; }
 
-    public ParserException(string message) : base(message)
+    public ParserException(TokenBase tokenBase, string expected, int startPosition, int endPosition) 
+        : base($"Unhandled parsing exception expected {expected}, but was {tokenBase.GetString()}")
     {
+        EndPosition = endPosition;
+        StartPosition = startPosition;
     }
+
 }
