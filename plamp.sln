@@ -10,9 +10,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "plamp.Assembly", "plamp.Ass
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "plamp.Native", "plamp.Native\plamp.Native.csproj", "{876AC61C-9C00-4C50-9C2B-06583D3C8DA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "plamp.Tests", "plamp.Tests\plamp.Tests.csproj", "{51640059-754E-4613-8120-E0AFE14B6108}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "plamp.Native.Tests", "plamp.Native.Tests\plamp.Native.Tests.csproj", "{51640059-754E-4613-8120-E0AFE14B6108}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "plamp.Validators", "plamp.Validators\plamp.Validators.csproj", "{9963EDEB-89E0-44E0-B422-E84951329231}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevServer", "DevServer\DevServer.csproj", "{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4EA2DFBD-D26D-4EED-BAD4-E5835171C52D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{9BB31D1A-513A-4178-85F5-0DC8F68D3A52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,5 +54,14 @@ Global
 		{9963EDEB-89E0-44E0-B422-E84951329231}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9963EDEB-89E0-44E0-B422-E84951329231}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9963EDEB-89E0-44E0-B422-E84951329231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{51640059-754E-4613-8120-E0AFE14B6108} = {4EA2DFBD-D26D-4EED-BAD4-E5835171C52D}
+		{ED3CD2AE-19A9-4C1A-A5A0-B21C1F06FE02} = {9BB31D1A-513A-4178-85F5-0DC8F68D3A52}
+		{B68DA0B7-27CB-4C2D-92F9-742C8D5D7122} = {9BB31D1A-513A-4178-85F5-0DC8F68D3A52}
 	EndGlobalSection
 EndGlobal

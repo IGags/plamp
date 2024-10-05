@@ -1,14 +1,17 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
 
-public class TokenSequence
+public class TokenSequence : IEnumerable<TokenBase>
 {
     private readonly List<TokenBase> _tokenList;
     private int _position = -1;
 
+    public IReadOnlyList<TokenBase> TokenList => _tokenList;
+    
     public int Position
     {
         get => _position;
@@ -116,5 +119,21 @@ public class TokenSequence
         } while (_position != -1);
 
         return null;
+    }
+
+    /// <summary>
+    /// For testing purposes
+    /// </summary>
+    public IEnumerator<TokenBase> GetEnumerator()
+    {
+        return _tokenList.GetEnumerator();
+    }
+
+    /// <summary>
+    /// For testing purposes
+    /// </summary>
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

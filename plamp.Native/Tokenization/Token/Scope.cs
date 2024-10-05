@@ -6,5 +6,5 @@ public class Scope : TokenBase
     {
     }
     
-    public override string GetString() => "\t";
+    public override string GetString() => EndPosition - StartPosition == 0 ? "\t" : "    ";
 }

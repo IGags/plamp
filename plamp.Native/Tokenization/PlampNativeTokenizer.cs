@@ -7,11 +7,16 @@ namespace plamp.Native.Tokenization;
 
 public static class PlampNativeTokenizer
 {
-    private const char EndOfLine = '\n';
-    private const string EndOfLineCrlf = "\r\n";
+    public const char EndOfLine = '\n';
+    public const string EndOfLineCrlf = "\r\n";
     
     public static TokenizationResult Tokenize(this string code)
     {
+        if (code == null)
+        {
+            return new TokenizationResult(new TokenSequence([]), []);
+        }
+        
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<TokenizeException>();
         for(var i = 0; i < code.Length;)
@@ -38,11 +43,6 @@ public static class PlampNativeTokenizer
                 }
             }
         }
-
-        if (tokenList.Last().GetType() != typeof(EndOfLine))
-        {
-            tokenList.Add(new EndOfLine(code.Length));
-        }
         
         return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
     }
@@ -68,7 +68,6 @@ public static class PlampNativeTokenizer
         return true;
     }
 
-    //TODO: escape sequences
     private static bool TryParseLiteral(string code, ref int position, out StringLiteral literal, List<TokenizeException> exceptions)
     {
         literal = null;
@@ -80,7 +79,7 @@ public static class PlampNativeTokenizer
             switch (code[position])
             {
                 case EndOfLine:
-                    exceptions.Add(new TokenizeException("String is not closed", startPosition, position - 1));
+                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position));
                     return false;
                 case '"':
                     position++;
@@ -93,7 +92,7 @@ public static class PlampNativeTokenizer
                 case '\r':
                     if (code[position..(position + 2)] == EndOfLineCrlf)
                     {
-                        exceptions.Add(new TokenizeException("String is not closed", startPosition, position));
+                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position + 1));
                         position += 2;
                         return false;
                     }
@@ -106,11 +105,11 @@ public static class PlampNativeTokenizer
             }
         }
 
-        exceptions.Add(new TokenizeException("String is not closed", startPosition, position - 1));
+        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
         return false;
     }
 
-    private static bool TryParseEscapedSequence(string code, ref int position, StringBuilder builder,
+    private static void TryParseEscapedSequence(string code, ref int position, StringBuilder builder,
         List<TokenizeException> exceptions)
     {
         switch (code[position])
@@ -131,18 +130,16 @@ public static class PlampNativeTokenizer
                 builder.Append('"');
                 break;
             default:
-                exceptions.Add(new TokenizeException("invalid escape sequence", position - 1, position));
-                return false;
+                exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence, position - 1, position));
+                return;
         }
-        position++;
-        return true;
     }
     
     private static bool TryParseCustom(string code, ref int position, TokenBase lastToken, out TokenBase result, List<TokenizeException> exceptions)
     {
         result = null;
         var startPosition = position;
-        if (code.Length > position + 4 && code[position..(position + 4)] == "    "
+        if (code.Length > position + 3 && code[position..(position + 4)] == "    "
                                        && (lastToken == null
                                            || lastToken.GetType() == typeof(EndOfLine)
                                            || lastToken.GetType() == typeof(Scope)))
@@ -175,19 +172,32 @@ public static class PlampNativeTokenizer
                 return true;
             case '\t':
                 position++;
+                if (lastToken != null
+                    && lastToken.GetType() != typeof(EndOfLine)
+                    && lastToken.GetType() != typeof(Scope))
+                {
+                    result = new WhiteSpace("\t", startPosition);
+                    return true;
+                }
                 result = new Scope(startPosition, 1);
                 return true;
             case EndOfLine:
                 position++;
-                result = new EndOfLine(startPosition);
+                result = new EndOfLine(startPosition, 1);
                 return true;
             case ' ':
                 position++;
-                result = new WhiteSpace(startPosition);
+                result = new WhiteSpace(" ", startPosition);
                 return true;
             case '\r':
+                if (code.Length > position + 1 && code[position..(position + 2)] == EndOfLineCrlf)
+                {
+                    position += 2;
+                    result = new EndOfLine(startPosition, 2);
+                    return true;
+                }
                 position++;
-                result = new WhiteSpace(startPosition);
+                result = new WhiteSpace("\r", startPosition);
                 return true;
             default:
                 if (TryParseOperator(code, ref position, out var @operator))
@@ -195,13 +205,12 @@ public static class PlampNativeTokenizer
                     result = @operator;
                     return true;
                 }
-                exceptions.Add(new TokenizeException("Unexpected token", position, position));
+                exceptions.Add(new TokenizeException(TokenizerErrorConstants.UnexpectedToken, position, position));
                 position++;
                 return false;
         }
     }
-
-    //TODO: операторы надо подключать плагинами
+    
     private static bool TryParseOperator(string code, ref int position, out Operator @operator)
     {
         var startPosition = position;

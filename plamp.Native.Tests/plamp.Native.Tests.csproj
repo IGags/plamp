@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <RootNamespace>plamp.Native.Tests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+      <PackageReference Include="xunit" Version="2.9.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\plamp.Assembly\plamp.Assembly.csproj" />
+      <ProjectReference Include="..\plamp.Ast\plamp.Ast.csproj" />
+      <ProjectReference Include="..\plamp.Compiler\plamp.Compiler.csproj" />
+      <ProjectReference Include="..\plamp.Native\plamp.Native.csproj" />
+      <ProjectReference Include="..\plamp.Validators\plamp.Validators.csproj" />
+    </ItemGroup>
+
+</Project>

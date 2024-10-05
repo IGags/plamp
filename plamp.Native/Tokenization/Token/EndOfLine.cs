@@ -2,8 +2,9 @@
 
 public class EndOfLine : TokenBase
 {
-    public EndOfLine(int position) : base(position, position)
+    public EndOfLine(int position, int length) : base(position, position + length - 1)
     {
     }
-    public override string GetString() => "\n";
+    public override string GetString() => EndPosition - StartPosition == 1 
+        ? PlampNativeTokenizer.EndOfLineCrlf : PlampNativeTokenizer.EndOfLine.ToString();
 }
