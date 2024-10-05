@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node.Assign;
 
-public record DivAndAssignNode(VariableDefinitionNode Variable, NodeBase Right) : NodeBase
+public record DivAndAssignNode(NodeBase Variable, NodeBase Right) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

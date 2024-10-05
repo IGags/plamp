@@ -28,6 +28,9 @@ public class TokenSequence
             }
         }
     }
+
+    public TokenPosition CurrentStart => new(Current()?.StartPosition ?? -1);
+    public TokenPosition CurrentEnd => new(Current()?.EndPosition ?? -1);
     
     public TokenSequence(List<TokenBase> tokenList)
     {
@@ -59,12 +62,8 @@ public class TokenSequence
         return null;
     }
 
-    public TokenBase PeekNextNonWhiteSpace(int shift = 0)
+    public TokenBase PeekNextNonWhiteSpace()
     {
-        if (shift < 0)
-        {
-            throw new ArgumentException();
-        }
         var pos = _position;
         do
         {
@@ -78,20 +77,16 @@ public class TokenSequence
             {
                 continue;
             }
-            if (shift <= 0)
-            {
-                return _tokenList[pos];
-            }
 
-            shift--;
+            return _tokenList[pos];
         } while (_tokenList.Count > pos);
 
         return null;
     }
 
-    public TokenBase PeekNext(int shift = 0)
+    public TokenBase PeekNext()
     {
-        var pos = _position + shift;
+        var pos = _position;
         pos = pos == _tokenList.Count ? pos : ++pos;
         return _tokenList.Count <= pos ? null : _tokenList[pos];
     }
@@ -101,22 +96,8 @@ public class TokenSequence
         return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
     }
 
-    public TokenBase RollBack(int count = 1)
+    public TokenBase RollBackToNonWhiteSpace()
     {
-        for (int i = 0; i < count && _position > 0; i++)
-        {
-            _position = _position == 0 ? 0 : --_position;
-            
-        }
-        return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
-    }
-
-    public TokenBase RollBackToNonWhiteSpace(int shift = 0)
-    {
-        if (shift < 0)
-        {
-            throw new ArgumentException();
-        }
         do
         {
             _position = _position == -1 ? -1 : --_position;
@@ -131,19 +112,9 @@ public class TokenSequence
                 
             }
 
-            if (shift <= 0)
-            {
-                return _tokenList[_position];
-            }
-
-            shift--;
+            return _tokenList[_position];
         } while (_position != -1);
 
         return null;
-    }
-
-    public void ToBegin()
-    {
-        _position = -1;
     }
 }

@@ -46,13 +46,12 @@ public static class OperatorTranslator
                 OperatorEnum.Not => 99,
                 OperatorEnum.Increment => 98,
                 OperatorEnum.Decrement => 97,
-                _ => throw new ParserException($"Invalid operator {op} in current context")
+                _ => int.MinValue
             };
         }
 
         return op switch
         {
-            OperatorEnum.Call => 54,
             OperatorEnum.Multiply => 50,
             OperatorEnum.Divide => 49,
             OperatorEnum.Plus => 48,
@@ -66,7 +65,13 @@ public static class OperatorTranslator
             OperatorEnum.NotEquals => 40,
             OperatorEnum.And => 39,
             OperatorEnum.Or => 38,
-            _ => throw new ParserException($"Invalid operator {op} in currnet context")
+            OperatorEnum.Assign => 20,
+            OperatorEnum.PlusAndAssign => 19,
+            OperatorEnum.MinusAndAssign => 18,
+            OperatorEnum.MultiplyAndAssign => 17,
+            OperatorEnum.DivideAndAssign => 16,
+            OperatorEnum.ModuloAndAssign => 15,
+            _ => int.MinValue
         };
     }
 }

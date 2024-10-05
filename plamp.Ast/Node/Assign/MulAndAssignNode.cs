@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node.Assign;
 
-public record MulAndAssignNode(VariableDefinitionNode Variable, NodeBase Right) : NodeBase
+public record MulAndAssignNode(NodeBase Variable, NodeBase Right) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

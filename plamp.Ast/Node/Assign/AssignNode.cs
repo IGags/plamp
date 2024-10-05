@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node.Assign;
 
-public record AssignNode(MemberNode Member, NodeBase Right) : BaseAssignNode(Right)
+public record AssignNode(NodeBase Member, NodeBase Right) : BaseAssignNode(Right)
 {
     public override IEnumerable<NodeBase> Visit()
     {

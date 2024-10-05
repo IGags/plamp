@@ -1,4 +1,5 @@
-﻿using plamp.Ast.Node;
+﻿using System.Linq;
+using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
@@ -13,7 +14,7 @@ public abstract class BaseVisitor
     {
         VisitNode(node);
         var children = node.Visit();
-        foreach (var child in children)
+        foreach (var child in children.Where(x => x != null))
         {
             Visit(child);
         }
@@ -111,7 +112,7 @@ public abstract class BaseVisitor
                 VisitReturn(returnNode);
                 return;
             case NotNode notNode:
-                VisitNode(notNode);
+                VisitNot(notNode);
                 return;
             case PostfixDecrementNode postfixDecrement:
                 VisitPostfixDecrement(postfixDecrement);
@@ -157,6 +158,12 @@ public abstract class BaseVisitor
                 return;
             case UseNode useNode:
                 VisitUse(useNode);
+                return;
+            case MemberAccessNode memberAccessNode:
+                VisitMemberAccess(memberAccessNode);
+                return;
+            case ConstNode constNode:
+                VisitConst(constNode);
                 return;
         }
     }
@@ -250,4 +257,8 @@ public abstract class BaseVisitor
     protected virtual void VisitVariableDefinition(VariableDefinitionNode node){}
 
     protected virtual void VisitUse(UseNode node) {}
+    
+    protected virtual void VisitMemberAccess(MemberAccessNode accessNode){}
+    
+    protected virtual void VisitConst(ConstNode constNode){}
 }

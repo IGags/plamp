@@ -2,10 +2,10 @@
 
 namespace plamp.Ast.Node;
 
-public record TypeNode(NodeBase TypeName, List<TypeNode> InnerGenerics) : NodeBase
+public record ConstNode(object Value) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {
-        return InnerGenerics;
+        return [];
     }
 }
