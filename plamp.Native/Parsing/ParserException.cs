@@ -9,8 +9,8 @@ public class ParserException : Exception
     public int EndPosition { get; }
     public int StartPosition { get; }
 
-    public ParserException(string expected, TokenPosition startPosition, TokenPosition endPosition) 
-        : base($"Unhandled parsing exception expected {expected}")
+    public ParserException(string message, TokenPosition startPosition, TokenPosition endPosition) 
+        : base(message)
     {
         EndPosition = endPosition.Pos;
         StartPosition = startPosition.Pos;

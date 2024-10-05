@@ -8,4 +8,10 @@
       <ProjectReference Include="..\plamp.Ast\plamp.Ast.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>plamp.Native.Tests</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+    
 </Project>

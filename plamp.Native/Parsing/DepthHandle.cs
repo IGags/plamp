@@ -2,12 +2,12 @@
 
 namespace plamp.Native.Parsing;
 
-public class DepthHandle : IDisposable
+internal sealed class DepthHandle : IDisposable
 {
     private readonly Action _disposeAction;
     private readonly int _currentDepth;
 
-    public DepthHandle(Action disposeAction, int currentDepth)
+    internal DepthHandle(Action disposeAction, int currentDepth)
     {
         _disposeAction = disposeAction;
         _currentDepth = currentDepth;
