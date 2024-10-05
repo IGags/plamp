@@ -6,6 +6,7 @@ using Xunit;
 
 namespace plamp.Native.Tests;
 
+//TODO: проверить позиции токенов
 public class TokenizerTests
 {
     [Fact]
@@ -84,6 +85,8 @@ public class TokenizerTests
         {
             Assert.Equal(inline, result.Sequence.First().GetString());
         }
+        Assert.Equal(0, result.Sequence.First().StartPosition);
+        Assert.Equal(code.Length - 1, result.Sequence.First().EndPosition);
     }
 
     [Theory]
