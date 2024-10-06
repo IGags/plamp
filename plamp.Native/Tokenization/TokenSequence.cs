@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
@@ -32,8 +33,44 @@ public class TokenSequence : IEnumerable<TokenBase>
         }
     }
 
-    public TokenPosition CurrentStart => new(Current()?.StartPosition ?? -1);
-    public TokenPosition CurrentEnd => new(Current()?.EndPosition ?? -1);
+    public TokenPosition CurrentStart
+    {
+        get
+        {
+            if (_position < 0 || _tokenList.Count == 0)
+            {
+                return new(-1);
+            }
+
+            if (_position >= _tokenList.Count)
+            {
+                return new(_tokenList.Last().EndPosition + 1);
+            }
+
+            return new(Current().StartPosition);
+        }
+    }
+
+    public TokenPosition CurrentEnd
+    {
+        get
+        {
+            if (_tokenList.Count == 0)
+            {
+                return new(0);
+            }
+            if (_position > _tokenList.Last().EndPosition)
+            {
+                return new(_tokenList.Last().EndPosition + 1);
+            }
+            if (_position < 0)
+            {
+                return new(-1);
+            }
+
+            return new(Current().StartPosition);
+        }
+    }
     
     public TokenSequence(List<TokenBase> tokenList)
     {

@@ -886,7 +886,7 @@ public class PlampNativeParser
         where TOpen : TokenBase where TClose : TokenBase
     {
         result = default;
-        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<TOpen>(_ => true, () => { },
+        if (!TryConsumeNextNonWhiteSpace<TOpen>(_ => true,
                 AddUnexpectedToken<TOpen>, out _))
         {
             return false;
@@ -897,28 +897,34 @@ public class PlampNativeParser
             return true;
         }
 
-        parserFunc(out result);
+        var res = parserFunc(out result);
         if (TryConsumeNextNonWhiteSpace<TClose>(_ => true, () => { }, out _))
         {
-            return true;
+            return res;
         }
-        var unexpectedStart = _tokenSequence.CurrentStart;
+        var unexpectedStart = new TokenPosition(_tokenSequence.CurrentStart.Pos + 1);
         AdvanceToFirstOfTokens([typeof(EndOfLine), typeof(TClose)]);
-        _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedEndOfLine, unexpectedStart, _tokenSequence.CurrentEnd));
+        var endPos = _tokenSequence.CurrentEnd;
+        if (_tokenSequence.Current() is TClose)
+        {
+            endPos = new TokenPosition(endPos.Pos - 1);
+        }
+        _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedCloseParen, unexpectedStart, endPos));
         return false;
     }
 
     internal bool TryParseCommaSeparated<TReturn>(TryParseInternal<TReturn> parserFunc, out List<TReturn> result)
     {
         result = [];
+        var accumulate = true;
         while (true)
         {
-            parserFunc(out var res);
+            accumulate &= parserFunc(out var res);
             result.Add(res);
-
+            
             if (!TryConsumeNextNonWhiteSpace<Comma>(_ => true, () => {}, out _))
             {
-                return true;
+                return accumulate;
             }
         }
     }
@@ -926,6 +932,11 @@ public class PlampNativeParser
     internal bool TryConsumeNextNonWhiteSpace<TToken>(Func<TToken, bool> predicate, Action ifPredicateFalse, out TToken token)
         where TToken : TokenBase
     {
+        token = null;
+        if (typeof(TToken) == typeof(WhiteSpace))
+        {
+            return false;
+        }
         var next = _tokenSequence.PeekNextNonWhiteSpace();
         if (next is TToken target && predicate(target))
         {
@@ -935,7 +946,6 @@ public class PlampNativeParser
         }
 
         ifPredicateFalse();
-        token = null;
         return false;
     }
 
@@ -944,6 +954,10 @@ public class PlampNativeParser
         where TToken : TokenBase
     {
         token = null;
+        if (typeof(TToken) == typeof(WhiteSpace))
+        {
+            return false;
+        }
         var next = _tokenSequence.GetNextNonWhiteSpace();
         if (next is TToken target)
         {

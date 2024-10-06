@@ -25,5 +25,6 @@ public class ParserErrorConstants
     public const string EmptyIndexerDefinition = "Empty indexer definition";
     public const string InvalidOperator = "Invalid operator";
     public const string CannotUseKeyword = "Cannot use keyword here";
-    public const string UnexpectedTokenPrefix = "Unexpected token";
+    public const string UnexpectedTokenPrefix = "Unexpected token encountered, expected:";
+    public const string ExpectedCloseParen = "Expected close paren";
 }
