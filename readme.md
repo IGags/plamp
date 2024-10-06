@@ -1,7 +1,7 @@
 ## Задачи по фичам
 <details>
 <summary>Ast</summary>
-:white_check_mark: Тесты<br>
+:hammer_and_wrench: Тесты<br>
 </details>
 <details>
 <summary>Native</summary>
@@ -15,29 +15,29 @@
 :heavy_check_mark: Изменение порядка вызова метода<br>
 :heavy_check_mark: Method chaining<br>
 :heavy_check_mark: Поддержка var<br>
-:white_check_mark: Тесты<br>
+:hammer_and_wrench: Тесты<br>
 </details>
 <details>
 <summary>Compiler</summary>
-:white_check_mark: Вынос компиляции<br>
-:white_check_mark: Циклы for и while<br>
-:white_check_mark: Операторы контроля потока<br>
-:white_check_mark: Возможность вызова функций и рекурсии<br>
-:white_check_mark: Тесты<br>
+:hammer_and_wrench: Вынос компиляции<br>
+:hammer_and_wrench: Циклы for и while<br>
+:hammer_and_wrench: Операторы контроля потока<br>
+:hammer_and_wrench: Возможность вызова функций и рекурсии<br>
+:hammer_and_wrench: Тесты<br>
 </details>
 <details>
 <summary>Assembly</summary>
-:white_check_mark: Адекватная система сборок<br>
-:white_check_mark: Наполнение стандартной библиотеки<br>
-:white_check_mark: Тесты<br>
+:hammer_and_wrench: Адекватная система сборок<br>
+:hammer_and_wrench: Наполнение стандартной библиотеки<br>
+:hammer_and_wrench: Тесты<br>
 </details>
 <details>
 <summary>Validators</summary>
-:white_check_mark: Вынос валидации дерева<br>
-:white_check_mark: Циклы for и while<br>
-:white_check_mark: Операторы контроля потока<br>
-:white_check_mark: Возможность вызова функций и рекурсии<br>
-:white_check_mark: Тесты<br>
+:hammer_and_wrench: Вынос валидации дерева<br>
+:hammer_and_wrench: Циклы for и while<br>
+:hammer_and_wrench: Операторы контроля потока<br>
+:hammer_and_wrench: Возможность вызова функций и рекурсии<br>
+:hammer_and_wrench: Тесты<br>
 </details>
 
 ## Родмап чуть дальше(Большие фичи, необходимые для мвп)
