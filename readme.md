@@ -1,43 +1,43 @@
 ## Задачи по фичам
 <details>
 <summary>Ast</summary>
-:white_check_mark: Тесты
+:white_check_mark: Тесты<br>
 </details>
 <details>
 <summary>Native</summary>
-:heavy_check_mark: Добавить все операторы(modulo)
-:heavy_check_mark: . Должна стать бинарным оператором доступа
-:heavy_check_mark: new - Expression
-:heavy_check_mark: assignExpression
-:heavy_check_mark: Другой синтаксис дженериков
-:heavy_check_mark: Добавление индексаторов
-:heavy_check_mark: Оператор каста
-:heavy_check_mark: Изменение порядка вызова метода
-:heavy_check_mark: Method chaining
-:heavy_check_mark: Поддержка var
-:white_check_mark: Тесты
+:heavy_check_mark: Добавить все операторы(modulo)<br>
+:heavy_check_mark: . Должна стать бинарным оператором доступа<br>
+:heavy_check_mark: new - Expression<br>
+:heavy_check_mark: assignExpression<br>
+:heavy_check_mark: Другой синтаксис дженериков<br>
+:heavy_check_mark: Добавление индексаторов<br>
+:heavy_check_mark: Оператор каста<br>
+:heavy_check_mark: Изменение порядка вызова метода<br>
+:heavy_check_mark: Method chaining<br>
+:heavy_check_mark: Поддержка var<br>
+:white_check_mark: Тесты<br>
 </details>
 <details>
 <summary>Compiler</summary>
-:white_check_mark: Вынос компиляции
-:white_check_mark: Циклы for и while
-:white_check_mark: Операторы контроля потока
-:white_check_mark: Возможность вызова функций и рекурсии
-:white_check_mark: Тесты
+:white_check_mark: Вынос компиляции<br>
+:white_check_mark: Циклы for и while<br>
+:white_check_mark: Операторы контроля потока<br>
+:white_check_mark: Возможность вызова функций и рекурсии<br>
+:white_check_mark: Тесты<br>
 </details>
 <details>
 <summary>Assembly</summary>
-:white_check_mark: Адекватная система сборок
-:white_check_mark: Наполнение стандартной библиотеки
-:white_check_mark: Тесты
+:white_check_mark: Адекватная система сборок<br>
+:white_check_mark: Наполнение стандартной библиотеки<br>
+:white_check_mark: Тесты<br>
 </details>
 <details>
 <summary>Validators</summary>
-:white_check_mark: Вынос валидации дерева
-:white_check_mark: Циклы for и while
-:white_check_mark: Операторы контроля потока
-:white_check_mark: Возможность вызова функций и рекурсии
-:white_check_mark: Тесты
+:white_check_mark: Вынос валидации дерева<br>
+:white_check_mark: Циклы for и while<br>
+:white_check_mark: Операторы контроля потока<br>
+:white_check_mark: Возможность вызова функций и рекурсии<br>
+:white_check_mark: Тесты<br>
 </details>
 
 ## Родмап чуть дальше(Большие фичи, необходимые для мвп)
