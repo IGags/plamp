@@ -1,43 +1,43 @@
 ## Задачи по фичам
 <details>
 <summary>Ast</summary>
-- [ ] Тесты
+:white_check_mark: Тесты
 </details>
 <details>
 <summary>Native</summary>
-- [x] Добавить все операторы(modulo) +++
-- [x] . Должна стать бинарным оператором доступа
-- [x] new - Expression
-- [x] assignExpression
-- [x] Другой синтаксис дженериков
-- [x] Добавление индексаторов
-- [x] Оператор каста
-- [x] Изменение порядка вызова метода
-- [x] Method chaining
-- [x] Поддержка var
-- [ ] Тесты
+:heavy_check_mark: Добавить все операторы(modulo)
+:heavy_check_mark: . Должна стать бинарным оператором доступа
+:heavy_check_mark: new - Expression
+:heavy_check_mark: assignExpression
+:heavy_check_mark: Другой синтаксис дженериков
+:heavy_check_mark: Добавление индексаторов
+:heavy_check_mark: Оператор каста
+:heavy_check_mark: Изменение порядка вызова метода
+:heavy_check_mark: Method chaining
+:heavy_check_mark: Поддержка var
+:white_check_mark: Тесты
 </details>
 <details>
 <summary>Compiler</summary>
-- [ ] Вынос компиляции
-- [ ] Циклы for и while
-- [ ] Операторы контроля потока
-- [ ] Возможность вызова функций и рекурсии
-- [ ] Тесты
+:white_check_mark: Вынос компиляции
+:white_check_mark: Циклы for и while
+:white_check_mark: Операторы контроля потока
+:white_check_mark: Возможность вызова функций и рекурсии
+:white_check_mark: Тесты
 </details>
 <details>
 <summary>Assembly</summary>
-- [ ] Адекватная система сборок
-- [ ] Наполнение стандартной библиотеки
-- [ ] Тесты
+:white_check_mark: Адекватная система сборок
+:white_check_mark: Наполнение стандартной библиотеки
+:white_check_mark: Тесты
 </details>
 <details>
 <summary>Validators</summary>
-- [ ] Вынос валидации дерева
-- [ ] Циклы for и while
-- [ ] Операторы контроля потока
-- [ ] Возможность вызова функций и рекурсии
-- [ ] Тесты
+:white_check_mark: Вынос валидации дерева
+:white_check_mark: Циклы for и while
+:white_check_mark: Операторы контроля потока
+:white_check_mark: Возможность вызова функций и рекурсии
+:white_check_mark: Тесты
 </details>
 
 ## Родмап чуть дальше(Большие фичи, необходимые для мвп)
