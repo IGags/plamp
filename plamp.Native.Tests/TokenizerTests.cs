@@ -90,9 +90,9 @@ public class TokenizerTests
     }
 
     [Theory]
-    [InlineData("\"", TokenizerErrorConstants.StringIsNotClosed, 0, 0)]
-    [InlineData("\"\n", TokenizerErrorConstants.StringIsNotClosed, 0, 1, 1)]
-    [InlineData("\"\r\n", TokenizerErrorConstants.StringIsNotClosed, 0, 2)]
+    [InlineData("\"", TokenizerErrorConstants.StringIsNotClosed, 0, 0, 1)]
+    [InlineData("\"\n", TokenizerErrorConstants.StringIsNotClosed, 0, 0, 2)]
+    [InlineData("\"\r\n", TokenizerErrorConstants.StringIsNotClosed, 0, 0, 2)]
     [InlineData("\"\\x\"", TokenizerErrorConstants.InvalidEscapeSequence, 1, 2, 1)]
     [InlineData("@", TokenizerErrorConstants.UnexpectedToken, 0, 0)]
     public void TestParserErrors(string code, string exceptionText, int startPos, int endPos, int count = 0)
@@ -100,9 +100,9 @@ public class TokenizerTests
         var result = code.Tokenize();
         Assert.Equal(count, result.Sequence.Count());
         Assert.Single(result.Exceptions);
-        Assert.Equal(result.Exceptions.First().Message, exceptionText);
-        Assert.Equal(result.Exceptions.First().StartPosition, startPos);
-        Assert.Equal(result.Exceptions.First().EndPosition, endPos);
+        Assert.Equal(exceptionText, result.Exceptions.First().Message);
+        Assert.Equal(startPos, result.Exceptions.First().StartPosition);
+        Assert.Equal(endPos, result.Exceptions.First().EndPosition);
     }
     
     [Theory]
@@ -158,5 +158,67 @@ public class TokenizerTests
         {
             Assert.IsType(sequenceShould[i], result.Sequence.TokenList[i]);
         }
+    }
+
+    [Fact]
+    public void TestParseSequenceAfterEndOfLineSeparator()
+    {
+        var result = "\"l\nw".Tokenize();
+        Assert.Single(result.Exceptions);
+        Assert.Equal(TokenizerErrorConstants.StringIsNotClosed, result.Exceptions.First().Message);
+        Assert.Equal(0, result.Exceptions.First().StartPosition);
+        Assert.Equal(1, result.Exceptions.First().EndPosition);
+        Assert.Equal(3, result.Sequence.Count());
+        Assert.IsType<StringLiteral>(result.Sequence.TokenList[0]);
+        Assert.Equal(0, result.Sequence.TokenList[0].StartPosition);
+        Assert.Equal(1, result.Sequence.TokenList[0].EndPosition);
+        Assert.IsType<EndOfLine>(result.Sequence.TokenList[1]);
+        Assert.Equal(2, result.Sequence.TokenList[1].StartPosition);
+        Assert.Equal(2, result.Sequence.TokenList[1].EndPosition);
+        Assert.IsType<Word>(result.Sequence.TokenList[2]);
+        Assert.Equal(3, result.Sequence.TokenList[2].StartPosition);
+        Assert.Equal(3, result.Sequence.TokenList[2].EndPosition);
+    }
+
+    [Fact] 
+    public void TestParseSequenceAfterEndOfLineCrlfSeparator()
+    {
+        var result = "\"l\r\nw".Tokenize();
+        Assert.Single(result.Exceptions);
+        Assert.Equal(TokenizerErrorConstants.StringIsNotClosed, result.Exceptions.First().Message);
+        Assert.Equal(0, result.Exceptions.First().StartPosition);
+        Assert.Equal(1, result.Exceptions.First().EndPosition);
+        Assert.Equal(3, result.Sequence.Count());
+        Assert.IsType<StringLiteral>(result.Sequence.TokenList[0]);
+        Assert.Equal(0, result.Sequence.TokenList[0].StartPosition);
+        Assert.Equal(1, result.Sequence.TokenList[0].EndPosition);
+        Assert.IsType<EndOfLine>(result.Sequence.TokenList[1]);
+        Assert.Equal(2, result.Sequence.TokenList[1].StartPosition);
+        Assert.Equal(3, result.Sequence.TokenList[1].EndPosition);
+        Assert.IsType<Word>(result.Sequence.TokenList[2]);
+        Assert.Equal(4, result.Sequence.TokenList[2].StartPosition);
+        Assert.Equal(4, result.Sequence.TokenList[2].EndPosition);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("@  ")]
+    [InlineData("\"\n ")]
+    [InlineData("     1 + 2 + 3")]
+    [InlineData("     1 @ 2 @ 3")]
+    [InlineData("   \"321\"  1 @ 2 @ 3")]
+    [InlineData("\"\" 222")]
+    public void TestOverallConsistency(string code)
+    {
+        var tokenSequence = code.Tokenize();
+        var position = 0;
+        for (; position < code.Length;)
+        {
+            var token = tokenSequence.Sequence.FirstOrDefault(x => x.StartPosition == position);
+            var error = tokenSequence.Exceptions.FirstOrDefault(x => x.StartPosition == position);
+            Assert.False(token == null && error == null);
+            position = (token?.EndPosition ?? error.EndPosition) + 1;
+        }
+        Assert.Equal(position, code.Length);
     }
 }

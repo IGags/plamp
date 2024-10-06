@@ -5,7 +5,7 @@ using plamp.Native.Tokenization.Token;
 using Xunit;
 
 namespace plamp.Native.Tests;
-
+#pragma warning disable CS0618
 public class ParserTests
 {
     [Fact]
@@ -127,6 +127,7 @@ public class ParserTests
     [InlineData("w ", 2, 0)]
     [InlineData("w", 2, 0)]
     [InlineData(" w", 1, -1)]
+    [InlineData("w \n", 3, 0)]
     public void TestRollBackToRequestedNonWhiteSpaceToken(string code, int shift, int position)
     {
         var parser = new PlampNativeParser(code);
@@ -140,6 +141,15 @@ public class ParserTests
         {
             Assert.IsType<Word>(parser.TokenSequence.Current());
         }
+        else
+        {
+            Assert.Null(parser.TokenSequence.Current());
+        }
     }
-    
+
+
+    public void TestConsumeNextNonWhiteSpaceWithoutRollback()
+    {
+        
+    }
 }

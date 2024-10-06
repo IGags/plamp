@@ -30,7 +30,8 @@ public static class PlampNativeTokenizer
             }
             else if (code[i] == '"')
             {
-                if (TryParseLiteral(code, ref i, out var literal, exceptionList))
+                var literal = ParseLiteral(code, ref i, exceptionList);
+                if (literal != null)
                 {
                     tokenList.Add(literal);
                 }
@@ -68,9 +69,8 @@ public static class PlampNativeTokenizer
         return true;
     }
 
-    private static bool TryParseLiteral(string code, ref int position, out StringLiteral literal, List<TokenizeException> exceptions)
+    private static StringLiteral ParseLiteral(string code, ref int position, List<TokenizeException> exceptions)
     {
-        literal = null;
         var startPosition = position;
         var builder = new StringBuilder();
         position++;
@@ -79,12 +79,13 @@ public static class PlampNativeTokenizer
             switch (code[position])
             {
                 case EndOfLine:
-                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position));
-                    return false;
+                    var literal = new StringLiteral(builder.ToString(), startPosition, position - 1); 
+                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
+                    return literal;
                 case '"':
+                    literal = new StringLiteral(builder.ToString(), startPosition, position);
                     position++;
-                    literal = new StringLiteral(builder.ToString(), startPosition);
-                    return true;
+                    return literal;
                 case '\\':
                     position++;
                     TryParseEscapedSequence(code, ref position, builder, exceptions);
@@ -92,9 +93,9 @@ public static class PlampNativeTokenizer
                 case '\r':
                     if (code[position..(position + 2)] == EndOfLineCrlf)
                     {
-                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position + 1));
-                        position += 2;
-                        return false;
+                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
+                        literal = new StringLiteral(builder.ToString(), startPosition, position - 1);
+                        return literal;
                     }
 
                     builder.Append(code[position]);
@@ -104,9 +105,9 @@ public static class PlampNativeTokenizer
                     break;
             }
         }
-
+        
         exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
-        return false;
+        return new StringLiteral(builder.ToString(), startPosition, position - 1);
     }
 
     private static void TryParseEscapedSequence(string code, ref int position, StringBuilder builder,

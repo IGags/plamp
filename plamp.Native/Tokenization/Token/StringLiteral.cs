@@ -4,7 +4,7 @@ public class StringLiteral : TokenBase
 {
     private readonly string _value;
 
-    public StringLiteral(string value, int position) : base(position, position + value.Length + 1)
+    public StringLiteral(string value, int position, int end) : base(position, end)
     {
         _value = value;
     }
