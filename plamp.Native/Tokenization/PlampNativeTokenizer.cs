@@ -5,6 +5,7 @@ using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
 
+//TODO: Не сможет токенизировать флоты
 public static class PlampNativeTokenizer
 {
     public const char EndOfLine = '\n';
@@ -272,6 +273,18 @@ public static class PlampNativeTokenizer
                     @operator = new Operator("%=", startPosition);
                     position+=2;
                     return true;
+                case "&=":
+                    @operator = new Operator("&=", startPosition);
+                    position += 2;
+                    return true;
+                case "|=":
+                    @operator = new Operator("|=", startPosition);
+                    position += 2;
+                    return true;
+                case "^=":
+                    @operator = new Operator("^=", startPosition);
+                    position += 2;
+                    return true;
             }
         }
 
@@ -306,6 +319,15 @@ public static class PlampNativeTokenizer
                 break;
             case '%':
                 @operator = new Operator("%", startPosition);
+                break;
+            case '|':
+                @operator = new Operator("|", startPosition);
+                break;
+            case '&':
+                @operator = new Operator("&", startPosition);
+                break;
+            case '^':
+                @operator = new Operator("^", startPosition);
                 break;
             default:
                 @operator = null;

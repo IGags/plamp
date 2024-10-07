@@ -13,6 +13,7 @@ public abstract class BaseVisitor
     public void Visit(NodeBase node)
     {
         VisitNode(node);
+        VisitNodeBase(node);
         var children = node.Visit();
         foreach (var child in children.Where(x => x != null))
         {
@@ -291,4 +292,6 @@ public abstract class BaseVisitor
     protected virtual void VisitBitwiseOr(BitwiseOrNode bitwiseOr){}
 
     protected virtual void VisitXor(XorNode xor){}
+    
+    protected virtual void VisitNodeBase(NodeBase node){}
 }

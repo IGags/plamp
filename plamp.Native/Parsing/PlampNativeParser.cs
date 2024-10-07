@@ -597,12 +597,11 @@ public sealed class PlampNativeParser
             node = nud;
         }
 
-        bool except;
-        while (TryParseLed(rbp, node, out node, out except) && !except)
+        while (TryParseLed(rbp, node, out node))
         {
         }
 
-        return !except;
+        return true;
     }
 
     internal bool TryParseNud(out NodeBase node, bool isParseCast = true)
@@ -670,8 +669,8 @@ public sealed class PlampNativeParser
                 () => { }, out var operatorToken))
         {
             var op = operatorToken.ToOperator();
-            var isParsed = TryParseWithPrecedence(out var inner, op.GetPrecedence(true));
-            if (isParsed)
+            TryParseWithPrecedence(out var inner, op.GetPrecedence(true));
+            if (inner != null)
             {
                 node = null;
                 switch (op)
@@ -695,6 +694,14 @@ public sealed class PlampNativeParser
             }   
         }
 
+        if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, AddKeywordException,
+                out var word))
+        {
+            var member = new MemberNode(word.GetString());
+            node = ParsePostfixIfExist(member);
+            return true;
+        }
+
         node = null;
         return false;
         
@@ -707,10 +714,10 @@ public sealed class PlampNativeParser
     internal NodeBase ParsePostfixIfExist(NodeBase inner)
     {
         while (TryParseCall(inner, out inner)) { }
-
-        if (_tokenSequence.PeekNextNonWhiteSpace().GetType() == typeof(OpenSquareBracket))
+        
+        if (_tokenSequence.PeekNextNonWhiteSpace()?.GetType() == typeof(OpenSquareBracket))
         {
-            TryParseIndexer(inner, out inner);
+            ParseIndexerOrDefault(inner, out inner);
         }
 
         if (TryConsumeNextNonWhiteSpace<Operator>(
@@ -751,16 +758,23 @@ public sealed class PlampNativeParser
         return false;
     }
     
-    internal void TryParseIndexer(NodeBase inner, out NodeBase node)
+    internal void ParseIndexerOrDefault(NodeBase inner, out NodeBase node)
     {
-        var startPos = _tokenSequence.CurrentStart;
+        var next = _tokenSequence.PeekNextNonWhiteSpace();
+        if (next is null || next.GetType() != typeof(OpenSquareBracket))
+        {
+            node = inner;
+            return;
+        }
+        
+        var startPos = new TokenPosition(next.StartPosition);
         var isParsed = TryParseInParen<List<NodeBase>, OpenSquareBracket, CloseSquareBracket>(
             WrapParseCommaSeparated<NodeBase>(TryParseExpression), () =>
             {
                 _exceptions.Add(new ParserException(ParserErrorConstants.EmptyIndexerDefinition, startPos, _tokenSequence.CurrentEnd));
                 return [];
             }, out var index);
-        if (isParsed)
+        if (isParsed && index.Count > 0)
         {
             node = new IndexerNode(inner, index);
             return;
@@ -769,9 +783,8 @@ public sealed class PlampNativeParser
         node = inner;
     }
 
-    internal bool TryParseLed(int rbp, NodeBase left, out NodeBase output, out bool isExcept)
+    internal bool TryParseLed(int rbp, NodeBase left, out NodeBase output)
     {
-        var start = _tokenSequence.CurrentStart;
         if (TryConsumeNextNonWhiteSpace<Operator>(_ => true, () => { }, out var token))
         {
             var op = token.ToOperator();
@@ -780,126 +793,94 @@ public sealed class PlampNativeParser
             {
                 output = left;
                 _tokenSequence.RollBackToNonWhiteSpace();
-                isExcept = true;
                 return false;
             }
 
-            if (TryParseWithPrecedence(out var right, op.GetPrecedence(false)))
+            TryParseWithPrecedence(out var right, precedence);
+            if (right != null)
             {
                 switch (op)
                 {
                     case OperatorEnum.Multiply:
                         output = new MultiplyNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Divide:
                         output = new DivideNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Plus:
                         output = new PlusNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Minus:
                         output = new MinusNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Lesser:
                         output = new LessNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Greater:
                         output = new GreaterNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.LesserOrEquals:
                         output = new LessOrEqualNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.GreaterOrEquals:
                         output = new GreaterOrEqualsNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Equals:
                         output = new EqualNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.NotEquals:
                         output = new NotEqualNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.And:
                         output = new AndNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Or:
                         output = new OrNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Modulo:
                         output = new ModuloNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Assign:
                         output = new AssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.PlusAndAssign:
                         output = new AddAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.MinusAndAssign:
                         output = new SubAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.MultiplyAndAssign:
                         output = new MulAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.DivideAndAssign:
                         output = new DivAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.ModuloAndAssign:
                         output = new ModuloAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.AndAndAssign:
                         output = new AndAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.OrAndAssign:
                         output = new OrAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.XorAndAssign:
                         output = new XorAndAssignNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.BitwiseAnd:
                         output = new BitwiseAndNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.BitwiseOr:
                         output = new BitwiseOrNode(left, right);
-                        isExcept = false;
                         return true;
                     case OperatorEnum.Xor:
                         output = new XorNode(left, right);
-                        isExcept = false;
                         return true;
                 }
-                
-                _exceptions.Add(new ParserException(ParserErrorConstants.InvalidOperator, start, start));
-                output = null;
-                isExcept = true;
-                return false;
             }
-            
         }
 
         AddUnexpectedToken<Operator>();
-        isExcept = true;
         output = left;
         return false;
     }

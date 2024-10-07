@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using plamp.Ast.Node;
+using plamp.Ast.Node.Assign;
+using plamp.Ast.Node.Binary;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
@@ -432,6 +435,81 @@ public class ParserTests
     }
     
     private object GetDefaultValue(Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
-    
-    
+
+    [Theory]
+    [InlineData("", 0, false, new[]{typeof(MemberNode)}, new[]{"2"}, -1)]
+    [InlineData("+1", 0, true, new[]{typeof(PlusNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("*1", 0, true, new[]{typeof(MultiplyNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("-1", 0, true, new[]{typeof(MinusNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("/1", 0, true, new[]{typeof(DivideNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("<1", 0, true, new[]{typeof(LessNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData(">1", 0, true, new[]{typeof(GreaterNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("<=1", 0, true, new[]{typeof(LessOrEqualNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData(">=1", 0, true, new[]{typeof(GreaterOrEqualsNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("==1", 0, true, new[]{typeof(EqualNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("!=1", 0, true, new[]{typeof(NotEqualNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("&&1", 0, true, new[]{typeof(AndNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("||1", 0, true, new[]{typeof(OrNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("%1", 0, true, new[]{typeof(ModuloNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("=1", 0, true, new[]{typeof(AssignNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("+=1", 0, true, new[]{typeof(AddAndAssignNode), typeof(MemberNode),typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("-=1", 0, true, new[]{typeof(SubAndAssignNode), typeof(MemberNode),typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("*=1", 0, true, new[]{typeof(MulAndAssignNode), typeof(MemberNode),typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("/=1", 0, true, new[]{typeof(DivAndAssignNode), typeof(MemberNode),typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("%=1", 0, true, new[]{typeof(ModuloAndAssignNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("&=1", 0, true, new[]{typeof(AndAndAssignNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("|=1", 0, true, new[]{typeof(OrAndAssignNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("^=1", 0, true, new[]{typeof(XorAndAssignNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("&1", 0, true, new[]{typeof(BitwiseAndNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("|1", 0, true, new[]{typeof(BitwiseOrNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("^1", 0, true, new[]{typeof(XorNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"2", "1"}, 1)]
+    [InlineData("^1", int.MaxValue, false, new[]{typeof(MemberNode)}, new[]{"2"}, -1)]
+    [InlineData("!1", 0, false, new[]{typeof(MemberNode)}, new[]{"2"}, -1)]
+    public void TestTryParseLedCorrect(string code, int rbp, bool isParsedExpected, Type[] treeTypeIterator, string[] memberIterator, int? tokenSequencePos = null)
+    {
+        var startNode = new MemberNode("2");
+        var parser = new PlampNativeParser(code);
+        var isParsedActual = parser.TryParseLed(rbp, startNode, out var res);
+        Assert.Equal(isParsedExpected, isParsedActual);
+        var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+        visitor.Visit(res);
+        visitor.Validate();
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos.Value, parser.TokenSequence.Position);
+        }
+    }
+
+    [Theory]
+    [InlineData("", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData("[]", new[]{typeof(MemberNode)}, new[]{"1"}, 1, 1, 
+        new[]{ParserErrorConstants.EmptyIndexerDefinition}, new[]{0}, new[]{1})]
+    [InlineData("[2]", new[]{typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2"}, 2)]
+    public void TestParseIndexerOrDefault(string code, Type[] treeTypeIterator, string[] memberIterator, 
+        int? tokenSequencePos = null, int errorCount = 0, 
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var startNode = new MemberNode("1");
+        var parser = new PlampNativeParser(code);
+        parser.ParseIndexerOrDefault(startNode, out var res);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+
+        var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+        visitor.Visit(res);
+        visitor.Validate();
+    }
 }

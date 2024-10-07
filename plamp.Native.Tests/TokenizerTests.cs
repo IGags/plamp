@@ -74,7 +74,12 @@ public class TokenizerTests
     [InlineData("<", typeof(OpenAngleBracket))]
     [InlineData(">", typeof(CloseAngleBracket))]
     [InlineData("!", typeof(Operator))]
-    [InlineData("%", typeof(Operator))]
+    [InlineData("|", typeof(Operator))]
+    [InlineData("&", typeof(Operator))]
+    [InlineData("^", typeof(Operator))]
+    [InlineData("^=", typeof(Operator))]
+    [InlineData("|=", typeof(Operator))]
+    [InlineData("&=", typeof(Operator))]
     public void TestSingleToken(string code, Type resultToken, string inline = null)
     {
         var result = code.Tokenize();
