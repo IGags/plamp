@@ -25,5 +25,11 @@ public enum OperatorEnum
     Call,
     Modulo,
     ModuloAndAssign,
+    BitwiseOr,
+    BitwiseAnd,
+    Xor,
+    AndAndAssign,
+    OrAndAssign,
+    XorAndAssign,
     None
 }

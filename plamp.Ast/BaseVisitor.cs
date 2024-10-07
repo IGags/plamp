@@ -165,6 +165,24 @@ public abstract class BaseVisitor
             case ConstNode constNode:
                 VisitConst(constNode);
                 return;
+            case AndAndAssignNode andAndAssignNode:
+                VisitAndAndAssign(andAndAssignNode);
+                return;
+            case OrAndAssignNode orAndAssignNode:
+                VisitOrAndAssign(orAndAssignNode);
+                return;
+            case XorAndAssignNode xorAndAssignNode:
+                VisitXorAndAssign(xorAndAssignNode);
+                return;
+            case BitwiseAndNode bitwiseAndNode:
+                VisitBitwiseAnd(bitwiseAndNode);
+                return;
+            case BitwiseOrNode bitwiseOrNode:
+                VisitBitwiseOr(bitwiseOrNode);
+                return;
+            case XorNode xorNode:
+                VisitXor(xorNode);
+                return;
         }
     }
     
@@ -261,4 +279,16 @@ public abstract class BaseVisitor
     protected virtual void VisitMemberAccess(MemberAccessNode accessNode){}
     
     protected virtual void VisitConst(ConstNode constNode){}
+
+    protected virtual void VisitAndAndAssign(AndAndAssignNode andAndAssign){}
+
+    protected virtual void VisitOrAndAssign(OrAndAssignNode orAndAssign){}
+
+    protected virtual void VisitXorAndAssign(XorAndAssignNode xorAndAssign){}
+
+    protected virtual void VisitBitwiseAnd(BitwiseAndNode bitwiseAnd){}
+    
+    protected virtual void VisitBitwiseOr(BitwiseOrNode bitwiseOr){}
+
+    protected virtual void VisitXor(XorNode xor){}
 }

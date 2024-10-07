@@ -14,7 +14,7 @@ using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Parsing;
 
-public class PlampNativeParser
+public sealed class PlampNativeParser
 {
     internal delegate bool TryParseInternal<T>(out T result);
     
@@ -862,6 +862,30 @@ public class PlampNativeParser
                         return true;
                     case OperatorEnum.ModuloAndAssign:
                         output = new ModuloAndAssignNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.AndAndAssign:
+                        output = new AndAndAssignNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.OrAndAssign:
+                        output = new OrAndAssignNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.XorAndAssign:
+                        output = new XorAndAssignNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.BitwiseAnd:
+                        output = new BitwiseAndNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.BitwiseOr:
+                        output = new BitwiseOrNode(left, right);
+                        isExcept = false;
+                        return true;
+                    case OperatorEnum.Xor:
+                        output = new XorNode(left, right);
                         isExcept = false;
                         return true;
                 }

@@ -21,5 +21,6 @@ public enum Keywords
     //Reserved
     Model,
     Var,
-    Await
+    Await,
+    Async
 }

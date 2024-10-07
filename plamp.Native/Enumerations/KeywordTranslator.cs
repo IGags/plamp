@@ -31,6 +31,7 @@ public static class KeywordTranslator
             "model" => Keywords.Model,
             "var" => Keywords.Var,
             "await" => Keywords.Await,
+            "async" => Keywords.Async,
             _ => Keywords.Unknown
         };
     }

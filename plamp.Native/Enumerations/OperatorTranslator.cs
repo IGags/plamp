@@ -32,6 +32,12 @@ public static class OperatorTranslator
             "." => OperatorEnum.Call,
             "%" => OperatorEnum.Modulo,
             "%=" => OperatorEnum.ModuloAndAssign,
+            "|" => OperatorEnum.BitwiseOr,
+            "&" => OperatorEnum.BitwiseAnd,
+            "^" => OperatorEnum.Xor,
+            "&=" => OperatorEnum.AndAndAssign,
+            "|=" => OperatorEnum.OrAndAssign,
+            "^=" => OperatorEnum.XorAndAssign,
             _ => OperatorEnum.None
         };
     }
@@ -63,14 +69,20 @@ public static class OperatorTranslator
             OperatorEnum.GreaterOrEquals => 42,
             OperatorEnum.Equals => 41,
             OperatorEnum.NotEquals => 40,
-            OperatorEnum.And => 39,
-            OperatorEnum.Or => 38,
+            OperatorEnum.BitwiseAnd => 39,
+            OperatorEnum.Xor => 38,
+            OperatorEnum.BitwiseOr => 37,
+            OperatorEnum.And => 36,
+            OperatorEnum.Or => 35,
             OperatorEnum.Assign => 20,
             OperatorEnum.PlusAndAssign => 19,
             OperatorEnum.MinusAndAssign => 18,
             OperatorEnum.MultiplyAndAssign => 17,
             OperatorEnum.DivideAndAssign => 16,
             OperatorEnum.ModuloAndAssign => 15,
+            OperatorEnum.AndAndAssign => 14,
+            OperatorEnum.OrAndAssign => 13,
+            OperatorEnum.XorAndAssign => 12,
             _ => int.MinValue
         };
     }
