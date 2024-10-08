@@ -402,15 +402,19 @@ public class ParserTests
         true, ParserErrorConstants.ExpectedCloseParen, 1, 1)]
     [InlineData("\n)", false, -1, false, true,
         true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), -1, -1)]
+    [InlineData("", false, -1, false, true,
+        false, null, 0, 0, false)]
+    [InlineData("(w", false, 1, false, false,
+        false, null, 0, 0, false)]
     public void TestTryParseInParen(string code, bool methodResult, int resultPosition, bool isEmptyCaseInvokedExpected, 
-        bool resultTokenIsNull, bool isError, string errorText = null, int errorPositionStart = 0, int errorPositionEnd = 0)
+        bool resultTokenIsNull, bool isError, string errorText = null, int errorPositionStart = 0, int errorPositionEnd = 0, bool isStrict = true)
     {
         var parser = new PlampNativeParser(code);
         var isEmptyCaseInvokedActual = false;
         var result = parser.TryParseInParen<Word, OpenParen, CloseParen>(Wrapper,
             () => { isEmptyCaseInvokedActual = true;
                 return new Word("", 0);
-            }, out var resultToken);
+            }, out var resultToken, isStrict);
         Assert.Equal(methodResult, result);
         Assert.Equal(resultPosition, parser.TokenSequence.Position);
         Assert.Equal(isEmptyCaseInvokedExpected, isEmptyCaseInvokedActual);
@@ -432,6 +436,26 @@ public class ParserTests
         }
         
         bool Wrapper(out Word token) => parser.TryConsumeNextNonWhiteSpace(x => x.GetString() == "w", () => { }, out token);
+    }
+
+    [Fact]
+    private void TestTryParseInParenEdgeCase()
+    {
+        var parser = new PlampNativeParser("(1");
+        var result = parser.TryParseInParen<Word, OpenParen, CloseParen>(Wrapper, () => null, out _);
+        Assert.False(result);
+        Assert.Equal(2, parser.TokenSequence.Position);
+        Assert.Single(parser.Exceptions);
+        Assert.Equal(ParserErrorConstants.ExpectedCloseParen, parser.Exceptions.First().Message);
+        Assert.Equal(2, parser.Exceptions.First().StartPosition);
+        Assert.Equal(2, parser.Exceptions.First().EndPosition);
+        
+        bool Wrapper(out Word token)
+        {
+            token = null;
+            parser.TokenSequence.GetNextToken();
+            return false;
+        }
     }
     
     private object GetDefaultValue(Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
@@ -482,16 +506,97 @@ public class ParserTests
 
     [Theory]
     [InlineData("", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
-    [InlineData("[]", new[]{typeof(MemberNode)}, new[]{"1"}, 1, 1, 
+    [InlineData("[]", new[]{typeof(IndexerNode), typeof(MemberNode)}, new[]{"1"}, 1, 1, 
         new[]{ParserErrorConstants.EmptyIndexerDefinition}, new[]{0}, new[]{1})]
     [InlineData("[2]", new[]{typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2"}, 2)]
+    [InlineData("[2,3]", new[]{typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2", "3"}, 4)]
+    [InlineData("[", new[]{typeof(MemberNode)}, new []{"1"}, 1, 2, new[]{ParserErrorConstants.InvalidExpression, ParserErrorConstants.ExpectedCloseParen}, new[]{1,1}, new[]{1,1})]
+    [InlineData("[1", new[]{typeof(MemberNode)}, new []{"1"}, 2, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new[]{2}, new[]{2})]
+    [InlineData("]", new[]{typeof(MemberNode)}, new []{"1"}, -1)]
+    [InlineData("[2,]", new[]{typeof(IndexerNode),typeof(MemberNode),typeof(MemberNode)}, new []{"1", "2"}, 3, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{3},new []{3})]
+    [InlineData("[+]", new[]{typeof(MemberNode)}, new []{"1"}, 2, 2, new[]{ParserErrorConstants.InvalidExpression,ParserErrorConstants.ExpectedCloseParen}, new[]{1,1}, new[]{1,1})]
+    [InlineData("[,3]", new[]{typeof(IndexerNode),typeof(MemberNode),typeof(MemberNode)}, new []{"1", "3"}, 3, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{1},new []{1})]
+    [InlineData("[2,,3]", new[]{typeof(IndexerNode),typeof(MemberNode),typeof(MemberNode),typeof(MemberNode)}, new []{"1", "2", "3"}, 5, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{3},new []{3})]
     public void TestParseIndexerOrDefault(string code, Type[] treeTypeIterator, string[] memberIterator, 
         int? tokenSequencePos = null, int errorCount = 0, 
         string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
     {
         var startNode = new MemberNode("1");
         var parser = new PlampNativeParser(code);
-        parser.ParseIndexerOrDefault(startNode, out var res);
+        parser.TryParseIndexer(startNode, out var res);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+
+        var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+        visitor.Visit(res);
+        visitor.Validate();
+    }
+
+    //TODO: копирование
+    [Theory]
+    [InlineData("", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData(".d", new[]{typeof(MemberAccessNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d"}, 1)]
+    [InlineData(".d()", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d"}, 3)]
+    [InlineData(".d(a)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a"}, 4)]
+    [InlineData(".d(a,b)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a", "b"}, 6)]
+    [InlineData(".", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(Word)}, new []{1},new []{1})]
+    [InlineData(".+", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(Word)}, new []{1},new []{1})]
+    [InlineData(".var", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.CannotUseKeyword}, new []{1},new []{1})]
+    [InlineData(".d(a,)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a"}, 5, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{5},new []{5})]
+    [InlineData(".d(,a)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a"}, 5, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{3},new []{3})]
+    [InlineData(".d(,)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d"}, 4, 2, new[]{ParserErrorConstants.InvalidExpression,ParserErrorConstants.InvalidExpression}, new []{3,4},new []{3,4})]
+    [InlineData(".d(a", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d","a"}, 4, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new []{4},new []{4})]
+    [InlineData(".d(", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d"}, 3, 2, new[]{ParserErrorConstants.InvalidExpression, ParserErrorConstants.ExpectedCloseParen}, new[]{3,3}, new[]{3,3})]
+    public void TestTryParseCall(string code, Type[] treeTypeIterator, string[] memberIterator, 
+        int? tokenSequencePos = null, int errorCount = 0, 
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var startNode = new MemberNode("1");
+        var parser = new PlampNativeParser(code);
+        parser.TryParseCall(startNode, out var res);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+
+        var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+        visitor.Visit(res);
+        visitor.Validate();
+    }
+
+    [Theory]
+    [InlineData]
+    public void TestParsePostfixIfExist(string code, Type[] treeTypeIterator, string[] memberIterator,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var startNode = new MemberNode("1");
+        var parser = new PlampNativeParser(code);
+        var res = parser.ParsePostfixIfExist(startNode);
         Assert.Equal(errorCount, parser.Exceptions.Count);
         if (errorCount != 0)
         {
