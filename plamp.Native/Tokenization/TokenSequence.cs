@@ -59,7 +59,7 @@ public class TokenSequence : IEnumerable<TokenBase>
             {
                 return new(0);
             }
-            if (_position > _tokenList.Last().EndPosition)
+            if (_position >= _tokenList.Count)
             {
                 return new(_tokenList.Last().EndPosition + 1);
             }
@@ -68,7 +68,7 @@ public class TokenSequence : IEnumerable<TokenBase>
                 return new(-1);
             }
 
-            return new(Current().StartPosition);
+            return new(Current().EndPosition);
         }
     }
     

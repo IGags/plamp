@@ -737,28 +737,41 @@ public sealed class PlampNativeParser
     
     internal NodeBase ParsePostfixIfExist(NodeBase inner)
     {
-        while (TryParseCall(inner, out inner))
+        
+        
+        do
         {
-            while (_tokenSequence.PeekNextNonWhiteSpace()?.GetType() == typeof(OpenSquareBracket) 
-                   && TryParseIndexer(inner, out inner))
-            { }
+            inner = TryParsePostfixOperator(inner);
             
-            if (TryConsumeNextNonWhiteSpace<Operator>(
-                    x => x.ToOperator() == OperatorEnum.Increment || x.ToOperator() == OperatorEnum.Decrement,
-                    () => { }, out var @operator))
+            while (_tokenSequence.PeekNextNonWhiteSpace()?.GetType() == typeof(OpenSquareBracket)
+                   && TryParseIndexer(inner, out inner))
             {
-                return @operator.ToOperator() switch
-                {
-                    OperatorEnum.Increment => new PostfixIncrementNode(inner),
-                    OperatorEnum.Decrement => new PostfixDecrementNode(inner),
-                    _ => throw new Exception("Parser exception")
-                };
             }
-        }
+
+            inner = TryParsePostfixOperator(inner);
+        } while (TryParseCall(inner, out inner));
+        
         
         return inner;
     }
 
+    internal NodeBase TryParsePostfixOperator(NodeBase nodeBase)
+    {
+        if (TryConsumeNextNonWhiteSpace<Operator>(
+                x => x.ToOperator() == OperatorEnum.Increment || x.ToOperator() == OperatorEnum.Decrement,
+                () => { }, out var @operator))
+        {
+            return @operator.ToOperator() switch
+            {
+                OperatorEnum.Increment => new PostfixIncrementNode(nodeBase),
+                OperatorEnum.Decrement => new PostfixDecrementNode(nodeBase),
+                _ => throw new Exception("Parser exception")
+            };
+        }
+
+        return nodeBase;
+    }
+    
     internal bool TryParseCall(NodeBase input, out NodeBase res)
     {
         if (TryConsumeNextNonWhiteSpace<Operator>(x => x.ToOperator() == OperatorEnum.Call, () => { }, out _))

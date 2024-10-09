@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
+using plamp.Ast.Node.Unary;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
@@ -554,7 +556,7 @@ public class ParserTests
     [InlineData(".d(a,b)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a", "b"}, 6)]
     [InlineData(".", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(Word)}, new []{1},new []{1})]
     [InlineData(".+", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(Word)}, new []{1},new []{1})]
-    [InlineData(".var", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.CannotUseKeyword}, new []{1},new []{1})]
+    [InlineData(".var", new[]{typeof(MemberNode)}, new[]{"1"}, 0, 1, new[]{ParserErrorConstants.CannotUseKeyword}, new []{1},new []{3})]
     [InlineData(".d(a,)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a"}, 5, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{5},new []{5})]
     [InlineData(".d(,a)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d", "a"}, 5, 1, new[]{ParserErrorConstants.InvalidExpression}, new []{3},new []{3})]
     [InlineData(".d(,)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","d"}, 4, 2, new[]{ParserErrorConstants.InvalidExpression,ParserErrorConstants.InvalidExpression}, new []{3,4},new []{3,4})]
@@ -589,7 +591,39 @@ public class ParserTests
     }
 
     [Theory]
-    [InlineData]
+    [InlineData("", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData(".c().d()", new[]{typeof(CallNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "c", "d"}, 7)]
+    [InlineData(".c.d()", new[]{typeof(CallNode), typeof(MemberAccessNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "c", "d"}, 5)]
+    [InlineData(".c().d", new[]{typeof(MemberAccessNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "c", "d"}, 5)]
+    [InlineData(".c()[2]", new[]{typeof(IndexerNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "c", "2"}, 6)]
+    [InlineData("[3][2]", new[]{typeof(IndexerNode), typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "3", "2"}, 5)]
+    [InlineData(".d[2]", new[]{typeof(IndexerNode), typeof(MemberAccessNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "2"}, 4)]
+    [InlineData("[2].d", new[]{typeof(MemberAccessNode), typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2", "d"}, 4)]
+    [InlineData("++", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("++ddd", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--ddd", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("+++", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("---", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("-", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData("[2]++", new[]{typeof(PostfixIncrementNode), typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2"}, 3)]
+    [InlineData("++[2]", new[]{typeof(IndexerNode), typeof(PostfixIncrementNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2"}, 3)]
+    [InlineData(".d++", new[]{typeof(PostfixIncrementNode), typeof(MemberAccessNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d"}, 2)]
+    [InlineData("++.d", new[]{typeof(MemberAccessNode), typeof(PostfixIncrementNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d"}, 2)]
+    [InlineData(".d()++", new[]{typeof(PostfixIncrementNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d"}, 4)]
+    [InlineData("++.d()", new[]{typeof(CallNode), typeof(PostfixIncrementNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d"}, 4)]
+    [InlineData(".d(a).d(a,c)", new[]{typeof(CallNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a", "d", "a", "c"}, 11)]
+    [InlineData(".d(a,b).x", new[]{typeof(MemberAccessNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a", "b", "x"}, 8)]
+    [InlineData(".x.d(c)", new[]{typeof(CallNode), typeof(MemberAccessNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "x", "d", "c"}, 6)]
+    [InlineData(".d(a,b,c)", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a", "b", "c"}, 8)]
+    [InlineData(".d(a)++", new[]{typeof(PostfixIncrementNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a"}, 5)]
+    [InlineData("++.d(a)", new[]{typeof(CallNode), typeof(PostfixIncrementNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a"}, 5)]
+    [InlineData("[2].d(a)", new[]{typeof(CallNode), typeof(IndexerNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "2", "d", "a"}, 7)]
+    [InlineData(".d(a)[2]", new[]{typeof(IndexerNode), typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1", "d", "a", "2"}, 7)]
+    [InlineData("[2.c()", new[]{typeof(MemberNode)}, new[]{"1"}, 6, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new[]{6}, new[]{6})]
+    [InlineData("[2\"r\"", new[]{typeof(MemberNode)}, new[]{"1"}, 3, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new[]{2}, new[]{5})]
+    [InlineData("+[2]", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData(".c(2\"r\"", new[]{typeof(CallNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"1","c","2"}, 5, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new[]{4}, new[]{7})]
     public void TestParsePostfixIfExist(string code, Type[] treeTypeIterator, string[] memberIterator,
         int? tokenSequencePos = null, int errorCount = 0,
         string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
@@ -617,4 +651,54 @@ public class ParserTests
         visitor.Visit(res);
         visitor.Validate();
     }
+    
+    [Theory]
+    [InlineData("", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData("1", new[]{typeof(MemberNode)}, new[]{"1"}, -1)]
+    [InlineData("++", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("++++", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("----", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("++--", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--++", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("++-", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--+", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("++2", new[]{typeof(PostfixIncrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    [InlineData("--2", new[]{typeof(PostfixDecrementNode), typeof(MemberNode)}, new[]{"1"}, 0)]
+    public void TestParsePostfixOperator(string code, Type[] treeTypeIterator, string[] memberIterator,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var startNode = new MemberNode("1");
+        var parser = new PlampNativeParser(code);
+        var res = parser.TryParsePostfixOperator(startNode);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+
+        var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+        visitor.Visit(res);
+        visitor.Validate();
+    }
+    
+    //[Theory]
+    //[]
+    //public void TestTryParseNud(string code, Type[] treeTypeIterator, string[] memberIterator,
+    //    int? tokenSequencePos = null, int errorCount = 0,
+    //    string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    //{
+    //    
+    //}
 }

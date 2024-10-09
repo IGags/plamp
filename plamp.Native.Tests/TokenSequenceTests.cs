@@ -186,4 +186,46 @@ public class TokenSequenceTests
             Assert.Equal(resultType, sequence.Current().GetType());
         }
     }
+
+    [Theory]
+    [InlineData("1\"1232321\"", 2, 10)]
+    [InlineData("1\"1232321\"", 4, 10)]
+    [InlineData("1\"1232321\"", -1, -1)]
+    [InlineData("1\"1232321\"", -2, -1)]
+    [InlineData("1\"1232321\"", 0, 0)]
+    [InlineData("1\"1232321\"", 1, 9)]
+    public void TestGetEndPosition(string code, int setPosition, int targetPosition)
+    {
+        var sequence = code.Tokenize().Sequence;
+        sequence.Position = setPosition;
+        Assert.Equal(targetPosition, sequence.CurrentEnd.Pos);
+    }
+    
+    [Theory]
+    [InlineData("1\"1232321\"", 2, 10)]
+    [InlineData("1\"1232321\"", 4, 10)]
+    [InlineData("1\"1232321\"", -1, -1)]
+    [InlineData("1\"1232321\"", -2, -1)]
+    [InlineData("1\"1232321\"", 0, 0)]
+    [InlineData("1\"1232321\"", 1, 1)]
+    public void TestGetStartPosition(string code, int setPosition, int targetPosition)
+    {
+        var sequence = code.Tokenize().Sequence;
+        sequence.Position = setPosition;
+        Assert.Equal(targetPosition, sequence.CurrentStart.Pos);
+    }
+
+    [Theory]
+    [InlineData("1\"1232321\"", 2, 2)]
+    [InlineData("1\"1232321\"", 4, 2)]
+    [InlineData("1\"1232321\"", -1, -1)]
+    [InlineData("1\"1232321\"", -2, -1)]
+    [InlineData("1\"1232321\"", 0, 0)]
+    [InlineData("1\"1232321\"", 1, 1)]
+    public void TestSetPositionInTokens(string code, int setPosition, int targetPosition)
+    {
+        var sequence = code.Tokenize().Sequence;
+        sequence.Position = setPosition;
+        Assert.Equal(targetPosition, sequence.Position);
+    }
 }
