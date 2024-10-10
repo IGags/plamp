@@ -615,21 +615,27 @@ public sealed class PlampNativeParser
         return true;
     }
 
-    internal bool TryParseNud(out NodeBase node, bool isParseCast = true)
+    internal bool TryParseNud(out NodeBase node)
     {
-        if (isParseCast)
+        var position = _tokenSequence.Position;
+        var next = _tokenSequence.PeekNextNonWhiteSpace();
+        
+        //TODO: Если ничего нет, то возвращай false без rollback
+        if (next == null || next.GetType() == typeof(EndOfLine))
         {
-            var position = _tokenSequence.Position;
-            var next = _tokenSequence.PeekNextNonWhiteSpace();
-            if (next != null && next.GetType() == typeof(OpenParen) 
-                             && TryParseInParen<TypeNode, OpenParen, CloseParen>(TryParseTypeWrapper, () => null, out var type) 
-                             && TryParseNud(out var inner, false))
-            {
-                node = new CastNode(type, inner);
-            }
-
-            _tokenSequence.Position = position;
+            node = null;
+            return false;
         }
+        
+        if (next.GetType() == typeof(OpenParen) 
+            && TryParseInParen<TypeNode, OpenParen, CloseParen>(TryParseTypeWrapper, () => null, out var typeNode) 
+            && TryParseNud(out var inCast))
+        {
+            node = new CastNode(typeNode, inCast);
+            return true;
+        }
+
+        _tokenSequence.Position = position;
 
         var nextToken = _tokenSequence.PeekNextNonWhiteSpace();
         if (nextToken is null)
@@ -663,10 +669,12 @@ public sealed class PlampNativeParser
             node = ParsePostfixIfExist(stringLiteral);
             return true;
         }
-        
+        var pos = _tokenSequence.Position;
         if (TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.New, () => { }, out _))
         {
-            if (TryParseType(out var type)
+            
+            if (TryParseType(out var type, false)
+                && _tokenSequence.PeekNext()?.GetType() == typeof(OpenParen)
                 && TryParseInParen<List<NodeBase>, OpenParen, CloseParen>(
                     WrapParseCommaSeparated<NodeBase>(TryParseExpression),
                     () => [], out var args))
@@ -675,10 +683,13 @@ public sealed class PlampNativeParser
                 node = ParsePostfixIfExist(ctor);
                 return true;
             }
+            _tokenSequence.Position = pos;
             node = null;
             return false;
         }
-
+        _tokenSequence.Position = pos;
+        
+        var backupPos = _tokenSequence.Position;
         if (TryConsumeNextNonWhiteSpace<Operator>(
                 x =>
                     x.ToOperator() == OperatorEnum.Minus
@@ -713,6 +724,7 @@ public sealed class PlampNativeParser
             }   
         }
 
+        _tokenSequence.Position = backupPos;
         if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, () => { },
                 out var word))
         {

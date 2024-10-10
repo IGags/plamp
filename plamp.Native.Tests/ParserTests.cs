@@ -693,12 +693,65 @@ public class ParserTests
         visitor.Validate();
     }
     
-    //[Theory]
-    //[]
-    //public void TestTryParseNud(string code, Type[] treeTypeIterator, string[] memberIterator,
-    //    int? tokenSequencePos = null, int errorCount = 0,
-    //    string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
-    //{
-    //    
-    //}
+    [Theory]
+    [InlineData("", new Type[]{}, new string[]{}, -1)]
+    [InlineData("\n", new Type[]{}, new string[]{}, -1)]
+    //TD
+    [InlineData("\"123\"", new[]{typeof(ConstNode)}, new string[]{}, 0)]
+    [InlineData("aaa", new[]{typeof(MemberNode)}, new[]{"aaa"}, 0)]
+    [InlineData("321", new[]{typeof(MemberNode)}, new[]{"321"}, 0)]
+    [InlineData("-aaa", new[]{typeof(UnaryMinusNode), typeof(MemberNode)}, new[]{"aaa"}, 1)]
+    [InlineData("-321", new[]{typeof(UnaryMinusNode), typeof(MemberNode)}, new[]{"321"}, 1)]
+    [InlineData("!aaa", new[]{typeof(NotNode), typeof(MemberNode)}, new[]{"aaa"}, 1)]
+    [InlineData("!321", new[]{typeof(NotNode), typeof(MemberNode)}, new[]{"321"}, 1)]
+    [InlineData("++aaa", new[]{typeof(PrefixIncrementNode), typeof(MemberNode)}, new[]{"aaa"}, 1)]
+    [InlineData("++321", new[]{typeof(PrefixIncrementNode), typeof(MemberNode)}, new[]{"321"}, 1)]
+    [InlineData("--aaa", new[]{typeof(PrefixDecrementNode), typeof(MemberNode)}, new[]{"aaa"}, 1)]
+    [InlineData("--321", new[]{typeof(PrefixDecrementNode), typeof(MemberNode)}, new[]{"321"}, 1)]
+    [InlineData("=321", new Type[]{}, new string[]{}, -1)]
+    [InlineData("!!!321", new[]{typeof(NotNode), typeof(NotNode), typeof(NotNode), typeof(MemberNode)}, new[]{"321"}, 3)]
+    [InlineData("(int)x", new[]{typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "x"}, 3)]
+    [InlineData("(int)(int)x", new[]{typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "int", "x"}, 6)]
+    [InlineData("!(int)!(int)x", new[]{typeof(NotNode), typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(NotNode), typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "int", "x"}, 8)]
+    [InlineData("(int)", new Type[0], new string[0], -1)]
+    [InlineData("--", new Type[0], new string[0], -1)]
+    [InlineData("(int)(1 + 1)", new []{typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(AndNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "1", "1"})]
+    [InlineData("new", new Type[0], new string[0], -1)]
+    [InlineData("new int", new Type[0], new string[0], -1)]
+    [InlineData("new int()", new[]{typeof(ConstructorNode), typeof(TypeNode), typeof(MemberNode)}, new []{"int"}, 4)]
+    [InlineData("new int(a, b)", new[]{typeof(ConstructorNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new []{"int", "a", "b"}, 8)]
+    [InlineData("\"a\"++", new[]{typeof(PostfixIncrementNode), typeof(ConstNode)}, new string[0], 1)]
+    public void TestTryParseNud(string code, Type[] treeTypeIterator, string[] memberIterator,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var parser = new PlampNativeParser(code);
+        parser.TryParseNud(out var nud);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+
+        if (nud == null)
+        {
+            Assert.Empty(treeTypeIterator);
+        }
+        else
+        {
+            var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+            visitor.Visit(nud);
+            visitor.Validate();
+        }
+    }
 }

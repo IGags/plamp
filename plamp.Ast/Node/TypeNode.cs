@@ -6,6 +6,10 @@ public record TypeNode(NodeBase TypeName, List<TypeNode> InnerGenerics) : NodeBa
 {
     public override IEnumerable<NodeBase> Visit()
     {
-        return InnerGenerics;
+        yield return TypeName;
+        foreach (var generic in InnerGenerics)
+        {
+            yield return generic;
+        }
     }
 }
