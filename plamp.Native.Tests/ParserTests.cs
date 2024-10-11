@@ -715,12 +715,20 @@ public class ParserTests
     [InlineData("!(int)!(int)x", new[]{typeof(NotNode), typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(NotNode), typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "int", "x"}, 8)]
     [InlineData("(int)", new Type[0], new string[0], -1)]
     [InlineData("--", new Type[0], new string[0], -1)]
-    [InlineData("(int)(1 + 1)", new []{typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(AndNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "1", "1"})]
+    [InlineData("(int)(1 + 1)", new []{typeof(CastNode), typeof(TypeNode), typeof(MemberNode), typeof(PlusNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "1", "1"})]
     [InlineData("new", new Type[0], new string[0], -1)]
     [InlineData("new int", new Type[0], new string[0], -1)]
     [InlineData("new int()", new[]{typeof(ConstructorNode), typeof(TypeNode), typeof(MemberNode)}, new []{"int"}, 4)]
     [InlineData("new int(a, b)", new[]{typeof(ConstructorNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(MemberNode)}, new []{"int", "a", "b"}, 8)]
     [InlineData("\"a\"++", new[]{typeof(PostfixIncrementNode), typeof(ConstNode)}, new string[0], 1)]
+    [InlineData("var", new Type[0], new string[0], -1)]
+    [InlineData("var x", new[]{typeof(VariableDefinitionNode), typeof(MemberNode)}, new[]{"x"}, 2)]
+    [InlineData("var var", new Type[0], new string[0], -1, 1, new []{ParserErrorConstants.CannotUseKeyword}, new []{4}, new []{6})]
+    [InlineData("int d", new[]{typeof(VariableDefinitionNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "d"}, 2)]
+    [InlineData("int", new[]{typeof(MemberNode)}, new[]{"int"}, 0)]
+    [InlineData("int x = 1 + 1", new[]{typeof(AssignNode), typeof(VariableDefinitionNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(PlusNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"int", "x", "1", "1"}, 10)]
+    [InlineData("var x = 1 + 1", new[]{typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(PlusNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"x", "1", "1"}, 10)]
+    [InlineData("var x=1+", new []{typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new[]{"x", "1"}, 4)]
     public void TestTryParseNud(string code, Type[] treeTypeIterator, string[] memberIterator,
         int? tokenSequencePos = null, int errorCount = 0,
         string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
@@ -754,4 +762,6 @@ public class ParserTests
             visitor.Validate();
         }
     }
+    
+    
 }

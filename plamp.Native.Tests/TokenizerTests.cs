@@ -6,7 +6,6 @@ using Xunit;
 
 namespace plamp.Native.Tests;
 
-//TODO: проверить позиции токенов
 public class TokenizerTests
 {
     [Fact]
