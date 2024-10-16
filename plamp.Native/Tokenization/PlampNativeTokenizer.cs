@@ -92,7 +92,6 @@ public static class PlampNativeTokenizer
                     TryParseEscapedSequence(code, ref position, builder, exceptions);
                     break;
                 case '\r':
-                    //TODO: range сломается, если \r на конце строки(входного кода)
                     if (code[position..(position + 2)] == EndOfLineCrlf)
                     {
                         exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
