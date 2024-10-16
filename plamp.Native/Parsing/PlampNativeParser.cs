@@ -302,10 +302,8 @@ public sealed class PlampNativeParser
             return false;
         }
 
-        if (@internal(out result))
-        {
-            return true;
-        }
+        @internal(out result);
+        AdvanceToEndOfLineAndAddException();
 
         _tokenSequence.Position = position;
         return false;
