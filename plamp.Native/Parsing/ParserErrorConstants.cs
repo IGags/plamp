@@ -15,6 +15,7 @@ public class ParserErrorConstants
     public const string ExpectedElifClause = "Expected a valid elif clause";
     public const string ExpectedElseClause = "Expected a valid else clause";
     public const string InvalidConditionBlock = "Invalid condition block";
+    public const string ExpectedExpressionInParen = "Expected expression in paren";
     public const string ExpectedConditionExpression = "Expected condition expression";
     public const string ExpectedForKeyword = "Expected for keyword";
     public const string InvalidForHeaderDefinition = "Invalid for header";

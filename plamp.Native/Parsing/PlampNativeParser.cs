@@ -299,10 +299,7 @@ public sealed class PlampNativeParser
         }
 
         @internal(out result);
-        AdvanceToEndOfLineAndAddException();
-
-        _tokenSequence.Position = position;
-        return false;
+        return true;
     }
 
     internal bool TryParseSingleLineExpression(out NodeBase expression)
@@ -495,46 +492,42 @@ public sealed class PlampNativeParser
 
     internal bool TryParseForHeader(out ForHeaderHolder headerHolder)
     {
-        var isDefinitionParsed = TryParseWithPrecedence(out var node);
-        var isKeywordParsed = TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.In,
-            () => _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedInKeyword, _tokenSequence.CurrentStart, _tokenSequence.CurrentEnd)),
+        AddExceptionWithShift<NodeBase>(ParserErrorConstants.InvalidExpression, PrecedenceWrapper, out var iteratorVar);
+        TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.In,
+            () => AddNextTokenException(
+                () => _exceptions.Add(new ParserException(
+                    ParserErrorConstants.ExpectedInKeyword, _tokenSequence.CurrentStart, _tokenSequence.CurrentEnd))),
             out _);
-        var isExpressionParsed = TryParseWithPrecedence(out var expression);
-        if (isDefinitionParsed && isExpressionParsed && isKeywordParsed)
-        {
-            headerHolder = new ForHeaderHolder(node, expression);
-            return true;
-        }
-
-        headerHolder = default;
-        return false;
+        AddExceptionWithShift<NodeBase>(ParserErrorConstants.InvalidExpression, PrecedenceWrapper, out var iterable);
+        
+        headerHolder = new ForHeaderHolder(iteratorVar, iterable);
+        return true;
     }
     
     internal bool TryParseWhileLoop(out WhileNode whileNode)
     {
         whileNode = null;
-        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.While,
-                () => _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedWhileKeyword, _tokenSequence.CurrentStart, _tokenSequence.CurrentEnd)),
-                AddUnexpectedToken<Word>, out _))
-        {
-            return false;
-        }
-
-        var isParsedPredicate = TryParseInParen<NodeBase, OpenParen, CloseParen>(PrecedenceWrapper, () =>
-        {
-            _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedConditionExpression, _tokenSequence.CurrentStart,
-                _tokenSequence.CurrentEnd));
-            return null;
-        }, out var expression);
-        AdvanceToEndOfLineAndAddException();
         
-        var isBodyParsed = TryParseBody(out var body);
-        if (isBodyParsed && isParsedPredicate)
+        if (TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.While, () => { }, out _))
         {
+            var nextErrorStart = _tokenSequence.CurrentEnd.Pos + 1;
+            if (!TryParseInParen<NodeBase, OpenParen, CloseParen>(PrecedenceWrapper, () =>
+                {
+                    _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedConditionExpression,
+                        new TokenPosition(nextErrorStart),
+                        _tokenSequence.CurrentEnd));
+                    return null;
+                }, out var expression))
+            {
+                AdvanceToFirstOfTokens([typeof(EndOfLine)]);
+            }
+            
+            AdvanceToEndOfLineAndAddException();
+            TryParseBody(out var body);
             whileNode = new WhileNode(expression, body);
             return true;
         }
-
+        
         return false;
     }
 
@@ -621,7 +614,7 @@ public sealed class PlampNativeParser
         {
             var start = _tokenSequence.CurrentStart;
             var isParsed = TryParseInParen<NodeBase, OpenParen, CloseParen>(
-                TryParsePrecedenceWrapper, () => { 
+                PrecedenceWrapper, () => { 
                     _exceptions.Add(new ParserException(ParserErrorConstants.InvalidExpression, start, _tokenSequence.CurrentEnd));
                     return null;
                 }, out var inner);
@@ -708,11 +701,6 @@ public sealed class PlampNativeParser
 
         node = null;
         return false;
-        
-        bool TryParsePrecedenceWrapper(out NodeBase node)
-        {
-            return TryParseWithPrecedence(out node);
-        }
 
         bool TryParseTypeWrapper(out TypeNode type)
         {
@@ -944,7 +932,7 @@ public sealed class PlampNativeParser
         }
         
         if (!TryConsumeNextNonWhiteSpace<TOpen>(_ => true,
-                AddUnexpectedToken<TOpen>, out _))
+                () => AddNextTokenException(AddUnexpectedToken<TOpen>), out _))
         {
             return false;
         }
@@ -1125,7 +1113,15 @@ public sealed class PlampNativeParser
 
     internal void AdvanceToEndOfLineAndAddException()
     {
-        if (_tokenSequence.Current() != null && _tokenSequence.Current().GetType() == typeof(EndOfLine))
+        if (_tokenSequence.PeekNextNonWhiteSpace() == null 
+            || _tokenSequence.PeekNextNonWhiteSpace()?.GetType() == typeof(EndOfLine))
+        {
+            _tokenSequence.GetNextToken();
+            return;
+        }
+        
+        if ((_tokenSequence.Current() == null && _tokenSequence.PeekNext() == null) 
+            || _tokenSequence.Current()?.GetType() == typeof(EndOfLine))
         {
             return;
         }
@@ -1160,13 +1156,17 @@ public sealed class PlampNativeParser
     
     internal bool AddExceptionWithShift<T>(string errorText, TryParseInternal<T> @internal, out T res)
     {
+        var tokenPos = _tokenSequence.Position;
         var unexpectedStart = _tokenSequence.CurrentStart.Pos < 0 
             ? _tokenSequence.CurrentStart : new TokenPosition(_tokenSequence.CurrentEnd.Pos + 1);
         var result = @internal(out res);
-        var endPos = new TokenPosition(_tokenSequence.CurrentEnd.Pos < 0
-            ? _tokenSequence.Position > 0 ? _tokenSequence.Last().EndPosition : -1
-            : _tokenSequence.CurrentEnd.Pos);
-        _exceptions.Add(new ParserException(errorText, unexpectedStart, endPos));
+        if (!result)
+        {
+            var endPos = new TokenPosition(_tokenSequence.CurrentEnd.Pos < 0
+                ? _tokenSequence.Position > 0 ? _tokenSequence.Last().EndPosition : -1
+                : _tokenSequence.CurrentEnd.Pos + 1);
+            _exceptions.Add(new ParserException(errorText, unexpectedStart, endPos));
+        }
         return result;
     }
     

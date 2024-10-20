@@ -6,6 +6,7 @@ using plamp.Native.Tokenization.Token;
 namespace plamp.Native.Tokenization;
 
 //TODO: Не сможет токенизировать флоты
+//TODO: Bool должен быть литералом
 public static class PlampNativeTokenizer
 {
     public const char EndOfLine = '\n';
@@ -91,6 +92,7 @@ public static class PlampNativeTokenizer
                     position++;
                     TryParseEscapedSequence(code, ref position, builder, exceptions);
                     break;
+                //TODO: range сломается, \r находится в конце исходного кода
                 case '\r':
                     if (code[position..(position + 2)] == EndOfLineCrlf)
                     {

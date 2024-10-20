@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
+using plamp.Ast.Node.Body;
 using plamp.Ast.Node.Unary;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization;
@@ -30,15 +31,18 @@ public class ParserTests
     [Theory]
     [InlineData("w", -1, 1)]
     [InlineData("w\n", -1, 1)]
-    [InlineData("", -1, 0)]
-    public void TestAdvanceToEndOfLineAndAddException(string code, int startPosition, int endPosition)
+    [InlineData("", -1, -1, false)]
+    public void TestAdvanceToEndOfLineAndAddException(string code, int startPosition, int endPosition, bool isError = true)
     {
         var parser = new PlampNativeParser(code);
         parser.AdvanceToEndOfLineAndAddException();
-        Assert.Single(parser.Exceptions);
-        Assert.Equal(ParserErrorConstants.ExpectedEndOfLine, parser.Exceptions.First().Message);
-        Assert.Equal(startPosition, parser.Exceptions.First().StartPosition);
-        Assert.Equal(endPosition, parser.Exceptions.First().EndPosition);
+        if (isError)
+        {
+            Assert.Single(parser.Exceptions);
+            Assert.Equal(ParserErrorConstants.ExpectedEndOfLine, parser.Exceptions.First().Message);
+            Assert.Equal(startPosition, parser.Exceptions.First().StartPosition);
+            Assert.Equal(endPosition, parser.Exceptions.First().EndPosition);
+        }
     }
 
     [Fact]
@@ -388,12 +392,12 @@ public class ParserTests
     [InlineData("(", false, 1, false, true, 
         true, ParserErrorConstants.ExpectedCloseParen, 1, 1)]
     [InlineData(")", false, -1, false, true,
-        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), -1, -1)]
+        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), 0, 0)]
     [InlineData("()", true, 1, true, false, false)]
     [InlineData("(w", false, 2, false, false, 
         true, ParserErrorConstants.ExpectedCloseParen, 2, 2)]
     [InlineData("w)", false, -1, false, true,
-        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), -1, -1)]
+        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), 0, 0)]
     [InlineData("(w)", true, 2, false, false, false)]
     [InlineData("(x)", false, 2, false, true, false)]
     [InlineData("(w x)", false, 4, false, false, 
@@ -403,7 +407,7 @@ public class ParserTests
     [InlineData("(\n)", false, 1, false, true, 
         true, ParserErrorConstants.ExpectedCloseParen, 1, 1)]
     [InlineData("\n)", false, -1, false, true,
-        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), -1, -1)]
+        true, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen), 0, 0)]
     [InlineData("", false, -1, false, true,
         false, null, 0, 0, false)]
     [InlineData("(w", false, 1, false, false,
@@ -806,7 +810,16 @@ public class ParserTests
     }
 
     [Theory]
-    [InlineData()]
+    [InlineData("", new Type[0], new string[0], false, -1)]
+    [InlineData("while", new []{typeof(WhileNode), typeof(BodyNode)}, new string[0], true, 1, 1, new []{$"{ParserErrorConstants.UnexpectedTokenPrefix} {nameof(OpenParen)}"}, new []{5}, new []{5})]
+    [InlineData("while()", new []{typeof(WhileNode), typeof(BodyNode)}, new string[0], true, 3, 1, new[]{ParserErrorConstants.ExpectedConditionExpression}, new[]{5}, new[]{6})]
+    [InlineData("while(a==1)", new []{typeof(WhileNode), typeof(EqualNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new []{"a", "1"}, true, 6)]
+    [InlineData("while(a==1)\n", new []{typeof(WhileNode), typeof(EqualNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new []{"a", "1"}, true, 6)]
+    [InlineData("while(a==1)\n    var x=0", new []{typeof(WhileNode), typeof(EqualNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode), typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new []{"a", "1", "x", "0"}, true, 13)]
+    [InlineData("while(a==1,5+11)\n    var x=0", new []{typeof(WhileNode), typeof(EqualNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode), typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new []{"a", "1", "x", "0"},true, 17, 1, new[]{ParserErrorConstants.ExpectedCloseParen}, new[]{10}, new[]{14})]
+    [InlineData("while()\n    var x=0", new []{typeof(WhileNode), typeof(BodyNode), typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new []{"x", "0"}, true, 10, 1, new[]{ParserErrorConstants.ExpectedConditionExpression}, new[]{5}, new[]{6})]
+    [InlineData("while\n    var x=0", new []{typeof(WhileNode), typeof(BodyNode), typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new []{"x", "0"}, true, 8, 1, new []{$"{ParserErrorConstants.UnexpectedTokenPrefix} {nameof(OpenParen)}"}, new []{5}, new []{5})]
+    [InlineData("while(a==1)555\n    var x=0", new []{typeof(WhileNode), typeof(EqualNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode), typeof(AssignNode), typeof(VariableDefinitionNode), typeof(MemberNode), typeof(MemberNode)}, new []{"a", "1", "x", "0"}, true, 14, 1, new[]{ParserErrorConstants.ExpectedEndOfLine}, new[]{11}, new[]{14})]
     public void TestTryParseWhile(
         string code, Type[] treeTypeIterator, string[] memberIterator, bool expectedResult,
         int? tokenSequencePos = null, int errorCount = 0,
@@ -840,6 +853,50 @@ public class ParserTests
             var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
             visitor.Visit(whileNode);
             visitor.Validate();
+        }
+    }
+
+    [Theory]
+    [InlineData("", true, true, -1, 3, new []{ParserErrorConstants.InvalidExpression, ParserErrorConstants.ExpectedInKeyword, ParserErrorConstants.InvalidExpression}, new[]{-1, -1, -1}, new []{0,0,0})]
+    [InlineData("var t", true, false, 2, 1, new []{ParserErrorConstants.ExpectedInKeyword}, new[]{5}, new []{5})]
+    [InlineData("var t in", true, false, 4)]
+    [InlineData("var t in d", false, false, 6)]
+    [InlineData("in d", false, true, 2, 1, new []{ParserErrorConstants.InvalidExpression}, new[]{-1}, new []{-1})]
+    [InlineData("in", true, true, 0, 2, new []{ParserErrorConstants.InvalidExpression, ParserErrorConstants.InvalidExpression}, new[]{-1, 1}, new []{-1, 1})]
+    [InlineData("var t d", false, false, 4, 1, new []{ParserErrorConstants.ExpectedInKeyword}, new[]{6}, new []{6})]
+    public void TestTryParseForHeader(string code, bool isIterableNull, bool isIteratorNull, int resultPosition, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var parser = new PlampNativeParser(code);
+        parser.TryParseForHeader(out var holder);
+        if (isIterableNull)
+        {
+            Assert.Null(holder.Iterable);
+        }
+        else
+        {
+            Assert.NotNull(holder.Iterable);
+        }
+        
+        if (isIteratorNull)
+        {
+            Assert.Null(holder.IteratorVar);
+        }
+        else
+        {
+            Assert.NotNull(holder.IteratorVar);
+        }
+        
+        Assert.Equal(resultPosition, parser.TokenSequence.Position);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
         }
     }
 }
