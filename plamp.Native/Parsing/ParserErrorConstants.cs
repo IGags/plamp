@@ -7,10 +7,11 @@ public class ParserErrorConstants
     public const string ExpectedEndOfLine = "Expected end of line";
     public const string ExpectedUseStatement = "Expected use statement";
     public const string ExpectedDefStatement = "Expected def statement";
-    public const string ExpectedParameter = "Expected a valid parameter defenition";
-    public const string ExpectedWordPartTypeName = "Expected word (part of a type name)";
+    public const string ExpectedParameterName = "Expected a valid parameter name";
+    public const string InvalidTypeName = "Invalid type name";
     public const string ExpectedInnerGenerics = "Empty generic definition";
-    public const string ExpectedBodyLevelKeyword = "Expected body-level keyword (like: return, continue, break, for, if, while)";
+    public const string ExpectedType = "Expected type name";
+    public const string ExpectedBodyLevelExpression = "Expected body-level expression (like: return, continue, break, for, if, while, assign, call)";
     public const string ExpectedIfKeyword = "Expected if keyword";
     public const string ExpectedElifClause = "Expected a valid elif clause";
     public const string ExpectedElseClause = "Expected a valid else clause";
