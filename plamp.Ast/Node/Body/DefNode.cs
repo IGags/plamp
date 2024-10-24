@@ -8,9 +8,12 @@ public record DefNode(TypeNode ReturnType, MemberNode Name, List<ParameterNode> 
     {
         yield return ReturnType;
         yield return Name;
-        foreach (var parameter in ParameterList)
+        if (ParameterList != null)
         {
-            yield return parameter;
+            foreach (var parameter in ParameterList)
+            {
+                yield return parameter;
+            }
         }
 
         yield return Body;

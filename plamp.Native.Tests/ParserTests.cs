@@ -1289,4 +1289,203 @@ public class ParserTests
             visitor.Validate();
         }
     }
+
+    [Theory]
+    [InlineData("", new []{typeof(BodyNode)}, new string[0], -1)]
+    [InlineData("\n", new []{typeof(BodyNode)}, new string[0], -1)]
+    [InlineData("    \n", new []{typeof(BodyNode), typeof(EmptyNode)}, new string[0], 2)]
+    [InlineData("    \n12", new []{typeof(BodyNode), typeof(EmptyNode)}, new string[0], 1)]
+    [InlineData("    \n    \n", new []{typeof(BodyNode), typeof(EmptyNode), typeof(EmptyNode)}, new string[0], 4)]
+    [InlineData("        \n", new []{typeof(BodyNode), typeof(EmptyNode)}, new string[0], 3)]
+    [InlineData("        \n    \n", new []{typeof(BodyNode), typeof(EmptyNode), typeof(EmptyNode)}, new string[0], 5)]
+    public void TestTryParseBody(string code, Type[] treeTypeIterator, string[] memberIterator, int? tokenSequencePos = null)
+    {
+        var parser = new PlampNativeParser(code);
+        var actualResult = parser.TryParseBody(out var node);
+        Assert.True(actualResult);
+        Assert.Empty(parser.Exceptions);
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+        
+        if (node == null)
+        {
+            Assert.Empty(treeTypeIterator);
+        }
+        else
+        {
+            var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+            visitor.Visit(node);
+            visitor.Validate();
+        }
+    }
+
+    [Theory]
+    [InlineData("", new Type[0], new string[0], false, -1)]
+    [InlineData("var", new Type[0], new string[0], false, -1)]
+    [InlineData("def", new []{typeof(DefNode), typeof(BodyNode)}, new string[0], true, 1, 
+        2, new[]{ParserErrorConstants.ExpectedFunctionName, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen)}, new[]{3, 3}, new[]{3, 3})]
+    [InlineData("def int", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(BodyNode)}, new[]{"int"}, true, 3,
+        2, new[]{ParserErrorConstants.ExpectedFunctionName, ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen)}, new[]{7, 7}, new[]{7, 7})]
+    [InlineData("def()", new[]{typeof(DefNode), typeof(BodyNode)}, new string[0], true, 3,
+        1, new[]{ParserErrorConstants.ExpectedFunctionName}, new[]{3}, new[]{3})]
+    [InlineData("def int()", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(BodyNode)}, new[]{"int"}, true, 5,
+        1, new[]{ParserErrorConstants.ExpectedFunctionName}, new[]{7}, new[]{7})]
+    [InlineData("def int call", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new[]{"int", "call"}, true, 5,
+        1, new[]{ParserErrorConstants.UnexpectedTokenPrefix + " " + nameof(OpenParen)}, new[]{12}, new[]{12})]
+    [InlineData("def int call()", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new[]{"int", "call"}, true, 7)]
+    [InlineData("def int call()555", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new[]{"int", "call"}, true, 8,
+        1, new[]{ParserErrorConstants.ExpectedEndOfLine}, new []{14}, new[]{17})]
+    public void TestTryParseFunction(string code, Type[] treeTypeIterator, string[] memberIterator, bool expectedResult,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var parser = new PlampNativeParser(code);
+        var actualResult = parser.TryParseFunction(out var node);
+        Assert.Equal(expectedResult, actualResult);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+        
+        if (node == null)
+        {
+            Assert.Empty(treeTypeIterator);
+        }
+        else
+        {
+            var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+            visitor.Visit(node);
+            visitor.Validate();
+        }
+    }
+
+    [Theory]
+    [InlineData("", new Type[0], new string[0], false, -1)]
+    [InlineData("var", new Type[0], new string[0], false, -1)]
+    [InlineData("use", new Type[0], new string[0], false, 1,
+         1, new[]{ParserErrorConstants.InvalidAssemblyName}, new[]{3}, new[]{3})]
+    [InlineData("use System", new []{typeof(UseNode), typeof(MemberNode)}, new []{"System"}, true, 3)]
+    [InlineData("use var", new Type[0], new string[0], false, 3,
+        2, new[]{ParserErrorConstants.InvalidAssemblyName, ParserErrorConstants.ExpectedEndOfLine}, new[]{3, 3}, new[]{6, 7})]
+    [InlineData("use System.Collections", new []{typeof(UseNode), typeof(MemberNode)}, new []{"System.Collections"}, true, 5)]
+    [InlineData("use System.", new []{typeof(UseNode), typeof(MemberNode)}, new []{"System"}, true, 4,
+        1, new[]{ParserErrorConstants.InvalidAssemblyName}, new[]{3}, new[]{10})]
+    [InlineData("use System 555", new []{typeof(UseNode), typeof(MemberNode)}, new []{"System"}, true, 5,
+        1, new[]{ParserErrorConstants.ExpectedEndOfLine}, new[]{10}, new[]{14})]
+    public void TestTryParseUsing(string code, Type[] treeTypeIterator, string[] memberIterator, bool expectedResult,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var parser = new PlampNativeParser(code);
+        var actualResult = parser.TryParseUsing(out var node);
+        Assert.Equal(expectedResult, actualResult);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+        
+        if (node == null)
+        {
+            Assert.Empty(treeTypeIterator);
+        }
+        else
+        {
+            var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+            visitor.Visit(node);
+            visitor.Validate();
+        }
+    }
+    
+    [Theory]
+    [InlineData("", false, true, -1)]
+    [InlineData("x", false, true, -1)]
+    [InlineData("\n", true, false, 0)]
+    [InlineData("\nx", true, false, 0)]
+    public void TestTryParseEmpty(string code, bool result, bool isNull, int resultPosition)
+    {
+        var parser = new PlampNativeParser(code);
+        var actualResult = parser.TryParseEmpty(out var node);
+        Assert.Equal(result, actualResult);
+        if (isNull)
+        {
+            Assert.Null(node);
+        }
+        else
+        {
+            Assert.Equal(typeof(EmptyNode), node.GetType());
+        }
+        Assert.Empty(parser.Exceptions);
+        Assert.Equal(resultPosition, parser.TokenSequence.Position);
+    }
+
+    [Theory]
+    [InlineData("", new Type[0], new string[0], false, -1)]
+    [InlineData("\n", new []{typeof(EmptyNode)}, new string[0], true, 0)]
+    [InlineData("    \n", new []{typeof(EmptyNode)}, new string[0], true, 1)]
+    [InlineData("var x=3", new Type[0], new string[0], false, 5,
+        1, new []{ParserErrorConstants.ExpectedTopLevel}, new[]{-1}, new[]{7})]
+    [InlineData("use System", new []{typeof(UseNode), typeof(MemberNode)}, new[]{"System"}, true, 3)]
+    [InlineData("    use System", new []{typeof(UseNode), typeof(MemberNode)}, new[]{"System"}, true, 4)]
+    [InlineData("    def int call()\n    return 0", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode)}, new []{"int", "call"}, true, 8)]
+    [InlineData("def int call()\n    return 0", new[]{typeof(DefNode), typeof(TypeNode), typeof(MemberNode), typeof(MemberNode), typeof(BodyNode), typeof(ReturnNode), typeof(MemberNode)},
+        new []{"int", "call", "0"}, true, 12)]
+    public void TestTryParseTopLevel(string code, Type[] treeTypeIterator, string[] memberIterator, bool expectedResult,
+        int? tokenSequencePos = null, int errorCount = 0,
+        string[] errorTextList = null, int[] errorStartPosList = null, int[] errorEndPosList = null)
+    {
+        var parser = new PlampNativeParser(code);
+        var actualResult = parser.TryParseTopLevel(out var node);
+        Assert.Equal(expectedResult, actualResult);
+        Assert.Equal(errorCount, parser.Exceptions.Count);
+        if (errorCount != 0)
+        {
+            for (int i = 0; i < parser.Exceptions.Count; i++)
+            {
+                Assert.Equal(errorTextList[i], parser.Exceptions[i].Message);
+                Assert.Equal(errorStartPosList[i], parser.Exceptions[i].StartPosition);
+                Assert.Equal(errorEndPosList[i], parser.Exceptions[i].EndPosition);
+            }
+        }
+
+        if (tokenSequencePos != null)
+        {
+            Assert.Equal(tokenSequencePos, parser.TokenSequence.Position);
+        }
+        
+        if (node == null)
+        {
+            Assert.Empty(treeTypeIterator);
+        }
+        else
+        {
+            var visitor = new TypeTreeVisitor(treeTypeIterator, memberIterator.ToList());
+            visitor.Visit(node);
+            visitor.Validate();
+        }
+    }
 }

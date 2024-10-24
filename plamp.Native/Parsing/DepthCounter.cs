@@ -5,8 +5,8 @@ namespace plamp.Native.Parsing;
 internal sealed class DepthCounter
 {
     private int _depth;
-    
-    internal DepthCounter(int depth)
+
+    private DepthCounter(int depth)
     {
         if (depth < 0)
         {

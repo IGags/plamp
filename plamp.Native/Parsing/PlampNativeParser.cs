@@ -52,9 +52,10 @@ public sealed class PlampNativeParser
 
         var expressionList = new List<NodeBase>();
 
-        while (_tokenSequence.Current() != null && _tokenSequence.PeekNext() != null)
+        while (_tokenSequence.Current() != null || _tokenSequence.PeekNext() != null)
         {
-            if (TryParseTopLevel(out var node))
+            TryParseTopLevel(out var node);
+            if (node != null)
             {
                 expressionList.Add(node);
             }
@@ -65,47 +66,58 @@ public sealed class PlampNativeParser
     
     internal bool TryParseTopLevel(out NodeBase resultNode)
     {
-        var currentStart = _tokenSequence.CurrentStart;
         resultNode = null;
+        if (_tokenSequence.PeekNext() == null)
+        {
+            return false;
+        }
+        var currentStart = _tokenSequence.CurrentStart;
+        
+        if (TryParseScopedWithDepth<EmptyNode>(TryParseEmpty, out var empty, isStrict: true))
+        {
+            resultNode = empty;
+            return true;
+        }
+
+        var handleList = new List<DepthHandle>();
+        while (_tokenSequence.PeekNext()?.GetType() == typeof(Scope))
+        {
+            _tokenSequence.GetNextToken();
+            handleList.Add(_depth.EnterNewScope());    
+        }
+
+        handleList.Reverse();
+        
         var token = _tokenSequence.PeekNextNonWhiteSpace();
         if (token is Word word)
         {
-            //TODO: Empty не будет вызван никогда
             switch (word.ToKeyword())
             {
                 case Keywords.Def:
-                    if (!TryParseFunction(out var defNode))
-                    {
-                        return false;
-                    }
-
+                    var defRes = TryParseFunction(out var defNode);
                     resultNode = defNode;
-                    return true;
-
+                    DisposeHandles();
+                    return defRes;
                 case Keywords.Use:
-                    if (!TryParseUsing(out var useNode))
-                    {
-                        return false;
-                    }
-
+                    var useRes = TryParseUsing(out var useNode);
                     resultNode = useNode;
-                    return true;
-
-                default:
-                    if (TryParseScopedWithDepth<EmptyNode>(TryParseEmpty, out var node, _depth))
-                    {
-                        resultNode = node;
-                        return true;
-                    }
-
-                    break;
+                    DisposeHandles();
+                    return useRes;
             }
-
         }
 
         AdvanceToRequestedToken<EndOfLine>();
         _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedTopLevel, currentStart, _tokenSequence.CurrentEnd));
+        DisposeHandles();
         return false;
+
+        void DisposeHandles()
+        {
+            foreach (var handle in handleList)
+            {
+                handle.Dispose();
+            }
+        }
     }
 
     internal bool TryParseEmpty(out EmptyNode node)
@@ -123,62 +135,52 @@ public sealed class PlampNativeParser
     internal bool TryParseUsing(out UseNode node)
     {
         node = null;
-        var currentStart = _tokenSequence.CurrentStart;
-        if (TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Use, () => { }, out _))
+        if (!TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Use, () => { }, out _))
         {
-            if (TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(
-                    x => x.ToKeyword() == Keywords.Unknown, 
-                    AddKeywordException, 
-                    () => _exceptions.Add(
-                        new ParserException(ParserErrorConstants.ExpectedAssemblyName, _tokenSequence.CurrentStart, _tokenSequence.CurrentEnd)), 
-                    out var word))
-            {
-                if (TryConsumeNextNonWhiteSpaceWithoutRollback<EndOfLine>(_ => true,
-                        () => { }, () => { }, out _))
-                {
-                    node = new UseNode(new MemberNode(word.GetString()));
-                    return true;
-                }
-                AdvanceToRequestedToken<EndOfLine>();
-                AddParserException(ParserErrorConstants.ExpectedEndOfLine);
-                return false;
-            }
-            AdvanceToRequestedToken<EndOfLine>();
             return false;
         }
-        AddParserException(ParserErrorConstants.ExpectedUseStatement);
-        return false;
-        void AddParserException(string expected) => _exceptions.Add(new ParserException(expected, currentStart, _tokenSequence.CurrentEnd));
+        
+        var use = ParseDotSeparatedName(ParserErrorConstants.InvalidAssemblyName, true);
+        if (use == null)
+        {
+            AdvanceToEndOfLineAndAddException();
+            return false;
+        }
+
+        node = new UseNode(new MemberNode(use));
+        AdvanceToEndOfLineAndAddException();
+        return true;
     }
 
     internal bool TryParseFunction(out DefNode node)
     {
-        var start = _tokenSequence.CurrentStart;
         node = null;
-        if (!TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(x => x.ToKeyword() == Keywords.Def, AddKeywordException, () => {}, out _))
+        if (_tokenSequence.PeekNextNonWhiteSpace() == null 
+            || !TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Def, () => { }, out _))
         {
-            AddParserException(ParserErrorConstants.ExpectedDefStatement);
             return false;
         }
-
-        var isGetReturnType = TryParseType(out var typeNode);
-        var isGetName = TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown, AddKeywordException, out var word);
-
-        var isGetArgs =
-            TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
-                WrapParseCommaSeparated<ParameterNode>(TryParseParameter),
-                () => [], out var parameterNodes);
-        AdvanceToEndOfLineAndAddException();
         
-        var isParsedBody = TryParseBody(out var body);
-        if (isGetReturnType && isGetName && isGetArgs && isParsedBody)
+        TryParseType(out var typeNode, true);
+        var next = _tokenSequence.PeekNextNonWhiteSpace();
+        Word word = null;
+        if (next == null || next.GetType() != typeof(Word))
         {
-            node = new DefNode(typeNode, new MemberNode(word.GetString()), parameterNodes, body);
-            return true;
+            AddNextTokenException(() => _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedFunctionName,
+                _tokenSequence.CurrentStart, _tokenSequence.CurrentEnd)));
         }
-
-        return false;
-        void AddParserException(string expected) => _exceptions.Add(new ParserException(expected, start, _tokenSequence.CurrentEnd));
+        else
+        {
+            TryConsumeNextNonWhiteSpace(x => x.ToKeyword() == Keywords.Unknown, () => AddNextTokenException(AddKeywordException), out word);
+        }
+        
+        TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
+            WrapParseCommaSeparated<ParameterNode>(TryParseParameter),
+            () => [], out var parameterNodes);
+        AdvanceToEndOfLineAndAddException();
+        TryParseBody(out var body);
+        node = new DefNode(typeNode, word == null ? null : new MemberNode(word.GetString()), parameterNodes, body);
+        return true;
     }
 
     internal bool TryParseBody(out BodyNode body)
@@ -205,7 +207,7 @@ public sealed class PlampNativeParser
             return false;
         }
         
-        TryParseType(out var type);
+        TryParseType(out var type, true);
         peek = _tokenSequence.PeekNextNonWhiteSpace();
         if (peek is null || peek.GetType() != typeof(Word))
         {
@@ -228,44 +230,21 @@ public sealed class PlampNativeParser
     internal bool TryParseType(out TypeNode typeNode, bool isAddException = false)
     {
         typeNode = null;
-        StringBuilder last = null;
+        
         var peek = _tokenSequence.PeekNextNonWhiteSpace();
         if (peek == null || peek.GetType() != typeof(Word))
         {
             return false;
         }
-        
-        var definitionStart = new TokenPosition(_tokenSequence.CurrentEnd.Pos + 1);
-        while (TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown, () =>
-               {
-                   if (isAddException)
-                   {
-                       _exceptions.Add(new ParserException(ParserErrorConstants.InvalidTypeName, definitionStart, _tokenSequence.CurrentEnd));
-                   }
-               }, out var word))
-        {
-            if (last == null)
-            {
-                last = new StringBuilder();
-                last.Append(word.GetString());
-            }
-            else
-            {
-                last.Append($".{word.GetString()}");
-            }
-            
-            if (!TryConsumeNextNonWhiteSpace<Operator>(x => x.ToOperator() == OperatorEnum.Call, () => { }, out _))
-            {
-                break;
-            }
-        }
+
+        var last = ParseDotSeparatedName(ParserErrorConstants.InvalidTypeName, isAddException);
 
         if (last == null)
         {
             return false;
         }
         
-        var typeName = new MemberNode(last.ToString());
+        var typeName = new MemberNode(last);
         var next = _tokenSequence.PeekNextNonWhiteSpace();
         if (next is not OpenAngleBracket)
         {
@@ -1216,6 +1195,41 @@ public sealed class PlampNativeParser
     private bool PrecedenceWrapper(out NodeBase inner)
     {
         return TryParseWithPrecedence(out inner);
+    }
+
+    private string ParseDotSeparatedName(string exception, bool isAddException)
+    {
+        StringBuilder last = null;
+        var pos = _tokenSequence.Position;
+        var definitionStart = new TokenPosition(_tokenSequence.CurrentEnd.Pos + 1);
+        while (TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown, () =>
+               {
+                   if (isAddException)
+                   {
+                       var end = _tokenSequence.Position == pos
+                           ? new TokenPosition(_tokenSequence.PeekNextNonWhiteSpace()?.EndPosition ?? definitionStart.Pos)
+                           : _tokenSequence.CurrentEnd;
+                       _exceptions.Add(new ParserException(exception, definitionStart, end));
+                   }
+               }, out var word))
+        {
+            if (last == null)
+            {
+                last = new StringBuilder();
+                last.Append(word.GetString());
+            }
+            else
+            {
+                last.Append($".{word.GetString()}");
+            }
+            
+            if (!TryConsumeNextNonWhiteSpace<Operator>(x => x.ToOperator() == OperatorEnum.Call, () => { }, out _))
+            {
+                break;
+            }
+        }
+
+        return last?.ToString();
     }
     
     #endregion
