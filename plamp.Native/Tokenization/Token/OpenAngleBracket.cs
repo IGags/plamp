@@ -2,7 +2,7 @@
 
 public class OpenAngleBracket : Operator
 {
-    public OpenAngleBracket(int position) : base("<", position)
+    public OpenAngleBracket(string bracket, TokenPosition start, TokenPosition end) : base("<", start, end)
     {
     }
 }

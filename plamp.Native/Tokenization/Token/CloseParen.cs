@@ -2,7 +2,5 @@
 
 public class CloseParen : TokenBase
 {
-    public CloseParen(int position) : base(position, position) {}
-    
-    public override string GetString() => ")";
+    public CloseParen(TokenPosition start, TokenPosition end) : base(start, end, ")") {}
 }

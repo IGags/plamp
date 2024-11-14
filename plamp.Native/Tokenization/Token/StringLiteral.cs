@@ -2,12 +2,5 @@
 
 public class StringLiteral : TokenBase
 {
-    private readonly string _value;
-
-    public StringLiteral(string value, int position, int end) : base(position, end)
-    {
-        _value = value;
-    }
-
-    public override string GetString() => _value;
+    public StringLiteral(string value, TokenPosition start, TokenPosition end) : base(start, end, value) { }
 }

@@ -2,9 +2,9 @@
 
 public class CloseSquareBracket : TokenBase
 {
-    public CloseSquareBracket(int position) : base(position, position)
+    public CloseSquareBracket(TokenPosition start, TokenPosition end) : base(start, end, "]")
     {
     }
 
-    public override string GetString() => "]";
+    public override string GetStringRepresentation() => "]";
 }

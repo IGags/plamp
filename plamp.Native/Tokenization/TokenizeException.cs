@@ -4,10 +4,10 @@ namespace plamp.Native.Tokenization;
 
 public class TokenizeException : Exception
 {
-    public int StartPosition { get; }
-    public int EndPosition { get; }
+    public TokenPosition StartPosition { get; }
+    public TokenPosition EndPosition { get; }
 
-    public TokenizeException(string message, int startPosition, int endPosition) : base(message)
+    public TokenizeException(string message, TokenPosition startPosition, TokenPosition endPosition) : base(message)
     {
         StartPosition = startPosition;
         EndPosition = endPosition;

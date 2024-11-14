@@ -7,7 +7,7 @@ public static class OperatorTranslator
 {
     public static OperatorEnum ToOperator(this Operator token)
     {
-        return token.GetString() switch
+        return token.GetStringRepresentation() switch
         {
             "+" => OperatorEnum.Plus,
             "-" => OperatorEnum.Minus,

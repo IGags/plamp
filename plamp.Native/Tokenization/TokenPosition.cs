@@ -1,3 +1,6 @@
 ﻿namespace plamp.Native.Tokenization;
 
-public record TokenPosition(int Pos);
+/// <summary>
+/// Позиция в файле
+/// </summary>
+public record struct TokenPosition(int Row, int Column);

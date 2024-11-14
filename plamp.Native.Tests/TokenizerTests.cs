@@ -87,10 +87,10 @@ public class TokenizerTests
         Assert.Empty(result.Exceptions);
         if (inline != null)
         {
-            Assert.Equal(inline, result.Sequence.First().GetString());
+            Assert.Equal(inline, result.Sequence.First().GetStringRepresentation());
         }
-        Assert.Equal(0, result.Sequence.First().StartPosition);
-        Assert.Equal(code.Length - 1, result.Sequence.First().EndPosition);
+        Assert.Equal(0, result.Sequence.First().Start);
+        Assert.Equal(code.Length - 1, result.Sequence.First().End);
     }
 
     [Theory]
@@ -138,7 +138,7 @@ public class TokenizerTests
         Assert.Equal(2, result.Sequence.Count());
         Assert.Empty(result.Exceptions);
         Assert.IsType<WhiteSpace>(result.Sequence.TokenList[1]);
-        Assert.Equal("\t", result.Sequence.TokenList[1].GetString());
+        Assert.Equal("\t", result.Sequence.TokenList[1].GetStringRepresentation());
     }
     
     [Theory]
@@ -174,14 +174,14 @@ public class TokenizerTests
         Assert.Equal(1, result.Exceptions.First().EndPosition);
         Assert.Equal(3, result.Sequence.Count());
         Assert.IsType<StringLiteral>(result.Sequence.TokenList[0]);
-        Assert.Equal(0, result.Sequence.TokenList[0].StartPosition);
-        Assert.Equal(1, result.Sequence.TokenList[0].EndPosition);
+        Assert.Equal(0, result.Sequence.TokenList[0].Start);
+        Assert.Equal(1, result.Sequence.TokenList[0].End);
         Assert.IsType<EndOfLine>(result.Sequence.TokenList[1]);
-        Assert.Equal(2, result.Sequence.TokenList[1].StartPosition);
-        Assert.Equal(2, result.Sequence.TokenList[1].EndPosition);
+        Assert.Equal(2, result.Sequence.TokenList[1].Start);
+        Assert.Equal(2, result.Sequence.TokenList[1].End);
         Assert.IsType<Word>(result.Sequence.TokenList[2]);
-        Assert.Equal(3, result.Sequence.TokenList[2].StartPosition);
-        Assert.Equal(3, result.Sequence.TokenList[2].EndPosition);
+        Assert.Equal(3, result.Sequence.TokenList[2].Start);
+        Assert.Equal(3, result.Sequence.TokenList[2].End);
     }
 
     [Fact] 
@@ -194,14 +194,14 @@ public class TokenizerTests
         Assert.Equal(1, result.Exceptions.First().EndPosition);
         Assert.Equal(3, result.Sequence.Count());
         Assert.IsType<StringLiteral>(result.Sequence.TokenList[0]);
-        Assert.Equal(0, result.Sequence.TokenList[0].StartPosition);
-        Assert.Equal(1, result.Sequence.TokenList[0].EndPosition);
+        Assert.Equal(0, result.Sequence.TokenList[0].Start);
+        Assert.Equal(1, result.Sequence.TokenList[0].End);
         Assert.IsType<EndOfLine>(result.Sequence.TokenList[1]);
-        Assert.Equal(2, result.Sequence.TokenList[1].StartPosition);
-        Assert.Equal(3, result.Sequence.TokenList[1].EndPosition);
+        Assert.Equal(2, result.Sequence.TokenList[1].Start);
+        Assert.Equal(3, result.Sequence.TokenList[1].End);
         Assert.IsType<Word>(result.Sequence.TokenList[2]);
-        Assert.Equal(4, result.Sequence.TokenList[2].StartPosition);
-        Assert.Equal(4, result.Sequence.TokenList[2].EndPosition);
+        Assert.Equal(4, result.Sequence.TokenList[2].Start);
+        Assert.Equal(4, result.Sequence.TokenList[2].End);
     }
 
     [Theory]
@@ -218,10 +218,10 @@ public class TokenizerTests
         var position = 0;
         for (; position < code.Length;)
         {
-            var token = tokenSequence.Sequence.FirstOrDefault(x => x.StartPosition == position);
+            var token = tokenSequence.Sequence.FirstOrDefault(x => x.Start == position);
             var error = tokenSequence.Exceptions.FirstOrDefault(x => x.StartPosition == position);
             Assert.False(token == null && error == null);
-            position = (token?.EndPosition ?? error.EndPosition) + 1;
+            position = (token?.End ?? error.EndPosition) + 1;
         }
         Assert.Equal(position, code.Length);
     }

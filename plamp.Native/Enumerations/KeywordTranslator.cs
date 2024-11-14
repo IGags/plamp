@@ -6,7 +6,7 @@ public static class KeywordTranslator
 {
     public static Keywords ToKeyword(this Word word)
     {
-        return word.GetString().ToKeyword();
+        return word.GetStringRepresentation().ToKeyword();
     }
     
     public static Keywords ToKeyword(this string word)

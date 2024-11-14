@@ -2,7 +2,7 @@
 
 public class CloseAngleBracket : Operator
 {
-    public CloseAngleBracket(int position) : base(">", position)
+    public CloseAngleBracket(string token, TokenPosition start, TokenPosition end) : base(token, start, end)
     {
     }
 }

@@ -1,16 +1,39 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using plamp.Native.Enumerations;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
 
-//TODO: Не сможет токенизировать флоты
-//TODO: Bool должен быть литералом
-public static class PlampNativeTokenizer
+public static partial class PlampNativeTokenizer
 {
-    public const char EndOfLine = '\n';
+    private readonly record struct Row(int Number, string Value) : IEnumerable<char>
+    {
+        public int Length => Value.Length;
+        public char this[int index] => Value[index];
+
+        public string this[Range index] => Value[index];
+        
+        public IEnumerator<char> GetEnumerator()
+        {
+            return Value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    private const string EndOfLine = "\n";
     public const string EndOfLineCrlf = "\r\n";
+    
+    [GeneratedRegex($"(?:{EndOfLineCrlf}|{EndOfLine})")]
+    private static partial Regex EndOfLineRegex();
     
     public static TokenizationResult Tokenize(this string code)
     {
@@ -19,20 +42,35 @@ public static class PlampNativeTokenizer
             return new TokenizationResult(new TokenSequence([]), []);
         }
         
+        var rows = EndOfLineRegex().Split(code);
+        var prepared = rows.Select((t, i) => new Row(i, t));
+
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<TokenizeException>();
-        for(var i = 0; i < code.Length;)
+        
+        foreach (var row in prepared)
         {
-            if (char.IsLetterOrDigit(code[i]))
+            TokenizeSingleRow(row, tokenList, exceptionList);
+        }
+        
+        return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
+    }
+
+    private static void TokenizeSingleRow(Row row, List<TokenBase> tokenList, List<TokenizeException> exceptionList)
+    {
+        for(var i = 0; i < row.Value.Length;)
+        {
+            if (char.IsLetter(row[i]))
             {
-                if (TryParseWord(code, ref i, out var word, exceptionList))
-                {
-                    tokenList.Add(word);
-                }
+                tokenList.Add(ParseWord(row, ref i));
             }
-            else if (code[i] == '"')
+            else if(char.IsDigit(row[i]))
             {
-                var literal = ParseLiteral(code, ref i, exceptionList);
+                tokenList.Add(ParseNumber(row, ref i));                
+            }
+            else if (row[i] == '"')
+            {
+                var literal = ParseStringLiteral(row, ref i, exceptionList);
                 if (literal != null)
                 {
                     tokenList.Add(literal);
@@ -40,83 +78,138 @@ public static class PlampNativeTokenizer
             }
             else
             {
-                if (TryParseCustom(code, ref i, tokenList.LastOrDefault(), out var result, exceptionList))
+                if (TryParseCustom(row, ref i, out var result, exceptionList))
                 {
                     tokenList.Add(result);
                 }
             }
         }
         
-        return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
+        //Похоже на костыль
+        var start = new TokenPosition(row.Number, row.Length);
+        var end = new TokenPosition(row.Number, row.Length + EndOfLineCrlf.Length - 1);
+        tokenList.Add(new EndOfLine(EndOfLineCrlf, start, end));    
     }
 
-    private static bool TryParseWord(string code, ref int position, out Word word, List<TokenizeException> exceptions)
+    private static NumberLiteral ParseNumber(Row row, ref int position)
     {
-        word = null;
         var builder = new StringBuilder();
-        var start = position;
-        for (; position < code.Length; position++)
+        var startPosition = new TokenPosition(row.Number, position);
+        var isFractional = false;
+        do
         {
-            if (char.IsLetterOrDigit(code[position]))
+            if (char.IsDigit(row[position]))
             {
-                builder.Append(code[position]);
+                builder.Append(row[position]);
+                position++;
+            }
+            else if(!isFractional && row[position] == '.' 
+                                  && position + 1 < row.Length 
+                                  && char.IsDigit(row[position + 1]))
+            {
+                isFractional = true;
+                builder.Append(row[position]);
             }
             else
             {
-                word = new Word(builder.ToString(), start);
-                return true;
+                break;
+            }
+        } while (position < row.Length);
+
+        while (position < row.Length)
+        {
+            if (char.IsLetter(row[position]))
+            {
+                builder.Append(row[position]);
+                position++;
+            }
+            else
+            {
+                break;
             }
         }
-        word = new Word(builder.ToString(), start);
-        return true;
+
+        var endPosition = new TokenPosition(row.Number, position - 1);
+        return new NumberLiteral(builder.ToString(), startPosition, endPosition);
+    }
+    
+    private static TokenBase ParseWord(Row row, ref int position)
+    {
+        var builder = new StringBuilder();
+        var startPosition = new TokenPosition(row.Number, position);
+        do
+        {
+            if (char.IsLetterOrDigit(row[position]))
+            {
+                builder.Append(row[position]);
+                position++;
+            }
+            else
+            {
+                break;
+            }
+        } while (position < row.Length);
+        
+        var endPosition = new TokenPosition(row.Number, position - 1);
+        var word = builder.ToString();
+        
+        if (word.ToKeyword() != Keywords.Unknown)
+        {
+            return new KeywordToken(word, startPosition, endPosition, word.ToKeyword());
+        }
+        return new Word(word, startPosition, endPosition);
     }
 
-    private static StringLiteral ParseLiteral(string code, ref int position, List<TokenizeException> exceptions)
+    private static StringLiteral ParseStringLiteral(Row row, ref int position, List<TokenizeException> exceptions)
     {
-        var startPosition = position;
+        var startPosition = new TokenPosition(row.Number, position);
         var builder = new StringBuilder();
         position++;
-        for (; position < code.Length; position++)
+        for (; position < row.Length; position++)
         {
-            switch (code[position])
+            switch (row[position])
             {
-                case EndOfLine:
-                    var literal = new StringLiteral(builder.ToString(), startPosition, position - 1); 
-                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
+                case '\n':
+                    var end = new TokenPosition(row.Number, position - 1);
+                    var literal = new StringLiteral(builder.ToString(), startPosition, end); 
+                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, end));
                     return literal;
                 case '"':
-                    literal = new StringLiteral(builder.ToString(), startPosition, position);
+                    literal = new StringLiteral(builder.ToString(), startPosition, new TokenPosition(row.Number, position));
                     position++;
                     return literal;
                 case '\\':
                     position++;
-                    TryParseEscapedSequence(code, ref position, builder, exceptions);
+                    TryParseEscapedSequence(row, ref position, builder, exceptions);
                     break;
-                //TODO: range сломается, \r находится в конце исходного кода
                 case '\r':
-                    if (code[position..(position + 2)] == EndOfLineCrlf)
+                case '\t':
+                    if (row.Length < position + 1 && row[position] == EndOfLineCrlf[0] && row[position + 1] == EndOfLineCrlf[1])
                     {
-                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
-                        literal = new StringLiteral(builder.ToString(), startPosition, position - 1);
+                        var endPosition = new TokenPosition(row.Number, position - 1);
+                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, endPosition));
+                        literal = new StringLiteral(builder.ToString(), startPosition, endPosition);
                         return literal;
                     }
-
-                    builder.Append(code[position]);
+                    
+                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence,
+                        new TokenPosition(row.Number, position), new TokenPosition(row.Number, position)));
                     break;
                 default:
-                    builder.Append(code[position]);
+                    builder.Append(row[position]);
                     break;
             }
         }
-        
-        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, position - 1));
-        return new StringLiteral(builder.ToString(), startPosition, position - 1);
+
+        var endPos = new TokenPosition(row.Number, position - 1);
+        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, endPos));
+        return new StringLiteral(builder.ToString(), startPosition, endPos);
     }
 
-    private static void TryParseEscapedSequence(string code, ref int position, StringBuilder builder,
+    private static void TryParseEscapedSequence(Row row, ref int position, StringBuilder builder,
         List<TokenizeException> exceptions)
     {
-        switch (code[position])
+        switch (row[position])
         {
             case 'n':
                 builder.Append('\n');
@@ -134,202 +227,128 @@ public static class PlampNativeTokenizer
                 builder.Append('"');
                 break;
             default:
-                exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence, position - 1, position));
+                exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence,
+                    new TokenPosition(row.Number, position - 1), new TokenPosition(row.Number, position)));
                 return;
         }
     }
     
-    private static bool TryParseCustom(string code, ref int position, TokenBase lastToken, out TokenBase result, List<TokenizeException> exceptions)
+    private static bool TryParseCustom(Row row, ref int position, out TokenBase result, List<TokenizeException> exceptions)
     {
         result = null;
-        var startPosition = position;
-        if (code.Length > position + 3 && code[position..(position + 4)] == "    "
-                                       && (lastToken == null
-                                           || lastToken.GetType() == typeof(EndOfLine)
-                                           || lastToken.GetType() == typeof(Scope)))
+        var startPosition = new TokenPosition(row.Number, position);
+        if (row.Length > position + 3 && row[position..(position + 4)] == "    ")
         {
             position += 4;
-            result = new Scope(startPosition, 4);
+            result = new WhiteSpace("\t", startPosition, new TokenPosition(row.Number, position -= 1),
+                WhiteSpaceKind.Scope);
             return true;
         }
-        switch (code[position])
+
+        position++;
+        var endPos = new TokenPosition(row.Number, position);
+        switch (row[position])
         {
             case '[':
-                position++;
-                result = new OpenSquareBracket(startPosition);
+                result = new OpenSquareBracket(startPosition, endPos);
                 return true;
             case ']':
-                position++;
-                result = new CloseSquareBracket(startPosition);
+                result = new CloseSquareBracket(startPosition, endPos);
                 return true;
             case '(':
-                position++;
-                result = new OpenParen(startPosition);
+                result = new OpenParen(startPosition, endPos);
                 return true;
             case ')':
-                position++;
-                result = new CloseParen(startPosition);
+                result = new CloseParen(startPosition, endPos);
                 return true;
             case ',':
-                position++;
-                result = new Comma(startPosition);
+                result = new Comma(startPosition, endPos);
                 return true;
             case '\t':
-                position++;
-                if (lastToken != null
-                    && lastToken.GetType() != typeof(EndOfLine)
-                    && lastToken.GetType() != typeof(Scope))
-                {
-                    result = new WhiteSpace("\t", startPosition);
-                    return true;
-                }
-                result = new Scope(startPosition, 1);
+                result = new WhiteSpace("\t", startPosition, endPos, WhiteSpaceKind.Scope);
                 return true;
-            case EndOfLine:
-                position++;
-                result = new EndOfLine(startPosition, 1);
+            case '\n':
+                result = new EndOfLine(EndOfLine, startPosition, endPos);
                 return true;
             case ' ':
-                position++;
-                result = new WhiteSpace(" ", startPosition);
+                result = new WhiteSpace(" ", startPosition, endPos, WhiteSpaceKind.WhiteSpace);
                 return true;
             case '\r':
-                if (code.Length > position + 1 && code[position..(position + 2)] == EndOfLineCrlf)
+                if (row.Length > position + 1 && row[position..(position + 2)] == EndOfLineCrlf)
                 {
                     position += 2;
-                    result = new EndOfLine(startPosition, 2);
+                    endPos = new TokenPosition(row.Number, position - 1);
+                    result = new EndOfLine(EndOfLineCrlf, startPosition, endPos);
                     return true;
                 }
                 position++;
-                result = new WhiteSpace("\r", startPosition);
+                result = new WhiteSpace("\r", startPosition, endPos, WhiteSpaceKind.WhiteSpace);
                 return true;
             default:
-                if (TryParseOperator(code, ref position, out var @operator))
+                position -= 1;
+                if (TryParseOperator(row, ref position, out var @operator))
                 {
                     result = @operator;
                     return true;
                 }
-                exceptions.Add(new TokenizeException(TokenizerErrorConstants.UnexpectedToken, position, position));
+                exceptions.Add(new TokenizeException(TokenizerErrorConstants.UnexpectedToken, startPosition, startPosition));
                 position++;
                 return false;
         }
     }
     
-    private static bool TryParseOperator(string code, ref int position, out Operator @operator)
+    private static bool TryParseOperator(Row row, ref int position, out TokenBase @operator)
     {
-        var startPosition = position;
-        if (code.Length - position >= 2)
+        var startPosition = new TokenPosition(row.Number, position);
+        if (row.Length - position >= 2)
         {
-            var op = code.Substring(position, 2);
+            var op = row[position..(position+2)];
+            var opEnd = new TokenPosition(row.Number, position + 1);
+            position += 2;
             switch (op)
             {
                 case "+=":
-                    @operator = new Operator("+=", startPosition);
-                    position+=2;
-                    return true;
                 case "-=":
-                    @operator = new Operator("-=", startPosition);
-                    position+=2;
-                    return true;
                 case "++":
-                    @operator = new Operator("++", startPosition);
-                    position+=2;
-                    return true;
                 case "--":
-                    @operator = new Operator("--", startPosition);
-                    position+=2;
-                    return true;
                 case "*=":
-                    @operator = new Operator("*=", startPosition);
-                    position+=2;
-                    return true;
                 case "/=":
-                    @operator = new Operator("/=", startPosition);
-                    position+=2;
-                    return true;
                 case "==":
-                    @operator = new Operator("==", startPosition);
-                    position+=2;
-                    return true;
                 case "!=":
-                    @operator = new Operator("!=", startPosition);
-                    position+=2;
-                    return true;
                 case "<=":
-                    @operator = new Operator("<=", startPosition);
-                    position+=2;
-                    return true;
                 case ">=":
-                    @operator = new Operator(">=", startPosition);
-                    position+=2;
-                    return true;
                 case "&&":
-                    @operator = new Operator("&&", startPosition);
-                    position+=2;
-                    return true;
                 case "||":
-                    @operator = new Operator("||", startPosition);
-                    position+=2;
-                    return true;
                 case "%=":
-                    @operator = new Operator("%=", startPosition);
-                    position+=2;
-                    return true;
                 case "&=":
-                    @operator = new Operator("&=", startPosition);
-                    position += 2;
-                    return true;
                 case "|=":
-                    @operator = new Operator("|=", startPosition);
-                    position += 2;
-                    return true;
                 case "^=":
-                    @operator = new Operator("^=", startPosition);
-                    position += 2;
+                    @operator = new Operator(op, startPosition, opEnd);
+                    return true;
+                case "->":
+                    @operator = new LineBreak("->", startPosition, opEnd);
                     return true;
             }
+
+            position -= 2;
         }
 
-        switch (code[position])
+        switch (row[position])
         {
             case '+':
-                @operator = new Operator("+", startPosition);
-                break;
             case '-':
-                @operator = new Operator("-", startPosition);
-                break;
             case '=':
-                @operator = new Operator("=", startPosition);
-                break;
             case '.':
-                @operator = new Operator(".", startPosition);
-                break;
             case '/':
-                @operator = new Operator("/", startPosition);
-                break;
             case '*':
-                @operator = new Operator("*", startPosition);
-                break;
             case '<':
-                @operator = new OpenAngleBracket(startPosition);
-                break;
             case '>':
-                @operator = new CloseAngleBracket(startPosition);
-                break;
             case '!':
-                @operator = new Operator("!", startPosition);
-                break;
             case '%':
-                @operator = new Operator("%", startPosition);
-                break;
             case '|':
-                @operator = new Operator("|", startPosition);
-                break;
             case '&':
-                @operator = new Operator("&", startPosition);
-                break;
             case '^':
-                @operator = new Operator("^", startPosition);
+                @operator = new Operator(row[position].ToString(), startPosition, startPosition);
                 break;
             default:
                 @operator = null;

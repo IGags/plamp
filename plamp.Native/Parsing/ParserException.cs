@@ -6,14 +6,13 @@ namespace plamp.Native.Parsing;
 
 public class ParserException : Exception
 {
-    public int EndPosition { get; }
-    public int StartPosition { get; }
+    public TokenPosition EndPosition { get; }
+    public TokenPosition StartPosition { get; }
 
     public ParserException(string message, TokenPosition startPosition, TokenPosition endPosition) 
         : base(message)
     {
-        EndPosition = endPosition.Pos;
-        StartPosition = startPosition.Pos;
+        EndPosition = endPosition;
+        StartPosition = startPosition;
     }
-
 }

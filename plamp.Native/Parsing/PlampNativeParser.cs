@@ -103,12 +103,14 @@ public sealed class PlampNativeParser
                     resultNode = useNode;
                     DisposeHandles();
                     return useRes;
+                default:
+                    _tokenSequence.GetNextToken();
+                    //TODO : Нормальный код
+                    AdvanceToEndOfLineAndAddException();
+                    return false;
             }
         }
-
-        AdvanceToRequestedToken<EndOfLine>();
-        _exceptions.Add(new ParserException(ParserErrorConstants.ExpectedTopLevel, currentStart, _tokenSequence.CurrentEnd));
-        DisposeHandles();
+//TODO : Нормальный код
         return false;
 
         void DisposeHandles()
@@ -179,7 +181,7 @@ public sealed class PlampNativeParser
             () => [], out var parameterNodes);
         AdvanceToEndOfLineAndAddException();
         TryParseBody(out var body);
-        node = new DefNode(typeNode, word == null ? null : new MemberNode(word.GetString()), parameterNodes, body);
+        node = new DefNode(typeNode, word == null ? null : new MemberNode(word.GetStringRepresentation()), parameterNodes, body);
         return true;
     }
 
@@ -222,7 +224,7 @@ public sealed class PlampNativeParser
             _tokenSequence.GetNextNonWhiteSpace();
         }
 
-        var name = word == null ? null : new MemberNode(word.GetString());
+        var name = word == null ? null : new MemberNode(word.GetStringRepresentation());
         parameterNode = new ParameterNode(type, name);
         return true; 
     }
@@ -551,7 +553,7 @@ public sealed class PlampNativeParser
             if (_tokenSequence.PeekNextNonWhiteSpace()?.GetType() == typeof(Word) 
                 && TryConsumeNextNonWhiteSpace<Word>(x => x.ToKeyword() == Keywords.Unknown, () => AddNextTokenException(AddKeywordException), out var name))
             {
-                var definition = new VariableDefinitionNode(typ, new MemberNode(name.GetString()));
+                var definition = new VariableDefinitionNode(typ, new MemberNode(name.GetStringRepresentation()));
                 return TryParseWithPrecedence(out node, 0, definition);
             }
 
@@ -618,7 +620,7 @@ public sealed class PlampNativeParser
 
         if (TryConsumeNextNonWhiteSpace<StringLiteral>(_ => true, () => { }, out var literal))
         {
-            var stringLiteral = new ConstNode(literal.GetString());
+            var stringLiteral = new ConstNode(literal.GetStringRepresentation());
             node = ParsePostfixIfExist(stringLiteral);
             return true;
         }
@@ -681,7 +683,7 @@ public sealed class PlampNativeParser
         if (TryConsumeNextNonWhiteSpace<Word>(w => w.ToKeyword() == Keywords.Unknown, () => { },
                 out var word))
         {
-            var member = new MemberNode(word.GetString());
+            var member = new MemberNode(word.GetStringRepresentation());
             node = ParsePostfixIfExist(member);
             return true;
         }
@@ -767,16 +769,16 @@ public sealed class PlampNativeParser
                             WrapParseCommaSeparated<NodeBase>(WrapParseExpression),
                             () => [], out var args))
                     {
-                        res = new CallNode(input, new MemberNode(name.GetString()), args);
+                        res = new CallNode(input, new MemberNode(name.GetStringRepresentation()), args);
                         return true;
                     }
                     
-                    res = new CallNode(input, new MemberNode(name.GetString()), args);
+                    res = new CallNode(input, new MemberNode(name.GetStringRepresentation()), args);
                     return false;
                 }
 
                 _tokenSequence.Position = position;
-                res = new MemberAccessNode(input, new MemberNode(name.GetString()));
+                res = new MemberAccessNode(input, new MemberNode(name.GetStringRepresentation()));
                 return true;
             }
         }
@@ -794,7 +796,7 @@ public sealed class PlampNativeParser
             return false;
         }
         
-        var startPos = new TokenPosition(next.StartPosition);
+        var startPos = new TokenPosition(next.Start);
         var isParsed = TryParseInParen<List<NodeBase>, OpenSquareBracket, CloseSquareBracket>(
             WrapParseCommaSeparated<NodeBase>(WrapParseExpression), () =>
             {
@@ -1168,7 +1170,7 @@ public sealed class PlampNativeParser
         TokenPosition endPos;
         if (_tokenSequence.Any() && _tokenSequence.Current() == null && _tokenSequence.Position > -1)
         {
-            endPos = new TokenPosition(_tokenSequence.Last().EndPosition + 1);
+            endPos = new TokenPosition(_tokenSequence.Last().End + 1);
         }
         else
         //TODO: мерзкий кусок кода
@@ -1207,7 +1209,7 @@ public sealed class PlampNativeParser
                    if (isAddException)
                    {
                        var end = _tokenSequence.Position == pos
-                           ? new TokenPosition(_tokenSequence.PeekNextNonWhiteSpace()?.EndPosition ?? definitionStart.Pos)
+                           ? new TokenPosition(_tokenSequence.PeekNextNonWhiteSpace()?.End ?? definitionStart.Pos)
                            : _tokenSequence.CurrentEnd;
                        _exceptions.Add(new ParserException(exception, definitionStart, end));
                    }
@@ -1216,11 +1218,11 @@ public sealed class PlampNativeParser
             if (last == null)
             {
                 last = new StringBuilder();
-                last.Append(word.GetString());
+                last.Append(word.GetStringRepresentation());
             }
             else
             {
-                last.Append($".{word.GetString()}");
+                last.Append($".{word.GetStringRepresentation()}");
             }
             
             if (!TryConsumeNextNonWhiteSpace<Operator>(x => x.ToOperator() == OperatorEnum.Call, () => { }, out _))

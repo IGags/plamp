@@ -2,9 +2,7 @@
 
 public class OpenSquareBracket : TokenBase
 {
-    public OpenSquareBracket(int position) : base(position, position)
+    public OpenSquareBracket(TokenPosition start, TokenPosition end) : base(start, end, "[")
     {
     }
-    
-    public override string GetString() => "[";
 }

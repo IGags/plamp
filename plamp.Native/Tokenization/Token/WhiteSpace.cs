@@ -2,12 +2,10 @@
 
 public class WhiteSpace : TokenBase
 {
-    private readonly string _inner;
+    public WhiteSpaceKind Kind { get; }
 
-    public WhiteSpace(string inner, int position) : base(position, position)
+    public WhiteSpace(string inner, TokenPosition start, TokenPosition end, WhiteSpaceKind kind) : base(start, end, inner)
     {
-        _inner = inner;
+        Kind = kind;
     }
-    
-    public override string GetString() => _inner;
 }

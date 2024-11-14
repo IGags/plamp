@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
@@ -442,7 +443,7 @@ public class ParserTests
             Assert.Equal(errorPositionEnd, parser.Exceptions.First().EndPosition);
         }
         
-        bool Wrapper(out Word token) => parser.TryConsumeNextNonWhiteSpace(x => x.GetString() == "w", () => { }, out token);
+        bool Wrapper(out Word token) => parser.TryConsumeNextNonWhiteSpace(x => x.GetStringRepresentation() == "w", () => { }, out token);
     }
 
     [Fact]

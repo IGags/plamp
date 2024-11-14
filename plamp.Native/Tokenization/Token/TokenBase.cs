@@ -2,14 +2,15 @@
 
 public abstract class TokenBase
 {
-    public int StartPosition { get; }
-    public int EndPosition { get; }
+    protected string StringValue { get; set; }
+    public TokenPosition Start { get; }
+    public TokenPosition End { get; }
 
-    protected TokenBase(int startPosition, int endPosition)
+    protected TokenBase(TokenPosition start, TokenPosition end, string stringValue)
     {
-        StartPosition = startPosition;
-        EndPosition = endPosition;
+        Start = start;
+        End = end;
     }
     
-    public abstract string GetString();
+    public virtual string GetStringRepresentation() => StringValue;
 }
