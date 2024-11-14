@@ -1,4 +1,4 @@
-﻿using plamp.Native.Enumerations;
+﻿using plamp.Native.Tokenization.Enumerations;
 
 namespace plamp.Native.Tokenization.Token;
 

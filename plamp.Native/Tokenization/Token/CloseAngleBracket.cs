@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Native.Tokenization.Enumerations;
 
-public class CloseAngleBracket : Operator
+namespace plamp.Native.Tokenization.Token;
+
+public class CloseAngleBracket : OperatorToken
 {
-    public CloseAngleBracket(string token, TokenPosition start, TokenPosition end) : base(token, start, end)
+    public CloseAngleBracket(string token, TokenPosition start, TokenPosition end) : base(token, start, end, OperatorEnum.Greater)
     {
     }
 }

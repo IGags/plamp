@@ -1,13 +1,12 @@
-using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 
-namespace plamp.Native.Enumerations;
+namespace plamp.Native.Tokenization.Enumerations;
 
 public static class OperatorTranslator
 {
-    public static OperatorEnum ToOperator(this Operator token)
+    public static OperatorEnum ToOperator(this string token)
     {
-        return token.GetStringRepresentation() switch
+        return token switch
         {
             "+" => OperatorEnum.Plus,
             "-" => OperatorEnum.Minus,
@@ -42,11 +41,11 @@ public static class OperatorTranslator
         };
     }
 
-    public static int GetPrecedence(this OperatorEnum op, bool isNud)
+    public static int GetPrecedence(this OperatorToken op, bool isNud)
     {
         if (isNud)
         {
-            return op switch
+            return op.Operator switch
             {
                 OperatorEnum.Minus => 100,
                 OperatorEnum.Not => 99,
@@ -56,7 +55,7 @@ public static class OperatorTranslator
             };
         }
 
-        return op switch
+        return op.Operator switch
         {
             OperatorEnum.Multiply => 50,
             OperatorEnum.Divide => 49,

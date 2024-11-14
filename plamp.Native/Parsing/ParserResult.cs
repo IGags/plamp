@@ -4,4 +4,4 @@ using plamp.Native.Tokenization;
 
 namespace plamp.Native.Parsing;
 
-public record ParserResult(List<NodeBase> NodeList, List<ParserException> ParserExceptions, List<TokenizeException> TokenizeExceptions);
+public record ParserResult(List<NodeBase> NodeList, List<PlampException> Exceptions);

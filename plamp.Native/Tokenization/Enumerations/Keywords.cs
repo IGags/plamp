@@ -1,4 +1,4 @@
-﻿namespace plamp.Native.Enumerations;
+﻿namespace plamp.Native.Tokenization.Enumerations;
 
 public enum Keywords
 {

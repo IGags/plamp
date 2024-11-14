@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using plamp.Native.Enumerations;
+using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
@@ -46,7 +47,7 @@ public static partial class PlampNativeTokenizer
         var prepared = rows.Select((t, i) => new Row(i, t));
 
         var tokenList = new List<TokenBase>();
-        var exceptionList = new List<TokenizeException>();
+        var exceptionList = new List<PlampException>();
         
         foreach (var row in prepared)
         {
@@ -56,7 +57,7 @@ public static partial class PlampNativeTokenizer
         return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
     }
 
-    private static void TokenizeSingleRow(Row row, List<TokenBase> tokenList, List<TokenizeException> exceptionList)
+    private static void TokenizeSingleRow(Row row, List<TokenBase> tokenList, List<PlampException> exceptionList)
     {
         for(var i = 0; i < row.Value.Length;)
         {
@@ -66,7 +67,7 @@ public static partial class PlampNativeTokenizer
             }
             else if(char.IsDigit(row[i]))
             {
-                tokenList.Add(ParseNumber(row, ref i));                
+                tokenList.Add(ParseNumber(row, ref i, exceptionList));                
             }
             else if (row[i] == '"')
             {
@@ -91,7 +92,7 @@ public static partial class PlampNativeTokenizer
         tokenList.Add(new EndOfLine(EndOfLineCrlf, start, end));    
     }
 
-    private static NumberLiteral ParseNumber(Row row, ref int position)
+    private static NumberLiteral ParseNumber(Row row, ref int position, List<PlampException> exceptions)
     {
         var builder = new StringBuilder();
         var startPosition = new TokenPosition(row.Number, position);
@@ -115,12 +116,13 @@ public static partial class PlampNativeTokenizer
                 break;
             }
         } while (position < row.Length);
-
+        
+        var postfixBuilder = new StringBuilder();
         while (position < row.Length)
         {
             if (char.IsLetter(row[position]))
             {
-                builder.Append(row[position]);
+                postfixBuilder.Append(row[position]);
                 position++;
             }
             else
@@ -129,8 +131,88 @@ public static partial class PlampNativeTokenizer
             }
         }
 
-        var endPosition = new TokenPosition(row.Number, position - 1);
-        return new NumberLiteral(builder.ToString(), startPosition, endPosition);
+        var postfix = postfixBuilder.ToString();
+        var numberPart = builder.ToString();
+        var end = new TokenPosition(row.Number, position - 1);
+        if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
+        {
+            exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end));
+        }
+        var (value, type) = cort;
+        return new NumberLiteral(numberPart + postfix, startPosition, end, value, type);
+    }
+
+    private static bool TryParseNumberTypePostfix(string value, string postfix, out (object, Type) result)
+    {
+        switch (postfix)
+        {
+            case "i":
+                var res = int.TryParse(value, CultureInfo.InvariantCulture, out var i);
+                result = (i, typeof(int));
+                return res;
+            case "ui":
+                res = uint.TryParse(value, CultureInfo.InvariantCulture, out var j);
+                result = (j, typeof(uint));
+                return res;
+            case "l":
+                res = long.TryParse(value, CultureInfo.InvariantCulture, out var k);
+                result = (k, typeof(long));
+                return res;
+            case "ul":
+                res = ulong.TryParse(value, CultureInfo.InvariantCulture, out var l);
+                result = (l, typeof(ulong));
+                return res;
+            case "d":
+                res = double.TryParse(value, CultureInfo.InvariantCulture, out var m);
+                result = (m, typeof(double));
+                return res;
+            case "f":
+                res = float.TryParse(value, CultureInfo.InvariantCulture, out var n);
+                result = (n, typeof(float));
+                return res;
+            case "b":
+                res = byte.TryParse(value, CultureInfo.InvariantCulture, out var o);
+                result = (o, typeof(byte));
+                return res;
+            case "sb":
+                res = sbyte.TryParse(value, CultureInfo.InvariantCulture, out var p);
+                result = (p, typeof(sbyte));
+                return res;
+            case "s":
+                res = short.TryParse(value, CultureInfo.InvariantCulture, out var q);
+                result = (q, typeof(short));
+                return res;
+            case "us":
+                res = ushort.TryParse(value, CultureInfo.InvariantCulture, out var r);
+                result = (r, typeof(ushort));
+                return res;
+            case "":
+                if (value.Contains('.'))
+                {
+                    res = double.TryParse(value, CultureInfo.InvariantCulture, out var s);
+                    result = (s, typeof(double));
+                    return res;
+                }
+
+                res = long.TryParse(value, CultureInfo.InvariantCulture, out var t);
+                if (res)
+                {
+                    if (t is <= int.MaxValue and >= int.MaxValue)
+                    {
+                        result = ((int)t, typeof(int));
+                        return true;
+                    }
+
+                    result = (t, typeof(long));
+                    return true;
+                }
+
+                result = (t, null);
+                return false;
+            default:
+                result = (new object(), null);
+                return false;
+        }
     }
     
     private static TokenBase ParseWord(Row row, ref int position)
@@ -160,7 +242,7 @@ public static partial class PlampNativeTokenizer
         return new Word(word, startPosition, endPosition);
     }
 
-    private static StringLiteral ParseStringLiteral(Row row, ref int position, List<TokenizeException> exceptions)
+    private static StringLiteral ParseStringLiteral(Row row, ref int position, List<PlampException> exceptions)
     {
         var startPosition = new TokenPosition(row.Number, position);
         var builder = new StringBuilder();
@@ -172,7 +254,7 @@ public static partial class PlampNativeTokenizer
                 case '\n':
                     var end = new TokenPosition(row.Number, position - 1);
                     var literal = new StringLiteral(builder.ToString(), startPosition, end); 
-                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, end));
+                    exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, end));
                     return literal;
                 case '"':
                     literal = new StringLiteral(builder.ToString(), startPosition, new TokenPosition(row.Number, position));
@@ -187,12 +269,12 @@ public static partial class PlampNativeTokenizer
                     if (row.Length < position + 1 && row[position] == EndOfLineCrlf[0] && row[position + 1] == EndOfLineCrlf[1])
                     {
                         var endPosition = new TokenPosition(row.Number, position - 1);
-                        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, endPosition));
+                        exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPosition));
                         literal = new StringLiteral(builder.ToString(), startPosition, endPosition);
                         return literal;
                     }
                     
-                    exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence,
+                    exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(),
                         new TokenPosition(row.Number, position), new TokenPosition(row.Number, position)));
                     break;
                 default:
@@ -202,12 +284,12 @@ public static partial class PlampNativeTokenizer
         }
 
         var endPos = new TokenPosition(row.Number, position - 1);
-        exceptions.Add(new TokenizeException(TokenizerErrorConstants.StringIsNotClosed, startPosition, endPos));
+        exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos));
         return new StringLiteral(builder.ToString(), startPosition, endPos);
     }
 
     private static void TryParseEscapedSequence(Row row, ref int position, StringBuilder builder,
-        List<TokenizeException> exceptions)
+        List<PlampException> exceptions)
     {
         switch (row[position])
         {
@@ -227,13 +309,13 @@ public static partial class PlampNativeTokenizer
                 builder.Append('"');
                 break;
             default:
-                exceptions.Add(new TokenizeException(TokenizerErrorConstants.InvalidEscapeSequence,
+                exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
                     new TokenPosition(row.Number, position - 1), new TokenPosition(row.Number, position)));
                 return;
         }
     }
     
-    private static bool TryParseCustom(Row row, ref int position, out TokenBase result, List<TokenizeException> exceptions)
+    private static bool TryParseCustom(Row row, ref int position, out TokenBase result, List<PlampException> exceptions)
     {
         result = null;
         var startPosition = new TokenPosition(row.Number, position);
@@ -291,7 +373,8 @@ public static partial class PlampNativeTokenizer
                     result = @operator;
                     return true;
                 }
-                exceptions.Add(new TokenizeException(TokenizerErrorConstants.UnexpectedToken, startPosition, startPosition));
+                exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnexpectedToken(row[position].ToString()), 
+                    startPosition, startPosition));
                 position++;
                 return false;
         }
@@ -323,7 +406,8 @@ public static partial class PlampNativeTokenizer
                 case "&=":
                 case "|=":
                 case "^=":
-                    @operator = new Operator(op, startPosition, opEnd);
+                    var operatorType = op.ToOperator();
+                    @operator = new OperatorToken(op, startPosition, opEnd, operatorType);
                     return true;
                 case "->":
                     @operator = new LineBreak("->", startPosition, opEnd);
@@ -341,14 +425,21 @@ public static partial class PlampNativeTokenizer
             case '.':
             case '/':
             case '*':
-            case '<':
-            case '>':
             case '!':
             case '%':
             case '|':
             case '&':
             case '^':
-                @operator = new Operator(row[position].ToString(), startPosition, startPosition);
+                var opString = row[position].ToString();
+                @operator = new OperatorToken(opString, startPosition, startPosition, opString.ToOperator());
+                break;
+            case '<':
+                opString = row[position].ToString();
+                @operator = new OpenAngleBracket(opString, startPosition, startPosition);
+                break;
+            case '>':
+                opString = row[position].ToString();
+                @operator = new CloseAngleBracket(opString, startPosition, startPosition);
                 break;
             default:
                 @operator = null;

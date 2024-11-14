@@ -1,14 +1,7 @@
-﻿using plamp.Native.Tokenization.Token;
-
-namespace plamp.Native.Enumerations;
+﻿namespace plamp.Native.Tokenization.Enumerations;
 
 public static class KeywordTranslator
 {
-    public static Keywords ToKeyword(this Word word)
-    {
-        return word.GetStringRepresentation().ToKeyword();
-    }
-    
     public static Keywords ToKeyword(this string word)
     {
         return word switch
