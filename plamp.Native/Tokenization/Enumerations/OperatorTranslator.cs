@@ -28,7 +28,7 @@ public static class OperatorTranslator
             "/=" => OperatorEnum.DivideAndAssign,
             "++" => OperatorEnum.Increment,
             "--" => OperatorEnum.Decrement,
-            "." => OperatorEnum.Call,
+            "." => OperatorEnum.MemberAccess,
             "%" => OperatorEnum.Modulo,
             "%=" => OperatorEnum.ModuloAndAssign,
             "|" => OperatorEnum.BitwiseOr,

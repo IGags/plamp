@@ -574,7 +574,7 @@ public class ParserTests
     {
         var startNode = new MemberNode("1");
         var parser = new PlampNativeParser(code);
-        parser.TryParseCall(startNode, out var res);
+        parser.TryParseMemberAccess(startNode, out var res);
         Assert.Equal(errorCount, parser.Exceptions.Count);
         if (errorCount != 0)
         {

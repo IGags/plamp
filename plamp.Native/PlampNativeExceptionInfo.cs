@@ -50,5 +50,15 @@ public static class PlampNativeExceptionInfo
 
     public static PlampNativeExceptionFinalRecord ExpectedExpression() => ExpectedExpressionRecord.Format();
 
+    private static readonly PlampNativeExceptionRecord ExpectedMemberNameRecord =
+        new("Expected member name", 1004, ExceptionLevel.Error);
+
+    public static PlampNativeExceptionFinalRecord ExpectedMemberName() => ExpectedMemberNameRecord.Format();
+
+    private static PlampNativeExceptionRecord InvalidForHeaderRecord =
+        new("Invalid for header", 1005, ExceptionLevel.Error);
+
+    public static PlampNativeExceptionFinalRecord InvalidForHeader() => InvalidForHeaderRecord.Format();
+
     #endregion
 }

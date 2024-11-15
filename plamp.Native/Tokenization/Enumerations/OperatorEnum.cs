@@ -22,7 +22,7 @@ public enum OperatorEnum
     DivideAndAssign,
     Increment,
     Decrement,
-    Call,
+    MemberAccess,
     Modulo,
     ModuloAndAssign,
     BitwiseOr,
