@@ -41,24 +41,49 @@ public static class PlampNativeExceptionInfo
     public static PlampNativeExceptionFinalRecord Expected(string value) => ExpectedRecord.Format(value);
 
     private static readonly PlampNativeExceptionRecord InvalidCastOperatorRecord =
-        new("Invalid cast operator", 1002, ExceptionLevel.Error);
+        new("Invalid cast operator", 1102, ExceptionLevel.Error);
 
     public static PlampNativeExceptionFinalRecord InvalidCastOperator() => InvalidCastOperatorRecord.Format();
 
     private static readonly PlampNativeExceptionRecord ExpectedExpressionRecord =
-        new("Expected expression", 1003, ExceptionLevel.Error);
+        new("Expected expression", 1103, ExceptionLevel.Error);
 
     public static PlampNativeExceptionFinalRecord ExpectedExpression() => ExpectedExpressionRecord.Format();
 
     private static readonly PlampNativeExceptionRecord ExpectedMemberNameRecord =
-        new("Expected member name", 1004, ExceptionLevel.Error);
+        new("Expected member name", 1104, ExceptionLevel.Error);
 
     public static PlampNativeExceptionFinalRecord ExpectedMemberName() => ExpectedMemberNameRecord.Format();
 
-    private static PlampNativeExceptionRecord InvalidForHeaderRecord =
-        new("Invalid for header", 1005, ExceptionLevel.Error);
+    private static readonly PlampNativeExceptionRecord InvalidForHeaderRecord =
+        new("Invalid for header", 1105, ExceptionLevel.Error);
 
     public static PlampNativeExceptionFinalRecord InvalidForHeader() => InvalidForHeaderRecord.Format();
+
+    private static readonly PlampNativeExceptionRecord InvalidTypeNameDefinition =
+        new("Invalid type name definition", 1106, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidTypeName() => InvalidTypeNameDefinition.Format();
+
+    private static readonly PlampNativeExceptionRecord InvalidGenericDefinitionRecord =
+        new ("Invalid generic definition", 1107, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidGenericDefinition() => InvalidGenericDefinitionRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord InvalidParameterDefinitionRecord =
+        new ("Invalid parameter definition", 1108, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidParameterDefinition() => InvalidParameterDefinitionRecord.Format();
+
+    private static readonly PlampNativeExceptionRecord ExpectedArgDefinitionRecord =
+        new("Expected arg definition", 1109, ExceptionLevel.Error);
+
+    public static PlampNativeExceptionFinalRecord ExpectedArgDefinition() => ExpectedArgDefinitionRecord.Format();
+
+    private static readonly PlampNativeExceptionRecord InvalidUsingNameRecord =
+        new("Invalid using name", 1110, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidUsingName() => InvalidUsingNameRecord.Format();
 
     #endregion
 }

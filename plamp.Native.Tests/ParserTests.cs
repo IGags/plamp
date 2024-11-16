@@ -14,7 +14,6 @@ using plamp.Ast.Node.Unary;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
-using Xunit;
 
 namespace plamp.Native.Tests;
 #pragma warning disable CS0618
@@ -1180,7 +1179,7 @@ public class ParserTests
         int? tokenSequencePos = null)
     {
         var parser = new PlampNativeParser(code);
-        var actualResult = parser.TryParseScopedWithDepth<object>(DelegateFunc, out _, depth, isStrict);
+        var actualResult = parser.TryParseScopedWithDepth<object>(out _, depth, isStrict);
         Assert.Equal(expectedResult, actualResult);
         Assert.Empty(parser.Exceptions);
 

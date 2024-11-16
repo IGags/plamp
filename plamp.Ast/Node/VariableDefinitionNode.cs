@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node;
 
-public record VariableDefinitionNode(TypeNode Type, MemberNode Member) : NodeBase
+public record VariableDefinitionNode(NodeBase Type, MemberNode Member) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

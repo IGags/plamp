@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node;
 
-public record CastNode(TypeNode ToType, NodeBase Inner) : NodeBase
+public record CastNode(NodeBase ToType, NodeBase Inner) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node;
 
-public record UseNode(MemberNode Assembly) : NodeBase
+public record UseNode(NodeBase Assembly) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

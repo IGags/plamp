@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node;
 
-public record ConstructorNode(TypeNode Type, List<NodeBase> Args) : NodeBase
+public record ConstructorNode(NodeBase Type, List<NodeBase> Args) : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {
