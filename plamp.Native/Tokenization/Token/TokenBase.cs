@@ -10,6 +10,7 @@ public abstract class TokenBase
     {
         Start = start;
         End = end;
+        StringValue = stringValue;
     }
     
     public virtual string GetStringRepresentation() => StringValue;

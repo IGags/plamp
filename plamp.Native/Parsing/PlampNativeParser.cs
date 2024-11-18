@@ -49,7 +49,7 @@ public sealed class PlampNativeParser
 
         var expressionList = new List<NodeBase>();
 
-        while (_tokenSequence.Current() != null || _tokenSequence.PeekNext() != null)
+        while (_tokenSequence.PeekNext() != null || (_tokenSequence.PeekNext() != null && _tokenSequence.Current() == null))
         {
             TryParseTopLevel(out var node);
             if (node != null)
@@ -293,7 +293,7 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.FailedNeedRollback;
         }
 
-        _tokenSequence.GetNextToken();
+        _tokenSequence.GetNextNonWhiteSpace();
         members = [(Word)peek];
         
         while (true)
@@ -543,8 +543,8 @@ public sealed class PlampNativeParser
     {
         if (_tokenSequence.PeekNext()?.GetType() != typeof(EndOfLine))
         {
-            TryParseWithPrecedence(out var expression);
-            if (!TryConsumeNextNonWhiteSpace<EndOfLine>(_ => true, _ => { }, out _))
+            TryParseBodyLevelExpression(out var expression);
+            if (_tokenSequence.Current() is not EndOfLine)
             {
                 AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
             }
@@ -600,6 +600,9 @@ public sealed class PlampNativeParser
             case ExpressionParsingResult.FailedNeedCommit:
                 transaction.Commit();
                 return ExpressionParsingResult.FailedNeedCommit;
+            case ExpressionParsingResult.FailedNeedRollback:
+                transaction.Rollback();
+                break;
             case ExpressionParsingResult.FailedNeedPass:
             default:
                 transaction.Pass();
@@ -1125,7 +1128,7 @@ public sealed class PlampNativeParser
         var isClosed = TryConsumeNextNonWhiteSpace<TClose>(_ => true,
             _ => {}, out _);
 
-        if (!isClosed) return res;
+        if (isClosed) return res;
         AdvanceToRequestedTokenWithException<TClose>(transaction);
         
         return res;
@@ -1158,7 +1161,7 @@ public sealed class PlampNativeParser
         
         var next = _tokenSequence.PeekNextNonWhiteSpace();
         if (next is TToken target && predicate(target))
-        {
+        { 
             token = target;
             _tokenSequence.GetNextNonWhiteSpace();
             return true;
@@ -1213,7 +1216,12 @@ public sealed class PlampNativeParser
 
     private void AdvanceToRequestedTokenWithException<TRequested>(IParsingTransaction transaction)
     {
-        var next = _tokenSequence.GetNextNonWhiteSpace();
+        var next = _tokenSequence.PeekNextNonWhiteSpace();
+        if (next is EndOfLine)
+        {
+            _tokenSequence.GetNextToken();
+            return;
+        }
         AdvanceToEndOfOrLineRequested<TRequested>();
         var end = _tokenSequence.Current();
         AddExceptionToTheTokenRange(next, end, PlampNativeExceptionInfo.Expected(typeof(TRequested).Name), transaction);

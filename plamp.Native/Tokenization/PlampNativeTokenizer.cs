@@ -197,7 +197,7 @@ public static partial class PlampNativeTokenizer
                 res = long.TryParse(value, CultureInfo.InvariantCulture, out var t);
                 if (res)
                 {
-                    if (t is <= int.MaxValue and >= int.MaxValue)
+                    if (t is <= int.MaxValue and >= int.MinValue)
                     {
                         result = ((int)t, typeof(int));
                         return true;
@@ -327,33 +327,40 @@ public static partial class PlampNativeTokenizer
             return true;
         }
 
-        position++;
         var endPos = new TokenPosition(row.Number, position);
         switch (row[position])
         {
             case '[':
                 result = new OpenSquareBracket(startPosition, endPos);
+                position++;
                 return true;
             case ']':
                 result = new CloseSquareBracket(startPosition, endPos);
+                position++;
                 return true;
             case '(':
                 result = new OpenParen(startPosition, endPos);
+                position++;
                 return true;
             case ')':
                 result = new CloseParen(startPosition, endPos);
+                position++;
                 return true;
             case ',':
                 result = new Comma(startPosition, endPos);
+                position++;
                 return true;
             case '\t':
                 result = new WhiteSpace("\t", startPosition, endPos, WhiteSpaceKind.Scope);
+                position++;
                 return true;
             case '\n':
                 result = new EndOfLine(EndOfLine, startPosition, endPos);
+                position++;
                 return true;
             case ' ':
                 result = new WhiteSpace(" ", startPosition, endPos, WhiteSpaceKind.WhiteSpace);
+                position++;
                 return true;
             case '\r':
                 if (row.Length > position + 1 && row[position..(position + 2)] == EndOfLineCrlf)
@@ -367,7 +374,6 @@ public static partial class PlampNativeTokenizer
                 result = new WhiteSpace("\r", startPosition, endPos, WhiteSpaceKind.WhiteSpace);
                 return true;
             default:
-                position -= 1;
                 if (TryParseOperator(row, ref position, out var @operator))
                 {
                     result = @operator;

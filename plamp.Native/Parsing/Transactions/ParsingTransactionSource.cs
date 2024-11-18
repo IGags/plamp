@@ -41,6 +41,7 @@ public class ParsingTransactionSource
             _exceptionList = exceptionList;
             _sequence = sequence;
             _source = source;
+            _source._transactionStack.Push(this);
         }
 
         public void Commit()
@@ -76,6 +77,10 @@ public class ParsingTransactionSource
             do
             {
                 res = _source.Pop();
+                if (res == this)
+                {
+                    return;
+                }
                 res.Rollback();
             } while (res != this);
         }
