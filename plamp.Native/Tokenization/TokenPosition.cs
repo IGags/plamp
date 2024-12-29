@@ -5,7 +5,7 @@ namespace plamp.Native.Tokenization;
 /// <summary>
 /// Позиция в файле
 /// </summary>
-public record struct TokenPosition(int Row, int Column) : IComparable<TokenPosition>
+public readonly record struct TokenPosition(int Row, int Column) : IComparable<TokenPosition>
 {
     public int CompareTo(TokenPosition other)
     {
@@ -20,5 +20,10 @@ public record struct TokenPosition(int Row, int Column) : IComparable<TokenPosit
         }
 
         return 1;
+    }
+    
+    public static TokenPosition operator +(TokenPosition left, TokenPosition right)
+    {
+        return new(left.Row + right.Row, left.Column + right.Column);
     }
 }

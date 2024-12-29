@@ -40,7 +40,7 @@ public static partial class PlampNativeTokenizer
     {
         if (code == null)
         {
-            return new TokenizationResult(new TokenSequence([]), []);
+            return new TokenizationResult(new TokenSequence([new EndOfLine(EndOfLineCrlf, new(0, 0), new(0, 1))]), []);
         }
         
         var rows = EndOfLineRegex().Split(code);
@@ -110,6 +110,7 @@ public static partial class PlampNativeTokenizer
             {
                 isFractional = true;
                 builder.Append(row[position]);
+                position++;
             }
             else
             {
@@ -322,7 +323,7 @@ public static partial class PlampNativeTokenizer
         if (row.Length > position + 3 && row[position..(position + 4)] == "    ")
         {
             position += 4;
-            result = new WhiteSpace("\t", startPosition, new TokenPosition(row.Number, position -= 1),
+            result = new WhiteSpace("\t", startPosition, new TokenPosition(row.Number, position - 1),
                 WhiteSpaceKind.Scope);
             return true;
         }
@@ -354,6 +355,7 @@ public static partial class PlampNativeTokenizer
                 result = new WhiteSpace("\t", startPosition, endPos, WhiteSpaceKind.Scope);
                 position++;
                 return true;
+            //Not possible
             case '\n':
                 result = new EndOfLine(EndOfLine, startPosition, endPos);
                 position++;

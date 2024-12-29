@@ -37,4 +37,18 @@ public class PlampException : Exception
         Code = exceptionFinalRecord.Code;
         Level = exceptionFinalRecord.Level;
     }
+    
+    public override bool Equals(object obj)
+    {
+        if (obj == null || obj is not PlampException other)
+        {
+            return false;
+        }
+        return 
+            StartPosition.Equals(other.StartPosition) 
+            && EndPosition.Equals(other.EndPosition) 
+            && Code == other.Code 
+            && Level == other.Level
+            && Message.Equals(other.Message);
+    }
 }

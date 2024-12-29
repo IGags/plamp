@@ -4,12 +4,14 @@ using plamp.Native.Tokenization;
 
 namespace plamp.Native.Parsing.Transactions;
 
-public class ParsingTransactionSource
+internal class ParsingTransactionSource
 {
     private readonly TokenSequence _tokenSequence;
     private readonly List<PlampException> _exceptions;
     private readonly Stack<ParsingTransaction> _transactionStack = [];
 
+    public IReadOnlyList<PlampException> Exceptions => _exceptions;
+    
     public ParsingTransactionSource(TokenSequence tokenSequence, List<PlampException> exceptions)
     {
         _tokenSequence = tokenSequence;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
@@ -21,6 +20,9 @@ public sealed class PlampNativeParser
     private TokenSequence _tokenSequence;
     private DepthCounter _depth;
     private ParsingTransactionSource _transactionSource;
+
+    [Obsolete("For test purposes only")]
+    internal ParsingTransactionSource TransactionSource => _transactionSource;
     
     [Obsolete("For test purposes only")]
     internal TokenSequence TokenSequence => _tokenSequence;
@@ -29,12 +31,9 @@ public sealed class PlampNativeParser
     internal PlampNativeParser(string code)
     {
         var tokenRes = code.Tokenize();
-        if (tokenRes.Exceptions.Any())
-        {
-            throw new Exception("Invalid token sequence");
-        }   
         _depth = 0;
         _tokenSequence = tokenRes.Sequence;
+        _transactionSource = new ParsingTransactionSource(tokenRes.Sequence, tokenRes.Exceptions);
     }
 
     public PlampNativeParser(){}
@@ -149,7 +148,7 @@ public sealed class PlampNativeParser
         list.Reverse();
         
         NodeBase memberNode = new MemberNode(list[0].GetStringRepresentation());
-        foreach (var member in list.Skip(1))
+        foreach (var member in list[1..])
         {
             memberNode = new MemberAccessNode(new MemberNode(member.GetStringRepresentation()), memberNode);
         }
@@ -173,15 +172,8 @@ public sealed class PlampNativeParser
         var transaction = _transactionSource.BeginTransaction();
         TryParseType(transaction, out var typeNode);
         //TODO: To semantics layer
-        MemberNode nameNode;
-        if (!TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var name))
-        {
-            nameNode = null;
-        }
-        else
-        {
-            nameNode = new MemberNode(name.GetStringRepresentation());
-        }
+        var nameNode = !TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var name) 
+            ? null : new MemberNode(name.GetStringRepresentation());
         
         var res = TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
             transaction,
@@ -275,7 +267,7 @@ public sealed class PlampNativeParser
 
         list.Reverse();
         NodeBase node = new TypeNode(new MemberNode(list[0].GetStringRepresentation()), types);
-        foreach (var member in list.Skip(1))
+        foreach (var member in list[1..])
         {
             node = new MemberAccessNode(new MemberNode(member.GetStringRepresentation()), node);
         }
@@ -797,6 +789,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.FailedNeedCommit;
     }
     
+    //TODO: weird method usage need to refactor
     internal ExpressionParsingResult TryParseVariableDeclaration(IParsingTransaction transaction, out NodeBase variableDeclaration)
     {
         var typ = default(NodeBase);
@@ -873,17 +866,15 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.Success;
         }
 
-        if (TryConsumeNextNonWhiteSpace(t => t.Keyword is Keywords.Null, _ => { }, out KeywordToken _))
-        {
-            var nullNode = new ConstNode(null, null);
-            node = ParsePostfixIfExist(nullNode);
-            return ExpressionParsingResult.Success;
-        }
-
-        return ExpressionParsingResult.FailedNeedRollback;
+        if (!TryConsumeNextNonWhiteSpace(t => t.Keyword is Keywords.Null, _ => { }, out KeywordToken _))
+            return ExpressionParsingResult.FailedNeedRollback;
+        
+        var nullNode = new ConstNode(null, null);
+        node = ParsePostfixIfExist(nullNode);
+        return ExpressionParsingResult.Success;
     }
 
-    private ExpressionParsingResult TryParseConstructor(IParsingTransaction transaction, out NodeBase ctor)
+    internal ExpressionParsingResult TryParseConstructor(IParsingTransaction transaction, out NodeBase ctor)
     {
         ctor = null;
         if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.New, _ => { }, out var keywordToken))
@@ -920,26 +911,25 @@ public sealed class PlampNativeParser
     internal ExpressionParsingResult TryParsePrefixOperator(out NodeBase node)
     {
         node = null;
-        if (TryConsumeNextNonWhiteSpace<OperatorToken>(
-                x => x.Operator is OperatorEnum.Minus or OperatorEnum.Not or OperatorEnum.Increment or OperatorEnum.Decrement,
-                _ => { }, out var operatorToken))
+        if (!TryConsumeNextNonWhiteSpace<OperatorToken>(
+                x => x.Operator is OperatorEnum.Minus or OperatorEnum.Not or OperatorEnum.Increment
+                    or OperatorEnum.Decrement,
+                _ => { }, out var operatorToken)) return ExpressionParsingResult.FailedNeedRollback;
+        
+        TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
+
+        node = operatorToken.Operator switch
         {
-            TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
+            OperatorEnum.Minus => new UnaryMinusNode(inner),
+            OperatorEnum.Not => new NotNode(inner),
+            OperatorEnum.Increment => new PrefixIncrementNode(inner),
+            OperatorEnum.Decrement => new PrefixDecrementNode(inner),
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
-            node = operatorToken.Operator switch
-            {
-                OperatorEnum.Minus => new UnaryMinusNode(inner),
-                OperatorEnum.Not => new NotNode(inner),
-                OperatorEnum.Increment => new PrefixIncrementNode(inner),
-                OperatorEnum.Decrement => new PrefixDecrementNode(inner),
-                _ => throw new ArgumentOutOfRangeException()
-            };
+        node = ParsePostfixIfExist(node);
+        return ExpressionParsingResult.Success;
 
-            node = ParsePostfixIfExist(node);
-            return ExpressionParsingResult.Success;
-        }
-
-        return ExpressionParsingResult.FailedNeedRollback;
     }
     
     internal NodeBase ParsePostfixIfExist(NodeBase inner)
@@ -1012,25 +1002,22 @@ public sealed class PlampNativeParser
         node = null;
         return false;
     }
-    
+
     internal bool TryParseMemberAccess(NodeBase input, out NodeBase res)
     {
         res = null;
-        if (TryConsumeNextNonWhiteSpace<OperatorToken>(x => x.Operator == OperatorEnum.MemberAccess, _ => { }, out var call))
-        {
-            if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var word))
-            {
-                res = new MemberAccessNode(input, new MemberNode(word.GetStringRepresentation()));
-                return true;
-            }
+        if (!TryConsumeNextNonWhiteSpace<OperatorToken>(x => x.Operator == OperatorEnum.MemberAccess, _ => { },
+                out var call)) return false;
 
-            var transaction = _transactionSource.BeginTransaction();
-            transaction.AddException(new PlampException(PlampNativeExceptionInfo.ExpectedMemberName(), call));
-            transaction.Commit();
-            return false;
+        if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var word))
+        {
+            res = new MemberAccessNode(input, new MemberNode(word.GetStringRepresentation()));
+            return true;
         }
 
-        res = null;
+        var transaction = _transactionSource.BeginTransaction();
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.ExpectedMemberName(), call));
+        transaction.Commit();
         return false;
     }
 
@@ -1063,7 +1050,10 @@ public sealed class PlampNativeParser
     
     #region Helper
 
-    internal ExpressionParsingResult TryParseCommaSeparated<TReturn>(TryParseInternal<TReturn> parserFunc, out List<TReturn> result, ExpressionParsingResult resultIfFail)
+    internal ExpressionParsingResult TryParseCommaSeparated<TReturn>(
+        TryParseInternal<TReturn> parserFunc, 
+        out List<TReturn> result, 
+        ExpressionParsingResult resultIfFail)
     {
         result = [];
         var accumulate = ExpressionParsingResult.Success;
@@ -1083,8 +1073,11 @@ public sealed class PlampNativeParser
         }
     }
     
-    internal bool TryConsumeNextNonWhiteSpaceWithoutRollback<TToken>(Func<TToken, bool> predicate, 
-        Action<TokenBase> ifPredicateFalse, out TToken token) where TToken : TokenBase
+    //TODO: No need to test because 1 usage(until it change)
+    private bool TryConsumeNextNonWhiteSpaceWithoutRollback<TToken>(
+        Func<TToken, bool> predicate, 
+        Action<TokenBase> ifPredicateFalse, 
+        out TToken token) where TToken : TokenBase
     {
         token = null;
         if (typeof(TToken) == typeof(WhiteSpace))
@@ -1134,7 +1127,9 @@ public sealed class PlampNativeParser
         return res;
     }
 
-    internal bool TryConsumeNext<TToken>(Func<TToken, bool> predicate, Action<TokenBase> ifPredicateFalse,
+    internal bool TryConsumeNext<TToken>(
+        Func<TToken, bool> predicate, 
+        Action<TokenBase> ifPredicateFalse,
         out TToken token) where TToken : TokenBase
     {
         token = default;
@@ -1150,7 +1145,10 @@ public sealed class PlampNativeParser
         return false;
     }
     
-    internal bool TryConsumeNextNonWhiteSpace<TToken>(Func<TToken, bool> predicate, Action<TokenBase> ifPredicateFalse, out TToken token)
+    internal bool TryConsumeNextNonWhiteSpace<TToken>(
+        Func<TToken, bool> predicate, 
+        Action<TokenBase> ifPredicateFalse, 
+        out TToken token)
         where TToken : TokenBase
     {
         token = null;
@@ -1171,22 +1169,22 @@ public sealed class PlampNativeParser
         return false;
     }
 
-    internal void AdvanceToEndOfOrLineRequested<TToken>()
+    internal void AdvanceToEndOfLineOrRequested<TToken>()
     {
         if (typeof(TToken) == typeof(WhiteSpace))
         {
             throw new Exception("Cannot use with white space");
         }
         
-        TokenBase current;
-        do
+        var current = _tokenSequence.Current();
+        while (current.GetType() != typeof(EndOfLine) && current.GetType() != typeof(TToken))
         {
             SkipLineBreak();
             current = _tokenSequence.GetNextNonWhiteSpace();
-        } while (current.GetType() != typeof(EndOfLine) && current.GetType() != typeof(TToken));
+        } 
     }
 
-    private void SkipLineBreak()
+    internal void SkipLineBreak()
     {
         if (TryConsumeNextNonWhiteSpace<LineBreak>(_ => true, _ => { }, out _))
         {
@@ -1195,7 +1193,8 @@ public sealed class PlampNativeParser
     }
     
     private TryParseInternal<List<TReturn>> WrapParseCommaSeparated<TReturn>(
-        TryParseInternal<TReturn> parserFunc, ExpressionParsingResult errorResult)
+        TryParseInternal<TReturn> parserFunc, 
+        ExpressionParsingResult errorResult)
     {
         return FuncWrapper;
         ExpressionParsingResult FuncWrapper(out List<TReturn> resultList)
@@ -1208,21 +1207,25 @@ public sealed class PlampNativeParser
 
     #region ExceptionGeneration
 
-    private void AddExceptionToTheTokenRange(TokenBase start, TokenBase end,
-        PlampNativeExceptionFinalRecord exceptionRecord, IParsingTransaction transaction)
+    internal void AddExceptionToTheTokenRange(
+        TokenBase start, 
+        TokenBase end,
+        PlampNativeExceptionFinalRecord exceptionRecord, 
+        IParsingTransaction transaction)
     {
         transaction.AddException(new PlampException(exceptionRecord, start.Start, end.End));
     }
 
-    private void AdvanceToRequestedTokenWithException<TRequested>(IParsingTransaction transaction)
+    internal void AdvanceToRequestedTokenWithException<TRequested>(
+        IParsingTransaction transaction)
     {
-        var next = _tokenSequence.PeekNextNonWhiteSpace();
-        if (next is EndOfLine)
+        if (_tokenSequence.Current() is EndOfLine)
         {
-            _tokenSequence.GetNextToken();
             return;
         }
-        AdvanceToEndOfOrLineRequested<TRequested>();
+
+        var next = _tokenSequence.PeekNext();
+        AdvanceToEndOfLineOrRequested<TRequested>();
         var end = _tokenSequence.Current();
         AddExceptionToTheTokenRange(next, end, PlampNativeExceptionInfo.Expected(typeof(TRequested).Name), transaction);
     }

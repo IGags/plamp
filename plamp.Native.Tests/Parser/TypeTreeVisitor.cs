@@ -4,7 +4,7 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using Xunit;
 
-namespace plamp.Native.Tests;
+namespace plamp.Native.Tests.Parser;
 
 public class TypeTreeVisitor : BaseVisitor
 {
