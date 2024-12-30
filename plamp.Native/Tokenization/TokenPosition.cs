@@ -26,4 +26,9 @@ public readonly record struct TokenPosition(int Row, int Column) : IComparable<T
     {
         return new(left.Row + right.Row, left.Column + right.Column);
     }
+
+    public override string ToString()
+    {
+        return $"{Row}:{Column}";
+    }
 }

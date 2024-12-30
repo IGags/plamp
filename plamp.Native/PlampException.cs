@@ -51,4 +51,9 @@ public class PlampException : Exception
             && Level == other.Level
             && Message.Equals(other.Message);
     }
+
+    public override string ToString()
+    {
+        return $"{Level} {Code}: {Message} From: {StartPosition} To: {EndPosition})";
+    }
 }

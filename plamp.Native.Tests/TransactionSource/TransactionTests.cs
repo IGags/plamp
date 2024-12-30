@@ -60,7 +60,7 @@ public class TransactionTests
         var transaction = source.BeginTransaction();
         //If transaction 2 has any exceptions it will be ignored after first transaction commit
         var transaction2 = source.BeginTransaction();
-        var ex = new PlampException(null, default, default);
+        var ex = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), default, default);
         transaction2.AddException(ex);
         transaction.Commit();
         Assert.Equal(-1, result.Sequence.Position);

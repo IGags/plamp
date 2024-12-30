@@ -280,7 +280,7 @@ public class ParserHelperLogicTests
         const string code = "";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedRollback, res);
@@ -299,7 +299,7 @@ public class ParserHelperLogicTests
         const string code = "(";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
@@ -315,7 +315,7 @@ public class ParserHelperLogicTests
         const string code = ")";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedRollback, res);
@@ -331,7 +331,7 @@ public class ParserHelperLogicTests
         const string code = "(,(";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
@@ -348,14 +348,14 @@ public class ParserHelperLogicTests
         const string code = "(,)";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedRollback, res);
         Assert.Equal(2, result.Count);
         Assert.Equal(typeof(OpenParen), result[0].GetType());
         Assert.Null(result[1]);
-        Assert.Equal(2, parser.TokenSequence.Position);
+        Assert.Equal(1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
 
@@ -365,14 +365,13 @@ public class ParserHelperLogicTests
         const string code = "),(";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedRollback, res);
-        Assert.Equal(2, result.Count);
+        Assert.Single(result);
         Assert.Null(result[0]);
-        Assert.Equal(typeof(OpenParen), result[1].GetType());
-        Assert.Equal(2, parser.TokenSequence.Position);
+        Assert.Equal(-1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
 
@@ -382,20 +381,20 @@ public class ParserHelperLogicTests
         const string code = "(-(";
         var parser = new PlampNativeParser(code);
         var res = parser.TryParseCommaSeparated(
-            ConsumeOpenParen(parser), out var result, 
+            TryConsumeOpenParen(parser), out var result, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedRollback);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
         Assert.Single(result);
         Assert.Equal(typeof(OpenParen), result[0].GetType());
-        Assert.Equal(1, parser.TokenSequence.Position);
+        Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
     
     /// <summary>
     /// Internal function that consumes only open parens
     /// </summary>
-    private PlampNativeParser.TryParseInternal<OpenParen> ConsumeOpenParen(PlampNativeParser parser)
+    private PlampNativeParser.TryParseInternal<OpenParen> TryConsumeOpenParen(PlampNativeParser parser)
     {
         PlampNativeParser.ExpressionParsingResult Internal(out OpenParen paren)
         {
@@ -510,7 +509,8 @@ public class ParserHelperLogicTests
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new TokenPosition(0, 2), new TokenPosition(0, 2));
+            new TokenPosition(0, 2), new TokenPosition(0, 3));
+        //CRLF end of line has two characters
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
 
@@ -563,7 +563,7 @@ public class ParserHelperLogicTests
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new TokenPosition(0, 2), new TokenPosition(0, 2));
+            new TokenPosition(0, 1), new TokenPosition(0, 5));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
     
@@ -637,7 +637,7 @@ public class ParserHelperLogicTests
         Assert.Equal(1, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var expectedException = new PlampException(PlampNativeExceptionInfo.Expected(nameof(OpenParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 0));
+            new TokenPosition(0, 0), new TokenPosition(0, 1));
         
         Assert.Equal(expectedException, parser.TransactionSource.Exceptions[0]);
     }
@@ -654,7 +654,7 @@ public class ParserHelperLogicTests
         Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var expectedException = new PlampException(PlampNativeExceptionInfo.Expected(nameof(OpenParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 0));
+            new TokenPosition(0, 0), new TokenPosition(0, 1));
         
         Assert.Equal(expectedException, parser.TransactionSource.Exceptions[0]);
     }
@@ -714,7 +714,7 @@ public class ParserHelperLogicTests
         const string code = "(";
         var parser = new PlampNativeParser(code);
         var falsePredicateCalled = false;
-        var res = parser.TryConsumeNext<OpenParen>(
+        var res = parser.TryConsumeNext<WhiteSpace>(
             _ => true, _ => falsePredicateCalled = true, out var result);
         Assert.False(res);
         Assert.Null(result);

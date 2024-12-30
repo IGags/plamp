@@ -1177,7 +1177,9 @@ public sealed class PlampNativeParser
         }
         
         var current = _tokenSequence.Current();
-        while (current.GetType() != typeof(EndOfLine) && current.GetType() != typeof(TToken))
+        while (current == null 
+               || (current.GetType() != typeof(EndOfLine) 
+                   && current.GetType() != typeof(TToken)))
         {
             SkipLineBreak();
             current = _tokenSequence.GetNextNonWhiteSpace();

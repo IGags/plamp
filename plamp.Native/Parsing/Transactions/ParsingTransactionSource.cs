@@ -78,12 +78,17 @@ internal class ParsingTransactionSource
             ParsingTransaction res;
             do
             {
-                res = _source.Pop();
+                res = _source._transactionStack.Peek();
                 if (res == this)
                 {
+                    if (_source._transactionStack.Count == 1)
+                    {
+                        _source.Pop();
+                    }
                     return;
                 }
                 res.Rollback();
+                _source.Pop();
             } while (res != this);
         }
     }
