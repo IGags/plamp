@@ -45,7 +45,7 @@ public class TransactionTests
         result.Sequence.Position = 2;
         var transaction = source.BeginTransaction();
         //If transaction 2 isn't commited position won't change
-        var transaction2 = source.BeginTransaction();
+        _ = source.BeginTransaction();
         result.Sequence.Position = 1;
         transaction.Commit();
         Assert.Equal(2, result.Sequence.Position);
@@ -87,14 +87,100 @@ public class TransactionTests
     [Fact]
     public void RollbackWithoutExceptions()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 2;
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
+    [Fact]
+    public void RollbackWithExceptions()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new (0, 0), new (0, 1)));
+        result.Sequence.Position = 2;
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+
+    [Fact]
+    public void RollbackWithInnerTransactionHasNoException()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        _ = source.BeginTransaction();
+        result.Sequence.Position = 2;
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+
+    [Fact]
+    public void RollbackWithInnerTransactionHasException()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        var transaction2 = source.BeginTransaction();
+        transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+
+    [Fact]
+    public void RollbackTwice()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Rollback();
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+    
     #endregion
 
     #region Pass
 
-    
+    [Fact]
+    public void PassWithoutExceptions()
+    {
+        
+    }
+
+    [Fact]
+    public void PassWithExceptions()
+    {
+        
+    }
+
+    [Fact]
+    public void PassWithInnerTransactionHasNoException()
+    {
+        
+    }
+
+    [Fact]
+    public void PassWithInnerTransactionHasException()
+    {
+        
+    }
+
+    [Fact]
+    public void PassTwice()
+    {
+        
+    }
 
     #endregion
 
