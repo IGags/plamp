@@ -248,11 +248,8 @@ public sealed class PlampNativeParser
     {
         typeNode = null;
         var res = ParseMemberAccessSequence(transaction, out var list);
-        switch (res)
-        {
-            case ExpressionParsingResult.FailedNeedRollback:
-                return ExpressionParsingResult.FailedNeedRollback;
-        }
+        
+        if (res == ExpressionParsingResult.FailedNeedRollback) return ExpressionParsingResult.FailedNeedRollback;
 
         TryParseInParen<List<NodeBase>, OpenAngleBracket, CloseAngleBracket>(transaction,
             WrapParseCommaSeparated(TryParseTypeWrapper(transaction), ExpressionParsingResult.FailedNeedCommit),
@@ -267,6 +264,8 @@ public sealed class PlampNativeParser
 
         list.Reverse();
         NodeBase node = new TypeNode(new MemberNode(list[0].GetStringRepresentation()), types);
+        
+        //DO NOT USE AGGREGATE
         foreach (var member in list[1..])
         {
             node = new MemberAccessNode(new MemberNode(member.GetStringRepresentation()), node);

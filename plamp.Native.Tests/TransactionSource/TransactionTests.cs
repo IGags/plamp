@@ -1,4 +1,5 @@
-﻿using plamp.Native.Parsing.Transactions;
+﻿using System;
+using plamp.Native.Parsing.Transactions;
 using plamp.Native.Tokenization;
 using Xunit;
 
@@ -155,38 +156,104 @@ public class TransactionTests
     [Fact]
     public void PassWithoutExceptions()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
     public void PassWithExceptions()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
+    public void PassWithInnerTransactionHasNoExceptionButChangePosition()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        _ = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Pass();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+    
+    [Fact]
     public void PassWithInnerTransactionHasNoException()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        _ = source.BeginTransaction();
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
     public void PassWithInnerTransactionHasException()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        var transaction2 = source.BeginTransaction();
+        transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
     public void PassTwice()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Pass();
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     #endregion
 
     #region AddException
 
-    
+    [Fact]
+    public void AddExceptionToUncompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        //Yep, just call this method and believe that it won't fail
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+    }
+
+    [Fact]
+    public void AddExceptionToCompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, []);
+        var transaction = source.BeginTransaction();
+        transaction.Commit();
+        Assert.Throws<Exception>(() => transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1))));
+    }
 
     #endregion
 }
