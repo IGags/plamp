@@ -291,15 +291,15 @@ public sealed class PlampNativeParser
         {
             if (!TryConsumeNextNonWhiteSpace<OperatorToken>(x => x.Operator == OperatorEnum.MemberAccess, 
                     _ => { },
-                    out _))
+                    out var op))
             {
                 break;
             }
 
             var first = members[0];
-            if (TryConsumeNextNonWhiteSpace<Word>(_ => true, t =>
+            if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ =>
                 {
-                    AddExceptionToTheTokenRange(first, t, PlampNativeExceptionInfo.InvalidTypeName(),
+                    AddExceptionToTheTokenRange(first, op, PlampNativeExceptionInfo.InvalidTypeName(),
                         transaction);
                 }, out var word))
             {

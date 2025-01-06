@@ -19,7 +19,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("int"), []);
+        var should = new TypeNode(new MemberNode("int"), null);
         Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(0, parser.TokenSequence.Position);
@@ -35,8 +35,8 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), [])]);
-        Assert.Equal(should, typeNode);
+        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
+        Assert.Equal(should, typeNode, CompareTypesRecursively);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(3, parser.TokenSequence.Position);
     }
@@ -51,8 +51,8 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), [])]);
-        Assert.Equal(should, typeNode);
+        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
+        Assert.Equal(should, typeNode, CompareTypesRecursively);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould
             = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseAngleBracket)),
@@ -73,10 +73,10 @@ public class TypeParsingTests
         Assert.NotNull(typeNode);
         var should = new TypeNode(new MemberNode("Dict"),
         [
-            new TypeNode(new MemberNode("int"), []),
-            new TypeNode(new MemberNode("string"), []),
+            new TypeNode(new MemberNode("int"), null),
+            new TypeNode(new MemberNode("string"), null),
         ]);
-        Assert.Equal(should, typeNode);
+        Assert.Equal(should, typeNode, CompareTypesRecursively);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(5, parser.TokenSequence.Position);
     }
@@ -91,7 +91,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new MemberAccessNode(new MemberNode("std"), new TypeNode(new MemberNode("int"), []));
+        var should = new MemberAccessNode(new MemberNode("std"), new TypeNode(new MemberNode("int"), null));
         Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(2, parser.TokenSequence.Position);
@@ -107,7 +107,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std"), []);
+        var should = new TypeNode(new MemberNode("std"), null);
         Assert.Equal(should, typeNode);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
@@ -126,8 +126,8 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), [])]);
-        Assert.Equal(should, typeNode);
+        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
+        Assert.Equal(should, typeNode, CompareTypesRecursively);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
             new(0, 0), new(0, 4));
@@ -145,9 +145,13 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), []);
+        var should = new TypeNode(new MemberNode("List"), null);
         Assert.Equal(should, typeNode);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Single(parser.TransactionSource.Exceptions);
+        var exceptionShould
+            = new PlampException(PlampNativeExceptionInfo.InvalidGenericDefinition(), 
+                new(0, 4), new(0, 5));
+        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
         Assert.Equal(2, parser.TokenSequence.Position);
     }
 
@@ -161,7 +165,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), []);
+        var should = new TypeNode(new MemberNode("List"), null);
         Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(0, parser.TokenSequence.Position);
@@ -199,10 +203,14 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std"), []);
+        var should = new TypeNode(new MemberNode("std"), null);
         Assert.Equal(should, typeNode);
-        Assert.Empty(parser.TransactionSource.Exceptions);
-        Assert.Equal(0, parser.TokenSequence.Position);
+        Assert.Single(parser.TransactionSource.Exceptions);
+        var exceptionShould = new PlampException(
+            PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 3));
+        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
+        
+        Assert.Equal(1, parser.TokenSequence.Position);
     }
 
     [Fact]
@@ -217,12 +225,41 @@ public class TypeParsingTests
         Assert.NotNull(typeNode);
         var should = new TypeNode(new MemberNode("comparer"), 
             [
-                new TypeNode(new MemberNode("first"), []),
+                new TypeNode(new MemberNode("first"), null),
                 null,
-                new TypeNode(new MemberNode("comp"), []),
+                new TypeNode(new MemberNode("comp"), null),
             ]);
-        Assert.Equal(should, typeNode);
+        Assert.Equal(should, typeNode, CompareTypesRecursively);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(6, parser.TokenSequence.Position);
+    }
+
+
+    private bool CompareTypesRecursively(NodeBase first, NodeBase second)
+    {
+        if (first == null || second == null
+                          || first is not TypeNode firstType
+                          || second is not TypeNode secondType) return false;
+
+        if (!firstType.TypeName.Equals(secondType.TypeName)) return false;
+
+        if (firstType.InnerGenerics == null && secondType.InnerGenerics == null) return true;
+
+        if (firstType.InnerGenerics == null 
+            || secondType.InnerGenerics == null
+            || firstType.InnerGenerics.Count != secondType.InnerGenerics.Count) 
+            return false;
+        
+        var accumulate = true;
+        for (var i = 0; i < firstType.InnerGenerics.Count; i++)
+        {
+            if (firstType.InnerGenerics[i] == null 
+                && secondType.InnerGenerics[i] == null) continue;
+            
+            accumulate &= CompareTypesRecursively(
+                firstType.InnerGenerics[i], secondType.InnerGenerics[i]);
+            if (!accumulate) return false;
+        }
+        return true;
     }
 }
