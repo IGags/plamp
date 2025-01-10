@@ -672,7 +672,8 @@ public sealed class PlampNativeParser
 
         node = null;
         transaction.Rollback();
-        //TODO
+        
+        
         return ExpressionParsingResult.FailedNeedCommit;
     }
     
@@ -692,95 +693,89 @@ public sealed class PlampNativeParser
             }
 
             var res = TryParseWithPrecedence(out var right, precedence);
-            if (res == ExpressionParsingResult.Success && right != null)
-            {
-                switch (token.Operator)
-                {
-                    case OperatorEnum.Multiply:
-                        output = new MultiplyNode(left, right);
-                        break;
-                    case OperatorEnum.Divide:
-                        output = new DivideNode(left, right);
-                        break;
-                    case OperatorEnum.Plus:
-                        output = new PlusNode(left, right);
-                        break;
-                    case OperatorEnum.Minus:
-                        output = new MinusNode(left, right);
-                        break;
-                    case OperatorEnum.Lesser:
-                        output = new LessNode(left, right);
-                        break;
-                    case OperatorEnum.Greater:
-                        output = new GreaterNode(left, right);
-                        break;
-                    case OperatorEnum.LesserOrEquals:
-                        output = new LessOrEqualNode(left, right);
-                        break;
-                    case OperatorEnum.GreaterOrEquals:
-                        output = new GreaterOrEqualsNode(left, right);
-                        break;
-                    case OperatorEnum.Equals:
-                        output = new EqualNode(left, right);
-                        break;
-                    case OperatorEnum.NotEquals:
-                        output = new NotEqualNode(left, right);
-                        break;
-                    case OperatorEnum.And:
-                        output = new AndNode(left, right);
-                        break;
-                    case OperatorEnum.Or:
-                        output = new OrNode(left, right);
-                        break;
-                    case OperatorEnum.Modulo:
-                        output = new ModuloNode(left, right);
-                        break;
-                    case OperatorEnum.Assign:
-                        output = new AssignNode(left, right);
-                        break;
-                    case OperatorEnum.PlusAndAssign:
-                        output = new AddAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.MinusAndAssign:
-                        output = new SubAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.MultiplyAndAssign:
-                        output = new MulAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.DivideAndAssign:
-                        output = new DivAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.ModuloAndAssign:
-                        output = new ModuloAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.AndAndAssign:
-                        output = new AndAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.OrAndAssign:
-                        output = new OrAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.XorAndAssign:
-                        output = new XorAndAssignNode(left, right);
-                        break;
-                    case OperatorEnum.BitwiseAnd:
-                        output = new BitwiseAndNode(left, right);
-                        break;
-                    case OperatorEnum.BitwiseOr:
-                        output = new BitwiseOrNode(left, right);
-                        break;
-                    case OperatorEnum.Xor:
-                        output = new XorNode(left, right);
-                        break;
-                    default:
-                        throw new Exception();
-                }
-                transaction.Commit();
-                return ExpressionParsingResult.Success;
-            }
             
-            output = left;
-            transaction.Rollback();
-            return ExpressionParsingResult.FailedNeedCommit;
+            switch (token.Operator)
+            {
+                case OperatorEnum.Multiply:
+                    output = new MultiplyNode(left, right);
+                    break;
+                case OperatorEnum.Divide:
+                    output = new DivideNode(left, right);
+                    break;
+                case OperatorEnum.Plus:
+                    output = new PlusNode(left, right);
+                    break;
+                case OperatorEnum.Minus:
+                    output = new MinusNode(left, right);
+                    break;
+                case OperatorEnum.Lesser:
+                    output = new LessNode(left, right);
+                    break;
+                case OperatorEnum.Greater:
+                    output = new GreaterNode(left, right);
+                    break;
+                case OperatorEnum.LesserOrEquals:
+                    output = new LessOrEqualNode(left, right);
+                    break;
+                case OperatorEnum.GreaterOrEquals:
+                    output = new GreaterOrEqualsNode(left, right);
+                    break;
+                case OperatorEnum.Equals:
+                    output = new EqualNode(left, right);
+                    break;
+                case OperatorEnum.NotEquals:
+                    output = new NotEqualNode(left, right);
+                    break;
+                case OperatorEnum.And:
+                    output = new AndNode(left, right);
+                    break;
+                case OperatorEnum.Or:
+                    output = new OrNode(left, right);
+                    break;
+                case OperatorEnum.Modulo:
+                    output = new ModuloNode(left, right);
+                    break;
+                case OperatorEnum.Assign:
+                    output = new AssignNode(left, right);
+                    break;
+                case OperatorEnum.PlusAndAssign:
+                    output = new AddAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.MinusAndAssign:
+                    output = new SubAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.MultiplyAndAssign:
+                    output = new MulAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.DivideAndAssign:
+                    output = new DivAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.ModuloAndAssign:
+                    output = new ModuloAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.AndAndAssign:
+                    output = new AndAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.OrAndAssign:
+                    output = new OrAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.XorAndAssign:
+                    output = new XorAndAssignNode(left, right);
+                    break;
+                case OperatorEnum.BitwiseAnd:
+                    output = new BitwiseAndNode(left, right);
+                    break;
+                case OperatorEnum.BitwiseOr:
+                    output = new BitwiseOrNode(left, right);
+                    break;
+                case OperatorEnum.Xor:
+                    output = new XorNode(left, right);
+                    break;
+                default:
+                    throw new Exception();
+            }
+            transaction.Commit();
+            return res;
         }
         
         transaction.Rollback();
@@ -817,13 +812,9 @@ public sealed class PlampNativeParser
         cast = null;
         return TryParseInParen<NodeBase, OpenParen, CloseParen>(
             transaction, TryParseTypeWrapper(transaction),
-            (open, close) =>
-            {
-                AddExceptionToTheTokenRange(open, close, PlampNativeExceptionInfo.InvalidCastOperator(),
-                    transaction);
-                return null;
-            }, out cast,
-            ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.FailedNeedCommit);
+            (_, _) => null, out cast,
+            ExpressionParsingResult.FailedNeedRollback, 
+            ExpressionParsingResult.FailedNeedRollback);
     }
 
     internal ExpressionParsingResult TryParseSubExpression(IParsingTransaction transaction, out NodeBase sub)
@@ -910,13 +901,25 @@ public sealed class PlampNativeParser
     internal ExpressionParsingResult TryParsePrefixOperator(out NodeBase node)
     {
         node = null;
+        var transaction = _transactionSource.BeginTransaction();
         if (!TryConsumeNextNonWhiteSpace<OperatorToken>(
                 x => x.Operator is OperatorEnum.Minus or OperatorEnum.Not or OperatorEnum.Increment
                     or OperatorEnum.Decrement,
-                _ => { }, out var operatorToken)) return ExpressionParsingResult.FailedNeedRollback;
+                _ => { }, out var operatorToken))
+        {
+            transaction.Rollback();
+            return ExpressionParsingResult.FailedNeedRollback;
+        }
         
-        TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
+        var res = TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
 
+        if (res != ExpressionParsingResult.Success)
+        {
+            transaction.Rollback();
+            return ExpressionParsingResult.FailedNeedRollback;
+        }
+        
+        transaction.Commit();
         node = operatorToken.Operator switch
         {
             OperatorEnum.Minus => new UnaryMinusNode(inner),

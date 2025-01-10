@@ -56,6 +56,7 @@ internal class ParsingTransactionSource
 
         public void Rollback()
         {
+            if(_isComplete) return;
             Pass();
             _sequence.Position = _tokenSequencePosition;
         }
