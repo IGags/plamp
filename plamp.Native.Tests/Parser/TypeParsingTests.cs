@@ -36,7 +36,7 @@ public class TypeParsingTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
         var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
-        Assert.Equal(should, typeNode, CompareTypesRecursively);
+        Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(3, parser.TokenSequence.Position);
     }
@@ -52,7 +52,7 @@ public class TypeParsingTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
         var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
-        Assert.Equal(should, typeNode, CompareTypesRecursively);
+        Assert.Equal(should, typeNode);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould
             = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseAngleBracket)),
@@ -76,7 +76,7 @@ public class TypeParsingTests
             new TypeNode(new MemberNode("int"), null),
             new TypeNode(new MemberNode("string"), null),
         ]);
-        Assert.Equal(should, typeNode, CompareTypesRecursively);
+        Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(5, parser.TokenSequence.Position);
     }
@@ -127,7 +127,7 @@ public class TypeParsingTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
         var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
-        Assert.Equal(should, typeNode, CompareTypesRecursively);
+        Assert.Equal(should, typeNode);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
             new(0, 0), new(0, 4));
@@ -229,37 +229,8 @@ public class TypeParsingTests
                 null,
                 new TypeNode(new MemberNode("comp"), null),
             ]);
-        Assert.Equal(should, typeNode, CompareTypesRecursively);
+        Assert.Equal(should, typeNode);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(6, parser.TokenSequence.Position);
-    }
-
-
-    private bool CompareTypesRecursively(NodeBase first, NodeBase second)
-    {
-        if (first == null || second == null
-                          || first is not TypeNode firstType
-                          || second is not TypeNode secondType) return false;
-
-        if (!firstType.TypeName.Equals(secondType.TypeName)) return false;
-
-        if (firstType.InnerGenerics == null && secondType.InnerGenerics == null) return true;
-
-        if (firstType.InnerGenerics == null 
-            || secondType.InnerGenerics == null
-            || firstType.InnerGenerics.Count != secondType.InnerGenerics.Count) 
-            return false;
-        
-        var accumulate = true;
-        for (var i = 0; i < firstType.InnerGenerics.Count; i++)
-        {
-            if (firstType.InnerGenerics[i] == null 
-                && secondType.InnerGenerics[i] == null) continue;
-            
-            accumulate &= CompareTypesRecursively(
-                firstType.InnerGenerics[i], secondType.InnerGenerics[i]);
-            if (!accumulate) return false;
-        }
-        return true;
     }
 }

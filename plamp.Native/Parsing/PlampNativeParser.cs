@@ -279,7 +279,7 @@ public sealed class PlampNativeParser
     {
         members = null;
         var peek = _tokenSequence.PeekNextNonWhiteSpace();
-        if (peek.GetType() != typeof(Word))
+        if (peek == null || peek.GetType() != typeof(Word))
         {
             return ExpressionParsingResult.FailedNeedRollback;
         }
@@ -610,7 +610,7 @@ public sealed class PlampNativeParser
                     transaction.Commit();
                     return ExpressionParsingResult.Success;
                 }
-                transaction.Commit();
+                transaction.Rollback();
                 return ExpressionParsingResult.FailedNeedCommit;
             case ExpressionParsingResult.FailedNeedRollback:
                 transaction.Rollback();
@@ -783,31 +783,37 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.FailedNeedCommit;
     }
     
-    //TODO: weird method usage need to refactor
-    internal ExpressionParsingResult TryParseVariableDeclaration(IParsingTransaction transaction, out NodeBase variableDeclaration)
+    internal ExpressionParsingResult TryParseVariableDeclaration(
+        IParsingTransaction transaction, 
+        out NodeBase variableDeclaration)
     {
         var typ = default(NodeBase);
-        if (TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Var, _ => { }, out _) 
-            || TryParseType(transaction, out typ) == ExpressionParsingResult.Success)
+        if (!TryConsumeNextNonWhiteSpace<KeywordToken>(
+                x => x.Keyword == Keywords.Var, _ => { }, out _)
+            && TryParseType(transaction, out typ) != ExpressionParsingResult.Success)
         {
-            //Null denotation starts with variable declaration
-            if (TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(
-                    _ => true,
-                    token => transaction.AddException(new PlampException(PlampNativeExceptionInfo.ExpectedIdentifier(), token)), 
-                    out var name))
-            {
-                variableDeclaration = new VariableDefinitionNode(typ, new MemberNode(name.GetStringRepresentation()));
-                return ExpressionParsingResult.Success;
-            }
             variableDeclaration = null;
-            return ExpressionParsingResult.FailedNeedCommit;
+            return ExpressionParsingResult.FailedNeedRollback;
         }
-
+        
+        //Null denotation starts with variable declaration
+        if (TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(
+                _ => true,
+                token => transaction.AddException(
+                    new PlampException(PlampNativeExceptionInfo.ExpectedIdentifier(), token)), 
+                out var name))
+        {
+            variableDeclaration = new VariableDefinitionNode(
+                typ, new MemberNode(name.GetStringRepresentation()));
+            return ExpressionParsingResult.Success;
+        }
         variableDeclaration = null;
         return ExpressionParsingResult.FailedNeedRollback;
     }
 
-    internal ExpressionParsingResult TryParseCastOperator(IParsingTransaction transaction, out NodeBase cast)
+    internal ExpressionParsingResult TryParseCastOperator(
+        IParsingTransaction transaction, 
+        out NodeBase cast)
     {
         cast = null;
         return TryParseInParen<NodeBase, OpenParen, CloseParen>(
@@ -817,7 +823,9 @@ public sealed class PlampNativeParser
             ExpressionParsingResult.FailedNeedRollback);
     }
 
-    internal ExpressionParsingResult TryParseSubExpression(IParsingTransaction transaction, out NodeBase sub)
+    internal ExpressionParsingResult TryParseSubExpression(
+        IParsingTransaction transaction, 
+        out NodeBase sub)
     {
         return TryParseInParen<NodeBase, OpenParen, CloseParen>(
             transaction, TryParseWithPrecedence, (open, close) =>
@@ -847,7 +855,8 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.Success;
         }
 
-        if (TryConsumeNextNonWhiteSpace(t => t.Keyword is Keywords.True or Keywords.False, _ => { },
+        if (TryConsumeNextNonWhiteSpace(
+                t => t.Keyword is Keywords.True or Keywords.False, _ => { },
                 out KeywordToken boolLiteral))
         {
             var value = bool.Parse(boolLiteral.GetStringRepresentation());
@@ -856,7 +865,8 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.Success;
         }
 
-        if (!TryConsumeNextNonWhiteSpace(t => t.Keyword is Keywords.Null, _ => { }, out KeywordToken _))
+        if (!TryConsumeNextNonWhiteSpace(
+                t => t.Keyword is Keywords.Null, _ => { }, out KeywordToken _))
             return ExpressionParsingResult.FailedNeedRollback;
         
         var nullNode = new ConstNode(null, null);
@@ -864,7 +874,9 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
 
-    internal ExpressionParsingResult TryParseConstructor(IParsingTransaction transaction, out NodeBase ctor)
+    internal ExpressionParsingResult TryParseConstructor(
+        IParsingTransaction transaction, 
+        out NodeBase ctor)
     {
         ctor = null;
         if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.New, _ => { }, out var keywordToken))
@@ -874,14 +886,14 @@ public sealed class PlampNativeParser
         
         if (TryParseType(transaction, out var type) != ExpressionParsingResult.Success)
         {
-            return ExpressionParsingResult.FailedNeedCommit;
+            return ExpressionParsingResult.FailedNeedRollback;
         }
         
         var typeEnd = _tokenSequence.Current();
         var parenRes = TryParseInParen<List<NodeBase>, OpenParen, CloseParen>(
             transaction,
             WrapParseCommaSeparated<NodeBase>(TryParseWithPrecedence, ExpressionParsingResult.FailedNeedCommit),
-            (_, _) => [], out var parameters, ExpressionParsingResult.FailedNeedCommit,
+            (_, _) => [], out var parameters, ExpressionParsingResult.FailedNeedRollback,
             ExpressionParsingResult.Success);
         
         switch (parenRes)
@@ -889,6 +901,9 @@ public sealed class PlampNativeParser
             case ExpressionParsingResult.Success:
                 ctor = new ConstructorNode(type, parameters);
                 return ExpressionParsingResult.Success;
+            case ExpressionParsingResult.FailedNeedRollback:
+                return ExpressionParsingResult.FailedNeedRollback;
+            //Dead branch current focus is not in exception precision
             case ExpressionParsingResult.FailedNeedCommit:
                 AddExceptionToTheTokenRange(keywordToken, typeEnd,
                     PlampNativeExceptionInfo.Expected("arguments in ()"), transaction);
@@ -903,7 +918,10 @@ public sealed class PlampNativeParser
         node = null;
         var transaction = _transactionSource.BeginTransaction();
         if (!TryConsumeNextNonWhiteSpace<OperatorToken>(
-                x => x.Operator is OperatorEnum.Minus or OperatorEnum.Not or OperatorEnum.Increment
+                x => x.Operator 
+                    is OperatorEnum.Minus 
+                    or OperatorEnum.Not 
+                    or OperatorEnum.Increment
                     or OperatorEnum.Decrement,
                 _ => { }, out var operatorToken))
         {
@@ -911,7 +929,8 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.FailedNeedRollback;
         }
         
-        var res = TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
+        var res 
+            = TryParseWithPrecedence(out var inner, operatorToken.GetPrecedence(true));
 
         if (res != ExpressionParsingResult.Success)
         {
@@ -991,16 +1010,20 @@ public sealed class PlampNativeParser
         }
 
         var transaction = _transactionSource.BeginTransaction();
-        var isParsed = TryParseInParen<List<NodeBase>, OpenSquareBracket, CloseSquareBracket>(
+        var isParsed 
+            = TryParseInParen<List<NodeBase>, OpenSquareBracket, CloseSquareBracket>(
             transaction, 
-            WrapParseCommaSeparated<NodeBase>(TryParseWithPrecedence, ExpressionParsingResult.FailedNeedCommit), (_, _) => [], 
-            out var index, ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.Success);
+            WrapParseCommaSeparated<NodeBase>(
+                TryParseWithPrecedence, ExpressionParsingResult.FailedNeedCommit), (_, _) => [], 
+            out var index, 
+            ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.Success);
+        
         if (isParsed == ExpressionParsingResult.Success)
         {
             node = new IndexerNode(inner, index);
             return true;
         }
-
+        transaction.Rollback();
         node = null;
         return false;
     }
@@ -1008,8 +1031,10 @@ public sealed class PlampNativeParser
     internal bool TryParseMemberAccess(NodeBase input, out NodeBase res)
     {
         res = null;
-        if (!TryConsumeNextNonWhiteSpace<OperatorToken>(x => x.Operator == OperatorEnum.MemberAccess, _ => { },
-                out var call)) return false;
+        var tranasction = _transactionSource.BeginTransaction();
+        if (!TryConsumeNextNonWhiteSpace<OperatorToken>(
+                x => x.Operator == OperatorEnum.MemberAccess, _ => { },
+                out _)) return false;
 
         if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var word))
         {
@@ -1017,9 +1042,13 @@ public sealed class PlampNativeParser
             return true;
         }
 
-        var transaction = _transactionSource.BeginTransaction();
-        transaction.AddException(new PlampException(PlampNativeExceptionInfo.ExpectedMemberName(), call));
-        transaction.Commit();
+        //var transaction = _transactionSource.BeginTransaction();
+        //TODO: specify exception later
+        //transaction.AddException(
+        //    new PlampException(PlampNativeExceptionInfo.ExpectedMemberName(), call));
+        //transaction.Commit();
+        
+        tranasction.Rollback();
         return false;
     }
 
@@ -1030,7 +1059,8 @@ public sealed class PlampNativeParser
         var parenRes = TryParseInParen<List<NodeBase>, OpenParen, CloseParen>(
             transaction,
             WrapParseCommaSeparated<NodeBase>(TryParseWithPrecedence, ExpressionParsingResult.FailedNeedPass),
-            (_, _) => [], out var args, ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.Success);
+            (_, _) => [], out var args, 
+            ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.Success);
         switch (parenRes)
         {
             case ExpressionParsingResult.Success:
