@@ -2,7 +2,7 @@
 
 public class OpenParen : TokenBase
 {
-    public OpenParen(TokenPosition start, TokenPosition end) : base(start, end, ")")
+    public OpenParen(TokenPosition start, TokenPosition end) : base(start, end, "(")
     {
     }
 }

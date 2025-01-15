@@ -50,7 +50,6 @@ internal class ParsingTransactionSource
         {
             if (_isComplete) return;
             _exceptionList.AddRange(_temporalList);
-            _isComplete = true;
             Pop();
         }
 
@@ -64,13 +63,12 @@ internal class ParsingTransactionSource
         public void Pass()
         {
             if (_isComplete) return;
-            _isComplete = true;
             Pop();
         }
 
         public void AddException(PlampException exception)
         {
-            if (_isComplete) throw new Exception("Transction was completed");
+            if (_isComplete) throw new Exception("Transaction was completed");
             _temporalList.Add(exception);
         }
 
@@ -82,14 +80,19 @@ internal class ParsingTransactionSource
                 res = _source._transactionStack.Peek();
                 if (res == this)
                 {
-                    if (_source._transactionStack.Count == 1)
-                    {
-                        _source.Pop();
-                    }
+                    res._isComplete = true;
+                    _source.Pop();
                     return;
                 }
-                res.Rollback();
+
                 _source.Pop();
+                if (res._isComplete)
+                {
+                    continue;
+                }
+
+                throw new Exception(
+                    "Parsing inner parsing transaction is not complete, handle leak parser shutdown");
             } while (res != this);
         }
     }

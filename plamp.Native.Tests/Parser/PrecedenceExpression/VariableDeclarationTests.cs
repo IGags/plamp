@@ -3,44 +3,48 @@ using plamp.Native.Parsing;
 using Xunit;
 
 #pragma warning disable CS0618
-namespace plamp.Native.Tests.Parser;
+namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
-public class CastOperatorTests
+public class VariableDeclarationTests
 {
     [Fact]
-    public void ParseValidCast()
+    public void VariableDeclarationWithType()
     {
-        const string code = "(int)1l";
+        const string code = "int a";
         var parser = new PlampNativeParser(code);
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould 
-            = new CastNode(
+            = new VariableDefinitionNode(
                 new TypeNode(
                     new MemberNode("int"), 
                     null), 
-                new ConstNode(1L, typeof(long)));
+                new MemberNode("a"));
         Assert.Equal(expressionShould, expression);
-        Assert.Equal(3, parser.TokenSequence.Position);
+        Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
 
     [Fact]
-    public void ParseCastWithoutContinue()
+    public void VariableDeclarationWithKeyword()
     {
-        const string code = "(int)-";
+        const string code = "var a";
         var parser = new PlampNativeParser(code);
         var result = parser.TryParseWithPrecedence(out var expression);
-        Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
-        Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var expressionShould
+            = new VariableDefinitionNode(
+                null,
+                new MemberNode("a"));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
 
     [Fact]
-    public void ParseCastWithoutCloseParen()
+    public void KeywordOnly()
     {
-        const string code = "(int 1";
+        const string code = "var";
         var parser = new PlampNativeParser(code);
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);

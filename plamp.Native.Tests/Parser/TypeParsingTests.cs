@@ -55,8 +55,8 @@ public class TypeParsingTests
         Assert.Equal(should, typeNode);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould
-            = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseAngleBracket)),
-                new(0, 8), new(0, 9));
+            = new PlampException(PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
+                new(0, 4), new(0, 9));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
         Assert.Equal(3, parser.TokenSequence.Position);
     }

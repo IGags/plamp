@@ -7,7 +7,7 @@ using plamp.Native.Parsing;
 using Xunit;
 
 #pragma warning disable CS0618
-namespace plamp.Native.Tests.Parser;
+namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class SimpleMathTests
 {

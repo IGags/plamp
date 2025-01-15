@@ -73,7 +73,8 @@ public static class PlampNativeExceptionInfo
     private static readonly PlampNativeExceptionRecord InvalidParameterDefinitionRecord =
         new ("Invalid parameter definition", 1108, ExceptionLevel.Error);
     
-    public static PlampNativeExceptionFinalRecord InvalidParameterDefinition() => InvalidParameterDefinitionRecord.Format();
+    public static PlampNativeExceptionFinalRecord InvalidParameterDefinition() 
+        => InvalidParameterDefinitionRecord.Format();
 
     private static readonly PlampNativeExceptionRecord ExpectedArgDefinitionRecord =
         new("Expected arg definition", 1109, ExceptionLevel.Error);
@@ -84,6 +85,24 @@ public static class PlampNativeExceptionInfo
         new("Invalid using name", 1110, ExceptionLevel.Error);
     
     public static PlampNativeExceptionFinalRecord InvalidUsingName() => InvalidUsingNameRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord ParenExpressionIsNotClosedRecord = 
+        new("Paren expression is not closed", 1111, ExceptionLevel.Error);
+
+    public static PlampNativeExceptionFinalRecord ParenExpressionIsNotClosed() 
+        => ParenExpressionIsNotClosedRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord EmptyConditionPredicateRecord =
+        new ("Empty condition predicate", 1112, ExceptionLevel.Error);
+
+    public static PlampNativeExceptionFinalRecord EmptyConditionPredicate()
+        => EmptyConditionPredicateRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord missingConditionPredicateRecord = 
+        new ("Missing condition predicate", 1113, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord MissingConditionPredicate() 
+        => missingConditionPredicateRecord.Format();
 
     #endregion
 }

@@ -497,7 +497,7 @@ public class ParserHelperLogicTests
             ConsumeOperator(parser), (_, _) =>
             {
                 emptyCaseInvoked = true;
-                return default;
+                return null;
             }, out var @operator, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedPass,
             PlampNativeParser.ExpressionParsingResult.FailedNeedCommit);
@@ -508,8 +508,8 @@ public class ParserHelperLogicTests
         Assert.Equal(OperatorEnum.Minus, @operator.Operator);
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
-        var exceptionShould = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new TokenPosition(0, 2), new TokenPosition(0, 3));
+        var exceptionShould = new PlampException(PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
+            new TokenPosition(0, 0), new TokenPosition(0, 3));
         //CRLF end of line has two characters
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
@@ -551,7 +551,7 @@ public class ParserHelperLogicTests
             ConsumeOperator(parser), (_, _) =>
             {
                 emptyCaseInvoked = true;
-                return default;
+                return null;
             }, out var @operator, 
             PlampNativeParser.ExpressionParsingResult.FailedNeedPass,
             PlampNativeParser.ExpressionParsingResult.FailedNeedCommit);
@@ -563,7 +563,7 @@ public class ParserHelperLogicTests
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new TokenPosition(0, 1), new TokenPosition(0, 5));
+            new TokenPosition(0, 0), new TokenPosition(0, 5));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
     
@@ -652,11 +652,7 @@ public class ParserHelperLogicTests
         transaction.Commit();
         
         Assert.Equal(0, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
-        var expectedException = new PlampException(PlampNativeExceptionInfo.Expected(nameof(OpenParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 1));
-        
-        Assert.Equal(expectedException, parser.TransactionSource.Exceptions[0]);
+        Assert.Empty(parser.TransactionSource.Exceptions);
     }
     
     #endregion
