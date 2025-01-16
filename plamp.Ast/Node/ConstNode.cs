@@ -12,7 +12,11 @@ public record ConstNode(object Value, Type Type) : NodeBase
 
     public virtual bool Equals(ConstNode other)
     {
-        return other != null && Value.Equals(other.Value) && Type == other.Type;
+        if(other == null) return false;
+        if(Value == null && other.Value == null
+           && Type == null && other.Type == null) return true;
+        if (Value == null || Type == null) return false;
+        return Value.Equals(other.Value) && Type == other.Type;
     }
 
     public override int GetHashCode()

@@ -429,6 +429,282 @@ public class ParseConditionTests
         var parser = new PlampNativeParser(code);
         var transaction = parser.TransactionSource.BeginTransaction();
         var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new CallNode(
+                            new MemberNode("t"),
+                            [])
+                    ])),
+                [],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(22, parser.TokenSequence.Position);
+        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        var exceptionShould1 = new PlampException(
+            PlampNativeExceptionInfo.MissingConditionPredicate(), 
+            new(1, 0), new(1, 3));
+        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+        var exceptionShould2 = new PlampException(
+            PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
+            new(1, 4), new(1, 9));
+        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+        var exceptionShould3 = new PlampException(
+            PlampNativeExceptionInfo.InvalidBody(),
+            new(2, 4), new(2, 16));
+        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+    }
+
+    [Fact]
+    public void ParseManyElifClause()
+    {
+        const string code = """
+                            if(i) c++
+                            elif(!i)
+                                print("hi")
+                                c--
+                            elif(false) return 1
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new PostfixIncrementNode(
+                            new MemberNode("c"))
+                    ])),
+                [
+                    new ClauseNode(
+                        new NotNode(
+                            new MemberNode("i")),
+                        new BodyNode(
+                        [
+                            new CallNode(
+                                new MemberNode("print"),
+                                [
+                                    new ConstNode("hi", typeof(string))
+                                ]),
+                            new PostfixDecrementNode(
+                                new MemberNode("c"))
+                        ])),
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(1, typeof(int)))
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(32, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseManyElifClausesFirstEmptyBody()
+    {
+        const string code = """
+                            if(i) c++
+                            elif(!i)
+                            elif(false) return 1
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new PostfixIncrementNode(
+                            new MemberNode("c"))
+                    ])),
+                [
+                    new ClauseNode(
+                        new NotNode(
+                            new MemberNode("i")),
+                        new BodyNode([])),
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(1, typeof(int)))
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(22, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseManyElifClausesSecondEmptyBodyWithElse()
+    {
+        const string code = """
+                            if(i) c++
+                            elif(!i) return 1
+                            elif(false)
+                            else return 2
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new PostfixIncrementNode(
+                            new MemberNode("c"))
+                    ])),
+                [
+                    new ClauseNode(
+                        new NotNode(
+                            new MemberNode("i")),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                            new ConstNode(1, typeof(int)))
+                        ])),
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode([]))
+                ],
+                new BodyNode(
+                [
+                    new ReturnNode(
+                        new ConstNode(2, typeof(int)))
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(28, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseManyElifClausesFirstWithoutOpenParen()
+    {
+        const string code = """
+                            if(true) c++
+                            elif
+                                c()
+                                c()
+                            elif(false) return null
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new ConstNode(true, typeof(bool)),
+                    new BodyNode(
+                    [
+                        new PostfixIncrementNode(
+                            new MemberNode("c"))
+                    ])),
+                [
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(null, null))
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(28, parser.TokenSequence.Position);
+        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        var exceptionShould1 = new PlampException(
+            PlampNativeExceptionInfo.MissingConditionPredicate(), 
+            new(1, 0), new(1, 3));
+        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+        var exceptionShould2 = new PlampException(
+            PlampNativeExceptionInfo.InvalidBody(),
+            new(2, 4), new(2, 8));
+        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+        var exceptionShould3 = new PlampException(
+            PlampNativeExceptionInfo.InvalidBody(),
+            new(3, 4), new(3, 8));
+        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+    }
+
+    [Fact]
+    public void ParseManyElifClauseLastWithoutOpenParenWithElse()
+    {
+        const string code = """
+                            if(true) c++
+                            elif(false) return null
+                            elif
+                                c()
+                                c()
+                            else
+                                w()
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new ConstNode(true, typeof(bool)),
+                    new BodyNode(
+                    [
+                        new PostfixIncrementNode(
+                            new MemberNode("c"))
+                    ])),
+                [
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(null, null))
+                        ]))
+                ],
+                new BodyNode(
+                [
+                    new CallNode(
+                        new MemberNode("w"),
+                        [])
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(35, parser.TokenSequence.Position);
+        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        var exceptionShould1 = new PlampException(
+            PlampNativeExceptionInfo.MissingConditionPredicate(), 
+            new(2, 0), new(2, 3));
+        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+        var exceptionShould2 = new PlampException(
+            PlampNativeExceptionInfo.InvalidBody(),
+            new(3, 4), new(3, 8));
+        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+        var exceptionShould3 = new PlampException(
+            PlampNativeExceptionInfo.InvalidBody(),
+            new(4, 4), new(4, 8));
+        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
     }
 }

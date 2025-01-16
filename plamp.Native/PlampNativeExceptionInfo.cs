@@ -98,11 +98,17 @@ public static class PlampNativeExceptionInfo
     public static PlampNativeExceptionFinalRecord EmptyConditionPredicate()
         => EmptyConditionPredicateRecord.Format();
     
-    private static readonly PlampNativeExceptionRecord missingConditionPredicateRecord = 
+    private static readonly PlampNativeExceptionRecord MissingConditionPredicateRecord = 
         new ("Missing condition predicate", 1113, ExceptionLevel.Error);
     
     public static PlampNativeExceptionFinalRecord MissingConditionPredicate() 
-        => missingConditionPredicateRecord.Format();
+        => MissingConditionPredicateRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord InvalidBodyRecord =
+        new ("Invalid body", 1114, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidBody()
+        => InvalidBodyRecord.Format();
 
     #endregion
 }

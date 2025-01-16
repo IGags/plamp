@@ -296,7 +296,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
 
-    internal ExpressionParsingResult ParseMemberAccessSequence(IParsingTransaction transaction, out List<Word> members)
+    private ExpressionParsingResult ParseMemberAccessSequence(IParsingTransaction transaction, out List<Word> members)
     {
         members = null;
         var peek = _tokenSequence.PeekNextNonWhiteSpace();
@@ -335,7 +335,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
     
-    internal TryParseInternal<NodeBase> TryParseTypeWrapper(IParsingTransaction transaction)
+    private TryParseInternal<NodeBase> TryParseTypeWrapper(IParsingTransaction transaction)
     {
         return FuncWrapper;
             
@@ -443,7 +443,7 @@ public sealed class PlampNativeParser
         }
     }
 
-    internal ExpressionParsingResult TryParseConditionalExpression(KeywordToken ifClauseKeyword, IParsingTransaction transaction, out ConditionNode conditionNode)
+    private ExpressionParsingResult TryParseConditionalExpression(KeywordToken ifClauseKeyword, IParsingTransaction transaction, out ConditionNode conditionNode)
     {
         conditionNode = null;
         
@@ -486,7 +486,7 @@ public sealed class PlampNativeParser
         }
     }
 
-    internal ExpressionParsingResult TryParseConditionClause(
+    private ExpressionParsingResult TryParseConditionClause(
         KeywordToken clauseDefinition, 
         IParsingTransaction transaction, 
         out ClauseNode conditionNode)
@@ -510,14 +510,16 @@ public sealed class PlampNativeParser
         {
             AddExceptionToTheTokenRange(clauseDefinition, clauseDefinition,
                 PlampNativeExceptionInfo.MissingConditionPredicate(), transaction);
-            return res;
+            AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
+            AddBodyException(transaction);
+            return ExpressionParsingResult.FailedNeedCommit;
         }
         var body = ParseOptionalBody(transaction);
         conditionNode = new ClauseNode(condition, body);
         return res;
     }
 
-    internal ExpressionParsingResult TryParseForLoop(IParsingTransaction transaction, out ForNode forNode)
+    private ExpressionParsingResult TryParseForLoop(IParsingTransaction transaction, out ForNode forNode)
     {
         forNode = null;
         if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.For, _ => { }, out var keyword))
@@ -537,9 +539,9 @@ public sealed class PlampNativeParser
             TryParseForHeader(transaction, keyword, out header);
     }
 
-    internal record struct ForHeaderHolder(NodeBase IteratorVar, NodeBase Iterable);
+    private record struct ForHeaderHolder(NodeBase IteratorVar, NodeBase Iterable);
 
-    internal ExpressionParsingResult TryParseForHeader(IParsingTransaction transaction, TokenBase forNode, out ForHeaderHolder headerHolder)
+    private ExpressionParsingResult TryParseForHeader(IParsingTransaction transaction, TokenBase forNode, out ForHeaderHolder headerHolder)
     {
         TryParseWithPrecedence(out var iteratorVar);
         TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.In, 
@@ -549,7 +551,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
     
-    internal ExpressionParsingResult TryParseWhileLoop(IParsingTransaction transaction, out WhileNode whileNode)
+    private ExpressionParsingResult TryParseWhileLoop(IParsingTransaction transaction, out WhileNode whileNode)
     {
         whileNode = null;
 
@@ -577,7 +579,41 @@ public sealed class PlampNativeParser
         throw new Exception("Parser exception");
     }
 
-    internal BodyNode ParseOptionalBody(IParsingTransaction transaction)
+    /// <summary>
+    /// Add exception to matching body calls from end of line
+    /// </summary>
+    private void AddBodyException(IParsingTransaction transaction)
+    {
+        using var handle = _depth.EnterNewScope();
+        while (true)
+        {
+            var res
+                = TryParseScopedWithDepth<NodeBase>(AddExceptionToBodyLevelWrapper, out _);
+            if (res != ExpressionParsingResult.Success)
+            {
+                return;
+            }
+        }
+
+        ExpressionParsingResult AddExceptionToBodyLevelWrapper(out NodeBase res)
+        {
+            return AddExceptionToBodyLevel(transaction, out res);
+        }
+    }
+
+    private ExpressionParsingResult AddExceptionToBodyLevel(
+        IParsingTransaction transaction, out NodeBase result)
+    {
+        var next = _tokenSequence.PeekNext();
+        AdvanceToEndOfLineOrRequested<EndOfLine>();
+        var end = _tokenSequence.Current();
+        AddExceptionToTheTokenRange(
+            next, end, PlampNativeExceptionInfo.InvalidBody(), transaction);
+        result = null;
+        return ExpressionParsingResult.Success;
+    }
+    
+    private BodyNode ParseOptionalBody(IParsingTransaction transaction)
     {
         if (_tokenSequence.PeekNext()?.GetType() != typeof(EndOfLine))
         {
