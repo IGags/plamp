@@ -707,4 +707,365 @@ public class ParseConditionTests
             new(4, 4), new(4, 8));
         Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
     }
+
+    [Fact]
+    public void ParseManyElifClauseFirstWithoutCloseParen()
+    {
+        const string code = """
+                            if(true)
+                                return 0
+                            elif(false return null
+                            elif(false)
+                                return ++i
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new ConstNode(true, typeof(bool)),
+                    new BodyNode(
+                    [
+                        new ReturnNode(
+                            new ConstNode(0, typeof(int)))
+                    ])),
+                [
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                            []
+                        )),
+                    new ClauseNode(
+                        new ConstNode(false, typeof(bool)),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new PrefixIncrementNode(
+                                    new MemberNode("i")))
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(28, parser.TokenSequence.Position);
+        Assert.Single(parser.TransactionSource.Exceptions);
+        var exceptionShould = new PlampException(
+            PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
+            new(2, 4), new(2, 23));
+        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+    }
+
+    [Fact]
+    public void ParseElifClauseListLastWithoutCloseParenWithElse()
+    {
+        const string code = """
+                            if(i) return 0
+                            elif(j) return myFault
+                            elif(t
+                                return urFault
+                            else return ourFault
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new ReturnNode(
+                            new ConstNode(0, typeof(int)))
+                    ])),
+                [
+                    new ClauseNode(
+                        new MemberNode("j"),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new MemberNode("myFault"))
+                        ])),
+                    new ClauseNode(
+                        new MemberNode("t"),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new MemberNode("urFault"))
+                        ]))
+                ],
+                new BodyNode(
+                [
+                    new ReturnNode(
+                        new MemberNode("ourFault"))
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(32, parser.TokenSequence.Position);
+        Assert.Single(parser.TransactionSource.Exceptions);
+        var exceptionShould = new PlampException(
+            PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
+            new(2, 4), new(2, 7));
+        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+    }
+
+    [Fact]
+    public void ParseFullValidManyElifClauses()
+    {
+        const string code = """
+                            if(i) return 1
+                            elif(j) return 2
+                            elif(t) return 3
+                            else return 4
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new ReturnNode(
+                            new ConstNode(1, typeof(int)))
+                    ])),
+                [
+                    new ClauseNode(
+                        new MemberNode("j"),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(2, typeof(int)))
+                        ])),
+                    new ClauseNode(
+                        new MemberNode("t"),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(3, typeof(int)))
+                        ]))
+                ],
+                new BodyNode(
+                [
+                    new ReturnNode(
+                        new ConstNode(4, typeof(int)))
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(32, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseDoubleIfClause()
+    {
+        const string code = """
+                            if(a) t()
+                            if(b) d()
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("a"),
+                    new BodyNode(
+                    [
+                        new CallNode(
+                            new MemberNode("t"),
+                            [])
+                    ])),
+                [],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(8, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseSpaceBetweenIfAndElse()
+    {
+        const string code = """
+                            if(i)
+                                print()
+                            
+                            
+                            
+                            
+                            else
+                                println()
+                            """;
+        
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new CallNode(
+                            new MemberNode("print"),
+                            [])
+                    ])),
+                [],
+                new BodyNode(
+                [
+                    new CallNode(
+                        new MemberNode("println"),
+                        [])
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(20, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseSpaceBetweenIfAndElif()
+    {
+        const string code = """
+                            if(i)
+                                print()
+                            
+                            
+                            elif(j)
+                                println()
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new CallNode(
+                            new MemberNode("print"),
+                            [])
+                    ])),
+                [
+                    new ClauseNode(
+                        new MemberNode("j"),
+                        new BodyNode(
+                        [
+                            new CallNode(
+                                new MemberNode("println"),
+                                [])
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(21, parser.TokenSequence.Position);
+    }
+
+    [Fact]
+    public void ParseSpaceBetweenElifAndElif()
+    {
+        const string code = """
+                            if(i) j++
+                            elif(t) print()
+                            
+                            
+                            
+                            elif(d) print("tt")
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                        [
+                            new PostfixIncrementNode(
+                                new MemberNode("j"))
+                        ])),
+                [
+                    new ClauseNode(
+                        new MemberNode("t"),
+                        new BodyNode(
+                            [
+                                new CallNode(
+                                    new MemberNode("print"),
+                                    [])
+                            ])),
+                    new ClauseNode(
+                        new MemberNode("d"),
+                        new BodyNode(
+                        [
+                            new CallNode(
+                                new MemberNode("print"),
+                                [
+                                    new ConstNode("tt", typeof(string))
+                                ])
+                        ]))
+                ],
+                null);
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(29, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
+
+    [Fact]
+    public void ParseSpaceBetweenElifAndElse()
+    {
+        const string code = """
+                            if(i) return 1
+                            elif(t) return 2
+                            
+                            
+                            else return 3
+                            """;
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        transaction.Commit();
+        var expressionShould
+            = new ConditionNode(
+                new ClauseNode(
+                    new MemberNode("i"),
+                    new BodyNode(
+                    [
+                        new ReturnNode(
+                            new ConstNode(1, typeof(int)))
+                    ])),
+                [
+                    new ClauseNode(
+                        new MemberNode("t"),
+                        new BodyNode(
+                        [
+                            new ReturnNode(
+                                new ConstNode(2, typeof(int)))
+                        ]))
+                ],
+                new BodyNode(
+                [
+                    new ReturnNode(
+                        new ConstNode(3, typeof(int)))
+                ]));
+        Assert.Equal(expressionShould, expression);
+        Assert.Equal(25, parser.TokenSequence.Position);
+        Assert.Empty(parser.TransactionSource.Exceptions);
+    }
 }

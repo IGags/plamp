@@ -541,11 +541,17 @@ public sealed class PlampNativeParser
 
     private record struct ForHeaderHolder(NodeBase IteratorVar, NodeBase Iterable);
 
-    private ExpressionParsingResult TryParseForHeader(IParsingTransaction transaction, TokenBase forNode, out ForHeaderHolder headerHolder)
+    private ExpressionParsingResult TryParseForHeader(
+        IParsingTransaction transaction, 
+        TokenBase forNode, 
+        out ForHeaderHolder headerHolder)
     {
         TryParseWithPrecedence(out var iteratorVar);
-        TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.In, 
-            _ => transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidForHeader(), forNode)), out _);
+        TryConsumeNextNonWhiteSpace<KeywordToken>(
+            x => x.Keyword == Keywords.In, 
+            _ => transaction.AddException(
+                new PlampException(PlampNativeExceptionInfo.InvalidForHeader(), forNode)), 
+            out _);
         TryParseWithPrecedence(out var iterable);
         headerHolder = new ForHeaderHolder(iteratorVar, iterable);
         return ExpressionParsingResult.Success;
