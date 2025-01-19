@@ -42,12 +42,12 @@ public class TypeParsingTests
     }
 
     [Fact]
-    public void ParseNotClosedGeneric()
+    public void ParseNotClosedGenericNonStrict()
     {
         var code = "List<int";
         var parser = new PlampNativeParser(code);
         var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseType(transaction, out var typeNode);
+        var result = parser.TryParseType(transaction, out var typeNode, false);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
@@ -59,6 +59,21 @@ public class TypeParsingTests
                 new(0, 4), new(0, 9));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
         Assert.Equal(3, parser.TokenSequence.Position);
+    }
+    
+    [Fact]
+    public void ParseNotClosedGenericStrict()
+    {
+        var code = "List<int";
+        var parser = new PlampNativeParser(code);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseType(transaction, out var typeNode);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        Assert.NotNull(typeNode);
+        var should = new TypeNode(new MemberNode("List"), null);
+        Assert.Equal(should, typeNode);
+        Assert.Equal(0, parser.TokenSequence.Position);
     }
 
     [Fact]

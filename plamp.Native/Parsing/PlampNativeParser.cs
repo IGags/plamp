@@ -246,13 +246,14 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
     
-    internal ExpressionParsingResult TryParseType(IParsingTransaction transaction, out NodeBase typeNode)
+    internal ExpressionParsingResult TryParseType(IParsingTransaction transaction, out NodeBase typeNode, bool strict = true)
     {
         typeNode = null;
         var res = ParseMemberAccessSequence(transaction, out var list);
         
         if (res == ExpressionParsingResult.FailedNeedRollback) return ExpressionParsingResult.FailedNeedRollback;
 
+        var inner = _transactionSource.BeginTransaction();
         TryParseInParen<List<NodeBase>, OpenAngleBracket, CloseAngleBracket>(transaction,
             WrapParseCommaSeparated(TryParseTypeWrapper(transaction), ExpressionParsingResult.FailedNeedCommit),
             (start, end)
@@ -263,7 +264,19 @@ public sealed class PlampNativeParser
                 return null;
             },
             out var types, ExpressionParsingResult.FailedNeedPass, ExpressionParsingResult.Success);
-
+        
+        if (_tokenSequence.Current()?.GetType() != typeof(CloseAngleBracket) 
+            && strict)
+        {
+            inner.Rollback();
+            types = null;
+        }
+        else
+        {
+            inner.Commit();
+        }
+        
+        
         //Member access should put previous member chain in first arg
         NodeBase node = null;
         for (var i = 0; i < list.Count; i++)
@@ -429,7 +442,7 @@ public sealed class PlampNativeParser
                 expression = node;
                 return res;
             case Keywords.For:
-                res = TryParseForLoop(transaction, out var forNode);
+                res = TryParseForLoop(keyword, transaction, out var forNode);
                 AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
                 expression = forNode;
                 return res;
@@ -519,41 +532,106 @@ public sealed class PlampNativeParser
         return res;
     }
 
-    private ExpressionParsingResult TryParseForLoop(IParsingTransaction transaction, out ForNode forNode)
+    private ExpressionParsingResult TryParseForLoop(
+        KeywordToken keyword, 
+        IParsingTransaction transaction, 
+        out NodeBase counterLoopHolder)
     {
-        forNode = null;
-        if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.For, _ => { }, out var keyword))
+        counterLoopHolder = null;
+
+        var res = TryParseInParen<CounterLoopHolder, OpenParen, CloseParen>(
+            transaction, ForHeaderWrapper, (_, _) => default, out var holder,
+            ExpressionParsingResult.FailedNeedCommit, ExpressionParsingResult.FailedNeedPass);
+        
+        if (res == ExpressionParsingResult.FailedNeedCommit)
         {
-            return ExpressionParsingResult.FailedNeedRollback;
+            AddExceptionToTheTokenRange(keyword, keyword, 
+                PlampNativeExceptionInfo.InvalidForHeader(), transaction);
+            AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
+            AddBodyException(transaction);
+            return ExpressionParsingResult.FailedNeedCommit;
         }
 
-        TryParseInParen<ForHeaderHolder, OpenParen, CloseParen>(
-            transaction, ForHeaderWrapper, (_, _) => default, out var holder,
-            ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.FailedNeedCommit);
         var body = ParseOptionalBody(transaction);
+
+        counterLoopHolder = holder.ForeachHeaderHolder == default
+            ? new ForNode(
+                holder.ForHeaderHolder.IteratorVar,
+                holder.ForHeaderHolder.TilCondition,
+                holder.ForHeaderHolder.Counter,
+                body) :
+            new ForeachNode(
+                holder.ForeachHeaderHolder.IteratorVar,
+                holder.ForeachHeaderHolder.Iterable,
+                body);
         
-        forNode = new ForNode(holder.IteratorVar, holder.Iterable, body);
         return ExpressionParsingResult.Success;
 
-        ExpressionParsingResult ForHeaderWrapper(out ForHeaderHolder header) =>
-            TryParseForHeader(transaction, keyword, out header);
+        ExpressionParsingResult ForHeaderWrapper(out CounterLoopHolder header) =>
+            TryParseForHeader(transaction, out header);
     }
 
-    private record struct ForHeaderHolder(NodeBase IteratorVar, NodeBase Iterable);
+    private readonly record struct ForeachHeaderHolder(
+        NodeBase IteratorVar, NodeBase Iterable);
+    
+    private readonly record struct ForHeaderHolder(
+        NodeBase IteratorVar, NodeBase TilCondition, NodeBase Counter);
 
+    private readonly record struct CounterLoopHolder(
+        ForeachHeaderHolder ForeachHeaderHolder,
+        ForHeaderHolder ForHeaderHolder);
+    
     private ExpressionParsingResult TryParseForHeader(
         IParsingTransaction transaction, 
-        TokenBase forNode, 
-        out ForHeaderHolder headerHolder)
+        out CounterLoopHolder loop)
     {
+        var innerTransaction = _transactionSource.BeginTransaction();
         TryParseWithPrecedence(out var iteratorVar);
-        TryConsumeNextNonWhiteSpace<KeywordToken>(
-            x => x.Keyword == Keywords.In, 
-            _ => transaction.AddException(
-                new PlampException(PlampNativeExceptionInfo.InvalidForHeader(), forNode)), 
-            out _);
-        TryParseWithPrecedence(out var iterable);
-        headerHolder = new ForHeaderHolder(iteratorVar, iterable);
+        if (TryConsumeNextNonWhiteSpace<KeywordToken>(
+                x => x.Keyword == Keywords.In,
+                _ => { },
+                out _))
+        {
+            innerTransaction.Commit();
+            TryParseWithPrecedence(out var iterable);
+            loop = new CounterLoopHolder(
+                new ForeachHeaderHolder(iteratorVar, iterable),
+                default);
+        }
+        else if (TryConsumeNextNonWhiteSpace<Comma>(
+                     _ => true,
+                     _ => { },
+                     out _))
+        {
+            innerTransaction.Commit();
+            TryParseWithPrecedence(out var tilCondition);
+            var res = TryConsumeNextNonWhiteSpace<Comma>(
+                _ => true,
+                _ => { },
+                out _);
+            if (!res)
+            {
+                transaction.AddException(
+                    new PlampException(
+                        PlampNativeExceptionInfo.Expected(nameof(Comma)), 
+                        _tokenSequence.PeekNext()));
+            }
+
+            TryParseWithPrecedence(out var counter);
+            loop = new CounterLoopHolder(
+                default,
+                new ForHeaderHolder(iteratorVar, tilCondition, counter));
+        }
+        else
+        {
+            innerTransaction.Rollback();
+            loop = default;
+            AdvanceToEndOfLineOrRequested<CloseParen>();
+            //dirty hack
+            _tokenSequence.Position--;
+            return ExpressionParsingResult.FailedNeedCommit;
+        }
+        
         return ExpressionParsingResult.Success;
     }
     

@@ -109,6 +109,6 @@ public static class PlampNativeExceptionInfo
     
     public static PlampNativeExceptionFinalRecord InvalidBody()
         => InvalidBodyRecord.Format();
-
+    
     #endregion
 }
