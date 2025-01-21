@@ -8,7 +8,7 @@ using plamp.Native.Tokenization.Token;
 using Xunit;
 
 #pragma warning disable CS0618
-namespace plamp.Native.Tests.Parser;
+namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseForTests
 {

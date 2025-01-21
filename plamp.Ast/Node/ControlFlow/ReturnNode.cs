@@ -8,4 +8,11 @@ public record ReturnNode(NodeBase ReturnValue) : NodeBase
     {
         yield return ReturnValue;
     }
+
+    public virtual bool Equals(ReturnNode other)
+    {
+        if(other == null) return false;
+        if(ReturnValue == null && other.ReturnValue == null) return true;
+        return base.Equals(other);
+    }
 }

@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Reflection.Emit;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
@@ -11,7 +10,7 @@ using plamp.Native.Tokenization.Token;
 using Xunit;
 
 #pragma warning disable CS0618
-namespace plamp.Native.Tests.Parser;
+namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseConditionTests
 {

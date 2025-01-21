@@ -170,8 +170,8 @@ public sealed class PlampNativeParser
         }
 
         var transaction = _transactionSource.BeginTransaction();
-        TryParseType(transaction, out var typeNode);
-        //TODO: To semantics layer
+        TryParseType(transaction, out var typeNode, false);
+        //TODO: To semantics layer?
         var nameNode = !TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var name) 
             ? null : new MemberNode(name.GetStringRepresentation());
         
@@ -403,7 +403,9 @@ public sealed class PlampNativeParser
         }
 
         var transaction = _transactionSource.BeginTransaction();
-        if (TryParseKeywordExpression(transaction, out var keywordExpression) == ExpressionParsingResult.Success)
+        var res = TryParseKeywordExpression(transaction, out var keywordExpression);
+        if (res == ExpressionParsingResult.Success 
+            || res == ExpressionParsingResult.FailedNeedCommit)
         {
             expression = keywordExpression;
             transaction.Commit();
@@ -447,8 +449,7 @@ public sealed class PlampNativeParser
                 expression = forNode;
                 return res;
             case Keywords.While:
-                _tokenSequence.RollBackToNonWhiteSpace();
-                res = TryParseWhileLoop(transaction, out var whileNode);
+                res = TryParseWhileLoop(transaction, keyword, out var whileNode);
                 expression = whileNode;
                 return res;
             default:
@@ -635,31 +636,37 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
     
-    private ExpressionParsingResult TryParseWhileLoop(IParsingTransaction transaction, out WhileNode whileNode)
+    private ExpressionParsingResult TryParseWhileLoop(
+        IParsingTransaction transaction, 
+        KeywordToken whileToken,
+        out WhileNode whileNode)
     {
-        whileNode = null;
-
-        if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.While, _ => { }, out _))
-        {
-            return ExpressionParsingResult.FailedNeedRollback;
-        }
-
         var res = TryParseInParen<NodeBase, OpenParen, CloseParen>(
-            transaction, TryParseWithPrecedence, (_, _) => null, out var expression, 
+            transaction, TryParseWithPrecedence, (from, to) =>
+            {
+                AddExceptionToTheTokenRange(from, to,
+                    PlampNativeExceptionInfo.EmptyConditionPredicate(),
+                    transaction);
+                return null;
+            }, out var expression, 
             ExpressionParsingResult.FailedNeedCommit, ExpressionParsingResult.Success);
-
-        var body = ParseOptionalBody(transaction);
         
         switch (res)
         {
             case ExpressionParsingResult.Success:
+                var body = ParseOptionalBody(transaction);
                 whileNode = new WhileNode(expression, body);
                 return ExpressionParsingResult.Success;
             case ExpressionParsingResult.FailedNeedCommit:
-                whileNode = new WhileNode(null, body);
-                return ExpressionParsingResult.Success;
+                AddExceptionToTheTokenRange(whileToken, whileToken, 
+                    PlampNativeExceptionInfo.MissingConditionPredicate(), transaction);
+                AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
+                AddBodyException(transaction);
+                whileNode = null;
+                return ExpressionParsingResult.FailedNeedCommit;
         }
-
+        
+        //Never invoked in common cases
         throw new Exception("Parser exception");
     }
 
