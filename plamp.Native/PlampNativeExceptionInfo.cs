@@ -109,6 +109,18 @@ public static class PlampNativeExceptionInfo
     
     public static PlampNativeExceptionFinalRecord InvalidBody()
         => InvalidBodyRecord.Format();
+
+    private static readonly PlampNativeExceptionRecord InvalidDefMissingReturnTypeRecord =
+        new("Invalid def missing return type", 1115, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidDefMissingReturnType()
+        => InvalidDefMissingReturnTypeRecord.Format();
+    
+    private static readonly PlampNativeExceptionRecord InvalidDefMissingNameRecord =
+        new("Invalid def missing name", 1116, ExceptionLevel.Error);
+    
+    public static PlampNativeExceptionFinalRecord InvalidDefMissingName()
+        => InvalidDefMissingNameRecord.Format();
     
     #endregion
 }

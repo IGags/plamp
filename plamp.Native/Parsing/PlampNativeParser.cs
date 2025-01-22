@@ -137,13 +137,23 @@ public sealed class PlampNativeParser
         node = null;
         if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Use, _ => { }, out var use))
         {
-            return ExpressionParsingResult.FailedNeedRollback;
+            throw new Exception("Internal parser bug");
         }
+        
         var transaction = _transactionSource.BeginTransaction();
         var res = ParseMemberAccessSequence(transaction, out var list);
         if (res == ExpressionParsingResult.FailedNeedRollback)
         {
-            transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidUsingName(), use));
+            transaction.Rollback();
+            var next = _tokenSequence.PeekNextNonWhiteSpace();
+            AdvanceToEndOfLineOrRequested<EndOfLine>();
+            var current = _tokenSequence.Current();
+            transaction = _transactionSource.BeginTransaction();
+            AddExceptionToTheTokenRange(next, current,
+                PlampNativeExceptionInfo.InvalidUsingName(),
+                transaction);
+            transaction.Commit();
+            return ExpressionParsingResult.FailedNeedCommit;
         }
         list.Reverse();
         
@@ -164,29 +174,53 @@ public sealed class PlampNativeParser
     {
         node = null;
         if (_tokenSequence.PeekNextNonWhiteSpace() == null 
-            || !TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Def, _ => { }, out var def))
+            || !TryConsumeNextNonWhiteSpace<KeywordToken>(
+                x => x.Keyword == Keywords.Def, _ => { }, out var def))
         {
             return ExpressionParsingResult.FailedNeedRollback;
         }
 
         var transaction = _transactionSource.BeginTransaction();
-        TryParseType(transaction, out var typeNode, false);
-        //TODO: To semantics layer?
-        var nameNode = !TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var name) 
-            ? null : new MemberNode(name.GetStringRepresentation());
+        var res = TryParseType(transaction, out var typeNode, false);
+        if (res == ExpressionParsingResult.FailedNeedRollback)
+        {
+            AddExceptionToTheTokenRange(def, def,
+                PlampNativeExceptionInfo.InvalidDefMissingReturnType(), transaction);
+            AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
+            AddBodyException(transaction);
+            transaction.Commit();
+            return ExpressionParsingResult.FailedNeedCommit;
+        }
+
+        if (!TryConsumeNextNonWhiteSpace<Word>(_ => true, _ => { }, out var name))
+        {
+            AddExceptionToTheTokenRange(def, def,
+                PlampNativeExceptionInfo.InvalidDefMissingName(), transaction);
+            AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
+            AddBodyException(transaction);
+            transaction.Commit();
+            return ExpressionParsingResult.FailedNeedCommit;
+        }
+
+        var nameNode = new MemberNode(name.GetStringRepresentation());
         
-        var res = TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
+        //TOO HARD
+        res = TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
             transaction,
-            WrapParseCommaSeparated<ParameterNode>(ParameterWrapper, ExpressionParsingResult.FailedNeedCommit),
+            WrapParseCommaSeparated<ParameterNode>(
+                ParameterWrapper, ExpressionParsingResult.FailedNeedCommit),
             (_, _) => [], out var parameterNodes, 
             ExpressionParsingResult.FailedNeedPass, ExpressionParsingResult.Success);
         if (res == ExpressionParsingResult.FailedNeedPass)
         {
-            transaction.AddException(new PlampException(PlampNativeExceptionInfo.ExpectedArgDefinition(), def));
+            transaction.AddException(
+                new PlampException(PlampNativeExceptionInfo.ExpectedArgDefinition(), def));
+            AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
         }
 
         var body = ParseOptionalBody(transaction);
-        node = new DefNode(typeNode, nameNode, parameterNodes, body);
+        node = new DefNode(typeNode, nameNode, parameterNodes ?? [], body);
+        transaction.Commit();
         return ExpressionParsingResult.Success;
 
         ExpressionParsingResult ParameterWrapper(out ParameterNode node)
@@ -202,7 +236,8 @@ public sealed class PlampNativeParser
         while (true)
         {
             var transaction = _transactionSource.BeginTransaction();
-            var res = TryParseScopedWithDepth<NodeBase>(TryParseBodyLevelExpression, out var expression);
+            var res = TryParseScopedWithDepth<NodeBase>(
+                TryParseBodyLevelExpression, out var expression);
             if (res == ExpressionParsingResult.Success)
             {
                 AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
@@ -384,7 +419,7 @@ public sealed class PlampNativeParser
         }
 
         var res = @internal(out result);
-
+        
         return res;
     }
 
@@ -470,9 +505,14 @@ public sealed class PlampNativeParser
         var elifClauses = new List<ClauseNode>();
 
         KeywordToken keyword = null;
+        var elifTransaction = _transactionSource.BeginTransaction();
         while (TryParseEmpty(out _) == ExpressionParsingResult.Success
-               || TryParseScopedWithDepth(TryParseElifKeyword, out keyword) == ExpressionParsingResult.Success)
+               || TryParseScopedWithDepth(TryParseElifKeyword, out keyword) 
+               == ExpressionParsingResult.Success)
         {
+            //Strange but need
+            elifTransaction.Commit();
+            elifTransaction = _transactionSource.BeginTransaction();
             var inner = _transactionSource.BeginTransaction();
             if (keyword != null)
             {
@@ -483,6 +523,7 @@ public sealed class PlampNativeParser
             }
             inner.Commit();
         }
+        elifTransaction?.Rollback();
         
         var elseBody = default(BodyNode);
         if (TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Else, _ => {}, out _))

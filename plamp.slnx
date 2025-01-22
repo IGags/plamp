@@ -5,7 +5,6 @@
   <Project Path="plamp.Assembly\plamp.Assembly.csproj" Type="Classic C#" />
   <Project Path="plamp.Ast\plamp.Ast.csproj" Type="Classic C#" />
   <Project Path="plamp.Compiler\plamp.Compiler.csproj" Type="Classic C#" />
-  <Project Path="plamp.FluentGrammaticGenerator\plamp.FluentGrammaticGenerator.csproj" Type="Classic C#" />
   <Project Path="plamp.Native\plamp.Native.csproj" Type="Classic C#" />
   <Project Path="plamp.Validators\plamp.Validators.csproj" Type="Classic C#" />
 </Solution>
