@@ -18,7 +18,7 @@ public record VariableDefinitionNode(NodeBase Type, MemberNode Member) : NodeBas
         if(Member == null && other.Member != null) return false;
         if(Member != null && other.Member == null) return false;
         if(Type != null && !Type.Equals(other.Type) ) return false;
-        if(Member != null && !Member.Equals(other.Type) ) return false;
+        if(Member != null && !Member.Equals(other.Member) ) return false;
         return true;
     }
 }

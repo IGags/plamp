@@ -135,7 +135,9 @@ public sealed class PlampNativeParser
     internal ExpressionParsingResult TryParseUsing(out UseNode node)
     {
         node = null;
-        if (!TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Use, _ => { }, out var use))
+        if (!TryConsumeNextNonWhiteSpace<KeywordToken>(
+                x => x.Keyword == Keywords.Use, _ => { }, 
+                out _))
         {
             throw new Exception("Internal parser bug");
         }
