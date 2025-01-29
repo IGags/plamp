@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class OpenParen : TokenBase
 {
-    public OpenParen(TokenPosition start, TokenPosition end) : base(start, end, "(")
+    public OpenParen(FilePosition start, FilePosition end) : base(start, end, "(")
     {
     }
 }

@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class LineBreak : TokenBase
 {
-    public LineBreak(string stringValue, TokenPosition start, TokenPosition end) : base(start, end, stringValue)
+    public LineBreak(string stringValue, FilePosition start, FilePosition end) : base(start, end, stringValue)
     {
     }
 }

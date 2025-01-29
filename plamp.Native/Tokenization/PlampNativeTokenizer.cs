@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using plamp.Ast;
 using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
 
@@ -87,15 +88,15 @@ public static partial class PlampNativeTokenizer
         }
         
         //Похоже на костыль
-        var start = new TokenPosition(row.Number, row.Length);
-        var end = new TokenPosition(row.Number, row.Length + EndOfLineCrlf.Length - 1);
+        var start = new FilePosition(row.Number, row.Length);
+        var end = new FilePosition(row.Number, row.Length + EndOfLineCrlf.Length - 1);
         tokenList.Add(new EndOfLine(EndOfLineCrlf, start, end));    
     }
 
     private static NumberLiteral ParseNumber(Row row, ref int position, List<PlampException> exceptions)
     {
         var builder = new StringBuilder();
-        var startPosition = new TokenPosition(row.Number, position);
+        var startPosition = new FilePosition(row.Number, position);
         var isFractional = false;
         do
         {
@@ -134,7 +135,7 @@ public static partial class PlampNativeTokenizer
 
         var postfix = postfixBuilder.ToString();
         var numberPart = builder.ToString();
-        var end = new TokenPosition(row.Number, position - 1);
+        var end = new FilePosition(row.Number, position - 1);
         if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
         {
             exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end));
@@ -219,7 +220,7 @@ public static partial class PlampNativeTokenizer
     private static TokenBase ParseWord(Row row, ref int position)
     {
         var builder = new StringBuilder();
-        var startPosition = new TokenPosition(row.Number, position);
+        var startPosition = new FilePosition(row.Number, position);
         do
         {
             if (char.IsLetterOrDigit(row[position]))
@@ -233,7 +234,7 @@ public static partial class PlampNativeTokenizer
             }
         } while (position < row.Length);
         
-        var endPosition = new TokenPosition(row.Number, position - 1);
+        var endPosition = new FilePosition(row.Number, position - 1);
         var word = builder.ToString();
         
         if (word.ToKeyword() != Keywords.Unknown)
@@ -245,7 +246,7 @@ public static partial class PlampNativeTokenizer
 
     private static StringLiteral ParseStringLiteral(Row row, ref int position, List<PlampException> exceptions)
     {
-        var startPosition = new TokenPosition(row.Number, position);
+        var startPosition = new FilePosition(row.Number, position);
         var builder = new StringBuilder();
         position++;
         for (; position < row.Length; position++)
@@ -253,12 +254,12 @@ public static partial class PlampNativeTokenizer
             switch (row[position])
             {
                 case '\n':
-                    var end = new TokenPosition(row.Number, position - 1);
+                    var end = new FilePosition(row.Number, position - 1);
                     var literal = new StringLiteral(builder.ToString(), startPosition, end); 
                     exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, end));
                     return literal;
                 case '"':
-                    literal = new StringLiteral(builder.ToString(), startPosition, new TokenPosition(row.Number, position));
+                    literal = new StringLiteral(builder.ToString(), startPosition, new FilePosition(row.Number, position));
                     position++;
                     return literal;
                 case '\\':
@@ -269,14 +270,14 @@ public static partial class PlampNativeTokenizer
                 case '\t':
                     if (row.Length < position + 1 && row[position] == EndOfLineCrlf[0] && row[position + 1] == EndOfLineCrlf[1])
                     {
-                        var endPosition = new TokenPosition(row.Number, position - 1);
+                        var endPosition = new FilePosition(row.Number, position - 1);
                         exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPosition));
                         literal = new StringLiteral(builder.ToString(), startPosition, endPosition);
                         return literal;
                     }
                     
                     exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(),
-                        new TokenPosition(row.Number, position), new TokenPosition(row.Number, position)));
+                        new FilePosition(row.Number, position), new FilePosition(row.Number, position)));
                     break;
                 default:
                     builder.Append(row[position]);
@@ -284,7 +285,7 @@ public static partial class PlampNativeTokenizer
             }
         }
 
-        var endPos = new TokenPosition(row.Number, position - 1);
+        var endPos = new FilePosition(row.Number, position - 1);
         exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos));
         return new StringLiteral(builder.ToString(), startPosition, endPos);
     }
@@ -311,7 +312,7 @@ public static partial class PlampNativeTokenizer
                 break;
             default:
                 exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
-                    new TokenPosition(row.Number, position - 1), new TokenPosition(row.Number, position)));
+                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position)));
                 return;
         }
     }
@@ -319,16 +320,16 @@ public static partial class PlampNativeTokenizer
     private static bool TryParseCustom(Row row, ref int position, out TokenBase result, List<PlampException> exceptions)
     {
         result = null;
-        var startPosition = new TokenPosition(row.Number, position);
+        var startPosition = new FilePosition(row.Number, position);
         if (row.Length > position + 3 && row[position..(position + 4)] == "    ")
         {
             position += 4;
-            result = new WhiteSpace("\t", startPosition, new TokenPosition(row.Number, position - 1),
+            result = new WhiteSpace("\t", startPosition, new FilePosition(row.Number, position - 1),
                 WhiteSpaceKind.Scope);
             return true;
         }
 
-        var endPos = new TokenPosition(row.Number, position);
+        var endPos = new FilePosition(row.Number, position);
         switch (row[position])
         {
             case '[':
@@ -368,7 +369,7 @@ public static partial class PlampNativeTokenizer
                 if (row.Length > position + 1 && row[position..(position + 2)] == EndOfLineCrlf)
                 {
                     position += 2;
-                    endPos = new TokenPosition(row.Number, position - 1);
+                    endPos = new FilePosition(row.Number, position - 1);
                     result = new EndOfLine(EndOfLineCrlf, startPosition, endPos);
                     return true;
                 }
@@ -390,11 +391,11 @@ public static partial class PlampNativeTokenizer
     
     private static bool TryParseOperator(Row row, ref int position, out TokenBase @operator)
     {
-        var startPosition = new TokenPosition(row.Number, position);
+        var startPosition = new FilePosition(row.Number, position);
         if (row.Length - position >= 2)
         {
             var op = row[position..(position+2)];
-            var opEnd = new TokenPosition(row.Number, position + 1);
+            var opEnd = new FilePosition(row.Number, position + 1);
             position += 2;
             switch (op)
             {

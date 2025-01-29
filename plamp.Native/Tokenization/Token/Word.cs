@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class Word : TokenBase
 {
-    public Word(string value, TokenPosition start, TokenPosition end) : base(start, end, value)
+    public Word(string value, FilePosition start, FilePosition end) : base(start, end, value)
     {
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace plamp.Native.Parsing.Transactions;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Parsing.Transactions;
 
 public interface IParsingTransaction
 {

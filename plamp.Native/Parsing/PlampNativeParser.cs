@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.Node.Unary;
+using plamp.Native.Parsing.Symbols;
 using plamp.Native.Parsing.Transactions;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Enumerations;
@@ -13,6 +15,7 @@ using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Parsing;
 
+//!!!NOT THREAD SAFE!!!
 public sealed class PlampNativeParser
 {
     internal delegate ExpressionParsingResult TryParseInternal<T>(out T result);
@@ -20,6 +23,7 @@ public sealed class PlampNativeParser
     private TokenSequence _tokenSequence;
     private DepthCounter _depth;
     private ParsingTransactionSource _transactionSource;
+    private Dictionary<NodeBase, PlampNativeSymbolRecord> _symbolDictionary;
 
     [Obsolete("For test purposes only")]
     internal ParsingTransactionSource TransactionSource => _transactionSource;
@@ -31,6 +35,7 @@ public sealed class PlampNativeParser
     internal PlampNativeParser(string code)
     {
         var tokenRes = code.Tokenize();
+        _symbolDictionary = new();
         _depth = 0;
         _tokenSequence = tokenRes.Sequence;
         _transactionSource = new ParsingTransactionSource(tokenRes.Sequence, tokenRes.Exceptions);
@@ -45,6 +50,7 @@ public sealed class PlampNativeParser
         _depth = 0;
         _transactionSource = new ParsingTransactionSource(tokenRes.Sequence, tokenRes.Exceptions);
         _tokenSequence = tokenRes.Sequence;
+        _symbolDictionary = new();
 
         var expressionList = new List<NodeBase>();
 
@@ -57,7 +63,8 @@ public sealed class PlampNativeParser
             }
         }
 
-        return new ParserResult(expressionList, tokenRes.Exceptions);
+        var symbolTable = new PlampNativeSymbolTable(_symbolDictionary);
+        return new ParserResult(expressionList, tokenRes.Exceptions, symbolTable);
     }
     
     internal ExpressionParsingResult TryParseTopLevel(out NodeBase resultNode)
@@ -216,7 +223,7 @@ public sealed class PlampNativeParser
         if (res == ExpressionParsingResult.FailedNeedPass)
         {
             transaction.AddException(
-                new PlampException(PlampNativeExceptionInfo.ExpectedArgDefinition(), def));
+                PlampNativeExceptionInfo.ExpectedArgDefinition().GetPlampException(def));
             AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
         }
 
@@ -656,9 +663,8 @@ public sealed class PlampNativeParser
             if (!res)
             {
                 transaction.AddException(
-                    new PlampException(
-                        PlampNativeExceptionInfo.Expected(nameof(Comma)), 
-                        _tokenSequence.PeekNext()));
+                    PlampNativeExceptionInfo.Expected(nameof(Comma))
+                        .GetPlampException(_tokenSequence.PeekNext()));
             }
 
             TryParseWithPrecedence(out var counter);
@@ -1018,7 +1024,7 @@ public sealed class PlampNativeParser
         if (TryConsumeNextNonWhiteSpaceWithoutRollback<Word>(
                 _ => true,
                 token => transaction.AddException(
-                    new PlampException(PlampNativeExceptionInfo.ExpectedIdentifier(), token)), 
+                    PlampNativeExceptionInfo.ExpectedIdentifier().GetPlampException(token)), 
                 out var name))
         {
             variableDeclaration = new VariableDefinitionNode(
@@ -1473,7 +1479,7 @@ public sealed class PlampNativeParser
     internal void AddExceptionToTheTokenRange(
         TokenBase start, 
         TokenBase end,
-        PlampNativeExceptionFinalRecord exceptionRecord, 
+        PlampExceptionRecord exceptionRecord, 
         IParsingTransaction transaction)
     {
         transaction.AddException(new PlampException(exceptionRecord, start.Start, end.End));

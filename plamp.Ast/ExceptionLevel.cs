@@ -1,4 +1,4 @@
-﻿namespace plamp.Native;
+﻿namespace plamp.Ast;
 
 public enum ExceptionLevel
 {

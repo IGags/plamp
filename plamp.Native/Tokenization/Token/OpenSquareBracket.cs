@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class OpenSquareBracket : TokenBase
 {
-    public OpenSquareBracket(TokenPosition start, TokenPosition end) : base(start, end, "[")
+    public OpenSquareBracket(FilePosition start, FilePosition end) : base(start, end, "[")
     {
     }
 }

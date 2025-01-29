@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class CloseSquareBracket : TokenBase
 {
-    public CloseSquareBracket(TokenPosition start, TokenPosition end) : base(start, end, "]")
+    public CloseSquareBracket(FilePosition start, FilePosition end) : base(start, end, "]")
     {
     }
 

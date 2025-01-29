@@ -1,10 +1,12 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class WhiteSpace : TokenBase
 {
     public WhiteSpaceKind Kind { get; }
 
-    public WhiteSpace(string inner, TokenPosition start, TokenPosition end, WhiteSpaceKind kind) : base(start, end, inner)
+    public WhiteSpace(string inner, FilePosition start, FilePosition end, WhiteSpaceKind kind) : base(start, end, inner)
     {
         Kind = kind;
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using plamp.Ast;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Enumerations;
@@ -509,7 +510,7 @@ public class ParserHelperLogicTests
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
-            new TokenPosition(0, 0), new TokenPosition(0, 3));
+            new FilePosition(0, 0), new FilePosition(0, 3));
         //CRLF end of line has two characters
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
@@ -563,7 +564,7 @@ public class ParserHelperLogicTests
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 5));
+            new FilePosition(0, 0), new FilePosition(0, 5));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
     
@@ -620,7 +621,7 @@ public class ParserHelperLogicTests
         Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var expectedException = new PlampException(PlampNativeExceptionInfo.Expected(nameof(OpenParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 0));
+            new FilePosition(0, 0), new FilePosition(0, 0));
         
         Assert.Equal(expectedException, parser.TransactionSource.Exceptions[0]);
     }
@@ -637,7 +638,7 @@ public class ParserHelperLogicTests
         Assert.Equal(1, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var expectedException = new PlampException(PlampNativeExceptionInfo.Expected(nameof(OpenParen)),
-            new TokenPosition(0, 0), new TokenPosition(0, 1));
+            new FilePosition(0, 0), new FilePosition(0, 1));
         
         Assert.Equal(expectedException, parser.TransactionSource.Exceptions[0]);
     }
