@@ -92,6 +92,7 @@ internal class ParsingTransactionSource
 
         public void AddSymbol(NodeBase symbol, NodeBase[] children, TokenBase[] nodeTokens)
         {
+            if (_isComplete) throw new Exception("Transaction was completed");
             _temporalDictionary.Add(symbol, new(children, nodeTokens));
         }
 

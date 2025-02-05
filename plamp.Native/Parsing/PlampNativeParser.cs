@@ -127,7 +127,7 @@ public sealed class PlampNativeParser
         }
     }
 
-    internal ExpressionParsingResult TryParseEmpty(out EmptyNode node)
+    private ExpressionParsingResult TryParseEmpty(out EmptyNode node)
     {
         var transaction = _transactionSource.BeginTransaction();
         if (TryConsumeNextNonWhiteSpace<EndOfLine>(_ => true, _ => {}, out var eol))
@@ -143,7 +143,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.FailedNeedRollback;
     }
 
-    internal ExpressionParsingResult TryParseUsing(out UseNode node)
+    private ExpressionParsingResult TryParseUsing(out UseNode node)
     {
         node = null;
         if (!TryConsumeNextNonWhiteSpace<KeywordToken>(
@@ -177,7 +177,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
 
-    internal ExpressionParsingResult TryParseFunction(out DefNode node)
+    private ExpressionParsingResult TryParseFunction(out DefNode node)
     {
         node = null;
         if (_tokenSequence.PeekNextNonWhiteSpace() == null 
@@ -248,7 +248,7 @@ public sealed class PlampNativeParser
         }
     }
 
-    internal ExpressionParsingResult TryParseBody(out BodyNode body)
+    private void TryParseBody(out BodyNode body)
     {
         using var handle = _depth.EnterNewScope();
         var expressions = new List<NodeBase>();
@@ -273,10 +273,9 @@ public sealed class PlampNativeParser
         var outerTransaction = _transactionSource.BeginTransaction();
         outerTransaction.AddSymbol(body, expressions.ToArray(), []);
         outerTransaction.Commit();
-        return ExpressionParsingResult.Success;
     }
-    
-    internal ExpressionParsingResult TryParseParameter(IParsingTransaction transaction, out ParameterNode parameterNode)
+
+    private ExpressionParsingResult TryParseParameter(IParsingTransaction transaction, out ParameterNode parameterNode)
     {
         parameterNode = null;
         var typePeek = _tokenSequence.PeekNextNonWhiteSpace();
@@ -398,8 +397,8 @@ public sealed class PlampNativeParser
             return TryParseType(transaction, out result);
         }
     }
-    
-    internal ExpressionParsingResult TryParseScopedWithDepth<TReturn>(
+
+    private ExpressionParsingResult TryParseScopedWithDepth<TReturn>(
         TryParseInternal<TReturn> @internal, out TReturn result, int depth = -1)
     {
         if (depth < 0)
@@ -818,8 +817,8 @@ public sealed class PlampNativeParser
 
     internal ExpressionParsingResult TryParseWithPrecedence(out NodeBase node) 
         => TryParseWithPrecedence(out node, 0);
-    
-    internal ExpressionParsingResult TryParseWithPrecedence(out NodeBase node, int rbp)
+
+    private ExpressionParsingResult TryParseWithPrecedence(out NodeBase node, int rbp)
     {
         var nudParsingResult = TryParseNud(out node);
         if (nudParsingResult != ExpressionParsingResult.Success)
@@ -833,8 +832,8 @@ public sealed class PlampNativeParser
 
         return ExpressionParsingResult.Success;
     }
-    
-    internal ExpressionParsingResult TryParseNud(out NodeBase node)
+
+    private ExpressionParsingResult TryParseNud(out NodeBase node)
     {
         var transaction = _transactionSource.BeginTransaction();
         var result = TryParseVariableDeclaration(transaction, out node);
@@ -936,8 +935,8 @@ public sealed class PlampNativeParser
         
         return ExpressionParsingResult.FailedNeedCommit;
     }
-    
-    internal ExpressionParsingResult TryParseLed(int rbp, NodeBase left, out NodeBase output)
+
+    private ExpressionParsingResult TryParseLed(int rbp, NodeBase left, out NodeBase output)
     {
         var transaction = _transactionSource.BeginTransaction();
         
@@ -1042,8 +1041,8 @@ public sealed class PlampNativeParser
         output = left;
         return ExpressionParsingResult.FailedNeedCommit;
     }
-    
-    internal ExpressionParsingResult TryParseVariableDeclaration(
+
+    private ExpressionParsingResult TryParseVariableDeclaration(
         IParsingTransaction transaction, 
         out NodeBase variableDeclaration)
     {
@@ -1084,7 +1083,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.FailedNeedRollback;
     }
 
-    internal ExpressionParsingResult TryParseCastOperator(
+    private ExpressionParsingResult TryParseCastOperator(
         IParsingTransaction transaction, 
         out NodeBase cast)
     {
@@ -1096,7 +1095,7 @@ public sealed class PlampNativeParser
             ExpressionParsingResult.FailedNeedRollback);
     }
 
-    internal ExpressionParsingResult TryParseSubExpression(
+    private ExpressionParsingResult TryParseSubExpression(
         IParsingTransaction transaction, 
         out NodeBase sub)
     {
@@ -1111,7 +1110,7 @@ public sealed class PlampNativeParser
             ExpressionParsingResult.FailedNeedRollback, ExpressionParsingResult.FailedNeedCommit);
     }
 
-    internal ExpressionParsingResult TryParseLiteral(out NodeBase node)
+    private ExpressionParsingResult TryParseLiteral(out NodeBase node)
     {
         node = null;
         IParsingTransaction transaction;
@@ -1160,7 +1159,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
     }
 
-    internal ExpressionParsingResult TryParseConstructor(
+    private ExpressionParsingResult TryParseConstructor(
         IParsingTransaction transaction, 
         out NodeBase ctor)
     {
@@ -1202,7 +1201,7 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.FailedNeedCommit;
     }
 
-    internal ExpressionParsingResult TryParsePrefixOperator(out NodeBase node)
+    private ExpressionParsingResult TryParsePrefixOperator(out NodeBase node)
     {
         node = null;
         var transaction = _transactionSource.BeginTransaction();
@@ -1241,8 +1240,8 @@ public sealed class PlampNativeParser
         return ExpressionParsingResult.Success;
 
     }
-    
-    internal NodeBase ParsePostfixIfExist(NodeBase inner)
+
+    private NodeBase ParsePostfixIfExist(NodeBase inner)
     {
         while (true)
         {
@@ -1268,8 +1267,8 @@ public sealed class PlampNativeParser
             inner = node;
         }
     }
-    
-    internal bool TryParsePostfixOperator(NodeBase nodeBase, out NodeBase node)
+
+    private bool TryParsePostfixOperator(NodeBase nodeBase, out NodeBase node)
     {
         node = null;
         if (!TryConsumeNextNonWhiteSpace<OperatorToken>(
@@ -1291,8 +1290,8 @@ public sealed class PlampNativeParser
         return true;
 
     }
-    
-    internal bool TryParseIndexer(NodeBase inner, out NodeBase node)
+
+    private bool TryParseIndexer(NodeBase inner, out NodeBase node)
     {
         var next = _tokenSequence.PeekNextNonWhiteSpace();
         if (next is not OpenSquareBracket)
@@ -1324,7 +1323,7 @@ public sealed class PlampNativeParser
         return false;
     }
 
-    internal bool TryParseMemberAccess(NodeBase input, out NodeBase res)
+    private bool TryParseMemberAccess(NodeBase input, out NodeBase res)
     {
         res = null;
         var transaction = _transactionSource.BeginTransaction();
@@ -1356,7 +1355,7 @@ public sealed class PlampNativeParser
         return false;
     }
 
-    internal bool TryParseCall(NodeBase input, out NodeBase res)
+    private bool TryParseCall(NodeBase input, out NodeBase res)
     {
         res = null;
         var transaction = _transactionSource.BeginTransaction();
