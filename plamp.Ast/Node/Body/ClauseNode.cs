@@ -14,14 +14,11 @@ public record ClauseNode(NodeBase Predicate, BodyNode Body) : NodeBase
     public virtual bool Equals(ClauseNode other)
     {
         if (other == null) return false;
-        if(Predicate == null && other.Predicate != null) return false;
-        if(Predicate != null && other.Predicate == null) return false;
-        if(Predicate != null && !Predicate.Equals(other.Predicate)) return false;
-        return Body == other.Body;
+        return Predicate == other.Predicate && Body == other.Body;
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(base.GetHashCode(), Predicate, Body);
+        return HashCode.Combine(Predicate, Body);
     }
 }

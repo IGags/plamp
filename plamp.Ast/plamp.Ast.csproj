@@ -4,4 +4,8 @@
         <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="NodeComparers\" />
+    </ItemGroup>
+
 </Project>

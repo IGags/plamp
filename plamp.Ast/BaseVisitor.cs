@@ -31,9 +31,6 @@ public abstract class BaseVisitor
             case AssignNode assignNode:
                 VisitAssign(assignNode);
                 return;
-            case CreateAndAssignNode createAndAssignNode:
-                VisitCreateAndAssign(createAndAssignNode);
-                return;
             case DivAndAssignNode divAndAssignNode:
                 VisitDivAndAssign(divAndAssignNode);
                 return;
@@ -190,8 +187,6 @@ public abstract class BaseVisitor
     protected virtual void VisitAddAndAssign(AddAndAssignNode node){}
     
     protected virtual void VisitAssign(AssignNode node){}
-    
-    protected virtual void VisitCreateAndAssign(CreateAndAssignNode node){}
     
     protected virtual void VisitDivAndAssign(DivAndAssignNode node){}
     

@@ -13,8 +13,7 @@ public record ConstNode(object Value, Type Type) : NodeBase
     public virtual bool Equals(ConstNode other)
     {
         if(other == null) return false;
-        if(Value == null && other.Value == null
-           && Type == null && other.Type == null) return true;
+        if(Value == null && other.Value == null && Type == other.Type) return true;
         if (Value == null || Type == null) return false;
         return Value.Equals(other.Value) && Type == other.Type;
     }

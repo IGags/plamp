@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
-public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> ParameterList, BodyNode Body) : NodeBase
+public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> ParameterList, BodyNode Body) 
+    : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {
@@ -19,33 +22,25 @@ public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> 
         yield return Body;
     }
 
-    //Sacry
+    //Not scary, much better
     public virtual bool Equals(DefNode other)
     {
         if (other == null) return false;
-        if (ReturnType == null && other.ReturnType != null) return false;
-        if (ReturnType != null && other.ReturnType == null) return false;
-        if (Name == null && other.Name != null) return false;
-        if (Name != null && other.Name == null) return false;
-        if (ParameterList == null && other.ParameterList != null) return false;
-        if (ParameterList != null && other.ParameterList == null) return false;
-        if (Body == null && other.Body != null) return false;
-        if (Body != null && other.Body == null) return false;
-        if (ReturnType != null && !ReturnType.Equals(other.ReturnType)) return false;
-        if (Name != null && !Name.Equals(other.Name)) return false;
-        if (Body != null && !Body.Equals(other.Body)) return false;
-        if (ParameterList != null && ParameterList.Count != other.ParameterList!.Count) return false;
-        if (ParameterList != null)
+        return ReturnType == other.ReturnType && Name == other.Name
+            && ParameterList.SequenceEqual(other.ParameterList)
+            && Body.Equals(other.Body);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(ReturnType);
+        hashCode.Add(Name);
+        foreach (var parameter in ParameterList)
         {
-            for (var i = 0; i < ParameterList.Count; i++)
-            {
-                if (ParameterList[i] == null && other.ParameterList![i] == null)
-                {
-                    continue;
-                }
-                if (!ParameterList[i].Equals(other.ParameterList![i])) return false;
-            }
+            hashCode.Add(parameter);
         }
-        return true;
+        hashCode.Add(Body);
+        return hashCode.ToHashCode();
     }
 }

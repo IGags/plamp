@@ -14,16 +14,11 @@ public record WhileNode(NodeBase Condition, BodyNode Body) : NodeBase
     public virtual bool Equals(WhileNode other)
     {
         if (other == null) return false;
-        if((Condition == null && other.Condition != null)
-           || (Condition != null && other.Condition == null)
-           || (Body == null && other.Body != null)
-           || (Body != null && other.Body == null)) return false;
-        return (Body == null || Body.Equals(other.Body)) 
-               && (Condition == null || Condition.Equals(other.Condition));
+        return Condition == other.Condition && Body == other.Body;
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(base.GetHashCode(), Condition, Body);
+        return HashCode.Combine(Condition, Body);
     }
 }

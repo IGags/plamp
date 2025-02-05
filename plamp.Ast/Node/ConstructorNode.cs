@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node;
 
@@ -16,25 +17,18 @@ public record ConstructorNode(NodeBase Type, List<NodeBase> Args) : NodeBase
 
     public virtual bool Equals(ConstructorNode other)
     {
-        if (other == null 
-            || !Type.Equals(other.Type)
-            || (Args != null && other.Args == null)
-            || (Args == null && other.Args != null)) 
-            return false;
-
-        if (other.Args == null && Args == null) return true;
-        if (Args!.Count != other.Args!.Count) return false;
-
-        for (var i = 0; i < Args.Count; i++)
-        {
-            if (!Args[i].Equals(other.Args[i])) return false;
-        }
-        
-        return true;
+        if (other == null) return false;
+        return Type == other.Type && Args.SequenceEqual(other.Args);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(base.GetHashCode(), Type, Args);
+        var hashCode = new HashCode();
+        hashCode.Add(Type);
+        foreach (var arg in Args)
+        {
+            hashCode.Add(arg);
+        }
+        return hashCode.ToHashCode();
     }
 }

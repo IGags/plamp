@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node;
 
@@ -13,12 +14,11 @@ public record VariableDefinitionNode(NodeBase Type, MemberNode Member) : NodeBas
     public virtual bool Equals(VariableDefinitionNode other)
     {
         if (other == null) return false;
-        if(Type == null && other.Type != null) return false;
-        if(Type != null && other.Type == null) return false;
-        if(Member == null && other.Member != null) return false;
-        if(Member != null && other.Member == null) return false;
-        if(Type != null && !Type.Equals(other.Type) ) return false;
-        if(Member != null && !Member.Equals(other.Member) ) return false;
-        return true;
+        return Type == other.Type && Member == other.Member;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(base.GetHashCode(), Type, Member);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
@@ -12,22 +13,17 @@ public record BodyNode(List<NodeBase> InstructionList) : NodeBase
 
     public virtual bool Equals(BodyNode other)
     {
-        if(other == null) return false;
-        if(other.InstructionList == null && InstructionList == null) return true;
-        if((other.InstructionList != null && InstructionList == null) 
-           || (other.InstructionList == null && InstructionList != null)
-           || other.InstructionList!.Count != InstructionList!.Count) return false;
-        for (var i = 0; i < InstructionList.Count; i++)
-        {
-            if(InstructionList[i] == null && other.InstructionList[i] == null) continue;
-            if(!InstructionList[i].Equals(other.InstructionList[i])) return false;
-        }
-
-        return true;
+        return other != null && InstructionList.SequenceEqual(other.InstructionList);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(base.GetHashCode(), InstructionList);
+        var hashCode = new HashCode();
+        foreach (var instruction in InstructionList)
+        {
+            hashCode.Add(instruction);
+        }
+
+        return hashCode.ToHashCode();
     }
 }

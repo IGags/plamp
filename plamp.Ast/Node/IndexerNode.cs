@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node;
 
@@ -15,17 +17,18 @@ public record IndexerNode(NodeBase ToIndex, List<NodeBase> Arguments) : NodeBase
 
     public virtual bool Equals(IndexerNode other)
     {
-        if(other == null || !ToIndex.Equals(other.ToIndex)) return false;
-        if(other.Arguments == null && Arguments == null) return true;
-        if((other.Arguments != null && Arguments == null) 
-           || (other.Arguments == null && Arguments != null)
-           || other.Arguments!.Count != Arguments!.Count) return false;
-        for (var i = 0; i < Arguments.Count; i++)
-        {
-            if(Arguments[i] == null && other.Arguments[i] == null) continue;
-            if(!Arguments[i].Equals(other.Arguments[i])) return false;
-        }
+        if (other == null) return false;
+        return ToIndex == other.ToIndex && Arguments.SequenceEqual(other.Arguments);
+    }
 
-        return true;
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(ToIndex);
+        foreach (var argument in Arguments)
+        {
+            hashCode.Add(argument);
+        }
+        return hashCode.ToHashCode();
     }
 }
