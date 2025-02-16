@@ -3,22 +3,20 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Binary;
 
-public abstract record BaseBinaryNode(NodeBase Left, NodeBase Right) : NodeBase
+public abstract class BaseBinaryNode : NodeBase
 {
+    public NodeBase Left { get; }
+    public NodeBase Right { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Left;
         yield return Right;
     }
 
-    public virtual bool Equals(BaseBinaryNode other)
+    public BaseBinaryNode(NodeBase left, NodeBase right)
     {
-        if(other == null) return false;
-        return Left == other.Left && Right == other.Right;
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(base.GetHashCode(), Left, Right);
+        Left = left;
+        Right = right;
     }
 }

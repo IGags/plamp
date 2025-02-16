@@ -2,6 +2,7 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.ControlFlow;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -11,6 +12,8 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseReturnKeywordTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseReturnKeyword()
     {
@@ -24,7 +27,7 @@ public class ParseReturnKeywordTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -45,7 +48,7 @@ public class ParseReturnKeywordTests
                 new PlusNode(
                     new ConstNode(1, typeof(int)),
                     new ConstNode(1, typeof(int))));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -64,7 +67,7 @@ public class ParseReturnKeywordTests
         var expressionShould
             = new ReturnNode(
                 new ConstNode(1, typeof(int)));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(

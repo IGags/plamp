@@ -1,3 +1,3 @@
 ﻿namespace plamp.Ast.Node.Binary;
 
-public record MultiplyNode(NodeBase Left, NodeBase Right) : BaseBinaryNode(Left, Right);
+public class MultiplyNode(NodeBase left, NodeBase right) : BaseBinaryNode(left, right);

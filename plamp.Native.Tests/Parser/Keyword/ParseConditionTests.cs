@@ -6,6 +6,7 @@ using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.Node.Unary;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -15,6 +16,8 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseConditionTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseValidSingleLineCondition()
     {
@@ -36,7 +39,7 @@ public class ParseConditionTests
                     ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -69,7 +72,7 @@ public class ParseConditionTests
                     )),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(20, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -94,7 +97,7 @@ public class ParseConditionTests
                         ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould =
@@ -121,7 +124,7 @@ public class ParseConditionTests
                         ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(7, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -152,7 +155,7 @@ public class ParseConditionTests
                     ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -210,7 +213,7 @@ public class ParseConditionTests
                     new PostfixIncrementNode(
                         new MemberNode("i"))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(13, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -246,7 +249,7 @@ public class ParseConditionTests
                     new PrefixDecrementNode(
                         new MemberNode("i"))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(17, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -291,7 +294,7 @@ public class ParseConditionTests
                 [],
                 new BodyNode(
                     []));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(10, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -329,7 +332,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(18, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -380,7 +383,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(36, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -413,7 +416,7 @@ public class ParseConditionTests
                             []))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(12, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -443,7 +446,7 @@ public class ParseConditionTests
                     ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(22, parser.TokenSequence.Position);
         Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
@@ -507,7 +510,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(32, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -548,7 +551,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(22, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -594,7 +597,7 @@ public class ParseConditionTests
                     new ReturnNode(
                         new ConstNode(2, typeof(int)))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(28, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -633,7 +636,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(28, parser.TokenSequence.Position);
         Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
@@ -691,7 +694,7 @@ public class ParseConditionTests
                         new MemberNode("w"),
                         [])
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(35, parser.TokenSequence.Position);
         Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
@@ -749,7 +752,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(28, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -803,7 +806,7 @@ public class ParseConditionTests
                     new ReturnNode(
                         new MemberNode("ourFault"))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(32, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -857,7 +860,7 @@ public class ParseConditionTests
                     new ReturnNode(
                         new ConstNode(4, typeof(int)))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(32, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -886,7 +889,7 @@ public class ParseConditionTests
                     ])),
                 [],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -927,7 +930,7 @@ public class ParseConditionTests
                         new MemberNode("println"),
                         [])
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(20, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -970,7 +973,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(21, parser.TokenSequence.Position);
     }
 
@@ -1021,7 +1024,7 @@ public class ParseConditionTests
                         ]))
                 ],
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(29, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -1064,7 +1067,7 @@ public class ParseConditionTests
                     new ReturnNode(
                         new ConstNode(3, typeof(int)))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(25, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

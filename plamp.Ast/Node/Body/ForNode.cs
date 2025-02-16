@@ -3,9 +3,13 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public record ForNode(
-    NodeBase IteratorVar, NodeBase TilCondition, NodeBase Counter, BodyNode Body) : NodeBase
+public class ForNode : NodeBase
 {
+    public NodeBase IteratorVar { get; }
+    public NodeBase TilCondition { get; }
+    public NodeBase Counter { get; }
+    public NodeBase Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return IteratorVar;
@@ -14,16 +18,11 @@ public record ForNode(
         yield return Body;
     }
 
-    public virtual bool Equals(ForNode other)
+    public ForNode(NodeBase iteratorVar, NodeBase tilCondition, NodeBase counter, NodeBase body)
     {
-        if(other is null) return false;
-        return IteratorVar == other.IteratorVar 
-               && TilCondition == other.TilCondition 
-               && Counter == other.Counter && Body == other.Body;
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(IteratorVar, TilCondition, Counter, Body);
+        IteratorVar = iteratorVar;
+        TilCondition = tilCondition;
+        Counter = counter;
+        Body = body;
     }
 }

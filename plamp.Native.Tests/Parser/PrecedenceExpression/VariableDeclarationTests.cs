@@ -1,4 +1,5 @@
 using plamp.Ast.Node;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -7,6 +8,8 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class VariableDeclarationTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void VariableDeclarationWithType()
     {
@@ -20,7 +23,7 @@ public class VariableDeclarationTests
                     new MemberNode("int"), 
                     null), 
                 new MemberNode("a"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -36,7 +39,7 @@ public class VariableDeclarationTests
             = new VariableDefinitionNode(
                 null,
                 new MemberNode("a"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

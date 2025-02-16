@@ -4,6 +4,7 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Unary;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -12,6 +13,8 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class SimpleMathTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Theory]
     [InlineData("1+1", typeof(PlusNode), 1, 1)]
     [InlineData("1-1", typeof(MinusNode), 1, 1)]
@@ -39,8 +42,8 @@ public class SimpleMathTests
         var binary = (BaseBinaryNode)expression;
         var leftShould = new ConstNode(left, left.GetType());
         var rightShould = new ConstNode(right, right.GetType());
-        Assert.Equal(leftShould, binary.Left);
-        Assert.Equal(rightShould, binary.Right);
+        Assert.Equal(leftShould, binary.Left, Comparer);
+        Assert.Equal(rightShould, binary.Right, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(2, parser.TokenSequence.Position);
     }
@@ -60,7 +63,7 @@ public class SimpleMathTests
         Assert.Equal(expressionType, expression.GetType());
         var unary = (UnaryBaseNode)expression;
         var innerShould = new ConstNode(inner, inner.GetType());
-        Assert.Equal(innerShould, unary.Inner);
+        Assert.Equal(innerShould, unary.Inner, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(1, parser.TokenSequence.Position);
     }
@@ -85,7 +88,7 @@ public class SimpleMathTests
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould = new DivideNode(new ConstNode(1, typeof(int)), null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(1, parser.TokenSequence.Position);
     }
@@ -103,7 +106,7 @@ public class SimpleMathTests
                 new MultiplyNode(
                     new ConstNode(2, typeof(int)),
                     new ConstNode(3, typeof(int))));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(4, parser.TokenSequence.Position);
     }
@@ -121,7 +124,7 @@ public class SimpleMathTests
                     new ConstNode(1, typeof(int)),
                     new ConstNode(2, typeof(int))),
                 new ConstNode(3, typeof(int)));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(6, parser.TokenSequence.Position);
     }
@@ -137,7 +140,7 @@ public class SimpleMathTests
             = new MultiplyNode(
                 new ConstNode(1, typeof(int)),
                 null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.ExpectedExpression(),
             new(0, 2), new(0, 3));

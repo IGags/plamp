@@ -2,17 +2,20 @@
 
 namespace plamp.Ast.Node.Assign;
 
-public record SubAndAssignNode(NodeBase Variable, NodeBase Right) : NodeBase
+public class SubAndAssignNode : NodeBase
 {
+    public NodeBase Variable { get; }
+    public NodeBase Right { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Variable;
         yield return Right;
     }
 
-    public virtual bool Equals(SubAndAssignNode other)
+    public SubAndAssignNode(NodeBase variable, NodeBase right)
     {
-        if (other == null) return false;
-        return Variable.Equals(other.Variable) && Right.Equals(other.Right);
+        Variable = variable;
+        Right = right;
     }
 }

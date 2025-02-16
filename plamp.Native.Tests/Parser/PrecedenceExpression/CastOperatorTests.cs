@@ -1,4 +1,5 @@
 using plamp.Ast.Node;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -7,6 +8,8 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class CastOperatorTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseValidCast()
     {
@@ -20,7 +23,7 @@ public class CastOperatorTests
                     new MemberNode("int"), 
                     null), 
                 new ConstNode(1L, typeof(long)));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(3, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

@@ -1,6 +1,7 @@
 using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Body;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -10,6 +11,8 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseWhileTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseWhileSingleLine()
     {
@@ -30,7 +33,7 @@ public class ParseWhileTests
                         new MemberNode("ping"),
                         [])
                 ]));
-        Assert.Equal(expression, expressionShould);
+        Assert.Equal(expression, expressionShould, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -56,7 +59,7 @@ public class ParseWhileTests
                         new MemberNode("ping"),
                         [])
                 ]));
-        Assert.Equal(expression, expressionShould);
+        Assert.Equal(expression, expressionShould, Comparer);
         Assert.Equal(9, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -77,7 +80,7 @@ public class ParseWhileTests
                 new ConstNode(true, typeof(bool)),
                 new BodyNode(
                     []));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(7, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -107,7 +110,7 @@ public class ParseWhileTests
                             new MemberNode("ping"),
                             [])
                     ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
@@ -188,7 +191,7 @@ public class ParseWhileTests
                         new MemberNode("ping"),
                         [])
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(7, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(

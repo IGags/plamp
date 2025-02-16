@@ -2,6 +2,7 @@ using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -9,7 +10,9 @@ using Xunit;
 namespace plamp.Native.Tests.Parser;
 
 public class ParseBodyLevelTests
-{ 
+{
+    private static readonly RecursiveComparer Comparer = new();
+    
     //Method does not advance to end of line
     [Fact]
     public void ParseValidSingleLineExpression()
@@ -26,7 +29,7 @@ public class ParseBodyLevelTests
                     new MemberNode("a"),
                     new MemberNode("b")),
                 new MemberNode("c"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(4, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -46,7 +49,7 @@ public class ParseBodyLevelTests
                     new MemberNode("a"),
                     new MemberNode("b")),
                 new MemberNode("c"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(4, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -60,16 +63,18 @@ public class ParseBodyLevelTests
                                     * 2
                             """;
         var parser = new PlampNativeParser(code);
+        //HoW does dis works? watch commit
         var result = parser.TryParseBodyLevelExpression(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(
-                new MultiplyNode(
-                    new PlusNode(
+                new PlusNode(
+                    new ConstNode(2, typeof(int)),
+                    new MultiplyNode(
                         new ConstNode(2, typeof(int)),
-                        new ConstNode(2, typeof(int))),
-                    new ConstNode(2, typeof(int))));
-        Assert.Equal(expressionShould, expression);
+                        new ConstNode(2, typeof(int)))
+                    ));
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(15, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -104,7 +109,7 @@ public class ParseBodyLevelTests
                     ])),
                 []
                 , null);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(16, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

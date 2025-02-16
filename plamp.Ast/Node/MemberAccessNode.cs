@@ -2,8 +2,17 @@
 
 namespace plamp.Ast.Node;
 
-public record MemberAccessNode(NodeBase From, NodeBase Member) : NodeBase
+public class MemberAccessNode : NodeBase
 {
+    public NodeBase From { get; }
+    public NodeBase Member { get; }
+
+    public MemberAccessNode(NodeBase from, NodeBase member)
+    {
+        From = from;
+        Member = member;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return From;

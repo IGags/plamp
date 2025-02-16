@@ -3,22 +3,18 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Assign;
 
-public record AndAndAssignNode(NodeBase DefinitionNode, NodeBase Right) : BaseAssignNode(Right)
+public class AndAndAssignNode : BaseAssignNode
 {
+    public NodeBase Member { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return DefinitionNode;
+        yield return Member;
         yield return Right;
     }
-    
-    public virtual bool Equals(AndAndAssignNode other)
-    {
-        if (other == null) return false;
-        return DefinitionNode.Equals(other.DefinitionNode) && Right.Equals(other.Right);
-    }
 
-    public override int GetHashCode()
+    public AndAndAssignNode(NodeBase member, NodeBase right) : base(right)
     {
-        return HashCode.Combine(DefinitionNode, Right);
+        Member = member;
     }
 }

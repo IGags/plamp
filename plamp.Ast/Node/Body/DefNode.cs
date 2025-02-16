@@ -4,9 +4,14 @@ using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
-public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> ParameterList, BodyNode Body) 
+public class DefNode 
     : NodeBase
 {
+    public NodeBase ReturnType { get; }
+    public MemberNode Name { get; }
+    public List<ParameterNode> ParameterList { get; }
+    public BodyNode Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return ReturnType;
@@ -22,25 +27,11 @@ public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> 
         yield return Body;
     }
 
-    //Not scary, much better
-    public virtual bool Equals(DefNode other)
+    public DefNode(NodeBase returnType, MemberNode name, List<ParameterNode> parameterList, BodyNode body)
     {
-        if (other == null) return false;
-        return ReturnType == other.ReturnType && Name == other.Name
-            && ParameterList.SequenceEqual(other.ParameterList)
-            && Body.Equals(other.Body);
-    }
-
-    public override int GetHashCode()
-    {
-        var hashCode = new HashCode();
-        hashCode.Add(ReturnType);
-        hashCode.Add(Name);
-        foreach (var parameter in ParameterList)
-        {
-            hashCode.Add(parameter);
-        }
-        hashCode.Add(Body);
-        return hashCode.ToHashCode();
+        ReturnType = returnType;
+        Name = name;
+        ParameterList = parameterList;
+        Body = body;
     }
 }

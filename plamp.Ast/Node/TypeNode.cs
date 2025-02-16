@@ -4,35 +4,24 @@ using System.Linq;
 
 namespace plamp.Ast.Node;
 
-public record TypeNode(NodeBase TypeName, List<NodeBase> InnerGenerics) : NodeBase
+public class TypeNode : NodeBase
 {
+    public NodeBase TypeName { get; }
+    public List<NodeBase> InnerGenerics { get; }
+
+    public TypeNode(NodeBase typeName, List<NodeBase> innerGenerics)
+    {
+        TypeName = typeName;
+        InnerGenerics = innerGenerics;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return TypeName;
+        if(InnerGenerics == null) yield break;
         foreach (var generic in InnerGenerics)
         {
             yield return generic;
         }
-    }
-
-    public virtual bool Equals(TypeNode other)
-    {
-        if(other == null) return false;
-        if (InnerGenerics == null && other.InnerGenerics != null) return false;
-        return TypeName == other.TypeName 
-               && ((InnerGenerics == null && other.InnerGenerics == null) 
-                   || InnerGenerics!.SequenceEqual(other.InnerGenerics!));
-    }
-
-    public override int GetHashCode()
-    {
-        var hashCode = new HashCode();
-        hashCode.Add(TypeName);
-        if (InnerGenerics == null) return hashCode.ToHashCode();
-        foreach (var generic in InnerGenerics)
-        {
-            hashCode.Add(generic);
-        }
-        return hashCode.ToHashCode();
     }
 }

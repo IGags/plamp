@@ -1,5 +1,6 @@
 using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -8,6 +9,8 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class ExpressionPostfixTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseSingleMember()
     {
@@ -16,7 +19,7 @@ public class ExpressionPostfixTests
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould = new MemberNode("hi");
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -32,7 +35,7 @@ public class ExpressionPostfixTests
             = new MemberAccessNode(
                 new MemberNode("hey"), 
                 new MemberNode("dude"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -52,7 +55,7 @@ public class ExpressionPostfixTests
                         new MemberNode("dude")),
                     new MemberNode("you")),
                 new MemberNode("cool"));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(6, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -64,7 +67,7 @@ public class ExpressionPostfixTests
         var parser = new PlampNativeParser(code);
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        Assert.Equal(new MemberNode("hey"), expression);
+        Assert.Equal(new MemberNode("hey"), expression, Comparer);
         Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -80,7 +83,7 @@ public class ExpressionPostfixTests
             = new CallNode(
                 new MemberNode("greet"),
                 []);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(2, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -93,7 +96,7 @@ public class ExpressionPostfixTests
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould = new MemberNode("greet");
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(0, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -114,7 +117,7 @@ public class ExpressionPostfixTests
                         new ConstNode("you", typeof(string))),
                     new ConstNode(1, typeof(int))
                 ]);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -138,7 +141,7 @@ public class ExpressionPostfixTests
                         ]),
                     new MemberNode("bye")),
                 []);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(9, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -156,7 +159,7 @@ public class ExpressionPostfixTests
                 [
                     new ConstNode(0, typeof(int))
                 ]);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(3, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -175,7 +178,7 @@ public class ExpressionPostfixTests
                     new ConstNode(0, typeof(int)),
                     new ConstNode(1, typeof(int))
                 ]);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -197,7 +200,7 @@ public class ExpressionPostfixTests
                 [
                     new ConstNode("hi", typeof(string))
                 ]);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(6, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

@@ -3,22 +3,20 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public record ClauseNode(NodeBase Predicate, BodyNode Body) : NodeBase
+public class ClauseNode : NodeBase
 {
+    public NodeBase Predicate { get; }
+    public NodeBase Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Predicate;
         yield return Body;
     }
 
-    public virtual bool Equals(ClauseNode other)
+    public ClauseNode(NodeBase predicate, NodeBase body)
     {
-        if (other == null) return false;
-        return Predicate == other.Predicate && Body == other.Body;
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Predicate, Body);
+        Predicate = predicate;
+        Body = body;
     }
 }

@@ -4,9 +4,13 @@ using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
-public record ConditionNode(ClauseNode IfClause, List<ClauseNode> ElifClauseList, BodyNode ElseClause) 
+public class ConditionNode 
     : NodeBase
 {
+    public ClauseNode IfClause { get; }
+    public List<ClauseNode> ElifClauseList { get; }
+    public BodyNode ElseClause { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return IfClause;
@@ -18,22 +22,10 @@ public record ConditionNode(ClauseNode IfClause, List<ClauseNode> ElifClauseList
         yield return ElseClause;
     }
 
-    public virtual bool Equals(ConditionNode other)
+    public ConditionNode(ClauseNode ifClause, List<ClauseNode> elifClauseList, BodyNode elseClause)
     {
-        if (other == null) return false;
-        return IfClause == other.IfClause && ElifClauseList.SequenceEqual(other.ElifClauseList)
-            && ElseClause == other.ElseClause;
-    }
-
-    public override int GetHashCode()
-    {
-        var hashCode = new HashCode();
-        hashCode.Add(IfClause);
-        foreach (var clause in ElifClauseList)
-        {
-            hashCode.Add(clause);
-        }
-        hashCode.Add(ElseClause);
-        return hashCode.ToHashCode();
+        IfClause = ifClause;
+        ElifClauseList = elifClauseList;
+        ElseClause = elseClause;
     }
 }

@@ -1,6 +1,7 @@
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -36,7 +37,7 @@ public class SingleLineExpressionParsingComplexCasesTests
                         new CallNode(
                             new MemberNode("getRandNum"),
                             []))));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, new RecursiveComparer());
         Assert.Equal(19, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

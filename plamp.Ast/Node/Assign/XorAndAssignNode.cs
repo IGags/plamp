@@ -3,22 +3,18 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Assign;
 
-public record XorAndAssignNode(NodeBase VariableDefinition, NodeBase Right) : BaseAssignNode(Right)
+public class XorAndAssignNode : BaseAssignNode
 {
+    public NodeBase VariableDefinition { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return VariableDefinition;
         yield return Right;
     }
 
-    public virtual bool Equals(XorAndAssignNode other)
+    public XorAndAssignNode(NodeBase variableDefinition, NodeBase right) : base(right)
     {
-        if(other == null) return false;
-        return VariableDefinition.Equals(other.VariableDefinition) && Right.Equals(other.Right);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(VariableDefinition, Right);
+        VariableDefinition = variableDefinition;
     }
 }

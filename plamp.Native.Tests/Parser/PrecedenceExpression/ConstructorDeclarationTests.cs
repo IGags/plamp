@@ -1,4 +1,5 @@
 using plamp.Ast.Node;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -7,6 +8,8 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class ConstructorDeclarationTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ValidConstructorDeclaration()
     {
@@ -20,7 +23,7 @@ public class ConstructorDeclarationTests
                     new MemberNode("int"),
                     null),
                 []);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(4, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -42,7 +45,7 @@ public class ConstructorDeclarationTests
                             null)
                     ]),
                 []);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(7, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -62,7 +65,7 @@ public class ConstructorDeclarationTests
                 [
                     new ConstNode(1, typeof(int))
                 ]);
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }

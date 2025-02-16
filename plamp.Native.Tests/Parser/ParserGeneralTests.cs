@@ -4,6 +4,7 @@ using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.Node.Unary;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace plamp.Native.Tests.Parser;
 
 public class ParserGeneralTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseFindMaximum()
     {
@@ -78,7 +81,7 @@ public class ParserGeneralTests
                     new ReturnNode(
                         new MemberNode("max"))
                 ]));
-        Assert.Equal(expressionShould, result.NodeList[0]);
+        Assert.Equal(expressionShould, result.NodeList[0], Comparer);
     }
 
     [Fact]
@@ -238,7 +241,7 @@ public class ParserGeneralTests
                         new UnaryMinusNode(
                             new ConstNode(1, typeof(int))))
                 ]));
-        Assert.Equal(expressionShould, result.NodeList[0]);
+        Assert.Equal(expressionShould, result.NodeList[0], Comparer);
     }
 
     [Fact]
@@ -503,7 +506,7 @@ public class ParserGeneralTests
                         ]))
                 ])
             );
-        Assert.Equal(expressionShould, result.NodeList[0]);
+        Assert.Equal(expressionShould, result.NodeList[0], Comparer);
     }
 
     [Fact]
@@ -533,8 +536,8 @@ public class ParserGeneralTests
         Assert.Equal(5, result.NodeList.Count);
         var expressionShould1
             = new UseNode(new MemberNode("RememberMe"));
-        Assert.Equal(expressionShould1, result.NodeList[0]);
-        Assert.Equal(new EmptyNode(), result.NodeList[1]);
+        Assert.Equal(expressionShould1, result.NodeList[0], Comparer);
+        Assert.Equal(new EmptyNode(), result.NodeList[1], Comparer);
         var expressionShould2
             = new DefNode(
                 new TypeNode(
@@ -570,8 +573,8 @@ public class ParserGeneralTests
                                 [])
                         ])
                 ]));
-        Assert.Equal(expressionShould2, result.NodeList[2]);
-        Assert.Equal(new EmptyNode(), result.NodeList[3]);
+        Assert.Equal(expressionShould2, result.NodeList[2], Comparer);
+        Assert.Equal(new EmptyNode(), result.NodeList[3], Comparer);
         var expressionShould3
             = new DefNode(
                 new TypeNode(
@@ -637,6 +640,6 @@ public class ParserGeneralTests
                     new ReturnNode(
                         new MemberNode("image"))
                 ]));
-        Assert.Equal(expressionShould3, result.NodeList[4]);
+        Assert.Equal(expressionShould3, result.NodeList[4], Comparer);
     }
 }

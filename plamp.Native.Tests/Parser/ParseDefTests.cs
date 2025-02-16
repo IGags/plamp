@@ -4,6 +4,7 @@ using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -13,6 +14,8 @@ namespace plamp.Native.Tests.Parser;
 
 public class ParseDefTests
 {
+    private static readonly RecursiveComparer Comparer = new();
+    
     [Fact]
     public void ParseValidDefSingleLine()
     {
@@ -35,7 +38,7 @@ public class ParseDefTests
                     new ReturnNode(
                         new ConstNode(1, typeof(int)))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(11, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -69,7 +72,7 @@ public class ParseDefTests
                     new ReturnNode(
                         new MemberNode("a"))
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(21, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -113,7 +116,7 @@ public class ParseDefTests
                             new MemberNode("arg")
                         ])
                 ]));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(25, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -136,7 +139,7 @@ public class ParseDefTests
                 [],
                 new BodyNode(
                     []));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(7, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -209,7 +212,7 @@ public class ParseDefTests
                 [],
                 new BodyNode(
                     []));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(15, parser.TokenSequence.Position);
         Assert.Equal(2, parser.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
@@ -240,7 +243,7 @@ public class ParseDefTests
                 [],
                 new BodyNode(
                     []));
-        Assert.Equal(expressionShould, expression);
+        Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(12, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(

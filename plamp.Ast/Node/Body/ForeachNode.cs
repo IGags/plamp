@@ -3,8 +3,12 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public record ForeachNode(NodeBase Iterator, NodeBase Iterable, BodyNode Body) : NodeBase
+public class ForeachNode : NodeBase
 {
+    public NodeBase Iterator { get; }
+    public NodeBase Iterable { get; }
+    public BodyNode Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Iterator;
@@ -12,14 +16,10 @@ public record ForeachNode(NodeBase Iterator, NodeBase Iterable, BodyNode Body) :
         yield return Body;
     }
 
-    public virtual bool Equals(ForeachNode other)
+    public ForeachNode(NodeBase iterator, NodeBase iterable, BodyNode body)
     {
-        if(other is null) return false;
-        return Iterator == other.Iterator && Iterable == other.Iterable && Body == other.Body;
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Iterator, Iterable, Body);
+        Iterator = iterator;
+        Iterable = iterable;
+        Body = body;
     }
 }

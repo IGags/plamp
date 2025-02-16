@@ -1,5 +1,6 @@
 using plamp.Ast;
 using plamp.Ast.Node.ControlFlow;
+using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -9,6 +10,8 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseBreakKeyword
 {
+    private static readonly RecursiveComparer Comparer = new RecursiveComparer();
+    
     [Fact]
     public void ParseBreak()
     {
@@ -22,7 +25,7 @@ public class ParseBreakKeyword
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new BreakNode();
-        Assert.Equal(expression, expressionShould);
+        Assert.Equal(expression, expressionShould, Comparer);
         Assert.Equal(1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
@@ -40,7 +43,7 @@ public class ParseBreakKeyword
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new BreakNode();
-        Assert.Equal(expression, expressionShould);
+        Assert.Equal(expression, expressionShould, Comparer);
         Assert.Equal(3, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(

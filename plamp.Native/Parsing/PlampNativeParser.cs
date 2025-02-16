@@ -512,26 +512,25 @@ public sealed class PlampNativeParser
         
         var elifClauses = new List<ClauseNode>();
 
-        KeywordToken keyword = null;
-        var elifTransaction = _transactionSource.BeginTransaction();
-        while (TryParseEmpty(out _) == ExpressionParsingResult.Success
-               || TryParseScopedWithDepth(TryParseElifKeyword, out keyword) 
-               == ExpressionParsingResult.Success)
+        while (true)
         {
-            //Strange but need
-            elifTransaction.Commit();
-            elifTransaction = _transactionSource.BeginTransaction();
-            var inner = _transactionSource.BeginTransaction();
+            if(TryParseEmpty(out _) == ExpressionParsingResult.Success) continue;
+            var condTrans = _transactionSource.BeginTransaction();
+            
+            if (TryParseScopedWithDepth(TryParseElifKeyword, out KeywordToken keyword) != ExpressionParsingResult.Success)
+            {
+                condTrans.Rollback();
+                break;
+            }
+            
             if (keyword != null)
             {
                 //TODO: Skip body with match depth
-                TryParseConditionClause(keyword, inner, out var elifClause);
+                TryParseConditionClause(keyword, condTrans, out var elifClause);
                 if(elifClause != null) elifClauses.Add(elifClause);
-                keyword = null;
             }
-            inner.Commit();
+            condTrans.Commit();
         }
-        elifTransaction?.Rollback();
         
         var elseBody = default(BodyNode);
         if (TryConsumeNextNonWhiteSpace<KeywordToken>(x => x.Keyword == Keywords.Else, _ => {}, out _))
@@ -939,6 +938,7 @@ public sealed class PlampNativeParser
     private ExpressionParsingResult TryParseLed(int rbp, NodeBase left, out NodeBase output)
     {
         var transaction = _transactionSource.BeginTransaction();
+        SkipLineBreak();
         
         if (TryConsumeNextNonWhiteSpace<OperatorToken>(_ => true, _ => { }, out var token))
         {
@@ -1226,7 +1226,6 @@ public sealed class PlampNativeParser
             return ExpressionParsingResult.FailedNeedRollback;
         }
         
-        transaction.Commit();
         node = operatorToken.Operator switch
         {
             OperatorEnum.Minus => new UnaryMinusNode(inner),
@@ -1236,6 +1235,7 @@ public sealed class PlampNativeParser
             _ => throw new ArgumentOutOfRangeException()
         };
         transaction.AddSymbol(node, [inner], [operatorToken]);
+        transaction.Commit();
         node = ParsePostfixIfExist(node);
         return ExpressionParsingResult.Success;
 

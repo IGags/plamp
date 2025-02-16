@@ -4,26 +4,17 @@ using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
-public record BodyNode(List<NodeBase> InstructionList) : NodeBase
+public class BodyNode : NodeBase
 {
+    public List<NodeBase> InstructionList { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         return InstructionList;
     }
 
-    public virtual bool Equals(BodyNode other)
+    public BodyNode(List<NodeBase> instructionList)
     {
-        return other != null && InstructionList.SequenceEqual(other.InstructionList);
-    }
-
-    public override int GetHashCode()
-    {
-        var hashCode = new HashCode();
-        foreach (var instruction in InstructionList)
-        {
-            hashCode.Add(instruction);
-        }
-
-        return hashCode.ToHashCode();
+        InstructionList = instructionList;
     }
 }
