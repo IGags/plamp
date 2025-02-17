@@ -40,6 +40,15 @@ public sealed class PlampNativeParser
             tokenRes.Sequence, tokenRes.Exceptions, new());
     }
 
+    [Obsolete("For test purposes only")]
+    internal PlampNativeParser(TokenSequence sequence)
+    {
+        _depth = 0;
+        _tokenSequence = sequence;
+        _transactionSource = new ParsingTransactionSource(
+            _tokenSequence, new(), new());
+    }
+
     public PlampNativeParser(){}
     
     public ParserResult Parse(string code)
@@ -477,7 +486,7 @@ public sealed class PlampNativeParser
             case Keywords.Return:
                 TryParseWithPrecedence(out var precedence);
                 expression = new ReturnNode(precedence);
-                transaction.AddSymbol(expression, [precedence], [keyword]);
+                transaction.AddSymbol(expression, precedence == null ? [] : [precedence], [keyword]);
                 AdvanceToRequestedTokenWithException<EndOfLine>(transaction);
                 return ExpressionParsingResult.Success;
             case Keywords.If:
@@ -542,7 +551,7 @@ public sealed class PlampNativeParser
         var children = new List<NodeBase>(elifClauses.Count + 2)
             {baseClause};
         children.AddRange(elifClauses);
-        children.Add(elseBody);
+        if(elseBody != null) children.Add(elseBody);
         transaction.AddSymbol(conditionNode, children.ToArray(), []);
         return ExpressionParsingResult.Success;
 
@@ -621,7 +630,8 @@ public sealed class PlampNativeParser
                 [
                     holder.ForHeaderHolder.IteratorVar, 
                     holder.ForHeaderHolder.TilCondition, 
-                    holder.ForHeaderHolder.Counter
+                    holder.ForHeaderHolder.Counter,
+                    body
                 ],
                 [keyword]);
         }
@@ -635,7 +645,8 @@ public sealed class PlampNativeParser
                 counterLoopHolder,
                 [
                     holder.ForeachHeaderHolder.IteratorVar,
-                    holder.ForeachHeaderHolder.Iterable
+                    holder.ForeachHeaderHolder.Iterable,
+                    body
                 ],
                 [keyword]);
         }

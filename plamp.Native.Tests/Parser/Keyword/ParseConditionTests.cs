@@ -8,6 +8,7 @@ using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.Node.Unary;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -1071,4 +1072,207 @@ public class ParseConditionTests
         Assert.Equal(25, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region Symbol table
+
+    [Fact]
+    public void SymbolTableIfSingleLine()
+    {
+        const string code = """
+                            if(true) k++
+                            """;
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(6, symbolDictionary.Count);
+        Assert.Contains(expression, symbolDictionary);
+        var first = symbolDictionary[expression];
+        Assert.Empty(first.Tokens);
+        Assert.Single(first.Children);
+        
+        var firstChildren = first.Children;
+        var child = firstChildren[0];
+        Assert.Contains(child, symbolDictionary);
+        var second = symbolDictionary[child];
+        Assert.Single(second.Tokens);
+        var sequence = tokenRes.Sequence;
+        Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
+        Assert.Equal(2, second.Children.Count);
+        //Don't need to know what's deeper
+    }
+
+    [Fact]
+    public void SymbolTableIfElseSingleLine()
+    {
+        const string code = """
+                            if(true) k++
+                            else k--
+                            """;
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(9, symbolDictionary.Count);
+        Assert.Contains(expression, symbolDictionary);
+        
+        var first = symbolDictionary[expression];
+        Assert.Empty(first.Tokens);
+        Assert.Equal(2, first.Children.Count);
+        var firstChildren = first.Children;
+        
+        var child1 = firstChildren[0];
+        Assert.Contains(child1, symbolDictionary);
+        var second = symbolDictionary[child1];
+        Assert.Single(second.Tokens);
+        var sequence = tokenRes.Sequence;
+        Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
+        Assert.Equal(2, second.Children.Count);
+        
+        var child2 = first.Children[1];
+        Assert.Contains(child2, symbolDictionary);
+        var third = symbolDictionary[child2];
+        //Maybe else will have token later
+        Assert.Empty(third.Tokens);
+        Assert.Single(third.Children);
+    }
+
+    [Fact]
+    public void SymbolTableIfElif()
+    {
+        const string code = """
+                            if(true) k++
+                            elif(false) k--
+                            """;
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(11, symbolDictionary.Count);
+        Assert.Contains(expression, symbolDictionary);
+        
+        var first = symbolDictionary[expression];
+        Assert.Empty(first.Tokens);
+        Assert.Equal(2, first.Children.Count);
+        var firstChildren = first.Children;
+        
+        var child1 = firstChildren[0];
+        Assert.Contains(child1, symbolDictionary);
+        var second = symbolDictionary[child1];
+        Assert.Single(second.Tokens);
+        var sequence = tokenRes.Sequence;
+        Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
+        Assert.Equal(2, second.Children.Count);
+        
+        var child2 = first.Children[1];
+        Assert.Contains(child2, symbolDictionary);
+        var third = symbolDictionary[child2];
+        Assert.Single(third.Tokens);
+        Assert.Equal(sequence.TokenList[8], third.Tokens[0]);
+        Assert.Equal(2, third.Children.Count);
+    }
+
+    [Fact]
+    public void SymbolTableIfElifElif()
+    {
+        const string code = """
+                            if(true) k++
+                            elif(false) k--
+                            elif(false) k--
+                            """;
+        
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(16, symbolDictionary.Count);
+        Assert.Contains(expression, symbolDictionary);
+        
+        var first = symbolDictionary[expression];
+        Assert.Empty(first.Tokens);
+        Assert.Equal(3, first.Children.Count);
+        var firstChildren = first.Children;
+        
+        var child1 = firstChildren[0];
+        Assert.Contains(child1, symbolDictionary);
+        var second = symbolDictionary[child1];
+        Assert.Single(second.Tokens);
+        var sequence = tokenRes.Sequence;
+        Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
+        Assert.Equal(2, second.Children.Count);
+        
+        var child2 = first.Children[1];
+        Assert.Contains(child2, symbolDictionary);
+        var third = symbolDictionary[child2];
+        Assert.Single(third.Tokens);
+        Assert.Equal(sequence.TokenList[8], third.Tokens[0]);
+        Assert.Equal(2, third.Children.Count);
+        
+        var child3 = first.Children[2];
+        Assert.Contains(child3, symbolDictionary);
+        var fourth = symbolDictionary[child3];
+        Assert.Single(fourth.Tokens);
+        Assert.Equal(sequence.TokenList[16], fourth.Tokens[0]);
+        Assert.Equal(2, fourth.Children.Count);
+    }
+
+    [Fact]
+    public void SymbolTableIfElifElse()
+    {
+        const string code = """
+                            if(true) k++
+                            elif(false) k--
+                            else !k
+                            """;
+        
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(14, symbolDictionary.Count);
+        Assert.Contains(expression, symbolDictionary);
+        
+        var first = symbolDictionary[expression];
+        Assert.Empty(first.Tokens);
+        Assert.Equal(3, first.Children.Count);
+        var firstChildren = first.Children;
+        
+        var child1 = firstChildren[0];
+        Assert.Contains(child1, symbolDictionary);
+        var second = symbolDictionary[child1];
+        Assert.Single(second.Tokens);
+        var sequence = tokenRes.Sequence;
+        Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
+        Assert.Equal(2, second.Children.Count);
+        
+        var child2 = first.Children[1];
+        Assert.Contains(child2, symbolDictionary);
+        var third = symbolDictionary[child2];
+        Assert.Single(third.Tokens);
+        Assert.Equal(sequence.TokenList[8], third.Tokens[0]);
+        Assert.Equal(2, third.Children.Count);
+        
+        var child3 = first.Children[2];
+        Assert.Contains(child3, symbolDictionary);
+        var fourth = symbolDictionary[child3];
+        Assert.Empty(fourth.Tokens);
+        Assert.Single(fourth.Children);
+    }
+    
+    #endregion
 }

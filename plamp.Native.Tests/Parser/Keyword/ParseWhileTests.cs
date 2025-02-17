@@ -3,6 +3,7 @@ using plamp.Ast.Node;
 using plamp.Ast.Node.Body;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -199,4 +200,35 @@ public class ParseWhileTests
             new(0, 5), new(0, 6));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
+
+    #region Symbol dictionary
+
+    [Fact]
+    public void SymbolWhileSingleLine()
+    {
+        const string code = """
+                            while(true) i++
+                            """;
+
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
+        
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(5, symbolTable.Count);
+        var first = symbolTable[expression];
+        Assert.Single(first.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], first.Tokens[0]);
+        Assert.Equal(2, first.Children.Count);
+        foreach (var child in first.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    #endregion
 }

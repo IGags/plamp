@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using plamp.Ast.Node;
 using plamp.Native.Tokenization.Token;
@@ -8,7 +9,7 @@ namespace plamp.Native.Parsing.Symbols;
 /// <summary>
 /// Record that represent symbol own tokens(without children) and child nodes
 /// </summary>
-internal record PlampNativeSymbolRecord(NodeBase[] Children, TokenBase[] Tokens)
+internal record PlampNativeSymbolRecord(IReadOnlyList<NodeBase> Children, IReadOnlyList<TokenBase> Tokens)
 {
     public virtual bool Equals(PlampNativeSymbolRecord other)
     {

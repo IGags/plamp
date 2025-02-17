@@ -6,6 +6,7 @@ using plamp.Ast.Node.Body;
 using plamp.Ast.Node.Unary;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -437,4 +438,62 @@ public class ParseForTests
         Assert.Equal(10, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region SymbolTable
+
+    [Fact]
+    public void SymbolTableForSingleLine()
+    {
+        const string code = """
+                            for(int i=0,i<c,i++) print(i)
+                            """;
+        
+        var tokenRes = code.Tokenize();
+        var tokenSequence = tokenRes.Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(16, symbolTable.Count);
+        var first = symbolTable[expression];
+        Assert.Single(first.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], first.Tokens[0]);
+        Assert.Equal(4, first.Children.Count);
+        foreach (var child in first.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void SymbolTableForeachSingleLine()
+    {
+        const string code = """
+                            for(var i in c) print(i)
+                            """;
+        
+        var tokenRes = code.Tokenize();
+        var tokenSequence = tokenRes.Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(8, symbolTable.Count);
+        var first = symbolTable[expression];
+        Assert.Single(first.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], first.Tokens[0]);
+        Assert.Equal(3, first.Children.Count);
+        foreach (var child in first.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    #endregion
 }

@@ -2,6 +2,7 @@ using plamp.Ast;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -51,4 +52,26 @@ public class ParseContinueKeyword
             new (0, 8), new (0, 11));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
+    
+    [Fact]
+    public void ContinueSymbolTest()
+    {
+        const string code = """
+                            continue
+                            """;
+        var tokenRes = code.Tokenize();
+        var parser = new PlampNativeParser(tokenRes.Sequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        transaction.Commit();
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Single(symbolDictionary);
+        Assert.Contains(expression, symbolDictionary);
+        var val = symbolDictionary[expression];
+        Assert.Empty(val.Children);
+        Assert.Single(val.Tokens);
+        var token = val.Tokens[0];
+        Assert.Equal(tokenRes.Sequence.TokenList[0], token);
+    }    
 }
