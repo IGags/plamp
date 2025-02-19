@@ -1,6 +1,8 @@
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using plamp.Ast.Node;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -93,4 +95,45 @@ public class ConstructorDeclarationTests
         Assert.Equal(-1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region Symbol table
+
+    [Fact]
+    public void ConstructorWithoutArgsSymbolTest()
+    {
+        const string code = "new T()";
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        
+        var result = parser.TryParseWithPrecedence(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(3, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Single(symbol.Children);
+    }
+
+    [Fact]
+    public void ConstructorWithArgsSymbolTest()
+    {
+        const string code = "new List<d>(2222,1111)";
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(7, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(3, symbol.Children.Count);
+    }
+
+    #endregion
 }

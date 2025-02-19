@@ -1,5 +1,6 @@
 ﻿using plamp.Ast.Node;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -26,12 +27,20 @@ public class ParsingNudLiteralTests
 	[InlineData("null", null)]
     public void ParseLiteral(string code, object value)
     {
-	    var parser = new PlampNativeParser(code);
+	    var tokenSequence = code.Tokenize().Sequence;
+	    var parser = new PlampNativeParser(tokenSequence);
 	    var result = parser.TryParseWithPrecedence(out var expression);
 	    Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 	    Assert.Equal(typeof(ConstNode), expression.GetType());
 	    Assert.Equal(value, ((ConstNode)expression).Value);
 	    Assert.Empty(parser.TransactionSource.Exceptions);
 	    Assert.Equal(0, parser.TokenSequence.Position);
+	    var dictionary = parser.TransactionSource.SymbolDictionary;
+	    Assert.Single(dictionary);
+	    Assert.Contains(expression, dictionary);
+	    var symbol = dictionary[expression];
+	    Assert.Single(symbol.Tokens);
+	    Assert.Equal(symbol.Tokens[0], tokenSequence.TokenList[0]);
+	    Assert.Empty(symbol.Children);
     }
 }

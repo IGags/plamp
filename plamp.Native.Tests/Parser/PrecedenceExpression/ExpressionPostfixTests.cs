@@ -2,6 +2,7 @@ using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -204,4 +205,198 @@ public class ExpressionPostfixTests
         Assert.Equal(6, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region Symbol table
+
+    [Fact]
+    public void MemberSymbolTest()
+    {
+        const string code = """
+                            mem
+                            """;
+
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Single(symbolTable);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Empty(symbol.Children);
+    }
+
+    [Fact]
+    public void MemberAccessSequenceSymbolTest()
+    {
+        const string code = """
+                            mem.d
+                            """;
+
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(3, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(sequence.TokenList[1], symbol.Tokens[0]);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void CallSymbolTest()
+    {
+        const string code = """
+                            mem()
+                            """;
+
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(2, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(1, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void CallWithArgSymbolTest()
+    {
+        const string code = """
+                            mem(m1, m2)
+                            """;
+
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(4, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(3, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void CallSequenceTest()
+    {
+        const string code = """
+                            mem(m1, m2).mem(t)
+                            """;
+
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(8, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void IndexerSymbolTest()
+    {
+        const string code = """
+                            r[2]
+                            """;
+        
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(3, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void MultidimensionalIndexerSymbolTest()
+    {
+        const string code = """
+                            canon[1,0]
+                            """;
+        
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(4, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(3, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void IndexerSequenceSymbolTest()
+    {
+        const string code = """
+                            canon[1][0]
+                            """;
+        
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(5, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    #endregion
 }

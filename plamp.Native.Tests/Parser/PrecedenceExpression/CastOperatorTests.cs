@@ -1,6 +1,7 @@
 using plamp.Ast.Node;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -51,4 +52,28 @@ public class CastOperatorTests
         Assert.Equal(-1, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region Symbol table
+
+    [Fact]
+    public void CastSymbolTest()
+    {
+        const string code = """
+                            (string)1
+                            """;
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseWithPrecedence(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var table = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(4, table.Count);
+        Assert.Contains(expression, table);
+        var symbol = table[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+    }
+
+    #endregion
 }

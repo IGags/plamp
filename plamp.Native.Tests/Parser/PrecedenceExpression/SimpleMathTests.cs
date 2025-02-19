@@ -6,6 +6,7 @@ using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Unary;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -35,7 +36,8 @@ public class SimpleMathTests
     public void ParseBinaryExpression(
         string code, Type expressionType, object left, object right)
     {
-        var parser = new PlampNativeParser(code);
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.Equal(expressionType, expression.GetType());
@@ -46,18 +48,30 @@ public class SimpleMathTests
         Assert.Equal(rightShould, binary.Right, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(2, parser.TokenSequence.Position);
+        var dictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(3, dictionary.Count);
+        Assert.Contains(expression, dictionary);
+        var symbol = dictionary[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(sequence.TokenList[1], symbol.Tokens[0]);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, dictionary);
+        }
     }
 
     [Theory]
-    [InlineData("-1", typeof(UnaryMinusNode), 1)]
-    [InlineData("!false", typeof(NotNode), false)]
-    [InlineData("++1", typeof(PrefixIncrementNode), 1)]
-    [InlineData("--1", typeof(PrefixDecrementNode), 1)]
-    [InlineData("1++", typeof(PostfixIncrementNode), 1)]
-    [InlineData("1--", typeof(PostfixDecrementNode), 1)]
-    public void ParseUnaryExpression(string code, Type expressionType, object inner)
+    [InlineData("-1", typeof(UnaryMinusNode), 1, true)]
+    [InlineData("!false", typeof(NotNode), false, true)]
+    [InlineData("++1", typeof(PrefixIncrementNode), 1, true)]
+    [InlineData("--1", typeof(PrefixDecrementNode), 1, true)]
+    [InlineData("1++", typeof(PostfixIncrementNode), 1, false)]
+    [InlineData("1--", typeof(PostfixDecrementNode), 1, false)]
+    public void ParseUnaryExpression(string code, Type expressionType, object inner, bool prefix)
     {
-        var parser = new PlampNativeParser(code);
+        var sequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(sequence);
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.Equal(expressionType, expression.GetType());
@@ -66,6 +80,17 @@ public class SimpleMathTests
         Assert.Equal(innerShould, unary.Inner, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(1, parser.TokenSequence.Position);
+        var dictionary = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(2, dictionary.Count);
+        Assert.Contains(expression, dictionary);
+        var symbol = dictionary[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(prefix ? sequence.TokenList[0] : sequence.TokenList[1], symbol.Tokens[0]);
+        Assert.Equal(1, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, dictionary);
+        }
     }
 
     [Fact]
