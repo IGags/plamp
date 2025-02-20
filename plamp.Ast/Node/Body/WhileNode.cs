@@ -1,9 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public record WhileNode(NodeBase Condition, BodyNode Body) : NodeBase
+public class WhileNode : NodeBase
 {
+    public NodeBase Condition { get; }
+    
+    public BodyNode Body { get; }
+
+    public WhileNode(NodeBase condition, BodyNode body)
+    {
+        Condition = condition;
+        Body = body;
+    }
+    
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Condition;

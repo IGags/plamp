@@ -2,8 +2,17 @@
 
 namespace plamp.Ast.Node;
 
-public record ParameterNode(NodeBase Type, MemberNode Name) : NodeBase
+public class ParameterNode : NodeBase
 {
+    public NodeBase Type { get; }
+    public MemberNode Name { get; }
+
+    public ParameterNode(NodeBase type, MemberNode name)
+    {
+        Type = type;
+        Name = name;
+    }
+    
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Type;

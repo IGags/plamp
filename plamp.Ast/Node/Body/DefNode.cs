@@ -1,9 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node.Body;
 
-public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> ParameterList, BodyNode Body) : NodeBase
+public class DefNode 
+    : NodeBase
 {
+    public NodeBase ReturnType { get; }
+    public MemberNode Name { get; }
+    public List<ParameterNode> ParameterList { get; }
+    public BodyNode Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return ReturnType;
@@ -17,5 +25,13 @@ public record DefNode(NodeBase ReturnType, MemberNode Name, List<ParameterNode> 
         }
 
         yield return Body;
+    }
+
+    public DefNode(NodeBase returnType, MemberNode name, List<ParameterNode> parameterList, BodyNode body)
+    {
+        ReturnType = returnType;
+        Name = name;
+        ParameterList = parameterList;
+        Body = body;
     }
 }

@@ -1,12 +1,14 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public abstract class TokenBase
 {
     protected string StringValue { get; set; }
-    public TokenPosition Start { get; }
-    public TokenPosition End { get; }
+    public FilePosition Start { get; }
+    public FilePosition End { get; }
 
-    protected TokenBase(TokenPosition start, TokenPosition end, string stringValue)
+    protected TokenBase(FilePosition start, FilePosition end, string stringValue)
     {
         Start = start;
         End = end;

@@ -1,8 +1,10 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class EndOfLine : TokenBase
 {
-    public EndOfLine(string token, TokenPosition start, TokenPosition end) : base(start, end, token)
+    public EndOfLine(string token, FilePosition start, FilePosition end) : base(start, end, token)
     {
     }
 }

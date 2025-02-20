@@ -31,9 +31,6 @@ public abstract class BaseVisitor
             case AssignNode assignNode:
                 VisitAssign(assignNode);
                 return;
-            case CreateAndAssignNode createAndAssignNode:
-                VisitCreateAndAssign(createAndAssignNode);
-                return;
             case DivAndAssignNode divAndAssignNode:
                 VisitDivAndAssign(divAndAssignNode);
                 return;
@@ -97,7 +94,7 @@ public abstract class BaseVisitor
             case DefNode defNode:
                 VisitDef(defNode);
                 return;
-            case ForNode forNode:
+            case ForeachNode forNode:
                 VisitFor(forNode);
                 return;
             case WhileNode whileNode:
@@ -191,8 +188,6 @@ public abstract class BaseVisitor
     
     protected virtual void VisitAssign(AssignNode node){}
     
-    protected virtual void VisitCreateAndAssign(CreateAndAssignNode node){}
-    
     protected virtual void VisitDivAndAssign(DivAndAssignNode node){}
     
     protected virtual void VisitModuloAndAssign(ModuloAndAssignNode node){}
@@ -235,7 +230,7 @@ public abstract class BaseVisitor
     
     protected virtual void VisitDef(DefNode node){}
     
-    protected virtual void VisitFor(ForNode node){}
+    protected virtual void VisitFor(ForeachNode node){}
     
     protected virtual void VisitWhile(WhileNode node){}
     

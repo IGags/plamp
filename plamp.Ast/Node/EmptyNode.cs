@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace plamp.Ast.Node;
 
-public record EmptyNode() : NodeBase
+public class EmptyNode : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

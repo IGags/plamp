@@ -1,5 +1,10 @@
-﻿using plamp.Native.Parsing.Transactions;
+﻿using System;
+using plamp.Ast;
+using plamp.Ast.Node;
+using plamp.Native.Parsing.Symbols;
+using plamp.Native.Parsing.Transactions;
 using plamp.Native.Tokenization;
+using plamp.Native.Tokenization.Token;
 using Xunit;
 
 namespace plamp.Native.Tests.TransactionSource;
@@ -12,7 +17,7 @@ public class TransactionTests
     public void CommitWithoutExceptions()
     {
         var result = "+ -".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 2;
         transaction.Commit();
@@ -25,7 +30,7 @@ public class TransactionTests
     public void CommitWithExceptions()
     {
         var result = string.Empty.Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
 
         var ex = new PlampException(PlampNativeExceptionInfo.InvalidCastOperator(), default, default);
         var transaction = source.BeginTransaction();
@@ -40,44 +45,58 @@ public class TransactionTests
     public void CommitWithInnerTransactionHasNotException()
     {
         var result = "(((".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         
         result.Sequence.Position = 2;
         var transaction = source.BeginTransaction();
-        //If transaction 2 isn't commited position won't change
         _ = source.BeginTransaction();
         result.Sequence.Position = 1;
-        transaction.Commit();
-        Assert.Equal(2, result.Sequence.Position);
-        Assert.Empty(source.Exceptions);
+        Assert.Throws<Exception>(() => transaction.Commit());
     }
 
     [Fact]
     public void CommitWithInnerTransactionHasException()
     {
         var result = string.Empty.Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
-        //If transaction 2 has any exceptions it will be ignored after first transaction commit
         var transaction2 = source.BeginTransaction();
         var ex = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), default, default);
         transaction2.AddException(ex);
-        transaction.Commit();
-        Assert.Equal(-1, result.Sequence.Position);
-        Assert.Empty(source.Exceptions);
+        Assert.Throws<Exception>(() => transaction.Commit());
     }
 
     [Fact]
     public void CommitTwice()
     {
         var result = "()".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         transaction.Commit();
         transaction.Commit();
         Assert.Equal(1, result.Sequence.Position);
         Assert.Empty(source.Exceptions);
+    }
+
+    [Fact]
+    public void CommitWithSymbol()
+    {
+        var result = "1".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
+        var node = new ConstNode(1, typeof(int));
+        transaction.AddSymbol(node, [], [literal]);
+        transaction.Commit();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+        Assert.Single(source.SymbolDictionary);
+        Assert.True(source.SymbolDictionary.ContainsKey(node));
+        var symbol = source.SymbolDictionary[node];
+        var symbolEntry = new PlampNativeSymbolRecord([], [literal]);
+        Assert.Equal(symbolEntry, symbol);
     }
 
     #endregion
@@ -88,7 +107,7 @@ public class TransactionTests
     public void RollbackWithoutExceptions()
     {
         var result = "0 0".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 2;
         transaction.Rollback();
@@ -100,7 +119,7 @@ public class TransactionTests
     public void RollbackWithExceptions()
     {
         var result = "0 0".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new (0, 0), new (0, 1)));
         result.Sequence.Position = 2;
@@ -113,39 +132,51 @@ public class TransactionTests
     public void RollbackWithInnerTransactionHasNoException()
     {
         var result = "0 0".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         _ = source.BeginTransaction();
         result.Sequence.Position = 2;
-        transaction.Rollback();
-        Assert.Equal(-1, result.Sequence.Position);
-        Assert.Empty(source.Exceptions);
+        Assert.Throws<Exception>(() => transaction.Rollback());
     }
 
     [Fact]
     public void RollbackWithInnerTransactionHasException()
     {
         var result = "0 0".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         var transaction2 = source.BeginTransaction();
         transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
-        transaction.Rollback();
-        Assert.Equal(-1, result.Sequence.Position);
-        Assert.Empty(source.Exceptions);
+        Assert.Throws<Exception>(() => transaction.Rollback());
     }
 
     [Fact]
     public void RollbackTwice()
     {
         var result = "0 0".Tokenize();
-        var source = new ParsingTransactionSource(result.Sequence, []);
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         transaction.Rollback();
         transaction.Rollback();
         Assert.Equal(-1, result.Sequence.Position);
         Assert.Empty(source.Exceptions);
+    }
+    
+    [Fact]
+    public void RollbackWithSymbol()
+    {
+        var result = "1".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
+        var node = new ConstNode(1, typeof(int));
+        transaction.AddSymbol(node, [], [literal]);
+        transaction.Rollback();
+        Assert.Equal(-1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+        Assert.Empty(source.SymbolDictionary);
     }
     
     #endregion
@@ -155,38 +186,141 @@ public class TransactionTests
     [Fact]
     public void PassWithoutExceptions()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
     public void PassWithExceptions()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
     }
 
     [Fact]
+    public void PassWithInnerTransactionHasNoExceptionButChangePosition()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        _ = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        Assert.Throws<Exception>(() => transaction.Pass());
+    }
+    
+    [Fact]
     public void PassWithInnerTransactionHasNoException()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        _ = source.BeginTransaction();
+        Assert.Throws<Exception>(() => transaction.Pass());
     }
 
     [Fact]
     public void PassWithInnerTransactionHasException()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        var transaction2 = source.BeginTransaction();
+        transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        Assert.Throws<Exception>(() => transaction.Pass());
     }
 
     [Fact]
     public void PassTwice()
     {
-        
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        transaction.Pass();
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+    }
+    
+    [Fact]
+    public void PassWithSymbol()
+    {
+        var result = "1".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        result.Sequence.Position = 1;
+        var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
+        var node = new ConstNode(1, typeof(int));
+        transaction.AddSymbol(node, [], [literal]);
+        transaction.Pass();
+        Assert.Equal(1, result.Sequence.Position);
+        Assert.Empty(source.Exceptions);
+        Assert.Empty(source.SymbolDictionary);
     }
 
     #endregion
 
     #region AddException
 
-    
+    [Fact]
+    public void AddExceptionToUncompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        //Yep, just call this method and believe that it won't fail
+        transaction.AddException(new PlampException(
+            PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+    }
+
+    [Fact]
+    public void AddExceptionToCompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        transaction.Commit();
+        Assert.Throws<Exception>(() => transaction.AddException(
+            new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), 
+                new(0, 0), new(0, 1))));
+    }
+
+    #endregion
+
+    #region AddSymbol
+
+    [Fact]
+    public void AddSymbolToUncompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        //Yep, just call this method and believe that it won't fail
+        transaction.AddSymbol(new ConstNode(1, typeof(int)), [], []);
+    }
+
+    [Fact]
+    public void AddSymbolToCompletedTransaction()
+    {
+        var result = "0 0".Tokenize();
+        var source = new ParsingTransactionSource(result.Sequence, [], []);
+        var transaction = source.BeginTransaction();
+        transaction.Commit();
+        Assert.Throws<Exception>(() => transaction.AddSymbol(new ConstNode(1, typeof(int)), [], []));
+    }
 
     #endregion
 }

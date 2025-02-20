@@ -1,3 +1,3 @@
 ﻿namespace plamp.Ast.Node.Binary;
 
-public record NotEqualNode(NodeBase Left, NodeBase Right) : BaseBinaryNode(Left, Right);
+public class NotEqualNode(NodeBase left, NodeBase right) : BaseBinaryNode(left, right);

@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node.ControlFlow;
 
-public record ContinueNode : NodeBase
+public class ContinueNode : NodeBase
 {
     public override IEnumerable<NodeBase> Visit()
     {

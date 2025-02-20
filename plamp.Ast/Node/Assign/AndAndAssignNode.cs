@@ -1,12 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Assign;
 
-public record AndAndAssignNode(NodeBase DefinitionNode, NodeBase Right) : BaseAssignNode(Right)
+public class AndAndAssignNode : BaseAssignNode
 {
+    public NodeBase Member { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return DefinitionNode;
+        yield return Member;
         yield return Right;
+    }
+
+    public AndAndAssignNode(NodeBase member, NodeBase right) : base(right)
+    {
+        Member = member;
     }
 }

@@ -1,12 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Assign;
 
-public record OrAndAssignNode(NodeBase VariableDefinition, NodeBase Right) : BaseAssignNode(Right)
+public class OrAndAssignNode : BaseAssignNode
 {
+    public NodeBase VariableDefinition { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return VariableDefinition;
         yield return Right;
+    }
+
+    public OrAndAssignNode(NodeBase variableDefinition, NodeBase right) : base(right)
+    {
+        VariableDefinition = variableDefinition;
     }
 }

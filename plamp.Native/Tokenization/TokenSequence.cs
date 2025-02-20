@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using plamp.Ast;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 
@@ -34,7 +35,7 @@ public class TokenSequence : IEnumerable<TokenBase>
         }
     }
 
-    public TokenPosition CurrentStart
+    public FilePosition CurrentStart
     {
         get
         {
@@ -46,7 +47,7 @@ public class TokenSequence : IEnumerable<TokenBase>
         }
     }
 
-    public TokenPosition CurrentEnd
+    public FilePosition CurrentEnd
     {
         get
         {

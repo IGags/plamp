@@ -1,12 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public record ClauseNode(NodeBase Predicate, BodyNode Body) : NodeBase
+public class ClauseNode : NodeBase
 {
+    public NodeBase Predicate { get; }
+    public NodeBase Body { get; }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Predicate;
         yield return Body;
+    }
+
+    public ClauseNode(NodeBase predicate, NodeBase body)
+    {
+        Predicate = predicate;
+        Body = body;
     }
 }

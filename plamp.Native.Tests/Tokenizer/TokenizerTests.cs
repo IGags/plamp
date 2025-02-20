@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using plamp.Ast;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -112,7 +113,7 @@ public class TokenizerTests
         var codeLength = code.Length + 2; //Plus to because of implicit \r\n addition
         var tokenSequence = code.Tokenize();
         Assert.Empty(tokenSequence.Exceptions);
-        var last = new TokenPosition(0, -1);
+        var last = new FilePosition(0, -1);
         foreach (var token in tokenSequence.Sequence)
         {
             Assert.True(

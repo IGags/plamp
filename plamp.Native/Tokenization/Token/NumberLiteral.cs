@@ -1,4 +1,5 @@
 ﻿using System;
+using plamp.Ast;
 
 namespace plamp.Native.Tokenization.Token;
 
@@ -7,7 +8,7 @@ public class NumberLiteral : TokenBase
     public object ActualValue { get; }
     public Type ActualType { get; }
 
-    public NumberLiteral(string stringValue, TokenPosition start, TokenPosition end, object actualValue, Type actualType) 
+    public NumberLiteral(string stringValue, FilePosition start, FilePosition end, object actualValue, Type actualType) 
         : base(start, end, stringValue)
     {
         ActualValue = actualValue;

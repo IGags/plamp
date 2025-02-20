@@ -2,8 +2,15 @@
 
 namespace plamp.Ast.Node;
 
-public record UseNode(NodeBase Assembly) : NodeBase
+public class UseNode : NodeBase
 {
+    public NodeBase Assembly { get; }
+
+    public UseNode(NodeBase assembly)
+    {
+        Assembly = assembly;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Assembly;

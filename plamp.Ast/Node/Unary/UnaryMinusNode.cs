@@ -1,3 +1,8 @@
 ﻿namespace plamp.Ast.Node.Unary;
 
-public record UnaryMinusNode(NodeBase Inner) : UnaryBaseNode(Inner);
+public class UnaryMinusNode : UnaryBaseNode
+{
+    public UnaryMinusNode(NodeBase inner) : base(inner)
+    {
+    }
+}

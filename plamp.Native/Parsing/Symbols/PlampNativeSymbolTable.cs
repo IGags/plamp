@@ -1,0 +1,96 @@
+using System;
+using System.Collections.Generic;
+using plamp.Ast;
+using plamp.Ast.Node;
+
+namespace plamp.Native.Parsing.Symbols;
+
+/// <inheritdoc />
+internal class PlampNativeSymbolTable : ISymbolTable
+{
+    private readonly Dictionary<NodeBase, PlampNativeSymbolRecord> _symbols;
+
+    internal PlampNativeSymbolTable(Dictionary<NodeBase, PlampNativeSymbolRecord> symbols)
+    {
+        _symbols = symbols;
+    }
+    
+    public PlampException SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    {
+        var symbolStack = new Stack<NodeBase>();
+        symbolStack.Push(node);
+        var positionMinimum = new FilePosition(int.MaxValue, int.MaxValue);
+        var positionMaximum = new FilePosition(int.MinValue, int.MinValue);
+        
+        while (symbolStack.Count > 0)
+        {
+            if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
+            {
+                throw new Exception("Symbol is not found in symbol table.");
+            }
+
+            foreach (var token in plampNativeSymbolRecord.Tokens)
+            {
+                if (token.Start < positionMinimum)
+                {
+                    positionMinimum = token.Start;
+                }
+
+                if (token.End > positionMaximum)
+                {
+                    positionMaximum = token.End;
+                }
+            }
+            
+            foreach (var child in plampNativeSymbolRecord.Children)
+            {
+                symbolStack.Push(child);
+            }
+        }
+
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+    }
+
+    public PlampException SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    {
+        if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
+        {
+            throw new Exception("Symbol is not found in symbol table.");
+        }
+
+        var positionMinimum = new FilePosition(int.MaxValue, int.MaxValue);
+        var positionMaximum = new FilePosition(int.MinValue, int.MinValue);
+        
+        foreach (var token in plampNativeSymbolRecord.Tokens)
+        {
+            if (token.Start < positionMinimum)
+            {
+                positionMinimum = token.Start;
+            }
+
+            if (token.End > positionMaximum)
+            {
+                positionMaximum = token.End;
+            }
+        }
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+    }
+
+    public List<PlampException> SetExceptionToChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    {
+        if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
+        {
+            throw new Exception("Symbol is not found in symbol table.");
+        }
+
+        var childExceptions = new List<PlampException>();
+
+        foreach (var child in plampNativeSymbolRecord.Children)
+        {
+            var ex = SetExceptionToNodeAndChildren(exceptionRecord, child);
+            childExceptions.Add(ex);
+        }
+
+        return childExceptions;
+    }
+}

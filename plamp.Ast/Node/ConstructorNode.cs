@@ -1,9 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node;
 
-public record ConstructorNode(NodeBase Type, List<NodeBase> Args) : NodeBase
+public class ConstructorNode : NodeBase
 {
+    public NodeBase Type { get; }
+    public List<NodeBase> Args { get; }
+
+    public ConstructorNode(NodeBase type, List<NodeBase> args)
+    {
+        Type = type;
+        Args = args;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Type;

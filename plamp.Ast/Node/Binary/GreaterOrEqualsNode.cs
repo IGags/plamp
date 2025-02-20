@@ -1,3 +1,3 @@
 ﻿namespace plamp.Ast.Node.Binary;
 
-public record GreaterOrEqualsNode(NodeBase Left, NodeBase Right) : BaseBinaryNode(Left, Right);
+public class GreaterOrEqualsNode(NodeBase left, NodeBase right) : BaseBinaryNode(left, right);

@@ -1,6 +1,8 @@
-﻿namespace plamp.Native.Tokenization.Token;
+﻿using plamp.Ast;
+
+namespace plamp.Native.Tokenization.Token;
 
 public class StringLiteral : TokenBase
 {
-    public StringLiteral(string value, TokenPosition start, TokenPosition end) : base(start, end, value) { }
+    public StringLiteral(string value, FilePosition start, FilePosition end) : base(start, end, value) { }
 }

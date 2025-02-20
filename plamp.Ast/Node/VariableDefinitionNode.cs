@@ -1,9 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Ast.Node;
 
-public record VariableDefinitionNode(NodeBase Type, MemberNode Member) : NodeBase
+public class VariableDefinitionNode : NodeBase
 {
+    public NodeBase Type { get; }
+    public MemberNode Member { get; }
+
+    public VariableDefinitionNode(NodeBase type, MemberNode member)
+    {
+        Type = type;
+        Member = member;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Type;

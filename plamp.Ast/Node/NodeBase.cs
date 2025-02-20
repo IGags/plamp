@@ -2,7 +2,7 @@
 
 namespace plamp.Ast.Node;
 
-public abstract record NodeBase
+public abstract class NodeBase
 {
     public abstract IEnumerable<NodeBase> Visit();
 }

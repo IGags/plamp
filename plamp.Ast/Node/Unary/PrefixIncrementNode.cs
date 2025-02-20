@@ -1,3 +1,8 @@
 ﻿namespace plamp.Ast.Node.Unary;
 
-public record PrefixIncrementNode(NodeBase Inner) : UnaryBaseNode(Inner);
+public class PrefixIncrementNode : UnaryBaseNode
+{
+    public PrefixIncrementNode(NodeBase inner) : base(inner)
+    {
+    }
+}

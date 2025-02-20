@@ -1,12 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace plamp.Ast.Node;
 
-public record TypeNode(NodeBase TypeName, List<NodeBase> InnerGenerics) : NodeBase
+public class TypeNode : NodeBase
 {
+    public NodeBase TypeName { get; }
+    public List<NodeBase> InnerGenerics { get; }
+
+    public TypeNode(NodeBase typeName, List<NodeBase> innerGenerics)
+    {
+        TypeName = typeName;
+        InnerGenerics = innerGenerics;
+    }
+
     public override IEnumerable<NodeBase> Visit()
     {
         yield return TypeName;
+        if(InnerGenerics == null) yield break;
         foreach (var generic in InnerGenerics)
         {
             yield return generic;
