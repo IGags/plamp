@@ -2,6 +2,7 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -84,4 +85,43 @@ public class ParseUsingTests
             new(0, 7), new(0, 10));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
+
+    [Fact]
+    public void ParseEmptyUse()
+    {
+        const string code = "use ";
+        var parser = new PlampNativeParser(code);
+        var result = parser.TryParseTopLevel(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
+        Assert.Null(expression);
+        Assert.Single(parser.TransactionSource.Exceptions);
+        var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidUsingName(), new(0, 4), new(0, 5));
+        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+    }
+    
+    #region Symbol table
+
+    [Fact]
+    public void UseSymbol()
+    {
+        const string code = "use std";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseTopLevel(out var expression);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(2, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Single(symbol.Children);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    #endregion
 }

@@ -6,6 +6,7 @@ using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -251,4 +252,77 @@ public class ParseDefTests
             new(0, 12), new(0, 23));
         Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
     }
+
+    #region Symbol talbe
+
+    [Fact]
+    public void DefWithoutBody()
+    {
+        const string code = "def void print()";
+
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseTopLevel(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(5, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(3, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void DefWithBody()
+    {
+        const string code = "def void print() bible.write(\"god was die\")";
+
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseTopLevel(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(10, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(3, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void DefWithArgs()
+    {
+        const string code = "def void print(string str)";
+        
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseTopLevel(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(9, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(4, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+    
+    #endregion
 }

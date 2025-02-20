@@ -3,6 +3,7 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -252,4 +253,77 @@ public class TypeParsingTests
         Assert.Empty(parser.TransactionSource.Exceptions);
         Assert.Equal(6, parser.TokenSequence.Position);
     }
+
+    #region Symbol table
+
+    [Fact]
+    public void SimpleType()
+    {
+        const string code = "integral";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseType(transaction, out var typeNode);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(2, symbolTable.Count);
+        Assert.Contains(typeNode, symbolTable);
+        var symbol = symbolTable[typeNode];
+        Assert.Empty(symbol.Tokens);
+        Assert.Single(symbol.Children);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void FullTypeDefinition()
+    {
+        const string code = "number.integral";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseType(transaction, out var typeNode);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(4, symbolTable.Count);
+        Assert.Contains(typeNode, symbolTable);
+        var symbol = symbolTable[typeNode];
+        Assert.Empty(symbol.Tokens);
+        Assert.Single(symbol.Children);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void TypeWithGenerics()
+    {
+        const string code = "t<strange>";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var transaction = parser.TransactionSource.BeginTransaction();
+        var result = parser.TryParseType(transaction, out var typeNode);
+        transaction.Commit();
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(4, symbolTable.Count);
+        Assert.Contains(typeNode, symbolTable);
+        var symbol = symbolTable[typeNode];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    #endregion
 }

@@ -1,9 +1,11 @@
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Binary;
 using plamp.Ast.Node.Body;
 using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.NodeComparers;
 using plamp.Native.Parsing;
+using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -113,4 +115,74 @@ public class ParseBodyLevelTests
         Assert.Equal(16, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
     }
+
+    #region Symbol tests
+
+    [Fact]
+    public void EmptyBodySymbol()
+    {
+        const string code = "";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseBodyLevelExpression(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Single(symbolTable);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Children);
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+    }
+
+    [Fact]
+    public void NotEmptySingleLineBody()
+    {
+        const string code = "13 - 3";
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseBodyLevelExpression(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(3, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Equal(2, symbol.Children.Count);
+        Assert.Single(symbol.Tokens);
+        Assert.Equal(tokenSequence.TokenList[2], symbol.Tokens[0]);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+
+    [Fact]
+    public void NotEmptyMultipleLineBody()
+    {
+        const string code = """
+                            if(t) print(x)
+                            else
+                                print(!t)
+                                return 132
+                            """;
+        var tokenSequence = code.Tokenize().Sequence;
+        var parser = new PlampNativeParser(tokenSequence);
+        var result = parser.TryParseBodyLevelExpression(out var expression);
+        
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        Assert.Equal(14, symbolTable.Count);
+        Assert.Contains(expression, symbolTable);
+        var symbol = symbolTable[expression];
+        Assert.Empty(symbol.Tokens);
+        Assert.Equal(2, symbol.Children.Count);
+        foreach (var child in symbol.Children)
+        {
+            Assert.Contains(child, symbolTable);
+        }
+    }
+    
+    #endregion
 }
