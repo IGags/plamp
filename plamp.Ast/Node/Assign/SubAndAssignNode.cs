@@ -1,21 +1,11 @@
 ﻿using System.Collections.Generic;
+using plamp.Ast.Node.Binary;
 
 namespace plamp.Ast.Node.Assign;
 
-public class SubAndAssignNode : NodeBase
+public class SubAndAssignNode : BaseBinaryNode
 {
-    public NodeBase Variable { get; }
-    public NodeBase Right { get; }
-
-    public override IEnumerable<NodeBase> Visit()
+    public SubAndAssignNode(NodeBase left, NodeBase right) : base(left, right)
     {
-        yield return Variable;
-        yield return Right;
-    }
-
-    public SubAndAssignNode(NodeBase variable, NodeBase right)
-    {
-        Variable = variable;
-        Right = right;
     }
 }

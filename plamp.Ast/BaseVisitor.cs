@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
@@ -8,285 +9,282 @@ using plamp.Ast.Node.Unary;
 
 namespace plamp.Ast;
 
+//TODO: Possible do with stack if will StackOverflow occurs
 public abstract class BaseVisitor
 {
+    protected enum VisitResult
+    {
+        Continue,
+        Break,
+        SkipChildren
+    }
+
     public void Visit(NodeBase node)
     {
-        VisitNode(node);
-        VisitNodeBase(node);
+        _ = VisitInternal(node);
+    }
+    
+    protected virtual VisitResult VisitInternal(NodeBase node)
+    {
+        var res = VisitNodeBase(node);
+        
+        if (res == VisitResult.Break) return VisitResult.Break;
+        if (res == VisitResult.SkipChildren) return VisitResult.Continue;
+        
         var children = node.Visit();
-        foreach (var child in children.Where(x => x != null))
-        {
-            Visit(child);
-        }
+        res = VisitChildren(children);
+        
+        return res == VisitResult.Break ? VisitResult.Break : VisitResult.Continue;
     }
 
-    private void VisitNode(NodeBase node)
+    protected virtual VisitResult VisitChildren(IEnumerable<NodeBase> children)
     {
+        foreach (var child in children)
+        {
+            var res = VisitInternal(child);
+            if(res == VisitResult.Break) return VisitResult.Break;
+        }
+        return VisitResult.Continue;
+    }
+    
+    protected virtual VisitResult VisitNodeBase(NodeBase node)
+    {
+        if (node == null) return VisitNull();
+        
         switch (node)
         {
-            case AddAndAssignNode addAndAssignNode:
-                VisitAddAndAssign(addAndAssignNode);
-                return;
-            case AssignNode assignNode:
-                VisitAssign(assignNode);
-                return;
-            case DivAndAssignNode divAndAssignNode:
-                VisitDivAndAssign(divAndAssignNode);
-                return;
-            case ModuloAndAssignNode moduloAndAssignNode:
-                VisitModuloAndAssign(moduloAndAssignNode);
-                return;
-            case MulAndAssignNode mulAndAssignNode:
-                VisitMulAndAssign(mulAndAssignNode);
-                return;
-            case SubAndAssignNode subAndAssignNode:
-                VisitSubAndAssign(subAndAssignNode);
-                return;
-            case AndNode andNode:
-                VisitAnd(andNode);
-                return;
-            case DivideNode divideNode:
-                VisitDivide(divideNode);
-                return;
-            case EqualNode equalNode:
-                VisitEqual(equalNode);
-                return;
-            case GreaterNode greaterNode:
-                VisitGreater(greaterNode);
-                return;
-            case GreaterOrEqualsNode greaterOrEqualsNode:
-                VisitGreaterOrEquals(greaterOrEqualsNode);
-                return;
-            case LessNode lessNode:
-                VisitLess(lessNode);
-                return;
-            case LessOrEqualNode lessOrEqualNode:
-                VisitLessOrEqual(lessOrEqualNode);
-                return;
-            case MinusNode minusNode:
-                VisitMinus(minusNode);
-                return;
-            case ModuloNode moduloNode:
-                VisitModulo(moduloNode);
-                return;
-            case MultiplyNode multiplyNode:
-                VisitMultiply(multiplyNode);
-                return;
-            case NotEqualNode notEqualNode:
-                VisitNotEqual(notEqualNode);
-                return;
-            case OrNode orNode:
-                VisitOr(orNode);
-                return;
-            case PlusNode plusNode:
-                VisitPlus(plusNode);
-                return;
             case BodyNode bodyNode:
-                VisitBody(bodyNode);
-                return;
+                return VisitBody(bodyNode);
             case ClauseNode clauseNode:
-                VisitClause(clauseNode);
-                return;
+                return VisitClause(clauseNode);
             case ConditionNode conditionNode:
-                VisitCondition(conditionNode);
-                return;
+                return VisitCondition(conditionNode);
             case DefNode defNode:
-                VisitDef(defNode);
-                return;
+                return VisitDef(defNode);
             case ForeachNode forNode:
-                VisitFor(forNode);
-                return;
+                return VisitFor(forNode);
             case WhileNode whileNode:
-                VisitWhile(whileNode);
-                return;
+                return VisitWhile(whileNode);
             case BreakNode breakNode:
-                VisitBreak(breakNode);
-                return;
+                return VisitBreak(breakNode);
             case ContinueNode continueNode:
-                VisitContinue(continueNode);
-                return;
+                return VisitContinue(continueNode);
             case ReturnNode returnNode:
-                VisitReturn(returnNode);
-                return;
-            case NotNode notNode:
-                VisitNot(notNode);
-                return;
-            case PostfixDecrementNode postfixDecrement:
-                VisitPostfixDecrement(postfixDecrement);
-                return;
-            case PostfixIncrementNode postfixIncrement:
-                VisitPostfixIncrement(postfixIncrement);
-                return;
-            case PrefixDecrementNode prefixDecrementNode:
-                VisitPrefixDecrement(prefixDecrementNode);
-                return;
-            case PrefixIncrementNode prefixIncrementNode:
-                VisitPrefixIncrement(prefixIncrementNode);
-                return;
-            case UnaryMinusNode unaryMinusNode:
-                VisitUnaryMinus(unaryMinusNode);
-                return;
+                return VisitReturn(returnNode);
             case CallNode callNode:
-                VisitCall(callNode);
-                return;
+                return VisitCall(callNode);
             case CastNode castNode:
-                VisitCast(castNode);
-                return;
+                return VisitCast(castNode);
             case ConstructorNode constructorNode:
-                VisitConstructor(constructorNode);
-                return;
+                return VisitConstructor(constructorNode);
             case EmptyNode emptyNode:
-                VisitEmpty(emptyNode);
-                return;
+                return VisitEmpty(emptyNode);
             case IndexerNode indexerNode:
-                VisitIndexer(indexerNode);
-                return;
+                return VisitIndexer(indexerNode);
             case MemberNode memberNode:
-                VisitMember(memberNode);
-                return;
+                return VisitMember(memberNode);
             case ParameterNode parameterNode:
-                VisitParameter(parameterNode);
-                return;
+                return VisitParameter(parameterNode);
             case TypeNode typeNode:
-                VisitType(typeNode);
-                return;
+                return VisitType(typeNode);
             case VariableDefinitionNode variableDefinitionNode:
-                VisitVariableDefinition(variableDefinitionNode);
-                return;
+                return VisitVariableDefinition(variableDefinitionNode);
             case UseNode useNode:
-                VisitUse(useNode);
-                return;
+                return VisitUse(useNode);
             case MemberAccessNode memberAccessNode:
-                VisitMemberAccess(memberAccessNode);
-                return;
+                return VisitMemberAccess(memberAccessNode);
             case ConstNode constNode:
-                VisitConst(constNode);
-                return;
-            case AndAndAssignNode andAndAssignNode:
-                VisitAndAndAssign(andAndAssignNode);
-                return;
-            case OrAndAssignNode orAndAssignNode:
-                VisitOrAndAssign(orAndAssignNode);
-                return;
-            case XorAndAssignNode xorAndAssignNode:
-                VisitXorAndAssign(xorAndAssignNode);
-                return;
-            case BitwiseAndNode bitwiseAndNode:
-                VisitBitwiseAnd(bitwiseAndNode);
-                return;
-            case BitwiseOrNode bitwiseOrNode:
-                VisitBitwiseOr(bitwiseOrNode);
-                return;
-            case XorNode xorNode:
-                VisitXor(xorNode);
-                return;
+                return VisitConst(constNode);
+            case BaseBinaryNode binaryNode:
+                return VisitBinaryExpression(binaryNode);
         }
+        
+        throw new Exception("Unknown node type");
+    }
+
+    protected virtual VisitResult VisitUnaryNode(BaseUnaryNode unaryNode)
+    {
+        switch (unaryNode)
+        {
+            case NotNode notNode:
+                return VisitNot(notNode);
+            case PostfixDecrementNode postfixDecrement:
+                return VisitPostfixDecrement(postfixDecrement);
+            case PostfixIncrementNode postfixIncrement:
+                return VisitPostfixIncrement(postfixIncrement);
+            case PrefixDecrementNode prefixDecrementNode:
+                return VisitPrefixDecrement(prefixDecrementNode);
+            case PrefixIncrementNode prefixIncrementNode:
+                return VisitPrefixIncrement(prefixIncrementNode);
+            case UnaryMinusNode unaryMinusNode:
+                return VisitUnaryMinus(unaryMinusNode);
+        }
+        
+        throw new Exception("Unknown node type");
     }
     
-    protected virtual void VisitAddAndAssign(AddAndAssignNode node){}
-    
-    protected virtual void VisitAssign(AssignNode node){}
-    
-    protected virtual void VisitDivAndAssign(DivAndAssignNode node){}
-    
-    protected virtual void VisitModuloAndAssign(ModuloAndAssignNode node){}
-    
-    protected virtual void VisitMulAndAssign(MulAndAssignNode node){}
-    
-    protected virtual void VisitSubAndAssign(SubAndAssignNode node){}
-    
-    protected virtual void VisitAnd(AndNode node){}
-    
-    protected virtual void VisitDivide(DivideNode node){}
-    
-    protected virtual void VisitEqual(EqualNode node){}
-    
-    protected virtual void VisitGreater(GreaterNode node){}
-    
-    protected virtual void VisitGreaterOrEquals(GreaterOrEqualsNode node){}
-    
-    protected virtual void VisitLess(LessNode node){}
-    
-    protected virtual void VisitLessOrEqual(LessOrEqualNode node){}
-    
-    protected virtual void VisitMinus(MinusNode node){}
-    
-    protected virtual void VisitModulo(ModuloNode node){}
-    
-    protected virtual void VisitMultiply(MultiplyNode node){}
-    
-    protected virtual void VisitNotEqual(NotEqualNode node){}
-    
-    protected virtual void VisitOr(OrNode node){}
-    
-    protected virtual void VisitPlus(PlusNode node){}
-    
-    protected virtual void VisitBody(BodyNode node){}
-    
-    protected virtual void VisitClause(ClauseNode node){}
-    
-    protected virtual void VisitCondition(ConditionNode node){}
-    
-    protected virtual void VisitDef(DefNode node){}
-    
-    protected virtual void VisitFor(ForeachNode node){}
-    
-    protected virtual void VisitWhile(WhileNode node){}
-    
-    protected virtual void VisitBreak(BreakNode node){}
-    
-    protected virtual void VisitContinue(ContinueNode node){}
-    
-    protected virtual void VisitReturn(ReturnNode node){}
-    
-    protected virtual void VisitNot(NotNode node){}
-    
-    protected virtual void VisitPostfixDecrement(PostfixDecrementNode node){}
-    
-    protected virtual void VisitPostfixIncrement(PostfixIncrementNode node){}
-    
-    protected virtual void VisitPrefixDecrement(PrefixDecrementNode node){}
-    
-    protected virtual void VisitPrefixIncrement(PrefixIncrementNode node){}
-    
-    protected virtual void VisitUnaryMinus(UnaryMinusNode node){}
-    
-    protected virtual void VisitCall(CallNode node){}
-    
-    protected virtual void VisitCast(CastNode node){}
-    
-    protected virtual void VisitConstructor(ConstructorNode node){}
-    
-    protected virtual void VisitEmpty(EmptyNode node){}
-    
-    protected virtual void VisitIndexer(IndexerNode node){}
-    
-    protected virtual void VisitMember(MemberNode node){}
-    
-    protected virtual void VisitParameter(ParameterNode node){}
-    
-    protected virtual void VisitType(TypeNode node){}
-    
-    protected virtual void VisitVariableDefinition(VariableDefinitionNode node){}
+    protected virtual VisitResult VisitBinaryExpression(BaseBinaryNode binaryNode)
+    {
+        switch (binaryNode)
+        {
+            case AndAndAssignNode andAndAssignNode:
+                return VisitAndAndAssign(andAndAssignNode);
+            case OrAndAssignNode orAndAssignNode:
+                return VisitOrAndAssign(orAndAssignNode);
+            case XorAndAssignNode xorAndAssignNode:
+                return VisitXorAndAssign(xorAndAssignNode);
+            case BitwiseAndNode bitwiseAndNode:
+                return VisitBitwiseAnd(bitwiseAndNode);
+            case BitwiseOrNode bitwiseOrNode:
+                return VisitBitwiseOr(bitwiseOrNode);
+            case XorNode xorNode:
+                return VisitXor(xorNode);
+            case AddAndAssignNode addAndAssignNode:
+                return VisitAddAndAssign(addAndAssignNode);
+            case AssignNode assignNode:
+                return VisitAssign(assignNode);
+            case DivAndAssignNode divAndAssignNode:
+                return VisitDivAndAssign(divAndAssignNode);
+            case ModuloAndAssignNode moduloAndAssignNode:
+                return VisitModuloAndAssign(moduloAndAssignNode);
+            case MulAndAssignNode mulAndAssignNode:
+                return VisitMulAndAssign(mulAndAssignNode);
+            case SubAndAssignNode subAndAssignNode:
+                return VisitSubAndAssign(subAndAssignNode);
+            case AndNode andNode:
+                return VisitAnd(andNode);
+            case DivideNode divideNode:
+                return VisitDivide(divideNode);
+            case EqualNode equalNode:
+                return VisitEqual(equalNode);
+            case GreaterNode greaterNode:
+                return VisitGreater(greaterNode);
+            case GreaterOrEqualsNode greaterOrEqualsNode:
+                return VisitGreaterOrEquals(greaterOrEqualsNode);
+            case LessNode lessNode:
+                return VisitLess(lessNode);
+            case LessOrEqualNode lessOrEqualNode:
+                return VisitLessOrEqual(lessOrEqualNode);
+            case MinusNode minusNode:
+                return VisitMinus(minusNode);
+            case ModuloNode moduloNode:
+                return VisitModulo(moduloNode);
+            case MultiplyNode multiplyNode:
+                return VisitMultiply(multiplyNode);
+            case NotEqualNode notEqualNode:
+                return VisitNotEqual(notEqualNode);
+            case OrNode orNode:
+                return VisitOr(orNode);
+            case PlusNode plusNode:
+                return VisitPlus(plusNode);
+        }
+        
+        throw new Exception("Unknown node type");
+    }
 
-    protected virtual void VisitUse(UseNode node) {}
+    protected virtual VisitResult VisitNull() => VisitResult.Continue;
     
-    protected virtual void VisitMemberAccess(MemberAccessNode accessNode){}
+    protected virtual VisitResult VisitAddAndAssign(AddAndAssignNode node) => VisitResult.Continue;
     
-    protected virtual void VisitConst(ConstNode constNode){}
-
-    protected virtual void VisitAndAndAssign(AndAndAssignNode andAndAssign){}
-
-    protected virtual void VisitOrAndAssign(OrAndAssignNode orAndAssign){}
-
-    protected virtual void VisitXorAndAssign(XorAndAssignNode xorAndAssign){}
-
-    protected virtual void VisitBitwiseAnd(BitwiseAndNode bitwiseAnd){}
+    protected virtual VisitResult VisitAssign(AssignNode node) => VisitResult.Continue;
     
-    protected virtual void VisitBitwiseOr(BitwiseOrNode bitwiseOr){}
-
-    protected virtual void VisitXor(XorNode xor){}
+    protected virtual VisitResult VisitDivAndAssign(DivAndAssignNode node) => VisitResult.Continue;
     
-    protected virtual void VisitNodeBase(NodeBase node){}
+    protected virtual VisitResult VisitModuloAndAssign(ModuloAndAssignNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitMulAndAssign(MulAndAssignNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitSubAndAssign(SubAndAssignNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitAnd(AndNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitDivide(DivideNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitEqual(EqualNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitGreater(GreaterNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitGreaterOrEquals(GreaterOrEqualsNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitLess(LessNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitLessOrEqual(LessOrEqualNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitMinus(MinusNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitModulo(ModuloNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitMultiply(MultiplyNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitNotEqual(NotEqualNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitOr(OrNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitPlus(PlusNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitBody(BodyNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitClause(ClauseNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitCondition(ConditionNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitDef(DefNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitFor(ForeachNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitWhile(WhileNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitBreak(BreakNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitContinue(ContinueNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitReturn(ReturnNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitNot(NotNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitPostfixDecrement(PostfixDecrementNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitPostfixIncrement(PostfixIncrementNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitPrefixDecrement(PrefixDecrementNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitPrefixIncrement(PrefixIncrementNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitUnaryMinus(UnaryMinusNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitCall(CallNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitCast(CastNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitConstructor(ConstructorNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitEmpty(EmptyNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitIndexer(IndexerNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitMember(MemberNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitParameter(ParameterNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitType(TypeNode node) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitVariableDefinition(VariableDefinitionNode node) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitUse(UseNode node)  => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitMemberAccess(MemberAccessNode accessNode) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitConst(ConstNode constNode) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitAndAndAssign(AndAndAssignNode andAndAssign) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitOrAndAssign(OrAndAssignNode orAndAssign) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitXorAndAssign(XorAndAssignNode xorAndAssign) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitBitwiseAnd(BitwiseAndNode bitwiseAnd) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode bitwiseOr) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitXor(XorNode xor) => VisitResult.Continue;
 }

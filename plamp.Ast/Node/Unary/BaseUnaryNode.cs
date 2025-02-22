@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Unary;
 
-public abstract class UnaryBaseNode : NodeBase
+public abstract class BaseUnaryNode : NodeBase
 {
     public NodeBase Inner { get; }
 
-    public UnaryBaseNode(NodeBase inner)
+    public BaseUnaryNode(NodeBase inner)
     {
         Inner = inner;
     }

@@ -46,21 +46,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
             switch (first)
             {
                 //TODO: not optimal, better pre-create comparer
-                case AddAndAssignNode node:
-                    var addAndAssignComparer = new AddAndAssignComparer();
-                    if (!addAndAssignComparer.Equals(node, (AddAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
-                case AndAndAssignNode node:
-                    var andAndAssignComparer = new AndAndAssignComparer();
-                    if (!andAndAssignComparer.Equals(node, (AndAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
-                case AssignNode node:
-                    var assignComparer = new AssignComparer();
-                    if (!assignComparer.Equals(node, (AssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 case BaseBinaryNode node:
                     var binaryComparer = new BinaryComparer();
                     if (!binaryComparer.Equals(node, (BaseBinaryNode)second)) return false;
@@ -111,11 +96,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!defComparer.Equals(node, (DefNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case DivAndAssignNode node:
-                    var divAndAssignComparer = new DivAndAssignComparer();
-                    if (!divAndAssignComparer.Equals(node, (DivAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 case EmptyNode node:
                     var emptyComparer = new EmptyComparer();
                     if (!emptyComparer.Equals(node, (EmptyNode)second)) return false;
@@ -146,21 +126,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!memberComparer.Equals(node, (MemberNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case ModuloAndAssignNode node:
-                    var moduloAndAssignComparer = new ModuloAndAssignComparer();
-                    if (!moduloAndAssignComparer.Equals(node, (ModuloAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
-                case MulAndAssignNode node:
-                    var mulAndAssignComparer = new MulAndAssignComparer();
-                    if (!mulAndAssignComparer.Equals(node, (MulAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
-                case OrAndAssignNode node:
-                    var orAndAssignComparer = new OrAndAssignComparer();
-                    if (!orAndAssignComparer.Equals(node, (OrAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 case ParameterNode node:
                     var parameterComparer = new ParameterComparer();
                     if (!parameterComparer.Equals(node, (ParameterNode)second)) return false;
@@ -171,19 +136,14 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!returnComparer.Equals(node, (ReturnNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case SubAndAssignNode node:
-                    var subAndAssignComparer = new SubAndAssignComparer();
-                    if (!subAndAssignComparer.Equals(node, (SubAndAssignNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 case TypeNode node:
                     var typeComparer = new TypeComparer();
                     if (!typeComparer.Equals(node, (TypeNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case UnaryBaseNode node:
+                case BaseUnaryNode node:
                     var unaryComparer = new UnaryComparer();
-                    if (!unaryComparer.Equals(node, (UnaryBaseNode)second)) return false;
+                    if (!unaryComparer.Equals(node, (BaseUnaryNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
                 case UseNode node:
@@ -199,11 +159,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                 case WhileNode node:
                     var whileComparer = new WhileComparer();
                     if (!whileComparer.Equals(node, (WhileNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
-                case XorAndAssignNode node:
-                    var xorAndAssignComparer = new XorAndAssignComparer();
-                    if (!xorAndAssignComparer.Equals(node, (XorAndAssignNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
                 case BodyNode node:

@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using plamp.Ast.Node.Binary;
 
 namespace plamp.Ast.Node.Assign;
 
-public class AndAndAssignNode : BaseAssignNode
+public class AndAndAssignNode : BaseBinaryNode
 {
-    public NodeBase Member { get; }
-
-    public override IEnumerable<NodeBase> Visit()
+    public AndAndAssignNode(NodeBase left, NodeBase right) : base(left, right)
     {
-        yield return Member;
-        yield return Right;
-    }
-
-    public AndAndAssignNode(NodeBase member, NodeBase right) : base(right)
-    {
-        Member = member;
     }
 }

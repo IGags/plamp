@@ -75,7 +75,7 @@ public class SimpleMathTests
         var result = parser.TryParseWithPrecedence(out var expression);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.Equal(expressionType, expression.GetType());
-        var unary = (UnaryBaseNode)expression;
+        var unary = (BaseUnaryNode)expression;
         var innerShould = new ConstNode(inner, inner.GetType());
         Assert.Equal(innerShould, unary.Inner, Comparer);
         Assert.Empty(parser.TransactionSource.Exceptions);

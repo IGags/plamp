@@ -3,9 +3,9 @@ using plamp.Ast.Node.Unary;
 
 namespace plamp.Ast.NodeComparers.Common;
 
-public class UnaryComparer : IEqualityComparer<UnaryBaseNode>
+public class UnaryComparer : IEqualityComparer<BaseUnaryNode>
 {
-    public bool Equals(UnaryBaseNode x, UnaryBaseNode y)
+    public bool Equals(BaseUnaryNode x, BaseUnaryNode y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (ReferenceEquals(x, null)) return false;
@@ -14,7 +14,7 @@ public class UnaryComparer : IEqualityComparer<UnaryBaseNode>
         return true;
     }
 
-    public int GetHashCode(UnaryBaseNode obj)
+    public int GetHashCode(BaseUnaryNode obj)
     {
         return obj.Inner.GetHashCode() ^ GetType().GetHashCode();
     }

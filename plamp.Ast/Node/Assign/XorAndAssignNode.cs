@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using plamp.Ast.Node.Binary;
 
 namespace plamp.Ast.Node.Assign;
 
-public class XorAndAssignNode : BaseAssignNode
+public class XorAndAssignNode : BaseBinaryNode
 {
-    public NodeBase VariableDefinition { get; }
-
-    public override IEnumerable<NodeBase> Visit()
+    public XorAndAssignNode(NodeBase left, NodeBase right) : base(left, right)
     {
-        yield return VariableDefinition;
-        yield return Right;
-    }
-
-    public XorAndAssignNode(NodeBase variableDefinition, NodeBase right) : base(right)
-    {
-        VariableDefinition = variableDefinition;
     }
 }
