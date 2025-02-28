@@ -31,8 +31,8 @@ public class ParsingNudLiteralTests
 	    var parser = new PlampNativeParser(tokenSequence);
 	    var result = parser.TryParseWithPrecedence(out var expression);
 	    Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-	    Assert.Equal(typeof(ConstNode), expression.GetType());
-	    Assert.Equal(value, ((ConstNode)expression).Value);
+	    Assert.Equal(typeof(LiteralNode), expression.GetType());
+	    Assert.Equal(value, ((LiteralNode)expression).Value);
 	    Assert.Empty(parser.TransactionSource.Exceptions);
 	    Assert.Equal(0, parser.TokenSequence.Position);
 	    var dictionary = parser.TransactionSource.SymbolDictionary;

@@ -4,9 +4,9 @@ using plamp.Ast.Node;
 
 namespace plamp.Ast.NodeComparers.Common;
 
-public class ConstComparer : IEqualityComparer<ConstNode>
+public class LiteralComparer : IEqualityComparer<LiteralNode>
 {
-    public bool Equals(ConstNode x, ConstNode y)
+    public bool Equals(LiteralNode x, LiteralNode y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;
@@ -15,7 +15,7 @@ public class ConstComparer : IEqualityComparer<ConstNode>
         return true;
     }
 
-    public int GetHashCode(ConstNode obj)
+    public int GetHashCode(LiteralNode obj)
     {
         return HashCode.Combine(obj.Value, obj.Type);
     }

@@ -32,7 +32,7 @@ public class ParseConditionTests
                 new ClauseNode(
                     new EqualNode(
                         new MemberNode("i"),
-                        new ConstNode(7, typeof(int))),
+                        new LiteralNode(7, typeof(int))),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -63,12 +63,12 @@ public class ParseConditionTests
                 new ClauseNode(
                     new EqualNode(
                         new MemberNode("i"),
-                        new ConstNode(3, typeof(int))),
+                        new LiteralNode(3, typeof(int))),
                     new BodyNode(
                         [
                             new PostfixIncrementNode(new MemberNode("i")),
                             new CallNode(new MemberNode("expose"), []),
-                            new ReturnNode(new ConstNode(0, typeof(int)))
+                            new ReturnNode(new LiteralNode(0, typeof(int)))
                         ]
                     )),
                 [],
@@ -152,7 +152,7 @@ public class ParseConditionTests
                     new MemberNode("r"),
                     new BodyNode(
                     [
-                        new ReturnNode(new ConstNode(1, typeof(int)))
+                        new ReturnNode(new LiteralNode(1, typeof(int)))
                     ])),
                 [],
                 null);
@@ -202,11 +202,11 @@ public class ParseConditionTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [],
                 new BodyNode(
@@ -236,7 +236,7 @@ public class ParseConditionTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -497,17 +497,17 @@ public class ParseConditionTests
                             new CallNode(
                                 new MemberNode("print"),
                                 [
-                                    new ConstNode("hi", typeof(string))
+                                    new LiteralNode("hi", typeof(string))
                                 ]),
                             new PostfixDecrementNode(
                                 new MemberNode("c"))
                         ])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(1, typeof(int)))
+                                new LiteralNode(1, typeof(int)))
                         ]))
                 ],
                 null);
@@ -544,11 +544,11 @@ public class ParseConditionTests
                             new MemberNode("i")),
                         new BodyNode([])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(1, typeof(int)))
+                                new LiteralNode(1, typeof(int)))
                         ]))
                 ],
                 null);
@@ -587,16 +587,16 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                         ])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode([]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(2, typeof(int)))
+                        new LiteralNode(2, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(28, parser.TokenSequence.Position);
@@ -621,7 +621,7 @@ public class ParseConditionTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -629,11 +629,11 @@ public class ParseConditionTests
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(null, null))
+                                new LiteralNode(null, null))
                         ]))
                 ],
                 null);
@@ -674,7 +674,7 @@ public class ParseConditionTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -682,11 +682,11 @@ public class ParseConditionTests
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(null, null))
+                                new LiteralNode(null, null))
                         ]))
                 ],
                 new BodyNode(
@@ -731,20 +731,20 @@ public class ParseConditionTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(0, typeof(int)))
+                            new LiteralNode(0, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                             []
                         )),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
@@ -784,7 +784,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(0, typeof(int)))
+                            new LiteralNode(0, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -838,7 +838,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -846,20 +846,20 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(2, typeof(int)))
+                                new LiteralNode(2, typeof(int)))
                         ])),
                     new ClauseNode(
                         new MemberNode("t"),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(3, typeof(int)))
+                                new LiteralNode(3, typeof(int)))
                         ]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(4, typeof(int)))
+                        new LiteralNode(4, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(32, parser.TokenSequence.Position);
@@ -1020,7 +1020,7 @@ public class ParseConditionTests
                             new CallNode(
                                 new MemberNode("print"),
                                 [
-                                    new ConstNode("tt", typeof(string))
+                                    new LiteralNode("tt", typeof(string))
                                 ])
                         ]))
                 ],
@@ -1052,7 +1052,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -1060,13 +1060,13 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(2, typeof(int)))
+                                new LiteralNode(2, typeof(int)))
                         ]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(3, typeof(int)))
+                        new LiteralNode(3, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(25, parser.TokenSequence.Position);

@@ -30,7 +30,7 @@ public static class PlampNativeExceptionInfo
 
     #endregion
 
-    #region Parsing(1100-1300)
+    #region Parsing(1100-1299)
 
     private static readonly PlampNativeExceptionRecord ExpectedIdentifierRecord =
         new("Expected identifier", 1100, ExceptionLevel.Error);

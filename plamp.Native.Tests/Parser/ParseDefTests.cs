@@ -37,7 +37,7 @@ public class ParseDefTests
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(1, typeof(int)))
+                        new LiteralNode(1, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(11, parser.TokenSequence.Position);
@@ -68,8 +68,8 @@ public class ParseDefTests
                         new VariableDefinitionNode(
                             null, new MemberNode("a")),
                         new MultiplyNode(
-                            new ConstNode(1, typeof(int)),
-                            new ConstNode(2, typeof(int)))),
+                            new LiteralNode(1, typeof(int)),
+                            new LiteralNode(2, typeof(int)))),
                     new ReturnNode(
                         new MemberNode("a"))
                 ]));

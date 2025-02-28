@@ -65,7 +65,7 @@ public class ConstructorDeclarationTests
                     new MemberNode("string"),
                     null),
                 [
-                    new ConstNode(1, typeof(int))
+                    new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);

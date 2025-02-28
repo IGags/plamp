@@ -114,9 +114,9 @@ public class ExpressionPostfixTests
                 new MemberNode("greet"),
                 [
                     new PlusNode(
-                        new ConstNode("hi", typeof(string)),
-                        new ConstNode("you", typeof(string))),
-                    new ConstNode(1, typeof(int))
+                        new LiteralNode("hi", typeof(string)),
+                        new LiteralNode("you", typeof(string))),
+                    new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(8, parser.TokenSequence.Position);
@@ -158,7 +158,7 @@ public class ExpressionPostfixTests
             = new IndexerNode(
                 new MemberNode("arr"),
                 [
-                    new ConstNode(0, typeof(int))
+                    new LiteralNode(0, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(3, parser.TokenSequence.Position);
@@ -176,8 +176,8 @@ public class ExpressionPostfixTests
             = new IndexerNode(
                 new MemberNode("arr"),
                 [
-                    new ConstNode(0, typeof(int)),
-                    new ConstNode(1, typeof(int))
+                    new LiteralNode(0, typeof(int)),
+                    new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
@@ -196,10 +196,10 @@ public class ExpressionPostfixTests
                 new IndexerNode(
                     new MemberNode("arr"),
                     [
-                        new ConstNode(0, typeof(int))
+                        new LiteralNode(0, typeof(int))
                     ]),
                 [
-                    new ConstNode("hi", typeof(string))
+                    new LiteralNode("hi", typeof(string))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(6, parser.TokenSequence.Position);

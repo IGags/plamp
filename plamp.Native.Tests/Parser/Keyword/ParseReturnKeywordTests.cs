@@ -47,8 +47,8 @@ public class ParseReturnKeywordTests
         var expressionShould
             = new ReturnNode(
                 new PlusNode(
-                    new ConstNode(1, typeof(int)),
-                    new ConstNode(1, typeof(int))));
+                    new LiteralNode(1, typeof(int)),
+                    new LiteralNode(1, typeof(int))));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);
@@ -67,7 +67,7 @@ public class ParseReturnKeywordTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(
-                new ConstNode(1, typeof(int)));
+                new LiteralNode(1, typeof(int)));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, parser.TokenSequence.Position);
         Assert.Single(parser.TransactionSource.Exceptions);

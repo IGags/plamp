@@ -1128,7 +1128,7 @@ public sealed class PlampNativeParser
         if (TryConsumeNextNonWhiteSpace<StringLiteral>(_ => true, _ => { }, out var literal))
         {
             transaction = _transactionSource.BeginTransaction();
-            var stringLiteral = new ConstNode(literal.GetStringRepresentation(), typeof(string));
+            var stringLiteral = new LiteralNode(literal.GetStringRepresentation(), typeof(string));
             transaction.AddSymbol(stringLiteral, [], [literal]);
             transaction.Commit();
             node = ParsePostfixIfExist(stringLiteral);
@@ -1138,7 +1138,7 @@ public sealed class PlampNativeParser
         if (TryConsumeNextNonWhiteSpace<NumberLiteral>(_ => true, _ => { }, out var numberLiteral))
         {
             transaction = _transactionSource.BeginTransaction();
-            var number = new ConstNode(numberLiteral.ActualValue, numberLiteral.ActualType);
+            var number = new LiteralNode(numberLiteral.ActualValue, numberLiteral.ActualType);
             transaction.AddSymbol(number, [], [numberLiteral]);
             transaction.Commit();
             node = ParsePostfixIfExist(number);
@@ -1151,7 +1151,7 @@ public sealed class PlampNativeParser
         {
             transaction = _transactionSource.BeginTransaction();
             var value = bool.Parse(boolLiteral.GetStringRepresentation());
-            var boolNode = new ConstNode(value, typeof(bool));
+            var boolNode = new LiteralNode(value, typeof(bool));
             transaction.AddSymbol(boolNode, [], [boolLiteral]);
             transaction.Commit();
             node = ParsePostfixIfExist(boolNode);
@@ -1162,7 +1162,7 @@ public sealed class PlampNativeParser
                 t => t.Keyword is Keywords.Null, _ => { }, out KeywordToken nullToken))
             return ExpressionParsingResult.FailedNeedRollback;
         
-        var nullNode = new ConstNode(null, null);
+        var nullNode = new LiteralNode(null, null);
         transaction = _transactionSource.BeginTransaction();
         transaction.AddSymbol(nullNode, [], [nullToken]);
         transaction.Commit();

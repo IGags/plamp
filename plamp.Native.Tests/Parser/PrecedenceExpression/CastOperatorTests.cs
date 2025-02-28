@@ -23,7 +23,7 @@ public class CastOperatorTests
                 new TypeNode(
                     new MemberNode("int"), 
                     null), 
-                new ConstNode(1L, typeof(long)));
+                new LiteralNode(1L, typeof(long)));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(3, parser.TokenSequence.Position);
         Assert.Empty(parser.TransactionSource.Exceptions);

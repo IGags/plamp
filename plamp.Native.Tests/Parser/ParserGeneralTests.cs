@@ -130,10 +130,10 @@ public class ParserGeneralTests
                                 new OrNode(
                                     new EqualNode(
                                         new MemberNode("str"),
-                                        new ConstNode(null, null)),
+                                        new LiteralNode(null, null)),
                                     new EqualNode(
                                         new MemberNode("substr"),
-                                        new ConstNode(null, null))),
+                                        new LiteralNode(null, null))),
                                 new LessNode(
                                     new MemberAccessNode(
                                         new MemberNode("str"),
@@ -145,7 +145,7 @@ public class ParserGeneralTests
                             [
                                 new ReturnNode(
                                     new UnaryMinusNode(
-                                        new ConstNode(1, typeof(int))))
+                                        new LiteralNode(1, typeof(int))))
                             ])),
                         [],
                         null),
@@ -156,7 +156,7 @@ public class ParserGeneralTests
                                     new MemberNode("int"),
                                     null),
                                 new MemberNode("index")),
-                            new ConstNode(0, typeof(int))),
+                            new LiteralNode(0, typeof(int))),
                         new LessNode(
                             new MemberNode("index"),
                             new MinusNode(
@@ -167,7 +167,7 @@ public class ParserGeneralTests
                                     new MemberAccessNode(
                                         new MemberNode("substr"),
                                         new MemberNode("Length"))),
-                                new ConstNode(1, typeof(int)))),
+                                new LiteralNode(1, typeof(int)))),
                         new PostfixIncrementNode(
                             new MemberNode("index")),
                         new BodyNode(
@@ -178,7 +178,7 @@ public class ParserGeneralTests
                                         new MemberNode("bool"),
                                         null),
                                     new MemberNode("isComplete")),
-                                new ConstNode(true, typeof(bool))),
+                                new LiteralNode(true, typeof(bool))),
                             new ForNode(
                                 new AssignNode(
                                     new VariableDefinitionNode(
@@ -186,7 +186,7 @@ public class ParserGeneralTests
                                             new MemberNode("int"),
                                             null),
                                         new MemberNode("i")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new LessNode(
                                     new MemberNode("i"),
                                     new MemberAccessNode(
@@ -220,7 +220,7 @@ public class ParserGeneralTests
                                             [
                                                 new AssignNode(
                                                     new MemberNode("isComplete"),
-                                                    new ConstNode(false, typeof(bool))),
+                                                    new LiteralNode(false, typeof(bool))),
                                                 new BreakNode()
                                             ])),
                                         [],
@@ -239,7 +239,7 @@ public class ParserGeneralTests
                         ])),
                     new ReturnNode(
                         new UnaryMinusNode(
-                            new ConstNode(1, typeof(int))))
+                            new LiteralNode(1, typeof(int))))
                 ]));
         Assert.Equal(expressionShould, result.NodeList[0], Comparer);
     }
@@ -307,12 +307,12 @@ public class ParserGeneralTests
                             new OrNode(
                                 new EqualNode(
                                     new MemberNode("list"),
-                                    new ConstNode(null, null)),
+                                    new LiteralNode(null, null)),
                                 new EqualNode(
                                     new MemberAccessNode(
                                         new MemberNode("list"),
                                         new MemberNode("Count")),
-                                    new ConstNode(0, typeof(int)))),
+                                    new LiteralNode(0, typeof(int)))),
                             new BodyNode(
                             [
                                 new ReturnNode(
@@ -327,7 +327,7 @@ public class ParserGeneralTests
                                 new MemberAccessNode(
                                     new MemberNode("list"),
                                     new MemberNode("Count")),
-                                new ConstNode(2, typeof(int))),
+                                new LiteralNode(2, typeof(int))),
                             new BodyNode(
                             [   
                                 new AssignNode(
@@ -338,7 +338,7 @@ public class ParserGeneralTests
                                         new MemberAccessNode(
                                             new MemberNode("list"),
                                             new MemberNode("Count")),
-                                        new ConstNode(2, typeof(int)))),
+                                        new LiteralNode(2, typeof(int)))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
@@ -351,7 +351,7 @@ public class ParserGeneralTests
                                                     new MemberNode("list"),
                                                     new MemberNode("Span")),
                                                 [
-                                                    new ConstNode(0, typeof(int)),
+                                                    new LiteralNode(0, typeof(int)),
                                                     new MemberNode("splitBasis")
                                                 ])
                                         ])),
@@ -379,12 +379,12 @@ public class ParserGeneralTests
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("firstPtr")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("secondPtr")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
@@ -469,7 +469,7 @@ public class ParserGeneralTests
                                     new MemberAccessNode(
                                         new MemberNode("list"),
                                         new MemberNode("Count")),
-                                    new ConstNode(2, typeof(int))),
+                                    new LiteralNode(2, typeof(int))),
                                 new BodyNode(
                                 [
                                     new ConditionNode(
@@ -478,12 +478,12 @@ public class ParserGeneralTests
                                                 new IndexerNode(
                                                     new MemberNode("list"),
                                                     [
-                                                        new ConstNode(1, typeof(int))
+                                                        new LiteralNode(1, typeof(int))
                                                     ]),
                                                 new IndexerNode(
                                                     new MemberNode("list"),
                                                     [
-                                                        new ConstNode(0, typeof(int))
+                                                        new LiteralNode(0, typeof(int))
                                                     ])),
                                             new BodyNode(
                                             [
@@ -595,42 +595,42 @@ public class ParserGeneralTests
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Joy", typeof(string))
+                            new LiteralNode("Joy", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Temptation", typeof(string))
+                            new LiteralNode("Temptation", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Honey", typeof(string))
+                            new LiteralNode("Honey", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Bees", typeof(string))
+                            new LiteralNode("Bees", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Pain", typeof(string))
+                            new LiteralNode("Pain", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(
                             new MemberNode("image"),
                             new MemberNode("Add")),
                         [
-                            new ConstNode("Lesson", typeof(string))
+                            new LiteralNode("Lesson", typeof(string))
                         ]),
                     new CallNode(
                         new MemberAccessNode(

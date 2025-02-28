@@ -19,7 +19,7 @@ public abstract class BaseVisitor
         SkipChildren
     }
 
-    public void Visit(NodeBase node)
+    public virtual void Visit(NodeBase node)
     {
         _ = VisitInternal(node);
     }
@@ -93,13 +93,13 @@ public abstract class BaseVisitor
                 return VisitUse(useNode);
             case MemberAccessNode memberAccessNode:
                 return VisitMemberAccess(memberAccessNode);
-            case ConstNode constNode:
-                return VisitConst(constNode);
+            case LiteralNode constNode:
+                return VisitLiteral(constNode);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode);
         }
         
-        throw new Exception("Unknown node type");
+        return VisitDefault(node);
     }
 
     protected virtual VisitResult VisitUnaryNode(BaseUnaryNode unaryNode)
@@ -120,37 +120,21 @@ public abstract class BaseVisitor
                 return VisitUnaryMinus(unaryMinusNode);
         }
         
-        throw new Exception("Unknown node type");
+        return VisitDefault(unaryNode);
     }
     
     protected virtual VisitResult VisitBinaryExpression(BaseBinaryNode binaryNode)
     {
         switch (binaryNode)
         {
-            case AndAndAssignNode andAndAssignNode:
-                return VisitAndAndAssign(andAndAssignNode);
-            case OrAndAssignNode orAndAssignNode:
-                return VisitOrAndAssign(orAndAssignNode);
-            case XorAndAssignNode xorAndAssignNode:
-                return VisitXorAndAssign(xorAndAssignNode);
+            case BaseAssignNode baseAssignNode:
+                return VisitBaseAssign(baseAssignNode);
             case BitwiseAndNode bitwiseAndNode:
                 return VisitBitwiseAnd(bitwiseAndNode);
             case BitwiseOrNode bitwiseOrNode:
                 return VisitBitwiseOr(bitwiseOrNode);
             case XorNode xorNode:
                 return VisitXor(xorNode);
-            case AddAndAssignNode addAndAssignNode:
-                return VisitAddAndAssign(addAndAssignNode);
-            case AssignNode assignNode:
-                return VisitAssign(assignNode);
-            case DivAndAssignNode divAndAssignNode:
-                return VisitDivAndAssign(divAndAssignNode);
-            case ModuloAndAssignNode moduloAndAssignNode:
-                return VisitModuloAndAssign(moduloAndAssignNode);
-            case MulAndAssignNode mulAndAssignNode:
-                return VisitMulAndAssign(mulAndAssignNode);
-            case SubAndAssignNode subAndAssignNode:
-                return VisitSubAndAssign(subAndAssignNode);
             case AndNode andNode:
                 return VisitAnd(andNode);
             case DivideNode divideNode:
@@ -179,11 +163,38 @@ public abstract class BaseVisitor
                 return VisitPlus(plusNode);
         }
         
-        throw new Exception("Unknown node type");
+        return VisitDefault(binaryNode);
+    }
+
+    protected virtual VisitResult VisitBaseAssign(BaseAssignNode node)
+    {
+        switch (node)
+        {
+            case AndAndAssignNode andAndAssignNode:
+                return VisitAndAndAssign(andAndAssignNode);
+            case OrAndAssignNode orAndAssignNode:
+                return VisitOrAndAssign(orAndAssignNode);
+            case XorAndAssignNode xorAndAssignNode:
+                return VisitXorAndAssign(xorAndAssignNode);
+            case AddAndAssignNode addAndAssignNode:
+                return VisitAddAndAssign(addAndAssignNode);
+            case AssignNode assignNode:
+                return VisitAssign(assignNode);
+            case DivAndAssignNode divAndAssignNode:
+                return VisitDivAndAssign(divAndAssignNode);
+            case ModuloAndAssignNode moduloAndAssignNode:
+                return VisitModuloAndAssign(moduloAndAssignNode);
+            case MulAndAssignNode mulAndAssignNode:
+                return VisitMulAndAssign(mulAndAssignNode);
+            case SubAndAssignNode subAndAssignNode:
+                return VisitSubAndAssign(subAndAssignNode);
+        }
+
+        return VisitDefault(node);
     }
 
     protected virtual VisitResult VisitNull() => VisitResult.Continue;
-    
+
     protected virtual VisitResult VisitAddAndAssign(AddAndAssignNode node) => VisitResult.Continue;
     
     protected virtual VisitResult VisitAssign(AssignNode node) => VisitResult.Continue;
@@ -274,7 +285,7 @@ public abstract class BaseVisitor
     
     protected virtual VisitResult VisitMemberAccess(MemberAccessNode accessNode) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitConst(ConstNode constNode) => VisitResult.Continue;
+    protected virtual VisitResult VisitLiteral(LiteralNode literalNode) => VisitResult.Continue;
 
     protected virtual VisitResult VisitAndAndAssign(AndAndAssignNode andAndAssign) => VisitResult.Continue;
 
@@ -287,4 +298,7 @@ public abstract class BaseVisitor
     protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode bitwiseOr) => VisitResult.Continue;
 
     protected virtual VisitResult VisitXor(XorNode xor) => VisitResult.Continue;
+    
+    //Continue because possible custom ast node types that compiles in default nodes in future
+    protected virtual VisitResult VisitDefault(NodeBase node) => VisitResult.Continue;
 }

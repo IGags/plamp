@@ -76,9 +76,9 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!conditionComparer.Equals(node, (ConditionNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case ConstNode node:
-                    var constComparer = new ConstComparer();
-                    if (!constComparer.Equals(node, (ConstNode)second)) return false;
+                case LiteralNode node:
+                    var constComparer = new LiteralComparer();
+                    if (!constComparer.Equals(node, (LiteralNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
                 case ConstructorNode node:

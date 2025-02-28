@@ -34,10 +34,10 @@ public class ParseForTests
                     new VariableDefinitionNode(
                         null,
                         new MemberNode("i")),
-                    new ConstNode(0, typeof(int))),
+                    new LiteralNode(0, typeof(int))),
                 new LessNode(
                     new MemberNode("i"),
-                    new ConstNode(10, typeof(int))),
+                    new LiteralNode(10, typeof(int))),
                 new PostfixIncrementNode(
                     new MemberNode("i")),
                 new BodyNode(
@@ -71,10 +71,10 @@ public class ParseForTests
                     new VariableDefinitionNode(
                         null,
                         new MemberNode("i")),
-                    new ConstNode(0, typeof(int))),
+                    new LiteralNode(0, typeof(int))),
                 new LessNode(
                     new MemberNode("i"),
-                    new ConstNode(10, typeof(int))),
+                    new LiteralNode(10, typeof(int))),
                 new PostfixIncrementNode(
                     new MemberNode("i")),
                 new BodyNode(
@@ -107,10 +107,10 @@ public class ParseForTests
                     new VariableDefinitionNode(
                         null,
                         new MemberNode("i")),
-                    new ConstNode(0, typeof(int))),
+                    new LiteralNode(0, typeof(int))),
                 new LessNode(
                     new MemberNode("i"),
-                    new ConstNode(10, typeof(int))),
+                    new LiteralNode(10, typeof(int))),
                 new PostfixIncrementNode(
                     new MemberNode("i")),
                 new BodyNode(
@@ -164,10 +164,10 @@ public class ParseForTests
                     new VariableDefinitionNode(
                         null,
                         new MemberNode("i")),
-                    new ConstNode(0, typeof(int))),
+                    new LiteralNode(0, typeof(int))),
                 new LessNode(
                     new MemberNode("i"),
-                    new ConstNode(10, typeof(int))),
+                    new LiteralNode(10, typeof(int))),
                 new PostfixIncrementNode(
                     new MemberNode("i")),
                 new BodyNode(
@@ -233,10 +233,10 @@ public class ParseForTests
                     new VariableDefinitionNode(
                         null,
                         new MemberNode("i")),
-                    new ConstNode(0, typeof(int))),
+                    new LiteralNode(0, typeof(int))),
                 new LessNode(
                     new MemberNode("i"),
-                    new ConstNode(10, typeof(int))),
+                    new LiteralNode(10, typeof(int))),
                 new PostfixIncrementNode(
                     new MemberNode("i")),
                 new BodyNode(

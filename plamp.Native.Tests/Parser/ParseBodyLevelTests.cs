@@ -71,10 +71,10 @@ public class ParseBodyLevelTests
         var expressionShould
             = new ReturnNode(
                 new PlusNode(
-                    new ConstNode(2, typeof(int)),
+                    new LiteralNode(2, typeof(int)),
                     new MultiplyNode(
-                        new ConstNode(2, typeof(int)),
-                        new ConstNode(2, typeof(int)))
+                        new LiteralNode(2, typeof(int)),
+                        new LiteralNode(2, typeof(int)))
                     ));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(15, parser.TokenSequence.Position);
@@ -95,18 +95,18 @@ public class ParseBodyLevelTests
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new CallNode(
                             new MemberNode("print"),
                             [
-                                new ConstNode(2, typeof(int))
+                                new LiteralNode(2, typeof(int))
                             ]),
                         new CallNode(
                             new MemberNode("print"),
                             [
-                                new ConstNode(3, typeof(int))
+                                new LiteralNode(3, typeof(int))
                             ])
                     ])),
                 []

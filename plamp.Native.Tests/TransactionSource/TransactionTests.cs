@@ -87,7 +87,7 @@ public class TransactionTests
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
-        var node = new ConstNode(1, typeof(int));
+        var node = new LiteralNode(1, typeof(int));
         transaction.AddSymbol(node, [], [literal]);
         transaction.Commit();
         Assert.Equal(1, result.Sequence.Position);
@@ -171,7 +171,7 @@ public class TransactionTests
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
-        var node = new ConstNode(1, typeof(int));
+        var node = new LiteralNode(1, typeof(int));
         transaction.AddSymbol(node, [], [literal]);
         transaction.Rollback();
         Assert.Equal(-1, result.Sequence.Position);
@@ -263,7 +263,7 @@ public class TransactionTests
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         var literal = new NumberLiteral("1", new(0, 0), new(0, 0), 1, typeof(int));
-        var node = new ConstNode(1, typeof(int));
+        var node = new LiteralNode(1, typeof(int));
         transaction.AddSymbol(node, [], [literal]);
         transaction.Pass();
         Assert.Equal(1, result.Sequence.Position);
@@ -309,7 +309,7 @@ public class TransactionTests
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         //Yep, just call this method and believe that it won't fail
-        transaction.AddSymbol(new ConstNode(1, typeof(int)), [], []);
+        transaction.AddSymbol(new LiteralNode(1, typeof(int)), [], []);
     }
 
     [Fact]
@@ -319,7 +319,7 @@ public class TransactionTests
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         transaction.Commit();
-        Assert.Throws<Exception>(() => transaction.AddSymbol(new ConstNode(1, typeof(int)), [], []));
+        Assert.Throws<Exception>(() => transaction.AddSymbol(new LiteralNode(1, typeof(int)), [], []));
     }
 
     #endregion

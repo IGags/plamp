@@ -32,8 +32,8 @@ public class SingleLineExpressionParsingComplexCasesTests
                         null),
                     new PlusNode(
                         new DivideNode(
-                            new ConstNode(1.2, typeof(double)),
-                            new ConstNode(3, typeof(int))),
+                            new LiteralNode(1.2, typeof(double)),
+                            new LiteralNode(3, typeof(int))),
                         new CallNode(
                             new MemberNode("getRandNum"),
                             []))));

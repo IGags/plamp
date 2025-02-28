@@ -3,7 +3,7 @@ namespace plamp.Ast;
 /// <summary>
 /// Inlined exception
 /// </summary>
-public record PlampExceptionRecord()
+public record PlampExceptionRecord
 {
     public required string Message { get; init; }
 

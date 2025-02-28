@@ -27,7 +27,7 @@ public class ParseWhileTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new WhileNode(
-                new ConstNode(true, typeof(bool)),
+                new LiteralNode(true, typeof(bool)),
                 new BodyNode(
                 [
                     new CallNode(
@@ -53,7 +53,7 @@ public class ParseWhileTests
         transaction.Commit();
         var expressionShould
             = new WhileNode(
-                new ConstNode(true, typeof(bool)),
+                new LiteralNode(true, typeof(bool)),
                 new BodyNode(
                 [
                     new CallNode(
@@ -78,7 +78,7 @@ public class ParseWhileTests
         transaction.Commit();
         var expressionShould
             = new WhileNode(
-                new ConstNode(true, typeof(bool)),
+                new LiteralNode(true, typeof(bool)),
                 new BodyNode(
                     []));
         Assert.Equal(expressionShould, expression, Comparer);
@@ -104,7 +104,7 @@ public class ParseWhileTests
         transaction.Commit();
         var expressionShould
             = new WhileNode(
-                new ConstNode(true, typeof(bool)),
+                new LiteralNode(true, typeof(bool)),
                 new BodyNode(
                     [
                         new CallNode(
