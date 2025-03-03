@@ -17,6 +17,12 @@ internal class PlampNativeSymbolTable : ISymbolTable
     
     public PlampException SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
     {
+        if (node.SymbolOverride != null 
+            && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+        {
+            return exception;
+        }
+        
         var symbolStack = new Stack<NodeBase>();
         symbolStack.Push(node);
         var positionMinimum = new FilePosition(int.MaxValue, int.MaxValue);
@@ -53,6 +59,12 @@ internal class PlampNativeSymbolTable : ISymbolTable
 
     public PlampException SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
     {
+        if (node.SymbolOverride != null 
+            && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+        {
+            return exception;
+        }
+        
         if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
         {
             throw new Exception("Symbol is not found in symbol table.");
@@ -84,9 +96,16 @@ internal class PlampNativeSymbolTable : ISymbolTable
         }
 
         var childExceptions = new List<PlampException>();
-
+        
         foreach (var child in plampNativeSymbolRecord.Children)
         {
+            if (child.SymbolOverride != null
+                && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+            {
+                childExceptions.Add(exception);
+                continue;
+            }
+            
             var ex = SetExceptionToNodeAndChildren(exceptionRecord, child);
             childExceptions.Add(ex);
         }

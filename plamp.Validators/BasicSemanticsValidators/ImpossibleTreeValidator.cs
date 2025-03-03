@@ -3,6 +3,8 @@ using plamp.Ast;
 using plamp.Ast.Node;
 using plamp.Ast.Node.Assign;
 using plamp.Ast.Node.Binary;
+using plamp.Ast.Node.Body;
+using plamp.Ast.Node.ControlFlow;
 using plamp.Ast.Node.Unary;
 using plamp.Validators.Abstractions;
 using plamp.Validators.Models;
@@ -28,13 +30,25 @@ public class ImpossibleTreeValidator : BaseValidator
         return _validationResult;
     }
 
+    protected override VisitResult VisitNodeBase(NodeBase node)
+    {
+        return _skippedBranches.Contains(node) 
+            ? VisitResult.Continue : base.VisitNodeBase(node);
+    }
+
     #region Assign
 
     protected override VisitResult VisitBaseAssign(BaseAssignNode node)
     {
         if (node is AssignNode assignNode) return VisitAssign(assignNode);
-        _ = ValidateBinaryBranch(node.Right);
-
+        
+        if (node.Right != null)
+        {
+            _ = ValidateBinaryBranch(node.Right);
+        }
+        
+        if(node.Left == null) return VisitResult.Continue;
+        
         switch (node.Left)
         {
             case MemberNode:
@@ -50,8 +64,13 @@ public class ImpossibleTreeValidator : BaseValidator
 
     protected override VisitResult VisitAssign(AssignNode node)
     {
-        _ = ValidateBinaryBranch(node.Right);
+        if (node.Right != null)
+        {
+            _ = ValidateBinaryBranch(node.Right);
+        }
 
+        if(node.Left == null) return VisitResult.Continue;
+        
         switch (node.Left)
         {
             case MemberNode:
@@ -63,6 +82,104 @@ public class ImpossibleTreeValidator : BaseValidator
         var exceptionRecord = PlampSemanticsExceptions.InvalidAssignmentTarget();
         SetExceptionToNodeAndChildren(exceptionRecord, node.Left);
         return base.VisitAssign(node);
+    }
+
+    #endregion
+
+    #region Binary
+
+    protected override VisitResult VisitBinaryExpression(BaseBinaryNode binaryNode)
+    {
+        if (binaryNode.Left == null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MissingLeftExpression();
+            SetExceptionToNode(exceptionRecord, binaryNode);
+        }
+
+        if (binaryNode.Right == null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MissingRightExpression();
+            SetExceptionToNode(exceptionRecord, binaryNode);
+        }
+        
+        _ = ValidateBinaryBranch(binaryNode.Left);
+        _ = ValidateBinaryBranch(binaryNode.Right);
+        return VisitResult.Continue;
+    }
+
+    #endregion
+
+    #region Body level
+
+    protected override VisitResult VisitFor(ForNode node)
+    {
+        if (node.Body == null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MissingForBody();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        AddForChildException(PlampSemanticsExceptions.InvalidForLoopCounter(), node.Counter);
+
+        if (node.IteratorVar != null && node.IteratorVar is not AssignNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.InvalidForIterator();
+            SetExceptionToNode(exceptionRecord, node.IteratorVar);
+        }
+
+        AddForChildException(PlampSemanticsExceptions.InvalidForLoopCondition(), node.TilCondition);
+
+        void AddForChildException(PlampExceptionRecord record, NodeBase child)
+        {
+            if (child == null) return;
+            switch (child)
+            {
+                case BaseBinaryNode:
+                case BaseUnaryNode:
+                case CallNode:
+                case IndexerNode:
+                    break;
+                default:
+                    SetExceptionToNode(record, child);
+                    break;
+            }
+        }
+        
+        return VisitResult.Continue;
+    }
+
+    protected override VisitResult VisitForeach(ForeachNode node)
+    {
+        
+    }
+
+    protected override VisitResult VisitWhile(WhileNode node)
+    {
+        
+    }
+
+    protected override VisitResult VisitCondition(ConditionNode node)
+    {
+    }
+
+    protected override VisitResult VisitClause(ClauseNode node)
+    {
+        
+    }
+
+    protected override VisitResult VisitBreak(BreakNode node)
+    {
+        
+    }
+
+    protected override VisitResult VisitReturn(ReturnNode node)
+    {
+        
+    }
+
+    protected override VisitResult VisitContinue(ContinueNode node)
+    {
+        
     }
 
     #endregion
@@ -100,6 +217,13 @@ public class ImpossibleTreeValidator : BaseValidator
     private void SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
     {
         var exception = _context.Table.SetExceptionToNodeAndChildren(exceptionRecord, node);
+        _validationResult.Exceptions.Add(exception);
+        _skippedBranches.Add(node);
+    }
+
+    private void SetExceptionToNode(PlampExceptionRecord exceptionRecord, NodeBase node)
+    {
+        var exception = _context.Table.SetExceptionToNodeWithoutChildren(exceptionRecord, node);
         _validationResult.Exceptions.Add(exception);
         _skippedBranches.Add(node);
     }

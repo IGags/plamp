@@ -61,7 +61,7 @@ public abstract class BaseVisitor
                 return VisitCondition(conditionNode);
             case DefNode defNode:
                 return VisitDef(defNode);
-            case ForeachNode forNode:
+            case ForNode forNode:
                 return VisitFor(forNode);
             case WhileNode whileNode:
                 return VisitWhile(whileNode);
@@ -95,6 +95,8 @@ public abstract class BaseVisitor
                 return VisitMemberAccess(memberAccessNode);
             case LiteralNode constNode:
                 return VisitLiteral(constNode);
+            case ForeachNode foreachNode:
+                return VisitForeach(foreachNode);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode);
         }
@@ -241,7 +243,7 @@ public abstract class BaseVisitor
     
     protected virtual VisitResult VisitDef(DefNode node) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitFor(ForeachNode node) => VisitResult.Continue;
+    protected virtual VisitResult VisitFor(ForNode node) => VisitResult.Continue;
     
     protected virtual VisitResult VisitWhile(WhileNode node) => VisitResult.Continue;
     
@@ -298,6 +300,8 @@ public abstract class BaseVisitor
     protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode bitwiseOr) => VisitResult.Continue;
 
     protected virtual VisitResult VisitXor(XorNode xor) => VisitResult.Continue;
+    
+    protected virtual VisitResult VisitForeach(ForeachNode node) => VisitResult.Continue;
     
     //Continue because possible custom ast node types that compiles in default nodes in future
     protected virtual VisitResult VisitDefault(NodeBase node) => VisitResult.Continue;
