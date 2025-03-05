@@ -25,7 +25,7 @@ public class ConditionNode
     public ConditionNode(ClauseNode ifClause, List<ClauseNode> elifClauseList, BodyNode elseClause)
     {
         IfClause = ifClause;
-        ElifClauseList = elifClauseList;
+        ElifClauseList = elifClauseList ?? [];
         ElseClause = elseClause;
     }
 }

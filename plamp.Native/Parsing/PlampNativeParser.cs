@@ -1355,12 +1355,6 @@ public sealed class PlampNativeParser
             transaction.Commit();
             return true;
         }
-
-        //var transaction = _transactionSource.BeginTransaction();
-        //TODO: specify exception later
-        //transaction.AddException(
-        //    new PlampException(PlampNativeExceptionInfo.ExpectedMemberName(), call));
-        //transaction.Commit();
         
         transaction.Rollback();
         return false;

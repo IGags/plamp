@@ -12,7 +12,7 @@ public class CallNode : NodeBase
     public CallNode(NodeBase from, List<NodeBase> args)
     {
         From = from;
-        Args = args;
+        Args = args ?? [];
     }
 
     public override IEnumerable<NodeBase> Visit()

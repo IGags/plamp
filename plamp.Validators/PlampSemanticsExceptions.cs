@@ -80,5 +80,205 @@ public static class PlampSemanticsExceptions
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord MissingForeachBody() =>
+        new()
+        {
+            Message = "Foreach loop requires a body",
+            Code = 1309,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ForeachIteratorVarMustExist() =>
+        new()
+        {
+            Message = "Foreach loop iterator must exist",
+            Code = 1310,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ForeachIteratorMustBeVariableDeclaration() =>
+        new()
+        {
+            Message = "Foreach iterator must be a variable declaration",
+            Code = 1311,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ForeachIterableMustExist() =>
+        new()
+        {
+            Message = "Foreach iterable must exist",
+            Code = 1312,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MismatchForeachIterableNodeType() =>
+        new()
+        {
+            Message = "Foreach iterable must be a variable, method call, constructor, indexer or property",
+            Code = 1313,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MissingWhileBody() =>
+        new()
+        {
+            Message = "While loop requires a body",
+            Code = 1314,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MissingWhileCondition() =>
+        new()
+        {
+            Message = "While loop requires a condition",
+            Code = 1315,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MismatchWhileConditionNodeType() =>
+        new()
+        {
+            Message = "While predicate must be a variable, method call, constructor, indexer or property",
+            Code = 1316,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConditionMustHaveBaseClause() =>
+        new()
+        {
+            Message = "Condition requires a base clause",
+            Code = 1317,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConditionClauseMustHaveBody() =>
+        new()
+        {
+            Message = "Condition requires a body",
+            Code = 1318,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConditionClausePredicateNodeTypeMismatch() =>
+        new()
+        {
+            Message = "Condition clause predicate must be a variable, method call, property or indexer",
+            Code = 1319,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ClausePredicateMustExist() =>
+        new()
+        {
+            Message = "Condition clause predicate must exist",
+            Code = 1320,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord UnaryNodeRequiresUnderlyingNode() =>
+        new()
+        {
+            Message = "Unary node require inner node",
+            Code = 1321,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord UnaryNodeInnerNodeTypeMismatch() =>
+        new()
+        {
+            Message = "Inner node must be member, property, constant, method call, literal, indexer",
+            Code = 1322,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CallNodeRequireCallerNode() =>
+        new()
+        {
+            Message = "Call node requires a caller node",
+            Code = 1323,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CallerNodeTypeMismatch() =>
+        new()
+        {
+            Message = "Caller must be a member, property or indexer, cast, unary, binary node",
+            Code = 1324,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ArgNodeMustNotBeNull() =>
+        new()
+        {
+            Message = "Arg node in call args must not be null",
+            Code = 1325,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ArgMustBeValueReturningNode() =>
+        new()
+        {
+            Message = "Call argument must return a value",
+            Code = 1326,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IndexNodeRequireIndexableNode() =>
+        new()
+        {
+            Message = "Index node requires an indexable node",
+            Code = 1327,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IndexableNodeTypeMismatch() =>
+        new()
+        {
+            Message = "Indexable must be a member, property, indexer, binary, cast, unary",
+            Code = 1328,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IndexerArgMustBeReturningNode() =>
+        new()
+        {
+            Message = "Indexer node argument must return a value",
+            Code = 1329,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotAccessMemberFromNothing() =>
+        new()
+        {
+            Message = "Cannot access member from nothing",
+            Code = 1330,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotAccessNothing() =>
+        new()
+        {
+            Message = "Cannot access nothing",
+            Code = 1331,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AccessibleNodeTypeMismatch() =>
+        new()
+        {
+            Message = "Accessible node must return a typed value",
+            Code = 1332,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MemberAccessTargetMustBeMember() =>
+        new()
+        {
+            Message = "Member access target must be a member",
+            Code = 1333,
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }
