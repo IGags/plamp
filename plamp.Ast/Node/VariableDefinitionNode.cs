@@ -6,7 +6,7 @@ namespace plamp.Ast.Node;
 public class VariableDefinitionNode : NodeBase
 {
     public NodeBase Type { get; }
-    public MemberNode Member { get; }
+    public NodeBase Member { get; }
 
     public VariableDefinitionNode(NodeBase type, MemberNode member)
     {

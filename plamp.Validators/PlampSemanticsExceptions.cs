@@ -211,7 +211,7 @@ public static class PlampSemanticsExceptions
     public static PlampExceptionRecord ArgNodeMustNotBeNull() =>
         new()
         {
-            Message = "Arg node in call args must not be null",
+            Message = "Arg node in args must not be null",
             Code = 1325,
             Level = ExceptionLevel.Error
         };
@@ -277,6 +277,238 @@ public static class PlampSemanticsExceptions
         {
             Message = "Member access target must be a member",
             Code = 1333,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConstructorMustHaveCreatingType() =>
+        new()
+        {
+            Message = "Constructor must define type that creates",
+            Code = 1334,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConstructorTargetMustBeType() =>
+        new()
+        {
+            Message = "Constructor target must be a type",
+            Code = 1335,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ConstructorArgTypeMismatch() =>
+        new()
+        {
+            Message = "Constructor arg must be expression that returns value",
+            Code = 1336,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CastMustHaveType() =>
+        new()
+        {
+            Message = "Cannot use cast node without type",
+            Code = 1337,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CastTargetTypeMustBeTypeNode() =>
+        new()
+        {
+            Message = "Cast target type must be a type node",
+            Code = 1338,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord NullCastTarget() =>
+        new()
+        {
+            Message = "A cast target expression is required",
+            Code = 1339,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CastTargetMustReturnValue() =>
+        new()
+        {
+            Message = "Cast target expression must return a value",
+            Code = 1340,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DefNodeMustHaveReturnType() =>
+        new()
+        {
+            Message = "Def node must have return type",
+            Code = 1341,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DefNodeReturnTypeMustBeTypeNode() =>
+        new()
+        {
+            Message = "Def node return type must be type node",
+            Code = 1342,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MethodMustHaveName() =>
+        new()
+        {
+            Message = "Method must have a name",
+            Code = 1343,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MethodNameMustBeMemberName() =>
+        new()
+        {
+            Message = "Method name must be a name node",
+            Code = 1344,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MethodArgNodeMustBeParameter() =>
+        new()
+        {
+            Message = "Method arg must be a parameter",
+            Code = 1345,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MethodMustHaveBody() =>
+        new()
+        {
+            Message = "Method must have a body",
+            Code = 1346,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord UseMustHasTargetModule() =>
+        new()
+        {
+            Message = "Use statement must have a target module",
+            Code = 1347,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord UseTargetMustBeMember() =>
+        new()
+        {
+            Message = "Use statement target must be member or member access node",
+            Code = 1348,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord TypeNodeMustHaveName() =>
+        new()
+        {
+            Message = "Type node must have a name",
+            Code = 1349,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord TypeNameMustBeMember() =>
+        new()
+        {
+            Message = "Type name must be a member or member access",
+            Code = 1350,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericsMustNotBeNull() =>
+        new()
+        {
+            Message = "Generics must not be null",
+            Code = 1351,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericMustBeType() =>
+        new()
+        {
+            Message = "Generics must be a type",
+            Code = 1352,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ParameterMustHaveName() =>
+        new()
+        {
+            Message = "Parameter must have a name",
+            Code = 1353,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ParameterNameMustBeMember() =>
+        new()
+        {
+            Message = "Parameter name must be a member",
+            Code = 1354,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ParameterMustHaveType() =>
+        new()
+        {
+            Message = "Parameter must have a type",
+            Code = 1355,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ParameterTypeMustBeTypeNode() =>
+        new()
+        {
+            Message = "ParameterType must be a type node",
+            Code = 1356,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord VariableMustHaveName() =>
+        new()
+        {
+            Message = "Variable must have a type",
+            Code = 1357,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord VariableNameMustBeMember() =>
+        new()
+        {
+            Message = "Variable name must be a member",
+            Code = 1358,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord VariableTypeMustBeTypeNode() =>
+        new()
+        {
+            Message = "Variable type must be a type node",
+            Code = 1359,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MemberNameIsNull() =>
+        new()
+        {
+            Message = "Member name must not be null",
+            Code = 1360,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord LiteralIsNotValueType() =>
+        new()
+        {
+            Message = "Literal with value type must has value type value",
+            Code = 1361,
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord LiteralTypeMismatch() =>
+        new()
+        {
+            Message = "Literal type and literal value type mismatch",
+            Code = 1362,
             Level = ExceptionLevel.Error
         };
 

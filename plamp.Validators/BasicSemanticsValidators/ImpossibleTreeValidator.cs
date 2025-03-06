@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.InteropServices.JavaScript;
 using System.Security.Cryptography;
 using plamp.Ast;
 using plamp.Ast.Node;
@@ -25,7 +26,7 @@ public class ImpossibleTreeValidator : BaseValidator
     //Do not thread safe
     public override ValidationResult Validate(ValidationContext context)
     {
-        _skippedBranches.Clear();
+        _skippedBranches = [];
         _context = context;
         VisitInternal(context.Ast);
         return _validationResult;
@@ -393,12 +394,59 @@ public class ImpossibleTreeValidator : BaseValidator
 
     protected override VisitResult VisitConstructor(ConstructorNode node)
     {
+        if (node.Type == null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ConstructorMustHaveCreatingType();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Type is not TypeNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ConstructorTargetMustBeType();
+            SetExceptionToNode(exceptionRecord, node.Type);
+        }
         
+        ValidateArgsInMemberInteraction(node, node.Args,
+            PlampSemanticsExceptions.ArgNodeMustNotBeNull(),
+            PlampSemanticsExceptions.ConstructorArgTypeMismatch());
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitCast(CastNode node)
     {
-        return base.VisitCast(node);
+        if (node.ToType is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.CastMustHaveType();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.ToType is not TypeNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.CastTargetTypeMustBeTypeNode();
+            SetExceptionToNode(exceptionRecord, node.ToType);
+        }
+
+        switch (node.Inner)
+        {
+            case null:
+                var exceptionRecord = PlampSemanticsExceptions.NullCastTarget();
+                SetExceptionToNode(exceptionRecord, node);
+                return VisitResult.Continue;
+            case BaseBinaryNode:
+            case BaseUnaryNode:
+            case CastNode:
+            case LiteralNode:
+            case CallNode:
+            case MemberNode:
+            case IndexerNode:
+            case MemberAccessNode:
+                if(node.Inner is BaseAssignNode) goto default;
+                return VisitResult.Continue;
+            default:
+                exceptionRecord = PlampSemanticsExceptions.CastTargetMustReturnValue();
+                SetExceptionToNode(exceptionRecord, node.Inner);
+                return VisitResult.Continue;
+        }
     }
 
     #endregion
@@ -407,12 +455,74 @@ public class ImpossibleTreeValidator : BaseValidator
 
     protected override VisitResult VisitDef(DefNode node)
     {
-        return base.VisitDef(node);
+        if (node.ReturnType is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.DefNodeMustHaveReturnType();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.ReturnType is not TypeNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.DefNodeReturnTypeMustBeTypeNode();
+            SetExceptionToNode(exceptionRecord, node.ReturnType);
+        }
+
+        if (node.Name is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MethodMustHaveName();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Name is not MemberNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MethodNameMustBeMemberName();
+            SetExceptionToNode(exceptionRecord, node.Name);
+        }
+
+        var hasNull = false;
+        foreach (var parameter in node.ParameterList)
+        {
+            if (parameter is null)
+            {
+                hasNull = true;
+                continue;
+            }
+
+            if (parameter is ParameterNode) continue;
+            var exceptionRecord = PlampSemanticsExceptions.MethodArgNodeMustBeParameter();
+            SetExceptionToNode(exceptionRecord, parameter);
+        }
+
+        if (hasNull)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ArgNodeMustNotBeNull();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Body is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.MethodMustHaveBody();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+        
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitUse(UseNode node)
     {
-        return base.VisitUse(node);
+        if (node.Assembly == null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.UseMustHasTargetModule();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Assembly is not MemberNode or MemberAccessNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.UseTargetMustBeMember();
+            SetExceptionToNode(exceptionRecord, node.Assembly);
+        }
+        
+        return VisitResult.Continue;
     }
 
     #endregion
@@ -421,27 +531,127 @@ public class ImpossibleTreeValidator : BaseValidator
 
     protected override VisitResult VisitType(TypeNode node)
     {
-        return base.VisitType(node);
+        if (node.TypeName is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.TypeNodeMustHaveName();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.TypeName is not MemberNode or MemberAccessNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.TypeNameMustBeMember();
+            SetExceptionToNode(exceptionRecord, node.TypeName);
+        }
+
+        if (node.InnerGenerics is null) return VisitResult.Continue;
+
+        var hasNull = false;
+        foreach (var generic in node.InnerGenerics)
+        {
+            if (generic is null)
+            {
+                hasNull = true;
+                continue;
+            }
+            if(generic is TypeNode) continue;
+            var exceptionRecord = PlampSemanticsExceptions.GenericMustBeType();
+            SetExceptionToNode(exceptionRecord, generic);
+        }
+
+        if (hasNull)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.GenericsMustNotBeNull();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitParameter(ParameterNode node)
     {
-        return base.VisitParameter(node);
+        if (node.Name is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ParameterMustHaveName();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Name is not MemberNode or MemberAccessNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ParameterNameMustBeMember();
+            SetExceptionToNode(exceptionRecord, node.Name);
+        }
+
+        if (node.Type is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ParameterMustHaveType();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Type is not TypeNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.ParameterTypeMustBeTypeNode();
+            SetExceptionToNode(exceptionRecord, node.Type);
+        }
+
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitVariableDefinition(VariableDefinitionNode node)
     {
-        return base.VisitVariableDefinition(node);
+        if (node.Member is null)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.VariableMustHaveName();
+            SetExceptionToNode(exceptionRecord, node);
+        }
+
+        if (node.Member is not MemberNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.VariableNameMustBeMember();
+            SetExceptionToNode(exceptionRecord, node.Member);
+        }
+        
+        if(node.Type is null) return VisitResult.Continue;
+
+        if (node.Type is not TypeNode)
+        {
+            var exceptionRecord = PlampSemanticsExceptions.VariableTypeMustBeTypeNode();
+            SetExceptionToNode(exceptionRecord, node.Type);
+        }
+
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitMember(MemberNode node)
     {
-        return base.VisitMember(node);
+        if (node.MemberName is not null) return VisitResult.Continue;
+        
+        var exceptionRecord = PlampSemanticsExceptions.MemberNameIsNull();
+        SetExceptionToNode(exceptionRecord, node);
+
+        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitLiteral(LiteralNode literalNode)
     {
-        return base.VisitLiteral(literalNode);
+        //Value of literal can be anything if type is void(void is nothing)
+        if(literalNode.Type == typeof(void) || literalNode.Type is null) return VisitResult.Continue;
+        
+        if (literalNode.Type.IsValueType && 
+            (literalNode.Value == null || !literalNode.Value.GetType().IsValueType))
+        {
+            var exceptionRecord = PlampSemanticsExceptions.LiteralIsNotValueType();
+            SetExceptionToNode(exceptionRecord, literalNode);
+            return VisitResult.Continue;
+        }
+
+        //Only for reference types
+        if (!literalNode.Type.IsValueType && literalNode.Type != literalNode.Value?.GetType())
+        {
+            var exceptionRecord = PlampSemanticsExceptions.LiteralTypeMismatch();
+            SetExceptionToNode(exceptionRecord, literalNode);
+        }
+        
+        return VisitResult.Continue;
     }
 
     #endregion

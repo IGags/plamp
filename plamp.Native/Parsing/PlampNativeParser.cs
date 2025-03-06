@@ -222,9 +222,9 @@ public sealed class PlampNativeParser
         transaction.AddSymbol(nameNode, [], [name]);
         
         //TOO HARD
-        res = TryParseInParen<List<ParameterNode>, OpenParen, CloseParen>(
+        res = TryParseInParen<List<NodeBase>, OpenParen, CloseParen>(
             transaction,
-            WrapParseCommaSeparated<ParameterNode>(
+            WrapParseCommaSeparated<NodeBase>(
                 ParameterWrapper, ExpressionParsingResult.FailedNeedCommit),
             (_, _) => [], out var parameterNodes, 
             ExpressionParsingResult.FailedNeedPass, ExpressionParsingResult.Success);
@@ -251,7 +251,7 @@ public sealed class PlampNativeParser
         transaction.Commit();
         return ExpressionParsingResult.Success;
 
-        ExpressionParsingResult ParameterWrapper(out ParameterNode node)
+        ExpressionParsingResult ParameterWrapper(out NodeBase node)
         {
             return TryParseParameter(transaction, out node);
         }
@@ -284,7 +284,7 @@ public sealed class PlampNativeParser
         outerTransaction.Commit();
     }
 
-    private ExpressionParsingResult TryParseParameter(IParsingTransaction transaction, out ParameterNode parameterNode)
+    private ExpressionParsingResult TryParseParameter(IParsingTransaction transaction, out NodeBase parameterNode)
     {
         parameterNode = null;
         var typePeek = _tokenSequence.PeekNextNonWhiteSpace();

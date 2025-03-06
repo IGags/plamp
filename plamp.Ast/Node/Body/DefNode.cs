@@ -8,8 +8,8 @@ public class DefNode
     : NodeBase
 {
     public NodeBase ReturnType { get; }
-    public MemberNode Name { get; }
-    public List<ParameterNode> ParameterList { get; }
+    public NodeBase Name { get; }
+    public List<NodeBase> ParameterList { get; }
     public BodyNode Body { get; }
 
     public override IEnumerable<NodeBase> Visit()
@@ -27,11 +27,11 @@ public class DefNode
         yield return Body;
     }
 
-    public DefNode(NodeBase returnType, MemberNode name, List<ParameterNode> parameterList, BodyNode body)
+    public DefNode(NodeBase returnType, MemberNode name, List<NodeBase> parameterList, BodyNode body)
     {
         ReturnType = returnType;
         Name = name;
-        ParameterList = parameterList;
+        ParameterList = parameterList ?? [];
         Body = body;
     }
 }

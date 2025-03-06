@@ -5,7 +5,7 @@ namespace plamp.Ast.Node;
 public class ParameterNode : NodeBase
 {
     public NodeBase Type { get; }
-    public MemberNode Name { get; }
+    public NodeBase Name { get; }
 
     public ParameterNode(NodeBase type, MemberNode name)
     {
