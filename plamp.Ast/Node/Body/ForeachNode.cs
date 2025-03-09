@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public class ForeachNode : NodeBase
+public class ForeachNode : NodeBase, ILoopNode
 {
     public NodeBase Iterator { get; }
     public NodeBase Iterable { get; }
-    public BodyNode Body { get; }
+    public NodeBase Body { get; }
 
     public override IEnumerable<NodeBase> Visit()
     {

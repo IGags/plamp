@@ -4,7 +4,9 @@ namespace plamp.Validators;
 
 public static class PlampSemanticsExceptions
 {
-    #region Semantics exceptions(1300-2999) !RESERVED!
+    //Semantics ecxceptions(1300-2999) !RESERVED!
+    
+    #region Impossible tree
 
     public static PlampExceptionRecord InvalidChildExpression() =>
         new()
@@ -511,6 +513,24 @@ public static class PlampSemanticsExceptions
             Code = 1362,
             Level = ExceptionLevel.Error
         };
+
+    #endregion
+
+    #region DefMustReturnValue
+
+    public static PlampExceptionRecord DefMustReturnValue() =>
+        new()
+        {
+            Message = "Function must return a value",
+            Code = 1400,
+            Level = ExceptionLevel.Error
+        };
+
+    #endregion
+
+    #region 
+
+    
 
     #endregion
 }

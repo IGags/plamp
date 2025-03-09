@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public class ForNode : NodeBase
+public class ForNode : NodeBase, ILoopNode
 {
     public NodeBase IteratorVar { get; }
     public NodeBase TilCondition { get; }

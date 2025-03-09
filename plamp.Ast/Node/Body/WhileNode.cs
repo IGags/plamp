@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace plamp.Ast.Node.Body;
 
-public class WhileNode : NodeBase
+public class WhileNode : NodeBase, ILoopNode
 {
     public NodeBase Condition { get; }
     
-    public BodyNode Body { get; }
+    public NodeBase Body { get; }
 
     public WhileNode(NodeBase condition, BodyNode body)
     {
