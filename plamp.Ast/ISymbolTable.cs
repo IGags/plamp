@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using plamp.Ast.Node;
+using plamp.Ast.Node.Body;
 
 namespace plamp.Ast;
 
