@@ -2,10 +2,16 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace plamp.Ast.Modules;
 
-public interface IPropertyDefinition : IWritableMember
+public interface IPropertyDefinition
 {
+    /// <summary>
+    /// Name of property
+    /// </summary>
     public string Name { get; }
     
+    /// <summary>
+    /// Property type
+    /// </summary>
     public ITypeDefinition Type { get; }
     
     /// <summary>

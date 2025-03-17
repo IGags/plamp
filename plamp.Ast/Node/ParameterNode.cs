@@ -17,10 +17,7 @@ public class ParameterNode : NodeBase
     }
     
     public override IEnumerable<NodeBase> Visit()
-    { 
-        var ab = new PersistedAssemblyBuilder
-        var mod = ab.DefineDynamicModule("plamp.dll");
-        ab.Save("1234");
+    {
         yield return Type;
         yield return Name;
     }

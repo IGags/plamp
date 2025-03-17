@@ -16,4 +16,8 @@ public interface ISymbolTable
     PlampException SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node);
     
     List<PlampException> SetExceptionToChildren(PlampExceptionRecord exceptionRecord, NodeBase node);
+
+    bool Contains(NodeBase node);
+
+    bool TryGetChildren(NodeBase node, out IReadOnlyList<NodeBase> children);
 }

@@ -4,15 +4,15 @@ namespace plamp.Ast.Modules;
 
 public interface IModuleDefinition
 {
-    public string Name { get; }
+    string Name { get; }
     
-    public IReadOnlyList<ITypeDefinition> Types { get; }
+    IReadOnlyList<ITypeDefinition> Types { get; }
 
-    public IReadOnlyList<IModuleDefinition> Dependencies { get; }
+    IReadOnlyList<IModuleDefinition> Dependencies { get; }
 
-    public ITypeDefinition FindType(string name);
+    ITypeDefinition FindType(string name);
     
-    public IModuleDefinition FindDependency(string name);
+    IModuleDefinition FindDependency(string name);
     
-    public ISymbolTable GetSymbolTable();
+    bool TryGetEntryPointMethod(out IMethodDefinition methodDefinition);
 }

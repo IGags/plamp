@@ -1,6 +1,6 @@
 namespace plamp.Ast.Modules;
 
-public interface IArgDefinition
+public interface IFieldDefinition
 {
     public string Name { get; }
     
