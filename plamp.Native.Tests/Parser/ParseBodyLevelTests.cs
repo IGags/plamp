@@ -1,11 +1,10 @@
 using Microsoft.VisualStudio.TestPlatform.Utilities;
-using plamp.Ast.Node;
-using plamp.Ast.Node.Binary;
-using plamp.Ast.Node.Body;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.NodeComparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618

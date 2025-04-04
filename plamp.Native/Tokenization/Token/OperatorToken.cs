@@ -1,4 +1,4 @@
-﻿using plamp.Ast;
+﻿using plamp.Abstractions.Ast;
 using plamp.Native.Tokenization.Enumerations;
 
 namespace plamp.Native.Tokenization.Token;

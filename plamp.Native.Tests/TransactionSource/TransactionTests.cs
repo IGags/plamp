@@ -1,9 +1,8 @@
 ﻿using System;
-using plamp.Ast;
-using plamp.Ast.Node;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
 using plamp.Native.Parsing.Symbols;
 using plamp.Native.Parsing.Transactions;
-using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 

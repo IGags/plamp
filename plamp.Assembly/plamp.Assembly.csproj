@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\plamp.Ast\plamp.Ast.csproj" />
+      <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,30 +1,26 @@
-﻿using plamp.Ast;
-using plamp.Ast.Node.Body;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Validators.Abstractions;
-using plamp.Validators.Models;
+﻿using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Validation;
+using plamp.Abstractions.Validation.Models;
 
 namespace plamp.Validators.BasicSemanticsValidators;
 
-public class ReturnStatementValidator : BaseValidator
+public class ReturnStatementValidator : BaseValidator<ValidationContext>
 {
-    private ValidationContext _context;
-    private readonly ValidationResult _validationResult = new();
-    
     public override ValidationResult Validate(ValidationContext context)
     {
-        _context = context;
-        VisitInternal(context.Ast);
-        return _validationResult;
+        VisitInternal(context.Ast, context);
+        return new ValidationResult() { Exceptions = context.Exceptions };
     }
 
-    protected override VisitResult VisitDef(DefNode node)
+    protected override VisitResult VisitDef(DefNode node, ValidationContext context)
     {
         if (node.Body == null) return VisitResult.SkipChildren;
         if (VisitBody(node.Body, false)) return VisitResult.SkipChildren;
         
         var exceptionRecord = PlampSemanticsExceptions.DefMustReturnValue();
-        _context.Table.SetExceptionToNodeWithoutChildren(exceptionRecord, node);
+        context.Table.SetExceptionToNodeWithoutChildren(exceptionRecord, node, context.FileName, context.AssemblyName);
         return VisitResult.SkipChildren;
     }
 

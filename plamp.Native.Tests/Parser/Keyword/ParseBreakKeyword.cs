@@ -1,8 +1,8 @@
-using plamp.Ast;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Ast.NodeComparers;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.NodeComparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -19,7 +19,8 @@ public class ParseBreakKeyword
         const string code = """
                             break
                             """;
-        var parser = new PlampNativeParser(code);
+        var parser = new PlampNativeParser();
+        var context = new ParsingContext(code.Tokenize())
         var transaction = parser.TransactionSource.BeginTransaction();
         var result = parser.TryParseKeywordExpression(transaction, out var expression);
         transaction.Commit();

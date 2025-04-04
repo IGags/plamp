@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Linq;
-using plamp.Ast;
+using plamp.Abstractions.Ast;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
 using Xunit;

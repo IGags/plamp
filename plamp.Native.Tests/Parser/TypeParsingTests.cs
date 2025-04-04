@@ -1,10 +1,7 @@
-using System.Linq;
-using plamp.Ast;
-using plamp.Ast.Node;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.NodeComparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
-using plamp.Native.Tokenization.Token;
 using Xunit;
 
 namespace plamp.Native.Tests.Parser;

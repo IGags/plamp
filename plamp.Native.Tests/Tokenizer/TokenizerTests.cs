@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Ast;
-using plamp.Native.Tokenization;
+using plamp.Abstractions.Ast;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 

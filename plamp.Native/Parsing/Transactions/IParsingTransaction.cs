@@ -1,6 +1,5 @@
-﻿using plamp.Ast;
-using plamp.Ast.Node;
-using plamp.Native.Parsing.Symbols;
+﻿using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Parsing.Transactions;

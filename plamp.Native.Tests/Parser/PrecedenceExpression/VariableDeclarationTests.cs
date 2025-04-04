@@ -1,7 +1,6 @@
-using plamp.Ast.Node;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.NodeComparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618

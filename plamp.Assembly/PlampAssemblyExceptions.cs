@@ -1,4 +1,4 @@
-using plamp.Ast;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Assembly;
 

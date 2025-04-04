@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using plamp.Ast;
-using plamp.Ast.Node;
+using System.Reflection;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Native.Parsing.Symbols;
 
@@ -15,7 +16,11 @@ internal class PlampNativeSymbolTable : ISymbolTable
         _symbols = symbols;
     }
     
-    public PlampException SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public PlampException SetExceptionToNodeAndChildren(
+        PlampExceptionRecord exceptionRecord,
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
         if (node.SymbolOverride != null 
             && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
@@ -54,10 +59,14 @@ internal class PlampNativeSymbolTable : ISymbolTable
             }
         }
 
-        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum, fileName, assemblyName);
     }
 
-    public PlampException SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public PlampException SetExceptionToNodeWithoutChildren(
+        PlampExceptionRecord exceptionRecord, 
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
         if (node.SymbolOverride != null 
             && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
@@ -85,10 +94,14 @@ internal class PlampNativeSymbolTable : ISymbolTable
                 positionMaximum = token.End;
             }
         }
-        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum, fileName, assemblyName);
     }
 
-    public List<PlampException> SetExceptionToChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public List<PlampException> SetExceptionToChildren(
+        PlampExceptionRecord exceptionRecord,
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
         if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
         {
@@ -106,7 +119,7 @@ internal class PlampNativeSymbolTable : ISymbolTable
                 continue;
             }
             
-            var ex = SetExceptionToNodeAndChildren(exceptionRecord, child);
+            var ex = SetExceptionToNodeAndChildren(exceptionRecord, child, fileName, assemblyName);
             childExceptions.Add(ex);
         }
 

@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using plamp.Ast;
-using plamp.Native.Tokenization;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Native.Tests.Tokenizer;
 
