@@ -7,13 +7,14 @@ namespace plamp.Ast;
 /// </summary>
 public class PlampException : Exception
 {
+    public string FileName { get; }
     public FilePosition StartPosition { get; }
     public FilePosition EndPosition { get; }
     public int Code { get; }
     public ExceptionLevel Level { get; }
 
     public PlampException(PlampExceptionRecord exceptionFinalRecord, FilePosition startPosition, 
-        FilePosition endPosition) : base(exceptionFinalRecord.Message)
+        FilePosition endPosition, string fileName = null) : base(exceptionFinalRecord.Message)
     {
         if (startPosition.CompareTo(endPosition) == 1)
         {
@@ -25,6 +26,7 @@ public class PlampException : Exception
         EndPosition = endPosition;
         Code = exceptionFinalRecord.Code;
         Level = exceptionFinalRecord.Level;
+        FileName = fileName;
     }
     
     public override bool Equals(object obj)
@@ -38,7 +40,8 @@ public class PlampException : Exception
             && EndPosition.Equals(other.EndPosition) 
             && Code == other.Code 
             && Level == other.Level
-            && Message.Equals(other.Message);
+            && Message.Equals(other.Message)
+            && FileName.Equals(other.FileName);
     }
 
     public override string ToString()

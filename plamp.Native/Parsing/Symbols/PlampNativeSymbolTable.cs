@@ -112,4 +112,21 @@ internal class PlampNativeSymbolTable : ISymbolTable
 
         return childExceptions;
     }
+
+    public bool Contains(NodeBase node)
+    {
+        return _symbols.ContainsKey(node);
+    }
+
+    public bool TryGetChildren(NodeBase node, out IReadOnlyList<NodeBase> children)
+    {
+        if (_symbols.TryGetValue(node, out var value))
+        {
+            children = value.Children;
+            return true;
+        }
+
+        children = null;
+        return false;
+    }
 }

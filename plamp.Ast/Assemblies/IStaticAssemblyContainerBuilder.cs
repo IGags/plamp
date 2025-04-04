@@ -1,6 +1,7 @@
 namespace plamp.Ast.Assemblies;
 
-public interface IStaticAssemblyContainer
+public interface IStaticAssemblyContainerBuilder
 {
-    
+    //TODO: Shared api for libs
+    public IStaticAssemblyContainer Build();
 }
