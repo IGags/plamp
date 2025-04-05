@@ -21,8 +21,8 @@ public class ParseBodyLevelTests
         const string code = """
                             a+b-c
                             """;
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new MinusNode(
@@ -31,8 +31,8 @@ public class ParseBodyLevelTests
                     new MemberNode("b")),
                 new MemberNode("c"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(4, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(4, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]

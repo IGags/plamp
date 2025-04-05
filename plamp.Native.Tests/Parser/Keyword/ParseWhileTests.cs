@@ -19,9 +19,9 @@ public class ParseWhileTests
         const string code = """
                             while(true) ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -34,8 +34,8 @@ public class ParseWhileTests
                         [])
                 ]));
         Assert.Equal(expression, expressionShould, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -45,9 +45,9 @@ public class ParseWhileTests
                             while(true)
                                 ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -60,8 +60,8 @@ public class ParseWhileTests
                         [])
                 ]));
         Assert.Equal(expression, expressionShould, Comparer);
-        Assert.Equal(9, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(9, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -70,9 +70,9 @@ public class ParseWhileTests
         const string code = """
                             while(true ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -81,12 +81,13 @@ public class ParseWhileTests
                 new BodyNode(
                     []));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(7, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(7, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(CloseParen)),
-            new(0, 5), new(0, 16));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+            new(0, 5), new(0, 16),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     [Fact]
@@ -96,9 +97,9 @@ public class ParseWhileTests
                             while(true
                                 ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -111,11 +112,12 @@ public class ParseWhileTests
                             [])
                     ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
+        Assert.Equal(8, context.TokenSequence.Position);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
-            new(0, 5), new(0, 11));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+            new(0, 5), new(0, 11),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     [Fact]
@@ -124,22 +126,24 @@ public class ParseWhileTests
         const string code = """
                             while true) ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         transaction.Commit();
         Assert.Null(expression);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Equal(2, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Equal(2, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
             PlampNativeExceptionInfo.MissingConditionPredicate(),
-            new(0, 0), new(0, 4));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+            new(0, 0), new(0, 4),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(0, 5), new(0, 19));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+            new(0, 5), new(0, 19),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
     }
 
     [Fact]
@@ -149,26 +153,29 @@ public class ParseWhileTests
                             while true)
                                 ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         transaction.Commit();
         Assert.Null(expression);
-        Assert.Equal(9, parser.TokenSequence.Position);
-        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(9, context.TokenSequence.Position);
+        Assert.Equal(3, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
             PlampNativeExceptionInfo.MissingConditionPredicate(),
-            new(0, 0), new(0, 4));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+            new(0, 0), new(0, 4),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(0, 5), new(0, 12));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+            new(0, 5), new(0, 12),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
         var exceptionShould3 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(1, 4), new(1, 11));
-        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+            new(1, 4), new(1, 11),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould3, context.TransactionSource.Exceptions[2]);
     }
 
     [Fact]
@@ -177,9 +184,10 @@ public class ParseWhileTests
         const string code = """
                             while() ping()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -192,12 +200,12 @@ public class ParseWhileTests
                         [])
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(7, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(7, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.EmptyConditionPredicate(),
             new(0, 5), new(0, 6));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     #region Symbol dictionary
@@ -209,19 +217,18 @@ public class ParseWhileTests
                             while(true) i++
                             """;
 
-        var tokenSequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(tokenSequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
         
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(5, symbolTable.Count);
         var first = symbolTable[expression];
         Assert.Single(first.Tokens);
-        Assert.Equal(tokenSequence.TokenList[0], first.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], first.Tokens[0]);
         Assert.Equal(2, first.Children.Count);
         foreach (var child in first.Children)
         {

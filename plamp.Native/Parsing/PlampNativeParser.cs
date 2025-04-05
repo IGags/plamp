@@ -242,7 +242,7 @@ public sealed class PlampNativeParser : IParser
         transaction.Commit();
         return ExpressionParsingResult.Success;
 
-        ExpressionParsingResult ParameterWrapper(out NodeBase node, ParsingContext context)
+        ExpressionParsingResult ParameterWrapper(out NodeBase node, ParsingContext _)
         {
             return TryParseParameter(transaction, out node, context);
         }
@@ -400,7 +400,7 @@ public sealed class PlampNativeParser : IParser
         return ExpressionParsingResult.Success;
     }
     
-    private static TryParseInternal<NodeBase> TryParseTypeWrapper(IParsingTransaction transaction, ParsingContext context)
+    private static TryParseInternal<NodeBase> TryParseTypeWrapper(IParsingTransaction transaction, ParsingContext _)
     {
         return FuncWrapper;
             
@@ -566,7 +566,7 @@ public sealed class PlampNativeParser : IParser
         transaction.AddSymbol(conditionNode, children.ToArray(), []);
         return ExpressionParsingResult.Success;
 
-        ExpressionParsingResult TryParseElifKeyword(out KeywordToken res, ParsingContext context)
+        ExpressionParsingResult TryParseElifKeyword(out KeywordToken res, ParsingContext _)
         {
              return TryConsumeNextNonWhiteSpace(x => x.Keyword == Keywords.Elif, _ => { }, out res, context) 
                  ? ExpressionParsingResult.Success : ExpressionParsingResult.FailedNeedRollback;
@@ -666,7 +666,7 @@ public sealed class PlampNativeParser : IParser
         
         return ExpressionParsingResult.Success;
 
-        ExpressionParsingResult ForHeaderWrapper(out CounterLoopHolder header, ParsingContext context) =>
+        ExpressionParsingResult ForHeaderWrapper(out CounterLoopHolder header, ParsingContext _) =>
             TryParseForHeader(transaction, out header, context);
     }
 
@@ -792,7 +792,7 @@ public sealed class PlampNativeParser : IParser
             }
         }
 
-        ExpressionParsingResult AddExceptionToBodyLevelWrapper(out NodeBase res, ParsingContext context)
+        ExpressionParsingResult AddExceptionToBodyLevelWrapper(out NodeBase res, ParsingContext _)
         {
             return AddExceptionToBodyLevel(transaction, out res, context);
         }
@@ -1463,7 +1463,7 @@ public sealed class PlampNativeParser : IParser
         }
     }
     
-    //TODO: No need to test because 1 usage(until it change)
+    //No need to test - 1 usage(until it change)
     private static bool TryConsumeNextNonWhiteSpaceWithoutRollback<TToken>(
         Func<TToken, bool> predicate, 
         Action<TokenBase> ifPredicateFalse, 
