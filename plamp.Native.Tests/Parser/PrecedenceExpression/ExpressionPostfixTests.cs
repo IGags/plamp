@@ -15,37 +15,37 @@ public class ExpressionPostfixTests
     public void ParseSingleMember()
     {
         const string code = "hi";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould = new MemberNode("hi");
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(0, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(0, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseMemberAccess()
     {
         const string code = "hey.dude";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new MemberAccessNode(
                 new MemberNode("hey"), 
                 new MemberNode("dude"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(2, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(2, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseMemberAccessSequence()
     {
         const string code = "hey.dude.you.cool";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new MemberAccessNode(
@@ -56,57 +56,57 @@ public class ExpressionPostfixTests
                     new MemberNode("you")),
                 new MemberNode("cool"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(6, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(6, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
     
     [Fact]
     public void ParseAccessWithoutNextMember()
     {
         const string code = "hey.";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.Equal(new MemberNode("hey"), expression, Comparer);
-        Assert.Equal(0, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(0, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseCallExpression()
     {
         const string code = "greet()";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
                 new MemberNode("greet"),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(2, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(2, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseInvalidCallExpression()
     {
         const string code = "greet.()";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould = new MemberNode("greet");
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(0, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(0, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseCallWithArgs()
     {
         const string code = "greet(\"hi\"+\"you\", 1)";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
@@ -118,16 +118,16 @@ public class ExpressionPostfixTests
                     new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseCallSequence()
     {
         const string code = "arg.greet(greeter).bye()";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
@@ -142,16 +142,16 @@ public class ExpressionPostfixTests
                     new MemberNode("bye")),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(9, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(9, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseIndexer()
     {
         const string code = "arr[0]";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new IndexerNode(
@@ -160,16 +160,16 @@ public class ExpressionPostfixTests
                     new LiteralNode(0, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(3, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(3, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseMultidimensionalIndexer()
     {
         const string code = "arr[0,1]";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new IndexerNode(
@@ -179,16 +179,16 @@ public class ExpressionPostfixTests
                     new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(5, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(5, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseIndexerSequence()
     {
         const string code = "arr[0][\"hi\"]";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new IndexerNode(
@@ -201,8 +201,8 @@ public class ExpressionPostfixTests
                     new LiteralNode("hi", typeof(string))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(6, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(6, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol table
@@ -214,17 +214,16 @@ public class ExpressionPostfixTests
                             mem
                             """;
 
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Single(symbolTable);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Single(symbol.Tokens);
-        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], symbol.Tokens[0]);
         Assert.Empty(symbol.Children);
     }
 
@@ -235,17 +234,16 @@ public class ExpressionPostfixTests
                             mem.d
                             """;
 
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(3, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Single(symbol.Tokens);
-        Assert.Equal(sequence.TokenList[1], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[1], symbol.Tokens[0]);
         Assert.Equal(2, symbol.Children.Count);
         foreach (var child in symbol.Children)
         {
@@ -260,12 +258,11 @@ public class ExpressionPostfixTests
                             mem()
                             """;
 
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(2, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
@@ -284,12 +281,11 @@ public class ExpressionPostfixTests
                             mem(m1, m2)
                             """;
 
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(4, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
@@ -308,12 +304,11 @@ public class ExpressionPostfixTests
                             mem(m1, m2).mem(t)
                             """;
 
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(8, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
@@ -331,13 +326,12 @@ public class ExpressionPostfixTests
         const string code = """
                             r[2]
                             """;
-        
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(3, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
@@ -355,13 +349,12 @@ public class ExpressionPostfixTests
         const string code = """
                             canon[1,0]
                             """;
-        
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(4, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
@@ -380,12 +373,11 @@ public class ExpressionPostfixTests
                             canon[1][0]
                             """;
         
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(5, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];

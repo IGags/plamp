@@ -1,3 +1,4 @@
+using plamp.Abstractions;
 using plamp.Assembly.Impl.Builders;
 using plamp.Abstractions.Assemblies;
 
@@ -7,8 +8,5 @@ public class PlampStaticAssemblyContainerContainerFactory
     : IStaticAssemblyContainerFactory<PlampStaticAssemblyContainerBuilder>
 {
     public PlampStaticAssemblyContainerBuilder CreateBuilder() => new();
-
-    public bool CanReuseCreated => false;
-    
-    public bool CanParallelCreated => false;
+    public ResourceType Type => ResourceType.InstancePerRequest;
 }

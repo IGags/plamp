@@ -1,3 +1,10 @@
-﻿namespace plamp.Abstractions.Compilation;
+﻿using System;
 
-public readonly record struct SourceFile(string FileName, string SourceCode);
+namespace plamp.Abstractions.Compilation;
+
+public readonly record struct SourceFile(string FileName, string SourceCode)
+{
+    private int StringHashCode { get; } = SourceCode.GetHashCode();
+    
+    public override int GetHashCode() => HashCode.Combine(FileName, StringHashCode, GetType());
+}

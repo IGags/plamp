@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Native.Parsing.Symbols;
 using plamp.Native.Parsing.Transactions;
+using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -15,7 +16,7 @@ public class TransactionTests
     [Fact]
     public void CommitWithoutExceptions()
     {
-        var result = "+ -".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("+ -").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 2;
@@ -28,10 +29,15 @@ public class TransactionTests
     [Fact]
     public void CommitWithExceptions()
     {
-        var result = string.Empty.Tokenize();
+        var result = ParserTestHelper.GetSourceCode(string.Empty).Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
 
-        var ex = new PlampException(PlampNativeExceptionInfo.InvalidCastOperator(), default, default);
+        var ex = new PlampException(
+            PlampNativeExceptionInfo.InvalidCastOperator(),
+            default,
+            default,
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName);
         var transaction = source.BeginTransaction();
         transaction.AddException(ex);
         transaction.Commit();
@@ -43,7 +49,7 @@ public class TransactionTests
     [Fact]
     public void CommitWithInnerTransactionHasNotException()
     {
-        var result = "(((".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("(((").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         
         result.Sequence.Position = 2;
@@ -56,11 +62,16 @@ public class TransactionTests
     [Fact]
     public void CommitWithInnerTransactionHasException()
     {
-        var result = string.Empty.Tokenize();
+        var result = ParserTestHelper.GetSourceCode(string.Empty).Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         var transaction2 = source.BeginTransaction();
-        var ex = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), default, default);
+        var ex = new PlampException(
+            PlampNativeExceptionInfo.InvalidTypeName(),
+            default,
+            default,
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName);
         transaction2.AddException(ex);
         Assert.Throws<Exception>(() => transaction.Commit());
     }
@@ -68,7 +79,7 @@ public class TransactionTests
     [Fact]
     public void CommitTwice()
     {
-        var result = "()".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("()").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -81,7 +92,7 @@ public class TransactionTests
     [Fact]
     public void CommitWithSymbol()
     {
-        var result = "1".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("1").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -105,7 +116,7 @@ public class TransactionTests
     [Fact]
     public void RollbackWithoutExceptions()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 2;
@@ -117,10 +128,16 @@ public class TransactionTests
     [Fact]
     public void RollbackWithExceptions()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
-        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new (0, 0), new (0, 1)));
+        transaction.AddException(
+            new PlampException(
+                PlampNativeExceptionInfo.InvalidTypeName(),
+                new(0, 0),
+                new(0, 1),
+                ParserTestHelper.FileName,
+                ParserTestHelper.AssemblyName));
         result.Sequence.Position = 2;
         transaction.Rollback();
         Assert.Equal(-1, result.Sequence.Position);
@@ -130,7 +147,7 @@ public class TransactionTests
     [Fact]
     public void RollbackWithInnerTransactionHasNoException()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         _ = source.BeginTransaction();
@@ -141,18 +158,23 @@ public class TransactionTests
     [Fact]
     public void RollbackWithInnerTransactionHasException()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         var transaction2 = source.BeginTransaction();
-        transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction2.AddException(
+            new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
+            new(0, 0),
+            new(0, 1),
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName));
         Assert.Throws<Exception>(() => transaction.Rollback());
     }
 
     [Fact]
     public void RollbackTwice()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -165,7 +187,7 @@ public class TransactionTests
     [Fact]
     public void RollbackWithSymbol()
     {
-        var result = "1".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("1").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -185,7 +207,7 @@ public class TransactionTests
     [Fact]
     public void PassWithoutExceptions()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -197,11 +219,15 @@ public class TransactionTests
     [Fact]
     public void PassWithExceptions()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
-        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
+            new(0, 0),
+            new(0, 1),
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName));
         transaction.Pass();
         Assert.Equal(1, result.Sequence.Position);
         Assert.Empty(source.Exceptions);
@@ -210,7 +236,7 @@ public class TransactionTests
     [Fact]
     public void PassWithInnerTransactionHasNoExceptionButChangePosition()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         _ = source.BeginTransaction();
@@ -221,7 +247,7 @@ public class TransactionTests
     [Fact]
     public void PassWithInnerTransactionHasNoException()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -232,19 +258,24 @@ public class TransactionTests
     [Fact]
     public void PassWithInnerTransactionHasException()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
         var transaction2 = source.BeginTransaction();
-        transaction2.AddException(new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction2.AddException(
+            new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
+            new(0, 0),
+            new(0, 1),
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName));
         Assert.Throws<Exception>(() => transaction.Pass());
     }
 
     [Fact]
     public void PassTwice()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -257,7 +288,7 @@ public class TransactionTests
     [Fact]
     public void PassWithSymbol()
     {
-        var result = "1".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("1").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         result.Sequence.Position = 1;
@@ -277,24 +308,32 @@ public class TransactionTests
     [Fact]
     public void AddExceptionToUncompletedTransaction()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         //Yep, just call this method and believe that it won't fail
-        transaction.AddException(new PlampException(
-            PlampNativeExceptionInfo.InvalidTypeName(), new(0, 0), new(0, 1)));
+        transaction.AddException(
+            new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
+            new(0, 0),
+            new(0, 1),
+            ParserTestHelper.FileName,
+            ParserTestHelper.AssemblyName));
     }
 
     [Fact]
     public void AddExceptionToCompletedTransaction()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         transaction.Commit();
         Assert.Throws<Exception>(() => transaction.AddException(
-            new PlampException(PlampNativeExceptionInfo.InvalidTypeName(), 
-                new(0, 0), new(0, 1))));
+            new PlampException(
+                PlampNativeExceptionInfo.InvalidTypeName(),
+                new(0, 0),
+                new(0, 1),
+                ParserTestHelper.FileName,
+                ParserTestHelper.AssemblyName)));
     }
 
     #endregion
@@ -304,7 +343,7 @@ public class TransactionTests
     [Fact]
     public void AddSymbolToUncompletedTransaction()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         //Yep, just call this method and believe that it won't fail
@@ -314,7 +353,7 @@ public class TransactionTests
     [Fact]
     public void AddSymbolToCompletedTransaction()
     {
-        var result = "0 0".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("0 0").Tokenize(ParserTestHelper.AssemblyName);
         var source = new ParsingTransactionSource(result.Sequence, [], []);
         var transaction = source.BeginTransaction();
         transaction.Commit();

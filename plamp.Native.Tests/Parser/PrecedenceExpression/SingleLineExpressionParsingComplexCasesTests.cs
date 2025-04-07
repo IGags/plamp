@@ -16,8 +16,8 @@ public class SingleLineExpressionParsingComplexCasesTests
     public void DeclareAssignCastAndSub()
     {
         const string code = "int i = (int)(1.2/3 + getRandNum())";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new AssignNode(
@@ -38,7 +38,7 @@ public class SingleLineExpressionParsingComplexCasesTests
                             new MemberNode("getRandNum"),
                             []))));
         Assert.Equal(expressionShould, expression, new RecursiveComparer());
-        Assert.Equal(19, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(19, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 }

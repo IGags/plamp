@@ -8,28 +8,28 @@ public class TestParserErrorProvider : IEnumerable<object[]>
 {
     public IEnumerator<object[]> GetEnumerator()
     {
-        yield return ["\"", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0))}];
-        yield return ["\"\n", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0))}];
-        yield return ["\"\r\n", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0))}];
-        yield return ["\"\\x\"", new List<PlampException>{new(PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2))}];
-        yield return ["@", new List<PlampException>{new(PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0))}];
-        yield return ["1.0i", new List<PlampException>{new (PlampNativeExceptionInfo.UnknownNumberFormat, new FilePosition(0, 0), new FilePosition(0, 3))}];
-        yield return ["1fic", new List<PlampException>{new (PlampNativeExceptionInfo.UnknownNumberFormat, new FilePosition(0, 0), new FilePosition(0, 3))}];
+        yield return ["\"", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["\"\n", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["\"\r\n", new List<PlampException>{new(PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["\"\\x\"", new List<PlampException>{new(PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["@", new List<PlampException>{new(PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["1.0i", new List<PlampException>{new (PlampNativeExceptionInfo.UnknownNumberFormat, new FilePosition(0, 0), new FilePosition(0, 3), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
+        yield return ["1fic", new List<PlampException>{new (PlampNativeExceptionInfo.UnknownNumberFormat, new FilePosition(0, 0), new FilePosition(0, 3), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)}];
         yield return ["\"\\x", new List<PlampException>
         {
-            new (PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2)),
-            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 2))
+            new (PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2), ParserTestHelper.FileName, ParserTestHelper.AssemblyName),
+            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 2), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)
         }];
         yield return ["@\"", new List<PlampException>
         {
-            new (PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0)),
-            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 1))
+            new (PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName),
+            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 1), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)
         }];
         yield return ["@\"\\x", new List<PlampException>
         {
-            new (PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0)),
-            new (PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 2), new FilePosition(0, 3)),
-            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 3))
+            new (PlampNativeExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), ParserTestHelper.FileName, ParserTestHelper.AssemblyName),
+            new (PlampNativeExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 2), new FilePosition(0, 3), ParserTestHelper.FileName, ParserTestHelper.AssemblyName),
+            new (PlampNativeExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 3), ParserTestHelper.FileName, ParserTestHelper.AssemblyName)
         }];
     }
 

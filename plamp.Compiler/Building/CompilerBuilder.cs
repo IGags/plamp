@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using plamp.Abstractions.Assemblies;
+using plamp.Abstractions.Compilation;
 using plamp.Abstractions.CompilerEmission;
+using plamp.Abstractions.FileLoading;
 using plamp.Abstractions.Parsing;
 using plamp.Abstractions.Validation;
 
@@ -9,47 +12,63 @@ namespace plamp.Compiler.Building;
 
 public class CompilerBuilder
 {
-    private IParserFactory _parserFactory;
+    private Func<IParserFactory> _parserFactoryCreator;
 
-    private IStaticAssemblyContainerBuilder _containerBuilder;
+    private IStaticAssemblyContainer _assemblyContainer;
 
-    private ICompiledEmitterFactory _compiledEmitterFactory;
+    private Func<ICompiledEmitterFactory> _compiledEmitterFactoryCreator;
     
-    private List<IValidatorFactory> _validatorFactories = new();
-    
-    public CompilerBuilder WithParserFactory<TParserFactory>() where TParserFactory : IParserFactory, new()
+    private readonly List<Func<IValidatorFactory>> _validatorFactories = [];
+
+    public CompilerBuilder WithParserFactory(Func<IParserFactory> factoryCreator)
     {
-        _parserFactory = new TParserFactory();
+        _parserFactoryCreator = factoryCreator;
         return this;
     }
 
     public CompilerBuilder WithStaticAssemblyContainerFactory<TContainerFactory, TBuilder>(
-        Action<IStaticAssemblyContainerBuilder> builderAction)
-        where TContainerFactory : IStaticAssemblyContainerFactory<TBuilder>, new()
+        Func<TContainerFactory> factoryCreator,
+        Action<TBuilder> builderAction)
+        where TContainerFactory : IStaticAssemblyContainerFactory<TBuilder>
         where TBuilder : IStaticAssemblyContainerBuilder
     {
-        var factory = new TContainerFactory();
-        _containerBuilder = factory.CreateBuilder();
-        builderAction(_containerBuilder);
+        var factory = factoryCreator();
+        var builder = factory.CreateBuilder();
+        builderAction(builder);
+        _assemblyContainer = builder.Build();
         return this;
     }
 
-    public CompilerBuilder WithCompiledEmitterFactory<TEmitterFactory>() 
-        where TEmitterFactory : ICompiledEmitterFactory, new()
+    public CompilerBuilder WithCompiledEmitterFactory(Func<ICompiledEmitterFactory> factoryCreator)
     {
-        _compiledEmitterFactory = new TEmitterFactory();
+        _compiledEmitterFactoryCreator = factoryCreator;
         return this;
     }
 
-    public CompilerBuilder WithValidatorFactory<TValidatorFactory>() 
-        where TValidatorFactory : IValidatorFactory, new()
+    public CompilerBuilder WithValidatorFactory(Func<IValidatorFactory> factoryCreator)
     {
-        _validatorFactories.Add(new TValidatorFactory());
+        _validatorFactories.Add(factoryCreator);
         return this;
     }
 
-    public CompilerBuilder WithWeaverFactory<TWeaverFactory>()
+    public CompilerBuilder WithWeaverFactory(Func<object> factoryCreator)
     {
         throw new NotImplementedException();
     }
+
+    public BaseCompiler<TLoaderFactory, TLoader> BuildWithLoaderFactory<TLoader, TLoaderFactory>(
+            Func<TLoaderFactory> factoryCreator)
+        where TLoaderFactory : IFileLoaderFactory<TLoader>
+        where TLoader : FileLoaderBase
+    {
+        var loaderFactory = factoryCreator();
+        var validatorFactories = _validatorFactories.Select(x => x()).ToList();
+        var compiler = new PlampCompiler<TLoaderFactory, TLoader>(
+            loaderFactory,
+            validatorFactories,
+            _compiledEmitterFactoryCreator(),
+            _parserFactoryCreator(),
+            _assemblyContainer);
+        return compiler;
+    } 
 }

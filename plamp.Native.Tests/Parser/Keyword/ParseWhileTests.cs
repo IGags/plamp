@@ -204,7 +204,8 @@ public class ParseWhileTests
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.EmptyConditionPredicate(),
-            new(0, 5), new(0, 6));
+            new(0, 5), new(0, 6),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
         Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 

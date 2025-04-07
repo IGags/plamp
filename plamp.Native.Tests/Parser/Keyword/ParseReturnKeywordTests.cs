@@ -72,7 +72,8 @@ public class ParseReturnKeywordTests
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(0, 8), new(0, 11));
+            new(0, 8), new(0, 11),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
         Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 

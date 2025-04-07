@@ -14,8 +14,8 @@ public class CastOperatorTests
     public void ParseValidCast()
     {
         const string code = "(int)1l";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould 
             = new CastNode(
@@ -24,32 +24,32 @@ public class CastOperatorTests
                     null), 
                 new LiteralNode(1L, typeof(long)));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(3, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(3, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseCastWithoutContinue()
     {
         const string code = "(int)-";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(-1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseCastWithoutCloseParen()
     {
         const string code = "(int 1";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(-1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol table
@@ -60,13 +60,12 @@ public class CastOperatorTests
         const string code = """
                             (string)1
                             """;
-        var tokenSequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(tokenSequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var table = parser.TransactionSource.SymbolDictionary;
+        var table = context.TransactionSource.SymbolDictionary;
         Assert.Equal(4, table.Count);
         Assert.Contains(expression, table);
         var symbol = table[expression];

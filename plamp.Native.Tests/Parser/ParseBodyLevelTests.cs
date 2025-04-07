@@ -1,4 +1,3 @@
-using Microsoft.VisualStudio.TestPlatform.Utilities;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
@@ -41,8 +40,8 @@ public class ParseBodyLevelTests
         const string code = """
                             a+b-c 1
                             """;
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new MinusNode(
@@ -51,8 +50,8 @@ public class ParseBodyLevelTests
                     new MemberNode("b")),
                 new MemberNode("c"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(4, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(4, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     //But keyword expression advance to end of line
@@ -63,9 +62,9 @@ public class ParseBodyLevelTests
                             return 2 + 2 ->
                                     * 2
                             """;
-        var parser = new PlampNativeParser(code);
+        var context = ParserTestHelper.GetContext(code);
         //HoW does dis works? watch commit
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(
@@ -76,8 +75,8 @@ public class ParseBodyLevelTests
                         new LiteralNode(2, typeof(int)))
                     ));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(15, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(15, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -88,8 +87,8 @@ public class ParseBodyLevelTests
                                 print(2)
                                 print(3)
                             """;
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
@@ -111,8 +110,8 @@ public class ParseBodyLevelTests
                 []
                 , null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(16, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(16, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol tests
@@ -121,36 +120,34 @@ public class ParseBodyLevelTests
     public void EmptyBodySymbol()
     {
         const string code = "";
-        var tokenSequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(tokenSequence);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Single(symbolTable);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Empty(symbol.Children);
         Assert.Single(symbol.Tokens);
-        Assert.Equal(tokenSequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], symbol.Tokens[0]);
     }
 
     [Fact]
     public void NotEmptySingleLineBody()
     {
         const string code = "13 - 3";
-        var tokenSequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(tokenSequence);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(3, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Equal(2, symbol.Children.Count);
         Assert.Single(symbol.Tokens);
-        Assert.Equal(tokenSequence.TokenList[2], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[2], symbol.Tokens[0]);
         foreach (var child in symbol.Children)
         {
             Assert.Contains(child, symbolTable);
@@ -166,12 +163,11 @@ public class ParseBodyLevelTests
                                 print(!t)
                                 return 132
                             """;
-        var tokenSequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(tokenSequence);
-        var result = parser.TryParseBodyLevelExpression(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseBodyLevelExpression(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(14, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];

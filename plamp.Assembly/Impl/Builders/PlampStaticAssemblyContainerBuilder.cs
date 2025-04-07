@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using plamp.Assembly.Impl.BuiltRecords;
 using plamp.Assembly.Impl.Models;
 using plamp.Abstractions.Assemblies;
@@ -50,9 +51,9 @@ public class PlampStaticAssemblyContainerBuilder : IStaticAssemblyContainerBuild
         return new DefaultStaticAssemblyContainer(prepared.ToArray());
     }
 
-    public StaticAssemblyBuilder AddAssembly(System.Reflection.Assembly assembly, string alias = null)
+    public StaticAssemblyBuilder AddAssembly(System.Reflection.Assembly assembly, AssemblyName alias = null)
     {
-        alias ??= assembly.GetName().Name;
+        alias ??= assembly.GetName();
         if (assembly == null || assembly.IsDynamic) throw new ArgumentNullException(nameof(assembly));
         var builder = _builders.FirstOrDefault(x => x.Alias.Equals(alias));
         if (builder != default)

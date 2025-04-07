@@ -1,9 +1,6 @@
-using System.Reflection;
-using Microsoft.VisualStudio.TestPlatform.Utilities;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.NodeComparers;
-using plamp.Abstractions.Compilation;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -53,7 +50,8 @@ public class ParseBreakKeyword
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(0, 5), new(0, 8));
+            new(0, 5), new(0, 8),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
         Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 

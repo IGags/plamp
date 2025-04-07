@@ -2,7 +2,5 @@
 
 public interface ICompilerEntity
 {
-    bool CanReuseCreated { get; }
-    
-    bool CanParallelCreated { get; }
+    ResourceType Type { get; }
 }

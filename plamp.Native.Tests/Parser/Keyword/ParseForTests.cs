@@ -383,7 +383,9 @@ public class ParseForTests
         Assert.Equal(13, context.TokenSequence.Position);
         Assert.Equal(2, context.TransactionSource.Exceptions.Count);
         var expressionShould1 = new PlampException(
-            PlampNativeExceptionInfo.InvalidForHeader(), new(0, 0), new(0, 2));
+            PlampNativeExceptionInfo.InvalidForHeader(), 
+            new(0, 0), new(0, 2),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
         Assert.Equal(expressionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),

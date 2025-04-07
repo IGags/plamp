@@ -2,5 +2,5 @@
 
 public interface ICompiledEmitterFactory : ICompilerEntity
 {
-    ICompiledEmitter CreateCompiledEmitter(string source);
+    ICompiledEmitter CreateCompiledEmitter();
 }

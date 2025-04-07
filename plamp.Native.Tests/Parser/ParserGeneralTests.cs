@@ -25,8 +25,10 @@ public class ParserGeneralTests
                                         max = item
                                 return max
                             """;
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var result = parser.Parse(source, assembly);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -100,8 +102,10 @@ public class ParserGeneralTests
                                     if(isComplete) return index
                                 return -1
                             """;
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var result = parser.Parse(source, assembly);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -275,7 +279,9 @@ public class ParserGeneralTests
                                 else return list
                             """;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
+        var result = parser.Parse(source, assembly);
         Assert.Single(result.NodeList);
         Assert.Empty(result.Exceptions);
         var expressionShould
@@ -531,7 +537,9 @@ public class ParserGeneralTests
                                 return image
                             """;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
+        var result = parser.Parse(source, assembly);
         Assert.Empty(result.Exceptions);
         Assert.Equal(5, result.NodeList.Count);
         var expressionShould1

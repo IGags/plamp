@@ -1,5 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
 
 namespace plamp.Abstractions.Compilation;
 
-public record CompilationResult(object Entrypoint, bool Success, Assembly CompiledAssembly);
+public record CompilationResult(bool Success, List<AssemblyCompilation> Compilations);

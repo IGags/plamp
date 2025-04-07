@@ -14,8 +14,8 @@ public class VariableDeclarationTests
     public void VariableDeclarationWithType()
     {
         const string code = "int a";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould 
             = new VariableDefinitionNode(
@@ -24,36 +24,36 @@ public class VariableDeclarationTests
                     null), 
                 new MemberNode("a"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(2, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(2, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void VariableDeclarationWithKeyword()
     {
         const string code = "var a";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new VariableDefinitionNode(
                 null,
                 new MemberNode("a"));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(2, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(2, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void KeywordOnly()
     {
         const string code = "var";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(-1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol table
@@ -62,12 +62,11 @@ public class VariableDeclarationTests
     public void VariableWithTypeSymbol()
     {
         const string code = "int a";
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var table = parser.TransactionSource.SymbolDictionary;
+        var table = context.TransactionSource.SymbolDictionary;
         Assert.Equal(4, table.Count);
         Assert.Contains(expression, table);
         var symbol = table[expression];
@@ -83,17 +82,16 @@ public class VariableDeclarationTests
     public void VariableWithKeywordSymbol()
     {
         const string code = "var a";
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
-        var table = parser.TransactionSource.SymbolDictionary;
+        var table = context.TransactionSource.SymbolDictionary;
         Assert.Equal(2, table.Count);
         Assert.Contains(expression, table);
         var symbol = table[expression];
         Assert.Single(symbol.Tokens);
-        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], symbol.Tokens[0]);
         Assert.Equal(1, symbol.Children.Count);
         foreach (var child in symbol.Children)
         {

@@ -15,8 +15,12 @@ public class PlampException : Exception
     public int Code { get; }
     public ExceptionLevel Level { get; }
 
-    public PlampException(PlampExceptionRecord exceptionFinalRecord, FilePosition startPosition, 
-        FilePosition endPosition, string fileName = null, AssemblyName assemblyName = null) : base(exceptionFinalRecord.Message)
+    public PlampException(
+        PlampExceptionRecord exceptionFinalRecord, 
+        FilePosition startPosition, 
+        FilePosition endPosition, 
+        string fileName, 
+        AssemblyName assemblyName) : base(exceptionFinalRecord.Message)
     {
         if (startPosition.CompareTo(endPosition) == 1)
         {
@@ -38,13 +42,15 @@ public class PlampException : Exception
         {
             return false;
         }
-        return 
-            StartPosition.Equals(other.StartPosition) 
-            && EndPosition.Equals(other.EndPosition) 
-            && Code == other.Code 
+
+        return
+            StartPosition.Equals(other.StartPosition)
+            && EndPosition.Equals(other.EndPosition)
+            && Code == other.Code
             && Level == other.Level
             && Message.Equals(other.Message)
-            && FileName.Equals(other.FileName);
+            && AssemblyName != null && AssemblyName.Equals(other.AssemblyName)
+            && FileName != null && FileName.Equals(other.FileName);
     }
 
     public override string ToString()
