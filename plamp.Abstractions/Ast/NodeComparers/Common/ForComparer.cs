@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Extensions;
 
 namespace plamp.Abstractions.Ast.NodeComparers.Common;
 

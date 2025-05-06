@@ -14,7 +14,7 @@ public class CompilerBuilder
 {
     private Func<IParserFactory> _parserFactoryCreator;
 
-    private IStaticAssemblyContainer _assemblyContainer;
+    private ICompiledAssemblyContainer _assemblyContainer;
 
     private Func<ICompiledEmitterFactory> _compiledEmitterFactoryCreator;
     

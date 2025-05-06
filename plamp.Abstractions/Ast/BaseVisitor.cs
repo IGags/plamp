@@ -4,6 +4,7 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 
 namespace plamp.Abstractions.Ast;
@@ -74,7 +75,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitCall(callNode, context);
             case CastNode castNode:
                 return VisitCast(castNode, context);
-            case ConstructorNode constructorNode:
+            case ConstructorCallNode constructorNode:
                 return VisitConstructor(constructorNode, context);
             case EmptyNode emptyNode:
                 return VisitEmpty(emptyNode, context);
@@ -98,6 +99,8 @@ public abstract class BaseVisitor<TContext>
                 return VisitForeach(foreachNode, context);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context);
+            case TypeDefinitionNode typeDefinitionNode:
+                return VisitTypeDefinition(typeDefinitionNode, context);
         }
         
         return VisitDefault(node, context);
@@ -144,7 +147,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitEqual(equalNode, context);
             case GreaterNode greaterNode:
                 return VisitGreater(greaterNode, context);
-            case GreaterOrEqualsNode greaterOrEqualsNode:
+            case GreaterOrEqualNode greaterOrEqualsNode:
                 return VisitGreaterOrEquals(greaterOrEqualsNode, context);
             case LessNode lessNode:
                 return VisitLess(lessNode, context);
@@ -216,7 +219,7 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitGreater(GreaterNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitGreaterOrEquals(GreaterOrEqualsNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitGreaterOrEquals(GreaterOrEqualNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitLess(LessNode node, TContext context) => VisitResult.Continue;
     
@@ -268,7 +271,7 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitCast(CastNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitConstructor(ConstructorNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitConstructor(ConstructorCallNode callNode, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitEmpty(EmptyNode node, TContext context) => VisitResult.Continue;
     
@@ -301,7 +304,10 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult VisitXor(XorNode xor, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitForeach(ForeachNode node, TContext context) => VisitResult.Continue;
+
+    protected virtual VisitResult VisitTypeDefinition(TypeDefinitionNode node, TContext context) => VisitResult.Continue;
     
     //Continue because possible custom ast node types that compiles in default nodes in future
     protected virtual VisitResult VisitDefault(NodeBase node, TContext context) => VisitResult.Continue;
+    
 }

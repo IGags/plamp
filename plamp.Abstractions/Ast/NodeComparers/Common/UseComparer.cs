@@ -16,6 +16,6 @@ public class UseComparer : IEqualityComparer<UseNode>
 
     public int GetHashCode(UseNode obj)
     {
-        return obj.Assembly != null ? obj.Assembly.GetHashCode() : 0;
+        return obj.Namespace != null ? obj.Namespace.GetHashCode() : 0;
     }
 }

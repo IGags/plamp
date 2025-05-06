@@ -4,4 +4,7 @@ using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Abstractions.Parsing;
 
-public record ParserResult(List<NodeBase> NodeList, IReadOnlyList<PlampException> Exceptions, ISymbolTable SymbolTable);
+public record ParserResult(
+    List<NodeBase> NodeList, 
+    IReadOnlyList<PlampException> Exceptions, 
+    ISymbolTable SymbolTable);

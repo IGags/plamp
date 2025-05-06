@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.ObjectPool;
 
-namespace plamp.Compiler;
+namespace plamp.Compiler.Util;
 
 public class CompilerPoolPolicy<TResource> : IPooledObjectPolicy<TResource> where TResource : class
 {

@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Compilation;
+using plamp.Abstractions.Compilation.Models;
 using plamp.Abstractions.Parsing;
 using plamp.Native.Parsing.Symbols;
 using plamp.Native.Parsing.Transactions;
@@ -25,7 +29,7 @@ public sealed class PlampNativeParser : IParser
     internal delegate ExpressionParsingResult TryParseInternal<T>(out T result, ParsingContext context);
 
     //TODO: fixit
-    public ParserResult Parse(SourceFile sourceFile, AssemblyName assemblyName)
+    public ParserResult Parse(SourceFile sourceFile, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         var context = BuildContext(sourceFile, assemblyName);
 
@@ -354,7 +358,7 @@ public sealed class PlampNativeParser : IParser
     }
     
     /// <summary>
-    /// Parsing member access, return node member_access(member_access(member_access(...),member),member)
+    /// Parsing member access
     /// or member if one
     /// </summary>
     private static ExpressionParsingResult ParseMemberAccessSequence(IParsingTransaction transaction, out NodeBase node, ParsingContext context)
@@ -365,10 +369,9 @@ public sealed class PlampNativeParser : IParser
         {
             return ExpressionParsingResult.FailedNeedRollback;
         }
-
         context.TokenSequence.GetNextNonWhiteSpace();
-        node = new MemberNode(peek.GetStringRepresentation());
-        transaction.AddSymbol(node, [], [peek]);
+        
+        var members = new List<TokenBase>(){peek};
         
         while (true)
         {
@@ -378,6 +381,7 @@ public sealed class PlampNativeParser : IParser
             {
                 break;
             }
+            members.Add(op);
             
             if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ =>
                 {
@@ -385,18 +389,17 @@ public sealed class PlampNativeParser : IParser
                         transaction, context);
                 }, out var word, context))
             {
-                var accessTo = new MemberNode(word.GetStringRepresentation());
-                transaction.AddSymbol(accessTo, [], [word]);
-                var fromOld = node;
-                node = new MemberAccessNode(node, accessTo);
-                transaction.AddSymbol(node, [fromOld, accessTo], [op]);
+                members.Add(word);
             }
             else
             {
+                node = new MemberNode(string.Concat(members.Select(x => x.GetStringRepresentation())));
+                transaction.AddSymbol(node, [], members.ToArray());
                 return ExpressionParsingResult.FailedNeedCommit;
             }
         }
-
+        
+        node = new MemberNode(string.Join('.', members));
         return ExpressionParsingResult.Success;
     }
     
@@ -1017,7 +1020,7 @@ public sealed class PlampNativeParser : IParser
                     output = new LessOrEqualNode(left, right);
                     break;
                 case OperatorEnum.GreaterOrEquals:
-                    output = new GreaterOrEqualsNode(left, right);
+                    output = new GreaterOrEqualNode(left, right);
                     break;
                 case OperatorEnum.Equals:
                     output = new EqualNode(left, right);
@@ -1237,7 +1240,7 @@ public sealed class PlampNativeParser : IParser
         switch (parenRes)
         {
             case ExpressionParsingResult.Success:
-                ctor = new ConstructorNode(type, parameters);
+                ctor = new ConstructorCallNode(type, parameters);
                 var children = new List<NodeBase> { type };
                 children.AddRange(parameters);
                 transaction.AddSymbol(ctor, children.ToArray(), [keywordToken]);
@@ -1248,7 +1251,7 @@ public sealed class PlampNativeParser : IParser
             case ExpressionParsingResult.FailedNeedCommit:
                 AddExceptionToTheTokenRange(keywordToken, typeEnd,
                     PlampNativeExceptionInfo.Expected("arguments in ()"), transaction, context);
-                return ExpressionParsingResult.FailedNeedCommit;
+                break;
         }
 
         return ExpressionParsingResult.FailedNeedCommit;

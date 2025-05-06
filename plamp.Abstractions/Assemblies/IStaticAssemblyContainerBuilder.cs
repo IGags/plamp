@@ -3,5 +3,5 @@ namespace plamp.Abstractions.Assemblies;
 public interface IStaticAssemblyContainerBuilder
 {
     //TODO: Shared api for libs
-    public IStaticAssemblyContainer Build();
+    public ICompiledAssemblyContainer Build();
 }

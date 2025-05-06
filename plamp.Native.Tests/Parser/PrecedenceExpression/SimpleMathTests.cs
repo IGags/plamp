@@ -29,7 +29,7 @@ public class SimpleMathTests
     [InlineData("1<2", typeof(LessNode), 1, 2)]
     [InlineData("1>2", typeof(GreaterNode), 1, 2)]
     [InlineData("1<=2", typeof(LessOrEqualNode), 1, 2)]
-    [InlineData("1>=2", typeof(GreaterOrEqualsNode), 1, 2)]
+    [InlineData("1>=2", typeof(GreaterOrEqualNode), 1, 2)]
     [InlineData("1^1", typeof(XorNode), 1, 1)]
     [InlineData("2%5", typeof(ModuloNode), 2, 5)]
     public void ParseBinaryExpression(

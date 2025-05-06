@@ -4,9 +4,9 @@ using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
-public class ConstructorComparer : IEqualityComparer<ConstructorNode>
+public class ConstructorComparer : IEqualityComparer<ConstructorCallNode>
 {
-    public bool Equals(ConstructorNode x, ConstructorNode y)
+    public bool Equals(ConstructorCallNode x, ConstructorCallNode y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;
@@ -15,7 +15,7 @@ public class ConstructorComparer : IEqualityComparer<ConstructorNode>
         return true;
     }
 
-    public int GetHashCode(ConstructorNode obj)
+    public int GetHashCode(ConstructorCallNode obj)
     {
         var hashCode = new HashCode();
         hashCode.Add(obj.Type);

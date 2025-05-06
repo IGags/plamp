@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using plamp.Abstractions.Compilation;
+using plamp.Abstractions.Compilation.Models;
 using plamp.Native.Parsing;
 
 namespace plamp.Native.Tests;

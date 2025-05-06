@@ -12,7 +12,7 @@ public class PlampStaticAssemblyContainerBuilder : IStaticAssemblyContainerBuild
 {
     private readonly List<AssemblyBuilderInfo> _builders = [];
 
-    public IStaticAssemblyContainer Build()
+    public ICompiledAssemblyContainer Build()
     {
         //TODO: shitty code
         var prepared = new List<PreparedAssembly>();
@@ -48,7 +48,7 @@ public class PlampStaticAssemblyContainerBuilder : IStaticAssemblyContainerBuild
             prepared.Add(new PreparedAssembly(builder.AssemblyBuilder.Assembly, builder.Alias, types.ToArray()));
         }
         
-        return new DefaultStaticAssemblyContainer(prepared.ToArray());
+        return new DefaultCompiledAssemblyContainer(prepared.ToArray());
     }
 
     public StaticAssemblyBuilder AddAssembly(System.Reflection.Assembly assembly, AssemblyName alias = null)

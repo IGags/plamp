@@ -6,6 +6,7 @@ using plamp.Abstractions.CompilerEmission;
 using plamp.Abstractions.FileLoading;
 using plamp.Abstractions.Parsing;
 using plamp.Abstractions.Validation;
+using plamp.Compiler.Util;
 
 namespace plamp.Compiler;
 
@@ -20,14 +21,14 @@ internal class PlampCompiler<TLoaderFactory, TLoader>
     
     private readonly ResourceScheduler<ICompiledEmitter> _emitterScheduler;
     
-    private readonly IStaticAssemblyContainer _staticAssemblyContainer;
+    private readonly ICompiledAssemblyContainer _compiledAssemblyContainer;
     
     public PlampCompiler(
         TLoaderFactory loaderFactory,
         List<IValidatorFactory> validators,
         ICompiledEmitterFactory compiledEmitterFactory,
         IParserFactory parserFactory,
-        IStaticAssemblyContainer staticAssemblyContainer) : base(loaderFactory)
+        ICompiledAssemblyContainer compiledAssemblyContainer) : base(loaderFactory)
     {
         _validators = validators
             .Select(x => ResourceScheduler<IValidator>.CreateScheduler(x.CreateValidator, x))
@@ -36,7 +37,7 @@ internal class PlampCompiler<TLoaderFactory, TLoader>
         _emitterScheduler =
             ResourceScheduler<ICompiledEmitter>.CreateScheduler(compiledEmitterFactory.CreateCompiledEmitter,
                 compiledEmitterFactory);
-        _staticAssemblyContainer = staticAssemblyContainer;
+        _compiledAssemblyContainer = compiledAssemblyContainer;
     }
 
     public override TLoader CreateCompilation()
@@ -46,6 +47,6 @@ internal class PlampCompiler<TLoaderFactory, TLoader>
                 _parserScheduler,
                 _validators,
                 _emitterScheduler,
-                _staticAssemblyContainer));
+                _compiledAssemblyContainer));
     }
 }

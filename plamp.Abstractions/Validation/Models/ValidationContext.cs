@@ -7,7 +7,21 @@ using plamp.Abstractions.Ast.Node;
 namespace plamp.Abstractions.Validation.Models;
 
 public record ValidationContext
-{
+{ 
+    public ISymbolTable Table { get; init; }
+    
+    public NodeBase Ast { get; init; }
+
+    public List<PlampException> Exceptions { get; init; } = [];
+    
+    public ICompiledAssemblyContainer AssemblyContainer { get; init; }
+    
+    public AssemblyName AssemblyName { get; init; }
+    
+    public string FileName { get; init; }
+    
+    public IReadOnlyList<NodeBase> CurrentCompilationSymbols { get; init; }
+    
     public ValidationContext(ValidationContext other)
     {
         Table = other.Table;
@@ -16,17 +30,6 @@ public record ValidationContext
         AssemblyContainer = other.AssemblyContainer;
         AssemblyName = other.AssemblyName;
         FileName = other.FileName;
+        CurrentCompilationSymbols = other.CurrentCompilationSymbols;
     }
-    
-    public ISymbolTable Table { get; init; }
-    
-    public NodeBase Ast { get; init; }
-    
-    public List<PlampException> Exceptions { get; init; }
-    
-    public IStaticAssemblyContainer AssemblyContainer { get; init; }
-    
-    public AssemblyName AssemblyName { get; init; }
-    
-    public string FileName { get; init; }
 }

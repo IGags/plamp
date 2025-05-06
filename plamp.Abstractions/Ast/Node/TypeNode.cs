@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
@@ -6,6 +7,8 @@ public class TypeNode : NodeBase
 {
     public NodeBase TypeName { get; }
     public List<NodeBase> InnerGenerics { get; }
+
+    public virtual Type Symbol { get; } = null;
 
     public TypeNode(NodeBase typeName, List<NodeBase> innerGenerics)
     {

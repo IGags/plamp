@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Compilation;
+using plamp.Abstractions.Compilation.Models;
 using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
 

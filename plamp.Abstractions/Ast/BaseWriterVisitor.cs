@@ -1,6 +1,7 @@
 namespace plamp.Abstractions.Ast;
 
-public class BaseWriterVisitor
+//TODO: weavers
+public class BaseWriterVisitor<TContext> : BaseVisitor<TContext>
 {
     
 }

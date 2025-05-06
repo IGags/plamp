@@ -1,4 +1,5 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System.Threading;
+using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Validation;
@@ -8,7 +9,7 @@ namespace plamp.Validators.BasicSemanticsValidators;
 
 public class ReturnStatementValidator : BaseValidator<ValidationContext>
 {
-    public override ValidationResult Validate(ValidationContext context)
+    public override ValidationResult Validate(ValidationContext context, CancellationToken cancellationToken)
     {
         VisitInternal(context.Ast, context);
         return new ValidationResult() { Exceptions = context.Exceptions };

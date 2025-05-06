@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Threading;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Validation;
 using plamp.Abstractions.Validation.Models;
@@ -15,7 +17,7 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
 {
     //IDK need reuse or no need => do single usable
     //Do not thread safe
-    public override ValidationResult Validate(ValidationContext context)
+    public override ValidationResult Validate(ValidationContext context, CancellationToken cancellationToken)
     {
         var validationContext = new ImpossibleTreeValidatorContext(context)
         {
@@ -106,6 +108,11 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
 
     #region Body level
 
+    protected override VisitResult VisitBody(BodyNode node, ImpossibleTreeValidatorContext context)
+    {
+        //TODO: Complete visitor
+    }
+
     protected override VisitResult VisitFor(ForNode node, ImpossibleTreeValidatorContext context)
     {
         if (node.Body == null)
@@ -182,7 +189,7 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
             case MemberAccessNode:
             case CallNode:
             case IndexerNode:
-            case ConstructorNode:
+            case ConstructorCallNode:
             case CastNode:
                 break;
             default:
@@ -389,21 +396,21 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
         return VisitResult.Continue;
     }
 
-    protected override VisitResult VisitConstructor(ConstructorNode node, ImpossibleTreeValidatorContext context)
+    protected override VisitResult VisitConstructor(ConstructorCallNode callNode, ImpossibleTreeValidatorContext context)
     {
-        if (node.Type == null)
+        if (callNode.Type == null)
         {
             var exceptionRecord = PlampSemanticsExceptions.ConstructorMustHaveCreatingType();
-            SetExceptionToNode(exceptionRecord, node, context);
+            SetExceptionToNode(exceptionRecord, callNode, context);
         }
 
-        if (node.Type is not TypeNode)
+        if (callNode.Type is not TypeNode)
         {
             var exceptionRecord = PlampSemanticsExceptions.ConstructorTargetMustBeType();
-            SetExceptionToNode(exceptionRecord, node.Type, context);
+            SetExceptionToNode(exceptionRecord, callNode.Type, context);
         }
         
-        ValidateArgsInMemberInteraction(node, node.Args,
+        ValidateArgsInMemberInteraction(callNode, callNode.Args,
             PlampSemanticsExceptions.ArgNodeMustNotBeNull(),
             PlampSemanticsExceptions.ConstructorArgTypeMismatch(),
             context);
@@ -508,16 +515,16 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
 
     protected override VisitResult VisitUse(UseNode node, ImpossibleTreeValidatorContext context)
     {
-        if (node.Assembly == null)
+        if (node.Namespace == null)
         {
             var exceptionRecord = PlampSemanticsExceptions.UseMustHasTargetModule();
             SetExceptionToNode(exceptionRecord, node, context);
         }
 
-        if (node.Assembly is not MemberNode or MemberAccessNode)
+        if (node.Namespace is not MemberNode or MemberAccessNode)
         {
             var exceptionRecord = PlampSemanticsExceptions.UseTargetMustBeMember();
-            SetExceptionToNode(exceptionRecord, node.Assembly, context);
+            SetExceptionToNode(exceptionRecord, node.Namespace, context);
         }
         
         return VisitResult.Continue;
@@ -664,7 +671,7 @@ public class ImpossibleTreeValidator : BaseValidator<ImpossibleTreeValidatorCont
                 if(bin is BaseAssignNode) break;
                 return VisitResult.Continue;
             case CallNode:
-            case ConstructorNode:
+            case ConstructorCallNode:
             case IndexerNode:
             case MemberAccessNode:
             case CastNode:

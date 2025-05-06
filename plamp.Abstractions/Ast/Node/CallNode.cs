@@ -1,15 +1,21 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace plamp.Abstractions.Ast.Node;
 
 public class CallNode : NodeBase
 {
     public NodeBase From { get; }
+    
+    public NodeBase MethodName { get; }
     public List<NodeBase> Args { get; }
 
-    public CallNode(NodeBase from, List<NodeBase> args)
+    public virtual MethodInfo Symbol { get; } = null;
+
+    public CallNode(NodeBase from, NodeBase methodName, List<NodeBase> args)
     {
         From = from;
+        MethodName = methodName;
         Args = args ?? [];
     }
 

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.ObjectPool;
 using plamp.Abstractions;
 
-namespace plamp.Compiler;
+namespace plamp.Compiler.Util;
 
 public class ResourceScheduler<TResource> where TResource : class
 {

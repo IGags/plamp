@@ -6,6 +6,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Ast.NodeComparers.Common;
 
@@ -79,9 +80,9 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!constComparer.Equals(node, (LiteralNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case ConstructorNode node:
+                case ConstructorCallNode node:
                     var constructorComparer = new ConstructorComparer();
-                    if (!constructorComparer.Equals(node, (ConstructorNode)second)) return false;
+                    if (!constructorComparer.Equals(node, (ConstructorCallNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
                 case ContinueNode node:
@@ -162,6 +163,11 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                 case BodyNode node:
                     var bodyComparer = new BodyComparer();
                     if(!bodyComparer.Equals(node, (BodyNode)second)) return false;
+                    PushChildren(comparisionStack, node, second);
+                    return true;
+                case TypeDefinitionNode node:
+                    var typeDefinitionComparer = new TypeDefinitionComparer();
+                    if (!typeDefinitionComparer.Equals(node, (TypeDefinitionNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
             }

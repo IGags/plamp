@@ -4,15 +4,15 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class UseNode : NodeBase
 {
-    public NodeBase Assembly { get; }
+    public NodeBase Namespace { get; }
 
-    public UseNode(NodeBase assembly)
+    public UseNode(NodeBase @namespace)
     {
-        Assembly = assembly;
+        Namespace = @namespace;
     }
 
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return Assembly;
+        yield return Namespace;
     }
 }

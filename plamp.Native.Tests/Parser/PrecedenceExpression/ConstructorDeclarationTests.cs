@@ -18,7 +18,7 @@ public class ConstructorDeclarationTests
         var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("int"),
                     null),
@@ -36,7 +36,7 @@ public class ConstructorDeclarationTests
         var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("List"),
                     [
@@ -58,7 +58,7 @@ public class ConstructorDeclarationTests
         var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("string"),
                     null),

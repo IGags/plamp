@@ -1,8 +1,10 @@
+using System.Threading;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Ast.NodeComparers;
 using plamp.Native.Parsing;
@@ -28,7 +30,7 @@ public class ParserGeneralTests
         var source = ParserTestHelper.GetSourceCode(code);
         var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(source, assembly);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -105,7 +107,7 @@ public class ParserGeneralTests
         var source = ParserTestHelper.GetSourceCode(code);
         var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(source, assembly);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -281,7 +283,7 @@ public class ParserGeneralTests
         var parser = new PlampNativeParser();
         var source = ParserTestHelper.GetSourceCode(code);
         var assembly = ParserTestHelper.AssemblyName;
-        var result = parser.Parse(source, assembly);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Single(result.NodeList);
         Assert.Empty(result.Exceptions);
         var expressionShould
@@ -395,7 +397,7 @@ public class ParserGeneralTests
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("result")),
-                                    new ConstructorNode(
+                                    new ConstructorCallNode(
                                         new TypeNode(
                                             new MemberNode("List"),
                                             [
@@ -539,7 +541,7 @@ public class ParserGeneralTests
         var parser = new PlampNativeParser();
         var source = ParserTestHelper.GetSourceCode(code);
         var assembly = ParserTestHelper.AssemblyName;
-        var result = parser.Parse(source, assembly);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Equal(5, result.NodeList.Count);
         var expressionShould1
@@ -559,7 +561,7 @@ public class ParserGeneralTests
                         new VariableDefinitionNode(
                             null,
                             new MemberNode("im")),
-                        new ConstructorNode(
+                        new ConstructorCallNode(
                             new TypeNode(
                                 new MemberNode("Image"),
                                 null),
