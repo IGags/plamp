@@ -9,5 +9,6 @@ public record SignatureBuildingContext(
     IAssemblyBuilderCreator AssemblyBuilderCreator,
     ICompiledAssemblyContainer CompiledAssemblyContainer,
     ISymbolTable SymbolTable,
+    string FileName,
     AssemblyName AssemblyName,
     string ModuleName = null);
