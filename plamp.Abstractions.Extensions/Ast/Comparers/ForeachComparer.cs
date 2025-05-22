@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using plamp.Abstractions.Ast.Node.Body;
-using plamp.Abstractions.Ast.Node.Extensions;
+using plamp.Abstractions.Extensions.Ast.Node;
 
-namespace plamp.Abstractions.Ast.NodeComparers.Common;
+namespace plamp.Abstractions.Extensions.Ast.Comparers;
 
 public class ForeachComparer : IEqualityComparer<ForeachNode>
 {

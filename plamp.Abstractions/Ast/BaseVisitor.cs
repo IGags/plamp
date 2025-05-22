@@ -4,7 +4,6 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
 
 namespace plamp.Abstractions.Ast;
@@ -61,8 +60,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitCondition(conditionNode, context);
             case DefNode defNode:
                 return VisitDef(defNode, context);
-            case ForNode forNode:
-                return VisitFor(forNode, context);
             case WhileNode whileNode:
                 return VisitWhile(whileNode, context);
             case BreakNode breakNode:
@@ -79,8 +76,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitConstructor(constructorNode, context);
             case EmptyNode emptyNode:
                 return VisitEmpty(emptyNode, context);
-            case IndexerNode indexerNode:
-                return VisitIndexer(indexerNode, context);
             case MemberNode memberNode:
                 return VisitMember(memberNode, context);
             case ParameterNode parameterNode:
@@ -95,8 +90,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitMemberAccess(memberAccessNode, context);
             case LiteralNode constNode:
                 return VisitLiteral(constNode, context);
-            case ForeachNode foreachNode:
-                return VisitForeach(foreachNode, context);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context);
             case TypeDefinitionNode typeDefinitionNode:
@@ -174,42 +167,16 @@ public abstract class BaseVisitor<TContext>
     {
         switch (node)
         {
-            case AndAndAssignNode andAndAssignNode:
-                return VisitAndAndAssign(andAndAssignNode, context);
-            case OrAndAssignNode orAndAssignNode:
-                return VisitOrAndAssign(orAndAssignNode, context);
-            case XorAndAssignNode xorAndAssignNode:
-                return VisitXorAndAssign(xorAndAssignNode, context);
-            case AddAndAssignNode addAndAssignNode:
-                return VisitAddAndAssign(addAndAssignNode, context);
             case AssignNode assignNode:
                 return VisitAssign(assignNode, context);
-            case DivAndAssignNode divAndAssignNode:
-                return VisitDivAndAssign(divAndAssignNode, context);
-            case ModuloAndAssignNode moduloAndAssignNode:
-                return VisitModuloAndAssign(moduloAndAssignNode, context);
-            case MulAndAssignNode mulAndAssignNode:
-                return VisitMulAndAssign(mulAndAssignNode, context);
-            case SubAndAssignNode subAndAssignNode:
-                return VisitSubAndAssign(subAndAssignNode, context);
         }
 
         return VisitDefault(node, context);
     }
 
     protected virtual VisitResult VisitNull(TContext context) => VisitResult.Continue;
-
-    protected virtual VisitResult VisitAddAndAssign(AddAndAssignNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitAssign(AssignNode node, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitDivAndAssign(DivAndAssignNode node, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitModuloAndAssign(ModuloAndAssignNode node, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitMulAndAssign(MulAndAssignNode node, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitSubAndAssign(SubAndAssignNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitAnd(AndNode node, TContext context) => VisitResult.Continue;
     
@@ -245,8 +212,6 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitDef(DefNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitFor(ForNode node, TContext context) => VisitResult.Continue;
-    
     protected virtual VisitResult VisitWhile(WhileNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitBreak(BreakNode node, TContext context) => VisitResult.Continue;
@@ -275,8 +240,6 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitEmpty(EmptyNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitIndexer(IndexerNode node, TContext context) => VisitResult.Continue;
-    
     protected virtual VisitResult VisitMember(MemberNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitParameter(ParameterNode node, TContext context) => VisitResult.Continue;
@@ -291,19 +254,11 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitLiteral(LiteralNode literalNode, TContext context) => VisitResult.Continue;
 
-    protected virtual VisitResult VisitAndAndAssign(AndAndAssignNode andAndAssign, TContext context) => VisitResult.Continue;
-
-    protected virtual VisitResult VisitOrAndAssign(OrAndAssignNode orAndAssign, TContext context) => VisitResult.Continue;
-
-    protected virtual VisitResult VisitXorAndAssign(XorAndAssignNode xorAndAssign, TContext context) => VisitResult.Continue;
-
     protected virtual VisitResult VisitBitwiseAnd(BitwiseAndNode bitwiseAnd, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode bitwiseOr, TContext context) => VisitResult.Continue;
 
     protected virtual VisitResult VisitXor(XorNode xor, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitForeach(ForeachNode node, TContext context) => VisitResult.Continue;
 
     protected virtual VisitResult VisitTypeDefinition(TypeDefinitionNode node, TContext context) => VisitResult.Continue;
     

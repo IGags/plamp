@@ -1,12 +1,14 @@
+using System.Reflection.Emit;
+
 namespace plamp.ILCodeEmitters;
 
 internal class LocalVarStack
 {
-    private readonly Stack<List<KeyValuePair<string, Type>>> _localVars = [];
+    private readonly Stack<List<KeyValuePair<string, LocalBuilder>>> _localVars = [];
 
-    private readonly Dictionary<string, Type> _vars = [];
+    private readonly Dictionary<string, LocalBuilder> _vars = [];
 
-    private List<KeyValuePair<string, Type>> _currentScope = [];
+    private List<KeyValuePair<string, LocalBuilder>> _currentScope = [];
     
     public void BeginScope()
     {
@@ -27,11 +29,11 @@ internal class LocalVarStack
     
     public bool Contains(string name) => _vars.ContainsKey(name);
 
-    public void Add(string name, Type type)
+    public void Add(string name, LocalBuilder type)
     {
         _vars[name] = type;
         _currentScope.Add(new (name, type));
     }
     
-    public bool TryGetValue(string name, out Type? type) => _vars.TryGetValue(name, out type);
+    public bool TryGetValue(string name, out LocalBuilder builder) => _vars.TryGetValue(name, out builder);
 }

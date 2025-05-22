@@ -1,220 +1,207 @@
 using System.Reflection;
 using System.Reflection.Emit;
-using plamp.Abstractions.Assemblies;
-using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Compilation.Models.ApiGeneration;
 using plamp.Abstractions.CompilerEmission;
 
 namespace plamp.ILCodeEmitters;
 
 public class DefaultIlCodeEmitter : IIlCodeEmitter
 {
-    public Task<GeneratorPair> EmitMethodBodyAsync(
-        MethodEmitterPair currentEmitterPair, 
-        ICompiledAssemblyContainer compiledAssemblyContainer,
-        ISymbolTable symbolTable,
-        CancellationToken cancellationToken = default)
+    public Task EmitMethodBodyAsync(CompilerEmissionContext context, CancellationToken cancellationToken = default)
     {
+        var argInfoList = context.MethodBuilder.GetParameters();
         var varStack = new LocalVarStack();
-        var context = new EmissionContext(varStack, currentEmitterPair.MethodDefinition.Args);
+        var generator = context.MethodBuilder.GetILGenerator();
+        var emissionContext = new EmissionContext(varStack, argInfoList, generator, []);
         varStack.BeginScope();
-        var actor = new SequentialActor();
-        EmitExpression(actor, currentEmitterPair.MethodDefinition.Body, context);
+        EmitExpression(context.MethodBody, emissionContext);
         varStack.EndScope();
-        
-        var generator = currentEmitterPair.MethodBuilder.GetILGenerator();
-        return Task.FromResult(new GeneratorPair(generator, actor));
+        return Task.CompletedTask;
     }
 
     private void EmitExpression(
-        SequentialActor actor,
         NodeBase expression,
         EmissionContext context)
     {
         switch (expression)
         {
             case BodyNode bodyNode:
-                EmitBody(actor, bodyNode, context);
+                EmitBody(bodyNode, context);
                 break;
             case BaseBinaryNode binaryNode:
-                EmitBaseBinary(actor, binaryNode, context);
+                EmitBaseBinary(binaryNode, context);
                 break;
             case BaseUnaryNode unaryNode:
-                EmitUnary(actor, unaryNode, context);
+                EmitUnary(unaryNode, context);
                 break;
             case CastNode castNode:
-                EmitCast(actor, castNode, context);
+                EmitCast(castNode, context);
                 break;
             case ConditionNode conditionNode:
-                EmitCondition(actor, conditionNode, context);
+                EmitCondition(conditionNode, context);
                 break;
             case WhileNode whileNode:
-                EmitWhileLoop(actor, whileNode, context);
+                EmitWhileLoop(whileNode, context);
                 break;
             case BreakNode:
-                EmitBreak(actor, context);
+                EmitBreak(context);
                 break;
             case ContinueNode:
-                EmitContinue(actor, context);
+                EmitContinue(context);
                 break;
             case ReturnNode returnNode:
-                EmitReturn(actor, returnNode, context);
+                EmitReturn(returnNode, context);
                 break;
             case CallNode callNode:
-                EmitCall(actor, callNode, context);
+                EmitCall(callNode, context);
                 break;
             case ConstructorCallNode constructorNode:
-                EmitCallCtor(actor, constructorNode, context);
+                EmitCallCtor(constructorNode, context);
                 break;
             case VariableDefinitionNode variableDefinitionNode:
-                EmitVariableDefinition(actor, variableDefinitionNode, context);
+                EmitVariableDefinition(variableDefinitionNode, context);
                 break;
             case LiteralNode literalNode:
-                EmitLiteral(actor, literalNode);
+                EmitLiteral(literalNode, context);
                 break;
             case MemberAccessNode memberAccessNode:
-                EmitMemberAccess(actor, memberAccessNode, context);
+                EmitMemberAccess(memberAccessNode, context);
                 break;
         }
     }
 
     private void EmitBody(
-        SequentialActor actor,
         BodyNode body, 
         EmissionContext context)
     {
         context.LocalVarStack.BeginScope();
-        actor.Add(static g => g.BeginScope());
+        context.Generator.BeginScope();
         foreach (var instruction in body.InstructionList)
         {
             if(instruction == null) throw new InvalidOperationException("Cannot emit null instruction");
-            EmitExpression(actor, instruction, context);
+            EmitExpression(instruction, context);
         }
-        actor.Add(static g => g.EndScope());
+        context.Generator.EndScope();
         context.LocalVarStack.EndScope();
     }
     
-    private void EmitReturn(SequentialActor actor, ReturnNode returnNode, EmissionContext context)
+    private void EmitReturn(ReturnNode returnNode, EmissionContext context)
     {
-        if(returnNode.ReturnValue != null) EmitGetMember(actor, returnNode.ReturnValue, context);
-        actor.Add(static g => g.Emit(OpCodes.Ret));
+        if(returnNode.ReturnValue != null) EmitGetMember(returnNode.ReturnValue, context);
+        context.Generator.Emit(OpCodes.Ret);
     }
     
     #region Looping
 
-    private void EmitWhileLoop(SequentialActor actor, WhileNode whileNide, EmissionContext context)
+    private void EmitWhileLoop(WhileNode whileNide, EmissionContext context)
     {
         if(whileNide.Body is not BodyNode body) return;
-        var startLabel = context.NextLabel();
-        actor.DefineLabel(startLabel);
-        actor.Add(g => g.MarkLabel(actor.Labels[startLabel]));
+        var startLabelName = CreateLabel(context);
+        context.Generator.MarkLabel(context.Labels[startLabelName]);
 
-        var endLabel = context.NextLabel();
-        actor.DefineLabel(endLabel);
+        var endLabelName = CreateLabel(context);
         
-        EmitExpression(actor, whileNide.Condition, context);
-        actor.Add(g => g.Emit(OpCodes.Brfalse, actor.Labels[endLabel]));
+        EmitExpression(whileNide.Condition, context);
+        context.Generator.Emit(OpCodes.Brfalse, context.Labels[endLabelName]);
         
-        context.EnterCycleContext(startLabel, endLabel);
-        EmitBody(actor, body, context);
+        context.EnterCycleContext(startLabelName, endLabelName);
+        EmitBody(body, context);
         context.ExitCycleContext();
         
-        actor.Add(g => g.Emit(OpCodes.Br, actor.Labels[startLabel]));
-        actor.Add(g => g.MarkLabel(actor.Labels[endLabel]));
+        context.Generator.Emit(OpCodes.Br, context.Labels[startLabelName]);
+        context.Generator.MarkLabel(context.Labels[endLabelName]);
     }
 
-    private void EmitBreak(SequentialActor actor, EmissionContext context)
+    private void EmitBreak(EmissionContext context)
     {
         var endLabel = context.GetCurrentCycleContext()?.EndLabel;
         if (endLabel == null) return;
-        actor.Add(g => g.Emit(OpCodes.Br, actor.Labels[endLabel]));
+        context.Generator.Emit(OpCodes.Br, context.Labels[endLabel]);
     }
 
-    private void EmitContinue(SequentialActor actor, EmissionContext context)
+    private void EmitContinue(EmissionContext context)
     {
         var startLabel = context.GetCurrentCycleContext()?.StartLabel;
         if (startLabel == null) return;
-        actor.Add(g => g.Emit(OpCodes.Br, actor.Labels[startLabel]));
+        context.Generator.Emit(OpCodes.Br, context.Labels[startLabel]);
     }
 
     #endregion
 
     #region Conditional
 
-    private void EmitCondition(SequentialActor actor, ConditionNode conditionNode, EmissionContext context)
+    private void EmitCondition(ConditionNode conditionNode, EmissionContext context)
     {
         var endLab = context.NextLabel();
-        EmitClause(actor, conditionNode.IfClause, context, endLab);
+        EmitClause(conditionNode.IfClause, context, endLab);
         
         foreach (var elifClause in conditionNode.ElifClauseList)
         {
-            EmitClause(actor, elifClause, context, endLab);
+            EmitClause(elifClause, context, endLab);
         }
 
         if (conditionNode.ElseClause != null)
         {
-            EmitBody(actor, conditionNode.ElseClause, context);
+            EmitBody(conditionNode.ElseClause, context);
         }
     }
 
-    private void EmitClause(SequentialActor actor, ClauseNode node, EmissionContext context, string endLab)
+    private void EmitClause(ClauseNode node, EmissionContext context, string conditionEndLab)
     {
-        EmitExpression(actor, node.Predicate, context);
-        var currentClauseEnd = context.NextLabel();
-        actor.DefineLabel(currentClauseEnd);
-        actor.Add(g => g.Emit(OpCodes.Brfalse, actor.Labels[currentClauseEnd]));
+        EmitExpression(node.Predicate, context);
+        var clauseEndLabel = CreateLabel(context);
+        context.Generator.Emit(OpCodes.Brfalse, context.Labels[clauseEndLabel]);
         if(node.Body is not BodyNode body) return;
-        EmitBody(actor, body, context);
-        actor.Add(g => g.Emit(OpCodes.Br, actor.Labels[endLab]));
-        actor.Add(g => g.MarkLabel(actor.Labels[currentClauseEnd]));
+        EmitBody(body, context);
+        context.Generator.Emit(OpCodes.Br, context.Labels[conditionEndLab]);
+        context.Generator.MarkLabel(context.Labels[clauseEndLabel]);
     }
 
     #endregion
     
     #region Unary operators
 
-    private void EmitUnary(SequentialActor actor, BaseUnaryNode unaryBase, EmissionContext context)
+    private void EmitUnary(BaseUnaryNode unaryBase, EmissionContext context)
     {
         switch (unaryBase)
         {
             case PrefixIncrementNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Ldc_I4_1));
-                actor.Add(static g => g.Emit(OpCodes.Add_Ovf));
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Ldc_I4_1);
+                context.Generator.Emit(OpCodes.Add_Ovf);
                 break;
             case PrefixDecrementNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Ldc_I4_1));
-                actor.Add(static g => g.Emit(OpCodes.Sub_Ovf));
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Ldc_I4_1);
+                context.Generator.Emit(OpCodes.Sub_Ovf);
                 break;
             case PostfixDecrementNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Dup));
-                actor.Add(static g => g.Emit(OpCodes.Ldc_I4_1));
-                actor.Add(static g => g.Emit(OpCodes.Sub_Ovf));
-                EmitSetMember(actor, unaryBase.Inner, context);
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Ldc_I4_1);
+                context.Generator.Emit(OpCodes.Sub_Ovf);
+                EmitSetMember(unaryBase.Inner, context);
                 break;
             case PostfixIncrementNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Dup));
-                actor.Add(static g => g.Emit(OpCodes.Ldc_I4_1));
-                actor.Add(static g => g.Emit(OpCodes.Add_Ovf));
-                EmitSetMember(actor, unaryBase.Inner, context);
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Ldc_I4_1);
+                context.Generator.Emit(OpCodes.Add_Ovf);
+                EmitSetMember(unaryBase.Inner, context);
                 break;
             case NotNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Ldc_I4_0));
-                actor.Add(static g => g.Emit(OpCodes.Ceq));
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Ldc_I4_0);
+                context.Generator.Emit(OpCodes.Ceq);
                 break;
             case UnaryMinusNode:
-                EmitGetMember(actor, unaryBase.Inner, context);
-                actor.Add(static g => g.Emit(OpCodes.Neg));
+                EmitGetMember(unaryBase.Inner, context);
+                context.Generator.Emit(OpCodes.Neg);
                 break;
         }
     }
@@ -223,203 +210,200 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     
     #region Binary operators
 
-    private void EmitBaseBinary(SequentialActor actor, BaseBinaryNode binaryNode, EmissionContext context)
+    private void EmitBaseBinary(BaseBinaryNode binaryNode, EmissionContext context)
     {
-        EmitGetMember(actor, binaryNode.Left, context);
-        EmitGetMember(actor, binaryNode.Right, context);
+        EmitGetMember(binaryNode.Left, context);
+        EmitGetMember(binaryNode.Right, context);
         switch (binaryNode)
         {
             case PlusNode:
-                EmitPlus(actor);
+                EmitPlus(context);
                 break;
             case MinusNode:
-                EmitMinus(actor);
+                EmitMinus(context);
                 break;
             case MultiplyNode:
-                EmitMultiply(actor);
+                EmitMultiply(context);
                 break;
             case DivideNode:
-                EmitDivide(actor);
+                EmitDivide(context);
                 break;
             case BitwiseAndNode:
-                EmitBitwiseAnd(actor);
+                EmitBitwiseAnd(context);
                 break;
             case BitwiseOrNode:
-                EmitBitwiseOr(actor);
+                EmitBitwiseOr(context);
                 break;
             case AndNode:
-                EmitAndNode(actor);
+                EmitAndNode(context);
                 break;
             case OrNode:
-                EmitOrNode(actor);
+                EmitOrNode(context);
                 break;
             case EqualNode:
-                EmitEqual(actor);
+                EmitEqual(context);
                 break;
             case GreaterNode:
-                EmitGreater(actor);
+                EmitGreater(context);
                 break;
             case GreaterOrEqualNode:
-                EmitGreaterOrEqual(actor);
+                EmitGreaterOrEqual(context);
                 break;
             case LessNode:
-                EmitLess(actor);
+                EmitLess(context);
                 break;
             case LessOrEqualNode:
-                EmitLessOrEqual(actor);
+                EmitLessOrEqual(context);
                 break;
             case NotEqualNode:
-                EmitNotEqual(actor);
+                EmitNotEqual(context);
                 break;
             case ModuloNode:
-                EmitModulo(actor);
+                EmitModulo(context);
                 break;
             case XorNode:
-                EmitXor(actor);
+                EmitXor(context);
                 break;
             case BaseAssignNode assignNode:
-                EmitAssign(actor, assignNode, context);
+                EmitAssign(assignNode, context);
                 break;
         }
     }
 
-    private void EmitAssign(SequentialActor actor, BaseAssignNode assignNode, EmissionContext context)
+    private void EmitAssign(BaseAssignNode assignNode, EmissionContext context)
     {
-        EmitExpression(actor, assignNode.Right, context);
+        EmitExpression(assignNode.Right, context);
         switch (assignNode)
         {
             case AssignNode:
-                EmitSetMember(actor, assignNode.Left, context);
+                EmitSetMember(assignNode.Left, context);
                 break;
         }
     }
     
-    private void EmitGreater(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Cgt));
+    private void EmitGreater(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Cgt);
 
-    private void EmitGreaterOrEqual(SequentialActor actor)
+    private void EmitGreaterOrEqual(EmissionContext context)
     {
-        actor.Add(static g => g.Emit(OpCodes.Clt));
-        actor.Add(static g => g.Emit(OpCodes.Ldc_I4_0));
+        context.Generator.Emit(OpCodes.Clt);
+        context.Generator.Emit(OpCodes.Ldc_I4_0);
     }
 
-    private void EmitLess(SequentialActor actor) 
-        => actor.Add(static g => g.Emit(OpCodes.Clt));
+    private void EmitLess(EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Clt);
 
-    private void EmitLessOrEqual(SequentialActor actor)
+    private void EmitLessOrEqual(EmissionContext context)
     {
-        actor.Add(static g => g.Emit(OpCodes.Cgt));
-        actor.Add(static g => g.Emit(OpCodes.Ldc_I4_0));
-        actor.Add(static g => g.Emit(OpCodes.Ceq));
+        context.Generator.Emit(OpCodes.Cgt);
+        context.Generator.Emit(OpCodes.Ldc_I4_0);
+        context.Generator.Emit(OpCodes.Ceq);
     }
 
-    private void EmitNotEqual(SequentialActor actor)
+    private void EmitNotEqual(EmissionContext context)
     {
-        actor.Add(static g => g.Emit(OpCodes.Ceq));
-        actor.Add(static g => g.Emit(OpCodes.Ldc_I4_0));
-        actor.Add(static g => g.Emit(OpCodes.Ceq));
+        context.Generator.Emit(OpCodes.Ceq);
+        context.Generator.Emit(OpCodes.Ldc_I4_0);
+        context.Generator.Emit(OpCodes.Ceq);
     }
 
-    private void EmitModulo(SequentialActor actor) 
-        => actor.Add(static g => g.Emit(OpCodes.Rem));
+    private void EmitModulo(EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Rem);
 
-    private void EmitXor(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Xor));
+    private void EmitXor(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Xor);
 
-    private void EmitEqual(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Ceq));
+    private void EmitEqual(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Ceq);
 
-    private void EmitPlus(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Add_Ovf));
+    private void EmitPlus(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Add_Ovf);
 
-    private void EmitMinus(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Sub_Ovf));
+    private void EmitMinus(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Sub_Ovf);
 
-    private void EmitMultiply(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Mul_Ovf));
+    private void EmitMultiply(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Mul_Ovf);
 
-    private void EmitDivide(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Div));
+    private void EmitDivide(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Div);
 
-    private void EmitBitwiseAnd(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.And));
+    private void EmitBitwiseAnd(EmissionContext context)
+        => context.Generator.Emit(OpCodes.And);
 
-    private void EmitBitwiseOr(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Or));
+    private void EmitBitwiseOr(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Or);
 
-    private void EmitAndNode(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Add));
+    private void EmitAndNode(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Add);
 
-    private void EmitOrNode(SequentialActor actor)
-        => actor.Add(static g => g.Emit(OpCodes.Or));
+    private void EmitOrNode(EmissionContext context)
+        => context.Generator.Emit(OpCodes.Or);
 
     #endregion
 
     #region Misc
 
-    private void EmitCast(SequentialActor actor, CastNode node, EmissionContext context)
+    private void EmitCast(CastNode node, EmissionContext context)
     {
-        EmitExpression(actor, node.Inner, context);
+        EmitExpression(node.Inner, context);
         var typ = GetTypeFromNode(node);
-        if (typ == typeof(long)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_I8));
-        else if (typ == typeof(ulong)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_U8));
-        else if (typ == typeof(int)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_I4));
-        else if (typ == typeof(uint)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_U4));
-        else if (typ == typeof(short)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_I2));
-        else if (typ == typeof(ushort)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_U2));
-        else if (typ == typeof(byte)) actor.Add(static g => g.Emit(OpCodes.Conv_Ovf_U1));
-        else if (typ == typeof(double)) actor.Add(static g => g.Emit(OpCodes.Conv_R8));
-        else if (typ == typeof(float)) actor.Add(static g => g.Emit(OpCodes.Conv_R4));
-        else actor.Add(g => g.Emit(OpCodes.Castclass, typ!));
+        if (typ == typeof(long)) context.Generator.Emit(OpCodes.Conv_Ovf_I8);
+        else if (typ == typeof(ulong)) context.Generator.Emit(OpCodes.Conv_Ovf_U8);
+        else if (typ == typeof(int)) context.Generator.Emit(OpCodes.Conv_Ovf_I4);
+        else if (typ == typeof(uint)) context.Generator.Emit(OpCodes.Conv_Ovf_U4);
+        else if (typ == typeof(short)) context.Generator.Emit(OpCodes.Conv_Ovf_I2);
+        else if (typ == typeof(ushort)) context.Generator.Emit(OpCodes.Conv_Ovf_U2);
+        else if (typ == typeof(byte)) context.Generator.Emit(OpCodes.Conv_Ovf_U1);
+        else if (typ == typeof(double)) context.Generator.Emit(OpCodes.Conv_R8);
+        else if (typ == typeof(float)) context.Generator.Emit(OpCodes.Conv_R4);
+        else context.Generator.Emit(OpCodes.Castclass, typ!);
     }
     
-    private void EmitLiteral(
-        SequentialActor actor,
-        LiteralNode literalNode)
+    private void EmitLiteral(LiteralNode literalNode, EmissionContext context)
     {
-        if (literalNode.Type == typeof(string)) actor.Add(g => g.Emit(OpCodes.Ldstr, (string)literalNode.Value));
-        else if (literalNode.Type == typeof(int)) actor.Add(g => g.Emit(OpCodes.Ldc_I4, (int)literalNode.Value));
-        else if (literalNode.Type == typeof(uint)) actor.Add(g => g.Emit(OpCodes.Ldc_I4, Convert.ToInt32((uint)literalNode.Value)));
-        else if (literalNode.Type == typeof(long)) actor.Add(g => g.Emit(OpCodes.Ldc_I8, (long)literalNode.Value));
-        else if (literalNode.Type == typeof(ulong)) actor.Add(g => g.Emit(OpCodes.Ldc_I8, Convert.ToInt64((ulong)literalNode.Value)));
-        else if (literalNode.Type == typeof(short)) actor.Add(g => g.Emit(OpCodes.Ldc_I4, (int)literalNode.Value));
-        else if (literalNode.Type == typeof(ushort)) actor.Add(g => g.Emit(OpCodes.Ldc_I4, (int)literalNode.Value));
-        else if (literalNode.Type == typeof(byte)) actor.Add(g => g.Emit(OpCodes.Ldc_I4, (int)literalNode.Value));
-        else if (literalNode.Type == typeof(float)) actor.Add(g => g.Emit(OpCodes.Ldc_R4, (float)literalNode.Value));
-        else if (literalNode.Type == typeof(double)) actor.Add(g => g.Emit(OpCodes.Ldc_R8, (double)literalNode.Value));
+        if (literalNode.Type == typeof(string)) context.Generator.Emit(OpCodes.Ldstr, (string)literalNode.Value);
+        else if (literalNode.Type == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalNode.Type == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToInt32((uint)literalNode.Value));
+        else if (literalNode.Type == typeof(long)) context.Generator.Emit(OpCodes.Ldc_I8, (long)literalNode.Value);
+        else if (literalNode.Type == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, Convert.ToInt64((ulong)literalNode.Value));
+        else if (literalNode.Type == typeof(short)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalNode.Type == typeof(ushort)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalNode.Type == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalNode.Type == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, (float)literalNode.Value);
+        else if (literalNode.Type == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, (double)literalNode.Value);
     }
 
     private void EmitVariableDefinition(
-        SequentialActor actor, 
         VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
         if(variableDefinitionNode.Type is not TypeNode type) return;
         if(variableDefinitionNode.Member is not MemberNode member) return;
-        context.LocalVarStack.Add(member.MemberName, type.Symbol);
-        actor.DeclareLocal(member.MemberName, type.Symbol);
+        var builder = context.Generator.DeclareLocal(type.Symbol);
+        context.LocalVarStack.Add(member.MemberName, builder);
     }
 
-    private void EmitCallCtor(SequentialActor actor, ConstructorCallNode constructorCallNode, EmissionContext context)
+    private void EmitCallCtor(ConstructorCallNode constructorCallNode, EmissionContext context)
     {
         if(constructorCallNode.Symbol == null) return;
         foreach (var arg in constructorCallNode.Args)
         {
-            EmitGetMember(actor, arg, context);
+            EmitGetMember(arg, context);
         }
         
-        actor.Add(g => g.Emit(OpCodes.Newobj, constructorCallNode.Symbol));
+        context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
     }
     
-    private void EmitCall(SequentialActor actor, CallNode callNode, EmissionContext context)
+    private void EmitCall(CallNode callNode, EmissionContext context)
     {
         if(callNode.Symbol == null) return;
-        actor.Add(g => g.Emit(OpCodes.Ldarg_0));
+        context.Generator.Emit(OpCodes.Ldarg_0);
         foreach (var arg in callNode.Args)
         {
-            EmitGetMember(actor, arg, context);
+            EmitGetMember(arg, context);
         }
-        EmitMethodCall(actor, callNode.Symbol);
+        EmitMethodCall(callNode.Symbol, context);
     }
 
     #endregion
@@ -428,96 +412,104 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.Symbol;
 
-    private void EmitMethodCall(SequentialActor actor, MethodInfo methodInfo)
+    private void EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
     {
-        if(methodInfo.IsVirtual) actor.Add(g => g.Emit(OpCodes.Callvirt, methodInfo));
-        else actor.Add(g => g.Emit(OpCodes.Call, methodInfo));
+        var opcode = methodInfo.IsVirtual ? OpCodes.Callvirt : OpCodes.Call;
+        context.Generator.Emit(opcode, methodInfo);
     }
 
-    private bool TryEmitGetLocalVarOrArg(SequentialActor actor, MemberNode member, EmissionContext context)
+    private bool TryEmitGetLocalVarOrArg(MemberNode member, EmissionContext context)
     {
-        if (context.LocalVarStack.TryGetValue(member.MemberName, out _))
+        if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
-            actor.Add(g => g.Emit(OpCodes.Ldloc, actor.Locals[member.MemberName]));
+            context.Generator.Emit(OpCodes.Ldloc, builder);
             return true;
         }
 
-        ArgDefinition arg;
-        if ((arg = context.Arguments.FirstOrDefault()) == default) return false;
+        ParameterInfo? arg;
+        if ((arg = context.Arguments.FirstOrDefault()) == null) return false;
         
-        var ix = context.Arguments.IndexOf(arg);
-        actor.Add(g => g.Emit(OpCodes.Ldarg_S, ix + 1));
+        var ix = Array.IndexOf(context.Arguments, arg);
+        context.Generator.Emit(OpCodes.Ldarg_S, ix + 1);
         return true;
     }
 
-    private bool TryEmitSetLocalVarOrArg(SequentialActor actor, MemberNode member, EmissionContext context)
+    private bool TryEmitSetLocalVarOrArg(MemberNode member, EmissionContext context)
     {
-        if (context.LocalVarStack.TryGetValue(member.MemberName, out _))
+        if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
-            actor.Add(g => g.Emit(OpCodes.Stloc, actor.Locals[member.MemberName]));
+            context.Generator.Emit(OpCodes.Stloc, builder);
             return true;
         }
 
-        ArgDefinition arg;
-        if ((arg = context.Arguments.FirstOrDefault()) == default) return false;
+        ParameterInfo? arg;
+        if ((arg = context.Arguments.FirstOrDefault()) == null) return false;
         
-        var ix = context.Arguments.IndexOf(arg);
-        actor.Add(g => g.Emit(OpCodes.Starg_S, ix + 1));
+        var ix = Array.IndexOf(context.Arguments, arg);
+        context.Generator.Emit(OpCodes.Starg_S, ix + 1);
         return true;
     }
 
-    private void EmitGetMember(SequentialActor actor, NodeBase node, EmissionContext context)
+    private void EmitGetMember(NodeBase node, EmissionContext context)
     {
         if (node is LiteralNode literalNode)
         {
-            EmitLiteral(actor, literalNode);
+            EmitLiteral(literalNode, context);
             return;
         }
         
         if(node is not MemberNode memberNode) return;
-        if (TryEmitGetLocalVarOrArg(actor, memberNode, context)) return;
+        if (TryEmitGetLocalVarOrArg(memberNode, context)) return;
         if (memberNode.Symbol == null) return;
         switch (memberNode.Symbol)
         {
             case PropertyInfo pi:
                 var getter = pi.GetGetMethod();
                 if(getter == null) return;
-                EmitMethodCall(actor, getter);
+                EmitMethodCall(getter, context);
                 break;
             case FieldInfo fi:
-                actor.Add(g => g.Emit(OpCodes.Ldfld, fi));
+                context.Generator.Emit(OpCodes.Ldfld, fi);
                 break;
         }
     }
 
-    private void EmitSetMember(SequentialActor actor, NodeBase node, EmissionContext context)
+    private void EmitSetMember(NodeBase node, EmissionContext context)
     {
         if(node is not MemberNode memberNode) return;
-        if (TryEmitSetLocalVarOrArg(actor, memberNode, context)) return;
+        if (TryEmitSetLocalVarOrArg(memberNode, context)) return;
         if (memberNode.Symbol == null) return;
         switch (memberNode.Symbol)
         {
             case PropertyInfo pi:
                 var setter = pi.GetSetMethod();
                 if(setter == null) return;
-                EmitMethodCall(actor, setter);
+                EmitMethodCall(setter, context);
                 break;
             case FieldInfo fi:
-                actor.Add(g => g.Emit(OpCodes.Stfld, fi));
+                context.Generator.Emit(OpCodes.Stfld, fi);
                 break;
         }
     }
     
     private void EmitMemberAccess(
-        SequentialActor actor, 
         MemberAccessNode memberAccessNode, 
         EmissionContext context)
     {
         if(memberAccessNode.From is not MemberNode memberFrom) return;
         if(memberAccessNode.Member is not MemberNode member) return;
-        EmitGetMember(actor, memberFrom, context);
-        EmitGetMember(actor, member, context);
+        EmitGetMember(memberFrom, context);
+        EmitGetMember(member, context);
     }
 
     #endregion
+    
+    //TODO: жидко
+    private string CreateLabel(EmissionContext context)
+    {
+        var label = context.Generator.DefineLabel();
+        var name = Guid.NewGuid().ToString();
+        context.Labels[name] = label;
+        return name;
+    }
 }

@@ -1,10 +1,13 @@
-using plamp.Abstractions.Compilation.Models.ApiGeneration;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace plamp.ILCodeEmitters;
 
 internal record EmissionContext(
     LocalVarStack LocalVarStack,
-    List<ArgDefinition> Arguments)
+    ParameterInfo[] Arguments,
+    ILGenerator Generator,
+    Dictionary<string, Label> Labels)
 {
     private int _labelCounter;
     

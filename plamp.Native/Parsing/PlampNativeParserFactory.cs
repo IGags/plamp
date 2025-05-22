@@ -1,4 +1,4 @@
-﻿using plamp.Abstractions;
+﻿using plamp.Abstractions.Compilation;
 using plamp.Abstractions.Parsing;
 
 namespace plamp.Native.Parsing;

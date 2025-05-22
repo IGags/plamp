@@ -1,4 +1,6 @@
-﻿namespace plamp.Abstractions;
+﻿using plamp.Abstractions.Compilation;
+
+namespace plamp.Abstractions;
 
 public interface ICompilerEntity
 {

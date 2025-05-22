@@ -6,7 +6,7 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -16,7 +16,7 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseConditionTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseValidSingleLineCondition()
@@ -66,7 +66,7 @@ public class ParseConditionTests
                     new BodyNode(
                         [
                             new PostfixIncrementNode(new MemberNode("i")),
-                            new CallNode(new MemberNode("expose"), []),
+                            new CallNode(null, new MemberNode("expose"), []),
                             new ReturnNode(new LiteralNode(0, typeof(int)))
                         ]
                     )),
@@ -293,7 +293,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
-                            new MemberNode("a"), [])
+                            null, new MemberNode("a"), [])
                     ])),
                 [],
                 new BodyNode(
@@ -321,6 +321,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("a"),
                             [])
                     ])),
@@ -331,6 +332,7 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("b"),
                                 [])
                         ]))
@@ -362,6 +364,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("a"),
                             [])
                     ])),
@@ -377,9 +380,11 @@ public class ParseConditionTests
                                     new MemberNode("d")),
                                 new PlusNode(
                                     new CallNode(
+                                        null,
                                         new MemberNode("b"), 
                                         []),
                                     new CallNode(
+                                        null,
                                         new MemberNode("c"),
                                         []))),
                             new ReturnNode(
@@ -445,6 +450,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("t"),
                             [])
                     ])),
@@ -501,6 +507,7 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("print"),
                                 [
                                     new LiteralNode("hi", typeof(string))
@@ -701,6 +708,7 @@ public class ParseConditionTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("w"),
                         [])
                 ]));
@@ -899,6 +907,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("t"),
                             [])
                     ])),
@@ -935,6 +944,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [])
                     ])),
@@ -942,6 +952,7 @@ public class ParseConditionTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("println"),
                         [])
                 ]));
@@ -974,6 +985,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [])
                     ])),
@@ -983,6 +995,7 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("println"),
                                 [])
                         ]))
@@ -1024,6 +1037,7 @@ public class ParseConditionTests
                         new BodyNode(
                             [
                                 new CallNode(
+                                    null,
                                     new MemberNode("print"),
                                     [])
                             ])),
@@ -1032,6 +1046,7 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("print"),
                                 [
                                     new LiteralNode("tt", typeof(string))

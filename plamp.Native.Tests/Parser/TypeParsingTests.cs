@@ -1,7 +1,7 @@
 using System.Linq;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -10,7 +10,7 @@ namespace plamp.Native.Tests.Parser;
 #pragma warning disable CS0618
 public class TypeParsingTests
 {
-    public static readonly RecursiveComparer Comparer = new();
+    public static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseSimpleType()
@@ -110,7 +110,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberAccessNode(new MemberNode("std"), new MemberNode("int")), null);
+        var should = new TypeNode(new MemberNode("std.int"), null);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Empty(context.TransactionSource.Exceptions);
         Assert.Equal(2, context.TokenSequence.Position);
@@ -126,7 +126,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std"), null);
+        var should = new TypeNode(new MemberNode("std."), null);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
@@ -146,7 +146,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
+        var should = new TypeNode(new MemberNode("List."), [new TypeNode(new MemberNode("int"), null)]);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
@@ -225,7 +225,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std"), null);
+        var should = new TypeNode(new MemberNode("std."), null);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
@@ -293,7 +293,7 @@ public class TypeParsingTests
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var symbolTable = context.TransactionSource.SymbolDictionary;
-        Assert.Equal(4, symbolTable.Count);
+        Assert.Equal(2, symbolTable.Count);
         Assert.Contains(typeNode, symbolTable);
         var symbol = symbolTable[typeNode];
         Assert.Empty(symbol.Tokens);

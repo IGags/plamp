@@ -1,6 +1,6 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -10,7 +10,7 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseBreakKeyword
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseBreak()

@@ -1,7 +1,7 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -11,7 +11,7 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseWhileTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseWhileSingleLine()
@@ -30,6 +30,7 @@ public class ParseWhileTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("ping"),
                         [])
                 ]));
@@ -56,6 +57,7 @@ public class ParseWhileTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("ping"),
                         [])
                 ]));
@@ -108,6 +110,7 @@ public class ParseWhileTests
                 new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("ping"),
                             [])
                     ]));
@@ -196,6 +199,7 @@ public class ParseWhileTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("ping"),
                         [])
                 ]));

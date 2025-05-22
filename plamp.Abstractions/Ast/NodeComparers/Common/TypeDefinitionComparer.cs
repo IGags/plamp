@@ -19,7 +19,6 @@ public class TypeDefinitionComparer : IEqualityComparer<TypeDefinitionNode>
     {
         var hashCode = new HashCode();
         hashCode.Add(obj.Name);
-        hashCode.Add(obj.Namespace);
         foreach (var member in obj.Members)
         {
             hashCode.Add(member);

@@ -4,7 +4,7 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -14,7 +14,7 @@ namespace plamp.Native.Tests.Parser;
 
 public class ParseDefTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseValidDefSingleLine()
@@ -109,9 +109,8 @@ public class ParseDefTests
                 new BodyNode(
                 [
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("list"),
-                            new MemberNode("add")),
+                        new MemberNode("list"),
+                        new MemberNode("add"),
                         [
                             new MemberNode("arg")
                         ])
@@ -294,7 +293,7 @@ public class ParseDefTests
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var symbolTable = context.TransactionSource.SymbolDictionary;
-        Assert.Equal(10, symbolTable.Count);
+        Assert.Equal(9, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Single(symbol.Tokens);

@@ -1,7 +1,7 @@
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
-using plamp.Abstractions.Ast.Node.Extensions;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -10,7 +10,7 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class ExpressionPostfixTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseSingleMember()
@@ -82,6 +82,7 @@ public class ExpressionPostfixTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
+                null,
                 new MemberNode("greet"),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
@@ -111,6 +112,7 @@ public class ExpressionPostfixTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
+                null,
                 new MemberNode("greet"),
                 [
                     new PlusNode(
@@ -132,15 +134,13 @@ public class ExpressionPostfixTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new CallNode(
-                new MemberAccessNode(
-                    new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("arg"),
-                            new MemberNode("greet")),
-                        [
-                            new MemberNode("greeter")
-                        ]),
-                    new MemberNode("bye")),
+                new CallNode(
+                    new MemberNode("arg"),
+                    new MemberNode("greet"),
+                    [
+                        new MemberNode("greeter")
+                    ]),
+                new MemberNode("bye"),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(9, context.TokenSequence.Position);
@@ -310,7 +310,7 @@ public class ExpressionPostfixTests
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
 
         var symbolTable = context.TransactionSource.SymbolDictionary;
-        Assert.Equal(8, symbolTable.Count);
+        Assert.Equal(7, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Empty(symbol.Tokens);

@@ -2,7 +2,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -11,7 +11,7 @@ namespace plamp.Native.Tests.Parser;
 
 public class ParseBodyLevelTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     //Method does not advance to end of line
     [Fact]
@@ -97,11 +97,13 @@ public class ParseBodyLevelTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [
                                 new LiteralNode(2, typeof(int))
                             ]),
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [
                                 new LiteralNode(3, typeof(int))

@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.ObjectPool;
 using plamp.Abstractions;
+using plamp.Abstractions.Compilation;
 
 namespace plamp.Compiler.Util;
 
@@ -40,12 +41,12 @@ public class ResourceScheduler<TResource> where TResource : class
         {
             case ResourceType.Parallel:
                 return new ResourceScheduler<TResource>(resourceCreator(), ResourceType.Parallel);
-            case ResourceType.Pooled:
+            case ResourceType.SingleThreaded:
                 return new ResourceScheduler<TResource>(
                     new DefaultObjectPool<TResource>(new CompilerPoolPolicy<TResource>(resourceCreator)),
-                    ResourceType.Pooled);
-            case ResourceType.InstancePerRequest:
-                return new ResourceScheduler<TResource>(resourceCreator, ResourceType.InstancePerRequest);
+                    ResourceType.SingleThreaded);
+            case ResourceType.Disposable:
+                return new ResourceScheduler<TResource>(resourceCreator, ResourceType.Disposable);
         }
         
         throw new NotSupportedException($"Resource type {factoryEntity.Type} is not supported");
@@ -57,9 +58,9 @@ public class ResourceScheduler<TResource> where TResource : class
         {
             case ResourceType.Parallel:
                 return _parallelResource;
-            case ResourceType.Pooled:
+            case ResourceType.SingleThreaded:
                 return _resourcePool.Get();
-            case ResourceType.InstancePerRequest:
+            case ResourceType.Disposable:
                 return _resourceFactory();
         }
         
@@ -68,7 +69,7 @@ public class ResourceScheduler<TResource> where TResource : class
 
     public void Return(TResource resource)
     {
-        if (_schedulerType == ResourceType.Pooled)
+        if (_schedulerType == ResourceType.SingleThreaded)
         {
             _resourcePool.Return(resource);
         }

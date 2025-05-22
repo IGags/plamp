@@ -9,10 +9,9 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Compilation;
 using plamp.Abstractions.Compilation.Models;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Abstractions.Parsing;
 using plamp.Native.Parsing.Symbols;
 using plamp.Native.Parsing.Transactions;
@@ -399,7 +398,8 @@ public sealed class PlampNativeParser : IParser
             }
         }
         
-        node = new MemberNode(string.Join('.', members));
+        node = new MemberNode(string.Concat(members.Select(x => x.GetStringRepresentation())));
+        transaction.AddSymbol(node, [], members.ToArray());
         return ExpressionParsingResult.Success;
     }
     
@@ -1410,8 +1410,26 @@ public sealed class PlampNativeParser : IParser
 
     private static bool TryParseCall(NodeBase input, out NodeBase res, ParsingContext context)
     {
+        var from = default(NodeBase);
         res = null;
         var transaction = context.TransactionSource.BeginTransaction();
+        
+        if (TryConsumeNextNonWhiteSpace<OperatorToken>(
+                x => x.Operator == OperatorEnum.MemberAccess, _ => { },
+                out _, context)
+            && TryConsumeNextNonWhiteSpace<Word>(
+                _ => true, _ => { }, out var word, context))
+        {
+            from = input;
+            input = new MemberNode(word.GetStringRepresentation());
+            transaction.AddSymbol(input, null, [word]);
+        }
+        else
+        {
+            transaction.Rollback();
+            transaction = context.TransactionSource.BeginTransaction();
+        }
+        
         var parenRes = TryParseInParen<List<NodeBase>, OpenParen, CloseParen>(
             transaction,
             WrapParseCommaSeparated<NodeBase>(TryParseWithPrecedence, ExpressionParsingResult.FailedNeedPass),
@@ -1420,7 +1438,7 @@ public sealed class PlampNativeParser : IParser
         switch (parenRes)
         {
             case ExpressionParsingResult.Success:
-                res = new CallNode(input, args);
+                res = new CallNode(from, input, args);
                 var children = new List<NodeBase>{ input };
                 children.AddRange(args);
                 transaction.AddSymbol(res, children.ToArray(), []);

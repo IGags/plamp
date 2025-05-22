@@ -4,7 +4,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -13,7 +13,7 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class SimpleMathTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Theory]
     [InlineData("1+1", typeof(PlusNode), 1, 1)]

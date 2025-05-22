@@ -1,6 +1,6 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -10,7 +10,7 @@ namespace plamp.Native.Tests.Parser;
 
 public class ParseUsingTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseValidUsingSingleLine()
@@ -39,8 +39,7 @@ public class ParseUsingTests
         var result = PlampNativeParser.TryParseTopLevel(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new UseNode(
-                new MemberAccessNode(new MemberNode("std"), new MemberNode("collection")));
+            = new UseNode(new MemberNode("std.collection"));
         Assert.Equal(expressionShould, expression, Comparer);
         Assert.Equal(5, context.TokenSequence.Position);
         Assert.Empty(context.TransactionSource.Exceptions);

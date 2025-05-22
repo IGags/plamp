@@ -3,9 +3,9 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
-using plamp.Abstractions.Ast.Node.Extensions;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Ast.NodeComparers;
+using plamp.Abstractions.Extensions.Ast.Comparers;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -15,7 +15,7 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseForTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseCorrectForSingleLine()
@@ -43,6 +43,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -80,6 +81,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -176,6 +178,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -210,6 +213,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -270,6 +274,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -301,6 +306,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
@@ -413,6 +419,7 @@ public class ParseForTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new MemberNode("i")
