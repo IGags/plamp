@@ -28,6 +28,28 @@ public class ParseUsingTests
         Assert.Equal(3, context.TokenSequence.Position);
         Assert.Empty(context.TransactionSource.Exceptions);
     }
+    
+    [Fact]
+    public void ParseUsingTrailingDot()
+    {
+        const string code = """
+                            use std.
+                            """;
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseTopLevel(out var expression, context);
+        Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
+        var expressionShould
+            = new UseNode(
+                new MemberNode("std"));
+        Assert.Equal(expressionShould, expression, Comparer);
+        Assert.Equal(4, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
+        var exceptionShould = new PlampException(
+            PlampNativeExceptionInfo.InvalidUsingName(),
+            new(0, 4), new(0, 7),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
+    }
 
     [Fact]
     public void ParseValidUsingWordChain()

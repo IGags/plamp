@@ -14,13 +14,10 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 {
     public Task EmitMethodBodyAsync(CompilerEmissionContext context, CancellationToken cancellationToken = default)
     {
-        var argInfoList = context.MethodBuilder.GetParameters();
         var varStack = new LocalVarStack();
         var generator = context.MethodBuilder.GetILGenerator();
-        var emissionContext = new EmissionContext(varStack, argInfoList, generator, []);
-        varStack.BeginScope();
+        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, []);
         EmitExpression(context.MethodBody, emissionContext);
-        varStack.EndScope();
         return Task.CompletedTask;
     }
 
@@ -32,6 +29,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         {
             case BodyNode bodyNode:
                 EmitBody(bodyNode, context);
+                break;
+            case AssignNode assignNode:
+                EmitAssign(assignNode, context);
                 break;
             case BaseBinaryNode binaryNode:
                 EmitBaseBinary(binaryNode, context);
@@ -174,11 +174,15 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitGetMember(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Ldc_I4_1);
                 context.Generator.Emit(OpCodes.Add_Ovf);
+                context.Generator.Emit(OpCodes.Dup);
+                EmitSetMember(unaryBase.Inner, context);
                 break;
             case PrefixDecrementNode:
                 EmitGetMember(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Ldc_I4_1);
                 context.Generator.Emit(OpCodes.Sub_Ovf);
+                context.Generator.Emit(OpCodes.Dup);
+                EmitSetMember(unaryBase.Inner, context);
                 break;
             case PostfixDecrementNode:
                 EmitGetMember(unaryBase.Inner, context);
@@ -264,9 +268,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             case XorNode:
                 EmitXor(context);
                 break;
-            case BaseAssignNode assignNode:
-                EmitAssign(assignNode, context);
-                break;
         }
     }
 
@@ -288,6 +289,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         context.Generator.Emit(OpCodes.Clt);
         context.Generator.Emit(OpCodes.Ldc_I4_0);
+        context.Generator.Emit(OpCodes.Ceq);
     }
 
     private void EmitLess(EmissionContext context) 
@@ -335,7 +337,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         => context.Generator.Emit(OpCodes.Or);
 
     private void EmitAndNode(EmissionContext context)
-        => context.Generator.Emit(OpCodes.Add);
+        => context.Generator.Emit(OpCodes.And);
 
     private void EmitOrNode(EmissionContext context)
         => context.Generator.Emit(OpCodes.Or);
@@ -362,16 +364,22 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     
     private void EmitLiteral(LiteralNode literalNode, EmissionContext context)
     {
-        if (literalNode.Type == typeof(string)) context.Generator.Emit(OpCodes.Ldstr, (string)literalNode.Value);
+        if (literalNode.Type == typeof(string))
+        {
+            if (literalNode.Value == null) context.Generator.Emit(OpCodes.Ldnull);
+            else context.Generator.Emit(OpCodes.Ldstr, (string)literalNode.Value);
+        }
         else if (literalNode.Type == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
-        else if (literalNode.Type == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToInt32((uint)literalNode.Value));
+        else if (literalNode.Type == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, BitConverter.ToInt32(BitConverter.GetBytes((uint)literalNode.Value)));
         else if (literalNode.Type == typeof(long)) context.Generator.Emit(OpCodes.Ldc_I8, (long)literalNode.Value);
-        else if (literalNode.Type == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, Convert.ToInt64((ulong)literalNode.Value));
-        else if (literalNode.Type == typeof(short)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
-        else if (literalNode.Type == typeof(ushort)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
-        else if (literalNode.Type == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalNode.Type == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, BitConverter.ToInt64(BitConverter.GetBytes((ulong)literalNode.Value)));
+        else if (literalNode.Type == typeof(short)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(short)literalNode.Value);
+        else if (literalNode.Type == typeof(ushort)) context.Generator.Emit(OpCodes.Ldc_I4, (ushort)literalNode.Value);
+        else if (literalNode.Type == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(byte)literalNode.Value);
         else if (literalNode.Type == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, (float)literalNode.Value);
         else if (literalNode.Type == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, (double)literalNode.Value);
+        else if (literalNode.Type == typeof(bool)) context.Generator.Emit((bool)literalNode.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
+        else if (literalNode.Type == typeof(char)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToUInt32(literalNode.Value));
     }
 
     private void EmitVariableDefinition(
@@ -427,7 +435,10 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         }
 
         ParameterInfo? arg;
-        if ((arg = context.Arguments.FirstOrDefault()) == null) return false;
+        if ((arg = context.Arguments.FirstOrDefault(x => x.Name == member.MemberName)) == null)
+        {
+            return false;
+        }
         
         var ix = Array.IndexOf(context.Arguments, arg);
         context.Generator.Emit(OpCodes.Ldarg_S, ix + 1);

@@ -1,14 +1,20 @@
+using System.Diagnostics;
 using System.Reflection.Emit;
 
 namespace plamp.ILCodeEmitters;
 
 internal class LocalVarStack
 {
-    private readonly Stack<List<KeyValuePair<string, LocalBuilder>>> _localVars = [];
+    private readonly Stack<List<KeyValuePair<string, LocalBuilder>>> _localVars = new();
 
     private readonly Dictionary<string, LocalBuilder> _vars = [];
 
     private List<KeyValuePair<string, LocalBuilder>> _currentScope = [];
+
+    public LocalVarStack()
+    {
+        _localVars.Push([]);
+    }
     
     public void BeginScope()
     {
@@ -18,6 +24,7 @@ internal class LocalVarStack
 
     public void EndScope()
     {
+        Debug.Assert(_localVars.Count > 1);
         var values = _localVars.Pop();
         foreach (var varName in values)
         {

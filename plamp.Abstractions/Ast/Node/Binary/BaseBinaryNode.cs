@@ -13,7 +13,7 @@ public abstract class BaseBinaryNode : NodeBase
         yield return Right;
     }
 
-    public BaseBinaryNode(NodeBase left, NodeBase right)
+    protected BaseBinaryNode(NodeBase left, NodeBase right)
     {
         Left = left;
         Right = right;

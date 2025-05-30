@@ -126,7 +126,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std."), null);
+        var should = new TypeNode(new MemberNode("std"), null);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
@@ -146,7 +146,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("List."), [new TypeNode(new MemberNode("int"), null)]);
+        var should = new TypeNode(new MemberNode("List"), [new TypeNode(new MemberNode("int"), null)]);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(PlampNativeExceptionInfo.InvalidTypeName(),
@@ -225,7 +225,7 @@ public class TypeParsingTests
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         Assert.NotNull(typeNode);
-        var should = new TypeNode(new MemberNode("std."), null);
+        var should = new TypeNode(new MemberNode("std"), null);
         Assert.Equal(should, typeNode, Comparer);
         Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(

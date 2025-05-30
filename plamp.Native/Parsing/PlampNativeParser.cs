@@ -149,7 +149,11 @@ public sealed class PlampNativeParser : IParser
         }
         
         var transaction = context.TransactionSource.BeginTransaction();
-        var res = ParseMemberAccessSequence(transaction, out var useMember, context);
+        var res = ParseMemberAccessSequence(
+            transaction, 
+            out var useMember, 
+            context,
+            PlampNativeExceptionInfo.InvalidUsingName());
         if (res == ExpressionParsingResult.FailedNeedRollback)
         {
             transaction.Rollback();
@@ -312,7 +316,11 @@ public sealed class PlampNativeParser : IParser
     internal static ExpressionParsingResult TryParseType(IParsingTransaction transaction, out NodeBase typeNode, ParsingContext context, bool strict = true)
     {
         typeNode = null;
-        var res = ParseMemberAccessSequence(transaction, out var typeMember, context);
+        var res = ParseMemberAccessSequence(
+            transaction,
+            out var typeMember,
+            context,
+            PlampNativeExceptionInfo.InvalidTypeName());
         
         if (res == ExpressionParsingResult.FailedNeedRollback) return ExpressionParsingResult.FailedNeedRollback;
 
@@ -360,7 +368,11 @@ public sealed class PlampNativeParser : IParser
     /// Parsing member access
     /// or member if one
     /// </summary>
-    private static ExpressionParsingResult ParseMemberAccessSequence(IParsingTransaction transaction, out NodeBase node, ParsingContext context)
+    private static ExpressionParsingResult ParseMemberAccessSequence(
+        IParsingTransaction transaction, 
+        out NodeBase node, 
+        ParsingContext context,
+        PlampExceptionRecord invalidMemberSequence)
     {
         node = null;
         var peek = context.TokenSequence.PeekNextNonWhiteSpace();
@@ -384,7 +396,7 @@ public sealed class PlampNativeParser : IParser
             
             if (TryConsumeNextNonWhiteSpace<Word>(_ => true, _ =>
                 {
-                    AddExceptionToTheTokenRange(peek, op, PlampNativeExceptionInfo.InvalidTypeName(),
+                    AddExceptionToTheTokenRange(peek, op, invalidMemberSequence,
                         transaction, context);
                 }, out var word, context))
             {
@@ -392,7 +404,7 @@ public sealed class PlampNativeParser : IParser
             }
             else
             {
-                node = new MemberNode(string.Concat(members.Select(x => x.GetStringRepresentation())));
+                node = new MemberNode(string.Concat(members.SkipLast(1).Select(x => x.GetStringRepresentation())));
                 transaction.AddSymbol(node, [], members.ToArray());
                 return ExpressionParsingResult.FailedNeedCommit;
             }
