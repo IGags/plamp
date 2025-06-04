@@ -46,10 +46,26 @@ public class EmissionSetupHelper
     }
 
     public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new MemberNode(type.Name), [], type);
+
+    public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
+
+    public static CallNode CreateCallNode(NodeBase from, MethodInfo info, List<NodeBase> args) 
+        => new ConcreteCall(from, new MemberNode(info.Name), args, info);
     
     private class ConcreteType(MemberNode name, List<NodeBase> generics, Type symbol) 
         : TypeNode(name, generics)
     {
         public override Type Symbol { get; } = symbol;
+    }
+    
+    private class ConcreteMember(string name, MemberInfo symbol) : MemberNode(name)
+    {
+        public override MemberInfo Symbol { get; } = symbol;
+    }
+    
+    private class ConcreteCall(NodeBase from, NodeBase name, List<NodeBase> args, MethodInfo symbol) 
+        : CallNode(from, name, args)
+    {
+        public override MethodInfo Symbol { get; } = symbol;
     }
 }

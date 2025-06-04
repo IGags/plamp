@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.CompilerEmission;
@@ -117,9 +118,16 @@ public class ConstantEmissionTests
 
     private CompilerEmissionContext CreateContext(object? constantValue, Type constantType, MethodBuilder method)
     {
+        var tempVarName = "temp";
+        /*
+         * var temp
+         * temp = literal
+         * return var1
+         */
         var ast = new BodyNode([
-            new ReturnNode(
-                new LiteralNode(constantValue, constantType))
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new MemberNode(tempVarName)),
+            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue, constantType)),
+            new ReturnNode(new MemberNode(tempVarName))
         ]);
         
         var context = new CompilerEmissionContext(ast, method, [], null, null);

@@ -33,15 +33,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             case AssignNode assignNode:
                 EmitAssign(assignNode, context);
                 break;
-            case BaseBinaryNode binaryNode:
-                EmitBaseBinary(binaryNode, context);
-                break;
-            case BaseUnaryNode unaryNode:
-                EmitUnary(unaryNode, context);
-                break;
-            case CastNode castNode:
-                EmitCast(castNode, context);
-                break;
             case ConditionNode conditionNode:
                 EmitCondition(conditionNode, context);
                 break;
@@ -60,17 +51,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             case CallNode callNode:
                 EmitCall(callNode, context);
                 break;
-            case ConstructorCallNode constructorNode:
-                EmitCallCtor(constructorNode, context);
-                break;
             case VariableDefinitionNode variableDefinitionNode:
                 EmitVariableDefinition(variableDefinitionNode, context);
-                break;
-            case LiteralNode literalNode:
-                EmitLiteral(literalNode, context);
-                break;
-            case MemberAccessNode memberAccessNode:
-                EmitMemberAccess(memberAccessNode, context);
                 break;
         }
     }
@@ -92,7 +74,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     
     private void EmitReturn(ReturnNode returnNode, EmissionContext context)
     {
-        if(returnNode.ReturnValue != null) EmitGetMember(returnNode.ReturnValue, context);
+        if(returnNode.ReturnValue != null) EmitGetMember(returnNode.ReturnValue, context, true);
         context.Generator.Emit(OpCodes.Ret);
     }
     
@@ -170,41 +152,13 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         switch (unaryBase)
         {
-            case PrefixIncrementNode:
-                EmitGetMember(unaryBase.Inner, context);
-                context.Generator.Emit(OpCodes.Ldc_I4_1);
-                context.Generator.Emit(OpCodes.Add_Ovf);
-                context.Generator.Emit(OpCodes.Dup);
-                EmitSetMember(unaryBase.Inner, context);
-                break;
-            case PrefixDecrementNode:
-                EmitGetMember(unaryBase.Inner, context);
-                context.Generator.Emit(OpCodes.Ldc_I4_1);
-                context.Generator.Emit(OpCodes.Sub_Ovf);
-                context.Generator.Emit(OpCodes.Dup);
-                EmitSetMember(unaryBase.Inner, context);
-                break;
-            case PostfixDecrementNode:
-                EmitGetMember(unaryBase.Inner, context);
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Ldc_I4_1);
-                context.Generator.Emit(OpCodes.Sub_Ovf);
-                EmitSetMember(unaryBase.Inner, context);
-                break;
-            case PostfixIncrementNode:
-                EmitGetMember(unaryBase.Inner, context);
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Ldc_I4_1);
-                context.Generator.Emit(OpCodes.Add_Ovf);
-                EmitSetMember(unaryBase.Inner, context);
-                break;
             case NotNode:
-                EmitGetMember(unaryBase.Inner, context);
+                EmitGetMember(unaryBase.Inner, context, false);
                 context.Generator.Emit(OpCodes.Ldc_I4_0);
                 context.Generator.Emit(OpCodes.Ceq);
                 break;
             case UnaryMinusNode:
-                EmitGetMember(unaryBase.Inner, context);
+                EmitGetMember(unaryBase.Inner, context, false);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
         }
@@ -216,8 +170,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitBaseBinary(BaseBinaryNode binaryNode, EmissionContext context)
     {
-        EmitGetMember(binaryNode.Left, context);
-        EmitGetMember(binaryNode.Right, context);
+        EmitGetMember(binaryNode.Left, context, false);
+        EmitGetMember(binaryNode.Right, context, false);
         switch (binaryNode)
         {
             case PlusNode:
@@ -271,15 +225,102 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         }
     }
 
-    private void EmitAssign(BaseAssignNode assignNode, EmissionContext context)
+    private void EmitAssign(AssignNode assignNode, EmissionContext context)
     {
-        EmitExpression(assignNode.Right, context);
-        switch (assignNode)
+        FieldInfo? emitFld = null;
+        if (assignNode.Left is MemberAccessNode accessNode)
         {
-            case AssignNode:
-                EmitSetMember(assignNode.Left, context);
+            emitFld = EmitAccessField(accessNode, context);
+        }
+
+        EmitAssignmentSource(assignNode.Right, context);
+
+        if (emitFld is {})
+        {
+            context.Generator.Emit(OpCodes.Stfld, emitFld);
+        }
+        else if(assignNode.Left is MemberNode memberNode)
+        {
+            EmitSetLocalVarOrArg(memberNode, context);
+        }
+    }
+
+    private void EmitAssignmentSource(NodeBase source, EmissionContext context)
+    {
+        switch (source)
+        {
+            case MemberNode memberNode: 
+                EmitGetLocalVarOrArg(memberNode, context, false);
+                break;
+            case BaseBinaryNode binaryNode:
+                EmitBaseBinary(binaryNode, context);
+                break;
+            case BaseUnaryNode unaryNode:
+                EmitUnary(unaryNode, context);
+                break;
+            case CallNode callNode:
+                EmitCall(callNode, context);
+                break;
+            case ConstructorCallNode constructorCallNode:
+                EmitCallCtor(constructorCallNode, context);
+                break;
+            case CastNode castNode:
+                EmitCast(castNode, context);
+                break;
+            case LiteralNode literalNode:
+                EmitLiteral(literalNode, context);
+                break;
+            case MemberAccessNode memberAccessNode:
+                EmitGetField(memberAccessNode, context);
                 break;
         }
+    }
+
+    private FieldInfo? EmitAssignmentTarget(NodeBase target, EmissionContext context)
+    {
+        switch (target)
+        {
+            case MemberNode memberNode:
+                EmitSetMember(memberNode, context);
+                break;
+            case MemberAccessNode memberAccessNode:
+                return EmitAccessField(memberAccessNode, context);
+        }
+
+        return null;
+    }
+
+    private void EmitGetField(MemberAccessNode accessNode, EmissionContext context)
+    {
+        if (accessNode.From is not MemberNode from
+            || accessNode.Member is not MemberNode memberNode)
+        {
+            return;
+        }
+        
+        if (memberNode.Symbol == null) return;
+        
+        EmitGetMember(from, context, true);
+        switch (memberNode.Symbol)
+        {
+            case FieldInfo fi:
+                context.Generator.Emit(OpCodes.Ldfld, fi);
+                break;
+        }
+    }
+
+    private FieldInfo? EmitAccessField(MemberAccessNode accessNode, EmissionContext context)
+    {
+        if (accessNode.From is not MemberNode from
+            || accessNode.Member is not MemberNode memberNode)
+        {
+            return null;
+        }
+        
+        if (memberNode.Symbol == null) return null;
+        
+        EmitGetMember(from, context, false);
+        return memberNode.Symbol as FieldInfo;
     }
     
     private void EmitGreater(EmissionContext context)
@@ -397,7 +438,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         if(constructorCallNode.Symbol == null) return;
         foreach (var arg in constructorCallNode.Args)
         {
-            EmitGetMember(arg, context);
+            EmitGetMember(arg, context, false);
         }
         
         context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
@@ -406,10 +447,14 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     private void EmitCall(CallNode callNode, EmissionContext context)
     {
         if(callNode.Symbol == null) return;
-        context.Generator.Emit(OpCodes.Ldarg_0);
+        //TODO: Make member as first arg
+        if (callNode.From is MemberNode)
+        {
+            EmitGetMember(callNode.From, context, false);
+        }
         foreach (var arg in callNode.Args)
         {
-            EmitGetMember(arg, context);
+            EmitGetMember(arg, context, false);
         }
         EmitMethodCall(callNode.Symbol, context);
     }
@@ -423,99 +468,61 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     private void EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
     {
         var opcode = methodInfo.IsVirtual ? OpCodes.Callvirt : OpCodes.Call;
-        context.Generator.Emit(opcode, methodInfo);
+        context.Generator.EmitCall(opcode, methodInfo, null);
     }
 
-    private bool TryEmitGetLocalVarOrArg(MemberNode member, EmissionContext context)
+    private void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool writable)
     {
         if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
             context.Generator.Emit(OpCodes.Ldloc, builder);
-            return true;
+            return;
         }
 
         ParameterInfo? arg;
         if ((arg = context.Arguments.FirstOrDefault(x => x.Name == member.MemberName)) == null)
         {
-            return false;
+            return;
         }
         
         var ix = Array.IndexOf(context.Arguments, arg);
-        context.Generator.Emit(OpCodes.Ldarg_S, ix + 1);
-        return true;
+        
+        var opcode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } && !writable
+            ? OpCodes.Ldarga_S
+            : OpCodes.Ldarg_S;
+        context.Generator.Emit(opcode, ix + 1);
     }
 
-    private bool TryEmitSetLocalVarOrArg(MemberNode member, EmissionContext context)
+    private void EmitSetLocalVarOrArg(MemberNode member, EmissionContext context)
     {
         if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
             context.Generator.Emit(OpCodes.Stloc, builder);
-            return true;
+            return;
         }
 
         ParameterInfo? arg;
-        if ((arg = context.Arguments.FirstOrDefault()) == null) return false;
-        
+        if ((arg = context.Arguments.FirstOrDefault()) == null) return;
+
         var ix = Array.IndexOf(context.Arguments, arg);
         context.Generator.Emit(OpCodes.Starg_S, ix + 1);
-        return true;
     }
 
-    private void EmitGetMember(NodeBase node, EmissionContext context)
+    private void EmitGetMember(NodeBase node, EmissionContext context, bool byValue)
     {
-        if (node is LiteralNode literalNode)
-        {
-            EmitLiteral(literalNode, context);
-            return;
-        }
-        
         if(node is not MemberNode memberNode) return;
-        if (TryEmitGetLocalVarOrArg(memberNode, context)) return;
-        if (memberNode.Symbol == null) return;
-        switch (memberNode.Symbol)
-        {
-            case PropertyInfo pi:
-                var getter = pi.GetGetMethod();
-                if(getter == null) return;
-                EmitMethodCall(getter, context);
-                break;
-            case FieldInfo fi:
-                context.Generator.Emit(OpCodes.Ldfld, fi);
-                break;
-        }
+        EmitGetLocalVarOrArg(memberNode, context, byValue);
     }
 
     private void EmitSetMember(NodeBase node, EmissionContext context)
     {
         if(node is not MemberNode memberNode) return;
-        if (TryEmitSetLocalVarOrArg(memberNode, context)) return;
-        if (memberNode.Symbol == null) return;
-        switch (memberNode.Symbol)
-        {
-            case PropertyInfo pi:
-                var setter = pi.GetSetMethod();
-                if(setter == null) return;
-                EmitMethodCall(setter, context);
-                break;
-            case FieldInfo fi:
-                context.Generator.Emit(OpCodes.Stfld, fi);
-                break;
-        }
-    }
-    
-    private void EmitMemberAccess(
-        MemberAccessNode memberAccessNode, 
-        EmissionContext context)
-    {
-        if(memberAccessNode.From is not MemberNode memberFrom) return;
-        if(memberAccessNode.Member is not MemberNode member) return;
-        EmitGetMember(memberFrom, context);
-        EmitGetMember(member, context);
+        EmitSetLocalVarOrArg(memberNode, context);
     }
 
     #endregion
     
-    //TODO: жидко
+    //TODO: жидко дублирование хранения лейблов
     private string CreateLabel(EmissionContext context)
     {
         var label = context.Generator.DefineLabel();
