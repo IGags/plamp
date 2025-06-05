@@ -265,7 +265,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitCallCtor(constructorCallNode, context);
                 break;
             case CastNode castNode:
-                EmitCast(castNode, context);
+                EmitTypeConversion(castNode, context);
                 break;
             case LiteralNode literalNode:
                 EmitLiteral(literalNode, context);
@@ -274,20 +274,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitGetField(memberAccessNode, context);
                 break;
         }
-    }
-
-    private FieldInfo? EmitAssignmentTarget(NodeBase target, EmissionContext context)
-    {
-        switch (target)
-        {
-            case MemberNode memberNode:
-                EmitSetMember(memberNode, context);
-                break;
-            case MemberAccessNode memberAccessNode:
-                return EmitAccessField(memberAccessNode, context);
-        }
-
-        return null;
     }
 
     private void EmitGetField(MemberAccessNode accessNode, EmissionContext context)
@@ -387,20 +373,35 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     #region Misc
 
-    private void EmitCast(CastNode node, EmissionContext context)
+    private void EmitTypeConversion(CastNode node, EmissionContext context)
     {
         EmitExpression(node.Inner, context);
-        var typ = GetTypeFromNode(node);
-        if (typ == typeof(long)) context.Generator.Emit(OpCodes.Conv_Ovf_I8);
-        else if (typ == typeof(ulong)) context.Generator.Emit(OpCodes.Conv_Ovf_U8);
-        else if (typ == typeof(int)) context.Generator.Emit(OpCodes.Conv_Ovf_I4);
-        else if (typ == typeof(uint)) context.Generator.Emit(OpCodes.Conv_Ovf_U4);
-        else if (typ == typeof(short)) context.Generator.Emit(OpCodes.Conv_Ovf_I2);
-        else if (typ == typeof(ushort)) context.Generator.Emit(OpCodes.Conv_Ovf_U2);
-        else if (typ == typeof(byte)) context.Generator.Emit(OpCodes.Conv_Ovf_U1);
-        else if (typ == typeof(double)) context.Generator.Emit(OpCodes.Conv_R8);
-        else if (typ == typeof(float)) context.Generator.Emit(OpCodes.Conv_R4);
-        else context.Generator.Emit(OpCodes.Castclass, typ!);
+        var toType = GetTypeFromNode(node)!;
+        var fromType = GetTypeFromNode(node.FromType)!;
+        
+        if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
+        if(fromType.IsValueType && !toType.IsValueType) EmitBox(context);
+        if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
+    }
+
+    private void EmitCast(Type targetType, EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Castclass, targetType);
+
+    private void EmitBox(EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Box);
+
+    private void EmitUnbox(Type targetType, EmissionContext context)
+    {
+        if (targetType == typeof(long)) context.Generator.Emit(OpCodes.Conv_Ovf_I8);
+        else if (targetType == typeof(ulong)) context.Generator.Emit(OpCodes.Conv_Ovf_U8);
+        else if (targetType == typeof(int)) context.Generator.Emit(OpCodes.Conv_Ovf_I4);
+        else if (targetType == typeof(uint)) context.Generator.Emit(OpCodes.Conv_Ovf_U4);
+        else if (targetType == typeof(short)) context.Generator.Emit(OpCodes.Conv_Ovf_I2);
+        else if (targetType == typeof(ushort)) context.Generator.Emit(OpCodes.Conv_Ovf_U2);
+        else if (targetType == typeof(byte)) context.Generator.Emit(OpCodes.Conv_Ovf_U1);
+        else if (targetType == typeof(double)) context.Generator.Emit(OpCodes.Conv_R8);
+        else if (targetType == typeof(float)) context.Generator.Emit(OpCodes.Conv_R4);
+        else context.Generator.Emit(OpCodes.Unbox_Any, targetType);
     }
     
     private void EmitLiteral(LiteralNode literalNode, EmissionContext context)

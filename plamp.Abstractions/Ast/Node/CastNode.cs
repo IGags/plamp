@@ -5,6 +5,9 @@ namespace plamp.Abstractions.Ast.Node;
 public class CastNode : NodeBase
 {
     public NodeBase ToType { get; }
+    
+    public virtual NodeBase FromType { get; }
+    
     public NodeBase Inner { get; }
 
     public CastNode(NodeBase toType, NodeBase inner)
@@ -17,5 +20,6 @@ public class CastNode : NodeBase
     {
         yield return ToType;
         yield return Inner;
+        if(FromType != null) yield return FromType;
     }
 }
