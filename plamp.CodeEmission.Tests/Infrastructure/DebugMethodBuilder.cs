@@ -44,6 +44,12 @@ public class DebugMethodBuilder : MethodBuilder
 
     public override ParameterInfo[] GetParameters() => _inner.GetParameters();
 
+    public override int MetadataToken => _inner.MetadataToken;
+
+    public override Module Module => _inner.Module;
+
+    public override Type ReturnType => _inner.ReturnType;
+
     #endregion
     
     internal DebugMethodBuilder(MethodBuilder inner)
@@ -100,4 +106,6 @@ public class DebugMethodBuilder : MethodBuilder
     {
         return _dbGen?.ToString();
     }
+
+    public MethodBuilder GetInner() => _inner;
 }

@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using Xunit;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 #pragma warning disable CS0618
 namespace plamp.Native.Tests.Parser;

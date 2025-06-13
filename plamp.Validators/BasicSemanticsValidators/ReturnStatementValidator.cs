@@ -60,21 +60,22 @@ public class ReturnStatementValidator : BaseValidator<ValidationContext>
 
     private bool VisitCondition(ConditionNode cond, bool isInCycleContext, bool returnsFully)
     {
-        foreach (var elifClause in cond.ElifClauseList)
-        {
-            var clauseBody = elifClause.Body as BodyNode;
-            if (clauseBody == null)
-            {
-                returnsFully = false;
-                continue;
-            }
-            returnsFully &= VisitBody(clauseBody, isInCycleContext);
-        }
-        var ifClauseBody = cond.IfClause.Body as BodyNode;
-                    
-        returnsFully &= ifClauseBody != null && VisitBody(ifClauseBody, isInCycleContext); 
-        if(cond.ElseClause != null) returnsFully &= VisitBody(cond.ElseClause, isInCycleContext);
-
-        return returnsFully;
+        // foreach (var elifClause in cond.ElifClauseList)
+        // {
+        //     var clauseBody = elifClause.Body as BodyNode;
+        //     if (clauseBody == null)
+        //     {
+        //         returnsFully = false;
+        //         continue;
+        //     }
+        //     returnsFully &= VisitBody(clauseBody, isInCycleContext);
+        // }
+        // var ifClauseBody = cond.IfClause.Body as BodyNode;
+        //             
+        // returnsFully &= ifClauseBody != null && VisitBody(ifClauseBody, isInCycleContext); 
+        // if(cond.ElseClause != null) returnsFully &= VisitBody(cond.ElseClause, isInCycleContext);
+        //
+        // return returnsFully;
+        return false;
     }
 }

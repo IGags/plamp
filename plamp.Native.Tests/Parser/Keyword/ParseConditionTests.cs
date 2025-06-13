@@ -7,9 +7,11 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Extensions.Ast.Comparers;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
 using plamp.Native.Tokenization.Token;
 using Xunit;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 #pragma warning disable CS0618
 namespace plamp.Native.Tests.Parser.Keyword;

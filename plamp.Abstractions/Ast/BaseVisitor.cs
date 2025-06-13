@@ -54,8 +54,6 @@ public abstract class BaseVisitor<TContext>
         {
             case BodyNode bodyNode:
                 return VisitBody(bodyNode, context);
-            case ClauseNode clauseNode:
-                return VisitClause(clauseNode, context);
             case ConditionNode conditionNode:
                 return VisitCondition(conditionNode, context);
             case DefNode defNode:
@@ -205,8 +203,6 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult VisitPlus(PlusNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitBody(BodyNode node, TContext context) => VisitResult.Continue;
-    
-    protected virtual VisitResult VisitClause(ClauseNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitCondition(ConditionNode node, TContext context) => VisitResult.Continue;
     

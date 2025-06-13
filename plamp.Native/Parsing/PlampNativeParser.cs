@@ -18,6 +18,7 @@ using plamp.Native.Parsing.Transactions;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 namespace plamp.Native.Parsing;
 

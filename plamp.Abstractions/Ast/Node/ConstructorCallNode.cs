@@ -8,7 +8,7 @@ public class ConstructorCallNode : NodeBase
     public NodeBase Type { get; }
     public List<NodeBase> Args { get; }
 
-    public ConstructorInfo Symbol { get; } = null;
+    public virtual ConstructorInfo Symbol { get; }
 
     public ConstructorCallNode(NodeBase type, List<NodeBase> args)
     {

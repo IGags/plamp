@@ -119,29 +119,24 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitCondition(ConditionNode conditionNode, EmissionContext context)
     {
-        var endLab = context.NextLabel();
-        EmitClause(conditionNode.IfClause, context, endLab);
+        if(conditionNode.IfClause is not BodyNode ifBody) return;
+        if(conditionNode.ElseClause is not null and not BodyNode) return;
+        EmitGetMember(conditionNode.Predicate, context, false);
+        var ifClauseEndLab = CreateLabel(context);
+        context.Generator.Emit(OpCodes.Brfalse, context.Labels[ifClauseEndLab]);
+        EmitBody(ifBody, context);
         
-        foreach (var elifClause in conditionNode.ElifClauseList)
+        if (conditionNode.ElseClause is null)
         {
-            EmitClause(elifClause, context, endLab);
+            context.Generator.MarkLabel(context.Labels[ifClauseEndLab]);
+            return;
         }
-
-        if (conditionNode.ElseClause != null)
-        {
-            EmitBody(conditionNode.ElseClause, context);
-        }
-    }
-
-    private void EmitClause(ClauseNode node, EmissionContext context, string conditionEndLab)
-    {
-        EmitExpression(node.Predicate, context);
-        var clauseEndLabel = CreateLabel(context);
-        context.Generator.Emit(OpCodes.Brfalse, context.Labels[clauseEndLabel]);
-        if(node.Body is not BodyNode body) return;
-        EmitBody(body, context);
-        context.Generator.Emit(OpCodes.Br, context.Labels[conditionEndLab]);
-        context.Generator.MarkLabel(context.Labels[clauseEndLabel]);
+        var elseClauseEndLab = CreateLabel(context);
+        context.Generator.Emit(OpCodes.Br, context.Labels[elseClauseEndLab]);
+        context.Generator.MarkLabel(context.Labels[ifClauseEndLab]);
+        
+        EmitBody((BodyNode)conditionNode.ElseClause, context);
+        context.Generator.MarkLabel(context.Labels[elseClauseEndLab]);
     }
 
     #endregion
@@ -375,35 +370,40 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitTypeConversion(CastNode node, EmissionContext context)
     {
-        EmitExpression(node.Inner, context);
-        var toType = GetTypeFromNode(node)!;
+        EmitGetLocalVarOrArg((MemberNode)node.Inner, context, false);
+        var toType = GetTypeFromNode(node.ToType)!;
         var fromType = GetTypeFromNode(node.FromType)!;
         
         if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
-        if(fromType.IsValueType && !toType.IsValueType) EmitBox(context);
-        if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
+        else if(fromType.IsValueType && !toType.IsValueType) EmitBox(fromType, context);
+        else if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
+        //We can convert i4 -> i8 or any other
+        else EmitNumberTypeConversion(toType, context);
+        //Struct cannot be converted to struct
     }
 
     private void EmitCast(Type targetType, EmissionContext context) 
         => context.Generator.Emit(OpCodes.Castclass, targetType);
 
-    private void EmitBox(EmissionContext context) 
-        => context.Generator.Emit(OpCodes.Box);
+    private void EmitBox(Type sourceType, EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Box, sourceType);
 
-    private void EmitUnbox(Type targetType, EmissionContext context)
+    private void EmitNumberTypeConversion(Type targetType, EmissionContext context)
     {
-        if (targetType == typeof(long)) context.Generator.Emit(OpCodes.Conv_Ovf_I8);
-        else if (targetType == typeof(ulong)) context.Generator.Emit(OpCodes.Conv_Ovf_U8);
+        if (targetType == typeof(long)) context.Generator.Emit(OpCodes.Conv_I8);
+        else if (targetType == typeof(ulong)) context.Generator.Emit(OpCodes.Conv_U8);
         else if (targetType == typeof(int)) context.Generator.Emit(OpCodes.Conv_Ovf_I4);
         else if (targetType == typeof(uint)) context.Generator.Emit(OpCodes.Conv_Ovf_U4);
         else if (targetType == typeof(short)) context.Generator.Emit(OpCodes.Conv_Ovf_I2);
-        else if (targetType == typeof(ushort)) context.Generator.Emit(OpCodes.Conv_Ovf_U2);
+        else if (targetType == typeof(ushort) || targetType == typeof(char)) context.Generator.Emit(OpCodes.Conv_Ovf_U2);
         else if (targetType == typeof(byte)) context.Generator.Emit(OpCodes.Conv_Ovf_U1);
         else if (targetType == typeof(double)) context.Generator.Emit(OpCodes.Conv_R8);
         else if (targetType == typeof(float)) context.Generator.Emit(OpCodes.Conv_R4);
-        else context.Generator.Emit(OpCodes.Unbox_Any, targetType);
     }
     
+    private void EmitUnbox(Type targetType, EmissionContext context) 
+        => context.Generator.Emit(OpCodes.Unbox_Any, targetType);
+
     private void EmitLiteral(LiteralNode literalNode, EmissionContext context)
     {
         if (literalNode.Type == typeof(string))
@@ -439,7 +439,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         if(constructorCallNode.Symbol == null) return;
         foreach (var arg in constructorCallNode.Args)
         {
-            EmitGetMember(arg, context, false);
+            EmitGetMember(arg, context, true);
         }
         
         context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
@@ -448,14 +448,20 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     private void EmitCall(CallNode callNode, EmissionContext context)
     {
         if(callNode.Symbol == null) return;
-        //TODO: Make member as first arg
-        if (callNode.From is MemberNode)
+        
+        switch (callNode.From)
         {
-            EmitGetMember(callNode.From, context, false);
+            case MemberNode:
+                EmitGetMember(callNode.From, context, true);
+                break;
+            case ThisNode:
+                context.Generator.Emit(OpCodes.Ldarg_0);
+                break;
         }
+        
         foreach (var arg in callNode.Args)
         {
-            EmitGetMember(arg, context, false);
+            EmitGetMember(arg, context, true);
         }
         EmitMethodCall(callNode.Symbol, context);
     }
@@ -469,7 +475,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     private void EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
     {
         var opcode = methodInfo.IsVirtual ? OpCodes.Callvirt : OpCodes.Call;
-        context.Generator.EmitCall(opcode, methodInfo, null);
+        context.Generator.Emit(opcode, methodInfo);
     }
 
     private void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool writable)

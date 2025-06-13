@@ -9,6 +9,7 @@ using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
 using Xunit;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 namespace plamp.Native.Tests.Parser;
 
