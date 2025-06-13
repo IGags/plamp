@@ -7,7 +7,8 @@ internal record EmissionContext(
     LocalVarStack LocalVarStack,
     ParameterInfo[] Arguments,
     ILGenerator Generator,
-    Dictionary<string, Label> Labels)
+    Dictionary<string, Label> Labels,
+    MethodInfo CurrentMethod)
 {
     private readonly Stack<CycleContext> _currentCycles = [];
 

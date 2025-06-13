@@ -16,7 +16,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         var varStack = new LocalVarStack();
         var generator = context.MethodBuilder.GetILGenerator();
-        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, []);
+        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, [], context.MethodBuilder);
         EmitExpression(context.MethodBody, emissionContext);
         return Task.CompletedTask;
     }
@@ -65,7 +65,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         context.Generator.BeginScope();
         foreach (var instruction in body.InstructionList)
         {
-            if(instruction == null) throw new InvalidOperationException("Cannot emit null instruction");
+            if(instruction == null) continue;
             EmitExpression(instruction, context);
         }
         context.Generator.EndScope();
@@ -497,7 +497,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         var opcode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } && !writable
             ? OpCodes.Ldarga_S
             : OpCodes.Ldarg_S;
-        context.Generator.Emit(opcode, ix + 1);
+        
+        ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
+        context.Generator.Emit(opcode, ix);
     }
 
     private void EmitSetLocalVarOrArg(MemberNode member, EmissionContext context)
@@ -519,12 +521,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         if(node is not MemberNode memberNode) return;
         EmitGetLocalVarOrArg(memberNode, context, byValue);
-    }
-
-    private void EmitSetMember(NodeBase node, EmissionContext context)
-    {
-        if(node is not MemberNode memberNode) return;
-        EmitSetLocalVarOrArg(memberNode, context);
     }
 
     #endregion
