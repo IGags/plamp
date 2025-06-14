@@ -280,8 +280,8 @@ public class MemberAccessTests
         var valueParam = new TestParameter(value.GetType(), valueName);
         
         /*
-         * var temp = obj[ix]
-         * return tmp
+         * obj.set_indexer(ix, value)
+         * return obj
          */
         var body = new BodyNode(
         [

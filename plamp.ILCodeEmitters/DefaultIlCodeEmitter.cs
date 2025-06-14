@@ -88,7 +88,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
         var endLabelName = CreateLabel(context);
         
-        EmitExpression(whileNide.Condition, context);
+        EmitSingleLineExpression(whileNide.Condition, context);
         context.Generator.Emit(OpCodes.Brfalse, context.Labels[endLabelName]);
         
         context.EnterCycleContext(startLabelName, endLabelName);
@@ -121,7 +121,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         if(conditionNode.IfClause is not BodyNode ifBody) return;
         if(conditionNode.ElseClause is not null and not BodyNode) return;
-        EmitGetMember(conditionNode.Predicate, context, false);
+        EmitSingleLineExpression(conditionNode.Predicate, context);
         var ifClauseEndLab = CreateLabel(context);
         context.Generator.Emit(OpCodes.Brfalse, context.Labels[ifClauseEndLab]);
         EmitBody(ifBody, context);
@@ -148,12 +148,12 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         switch (unaryBase)
         {
             case NotNode:
-                EmitGetMember(unaryBase.Inner, context, false);
+                EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Ldc_I4_0);
                 context.Generator.Emit(OpCodes.Ceq);
                 break;
             case UnaryMinusNode:
-                EmitGetMember(unaryBase.Inner, context, false);
+                EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
         }
@@ -165,8 +165,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitBaseBinary(BaseBinaryNode binaryNode, EmissionContext context)
     {
-        EmitGetMember(binaryNode.Left, context, false);
-        EmitGetMember(binaryNode.Right, context, false);
+        EmitSingleLineExpression(binaryNode.Left, context);
+        EmitSingleLineExpression(binaryNode.Right, context);
         switch (binaryNode)
         {
             case PlusNode:
@@ -223,16 +223,25 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     private void EmitAssign(AssignNode assignNode, EmissionContext context)
     {
         FieldInfo? emitFld = null;
-        if (assignNode.Left is MemberAccessNode accessNode)
+        switch (assignNode.Left)
         {
-            emitFld = EmitAccessField(accessNode, context);
+            case MemberAccessNode accessNode:
+                emitFld = EmitAccessField(accessNode, context);
+                break;
+            case VariableDefinitionNode varDef:
+                EmitVariableDefinition(varDef, context);
+                break;
         }
 
-        EmitAssignmentSource(assignNode.Right, context);
+        EmitSingleLineExpression(assignNode.Right, context);
 
-        if (emitFld is {})
+        if (emitFld is not null)
         {
             context.Generator.Emit(OpCodes.Stfld, emitFld);
+        }
+        else if (assignNode.Left is VariableDefinitionNode {Member: MemberNode varMember})
+        {
+            EmitSetLocalVarOrArg(varMember, context);
         }
         else if(assignNode.Left is MemberNode memberNode)
         {
@@ -240,7 +249,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         }
     }
 
-    private void EmitAssignmentSource(NodeBase source, EmissionContext context)
+    private void EmitSingleLineExpression(NodeBase source, EmissionContext context)
     {
         switch (source)
         {
@@ -379,7 +388,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         else if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
         //We can convert i4 -> i8 or any other
         else EmitNumberTypeConversion(toType, context);
-        //Struct cannot be converted to struct
+        //A struct cannot be converted to a struct
     }
 
     private void EmitCast(Type targetType, EmissionContext context) 
@@ -452,7 +461,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         switch (callNode.From)
         {
             case MemberNode:
-                EmitGetMember(callNode.From, context, true);
+                EmitGetMember(callNode.From, context, false);
                 break;
             case ThisNode:
                 context.Generator.Emit(OpCodes.Ldarg_0);
@@ -478,7 +487,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         context.Generator.Emit(opcode, methodInfo);
     }
 
-    private void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool writable)
+    private void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
     {
         if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
@@ -494,7 +503,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         
         var ix = Array.IndexOf(context.Arguments, arg);
         
-        var opcode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } && !writable
+        var opcode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } && !byValue
             ? OpCodes.Ldarga_S
             : OpCodes.Ldarg_S;
         
