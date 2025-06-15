@@ -74,7 +74,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     
     private void EmitReturn(ReturnNode returnNode, EmissionContext context)
     {
-        if(returnNode.ReturnValue != null) EmitGetMember(returnNode.ReturnValue, context, true);
+        //For struct cases. Struct must be returned by value
+        if(returnNode.ReturnValue is MemberNode) EmitGetMember(returnNode.ReturnValue, context, true);
+        else if(returnNode.ReturnValue != null) EmitSingleLineExpression(returnNode.ReturnValue, context);
         context.Generator.Emit(OpCodes.Ret);
     }
     
@@ -121,6 +123,19 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         if(conditionNode.IfClause is not BodyNode ifBody) return;
         if(conditionNode.ElseClause is not null and not BodyNode) return;
+        
+        string? elseClauseEndLab;
+        if (ifBody.InstructionList.Any(x => x.GetType() == typeof(ReturnNode))
+            && conditionNode.ElseClause != null
+            && ((BodyNode)conditionNode.ElseClause).InstructionList.Any(x => x.GetType() == typeof(ReturnNode)))
+        {
+            elseClauseEndLab = null;
+        }
+        else
+        {
+            elseClauseEndLab = CreateLabel(context);
+        }
+        
         EmitSingleLineExpression(conditionNode.Predicate, context);
         var ifClauseEndLab = CreateLabel(context);
         context.Generator.Emit(OpCodes.Brfalse, context.Labels[ifClauseEndLab]);
@@ -131,12 +146,19 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             context.Generator.MarkLabel(context.Labels[ifClauseEndLab]);
             return;
         }
-        var elseClauseEndLab = CreateLabel(context);
-        context.Generator.Emit(OpCodes.Br, context.Labels[elseClauseEndLab]);
-        context.Generator.MarkLabel(context.Labels[ifClauseEndLab]);
+
+        if (elseClauseEndLab != null)
+        {
+            context.Generator.Emit(OpCodes.Br, context.Labels[elseClauseEndLab]);
+        }
         
+        context.Generator.MarkLabel(context.Labels[ifClauseEndLab]);
         EmitBody((BodyNode)conditionNode.ElseClause, context);
-        context.Generator.MarkLabel(context.Labels[elseClauseEndLab]);
+
+        if (elseClauseEndLab != null)
+        {
+            context.Generator.MarkLabel(context.Labels[elseClauseEndLab]);
+        }
     }
 
     #endregion

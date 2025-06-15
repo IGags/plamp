@@ -368,4 +368,52 @@ public class ConditionTests
         var res4 = methodInfo.Invoke(instance, [1900])!;
         Assert.Equal(helloClause, res4);
     }
+
+    [Fact]
+    public async Task EmitReturnInBothClause()
+    {
+        const string methodName = "ConditionBoth";
+        var argType = typeof(int);
+        var (_, typeBuilder, methodBuilder, _) =
+            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(string), [argType]);
+        var arg = new TestParameter(argType, "arg");
+
+        const string subRes = "sub";
+        const string nontRes = "nont";
+        /*
+         * if(arg < 0)
+         *     return "sub"
+         * else
+         *     return "nont"
+         */
+        var body = new BodyNode(
+        [
+            new ConditionNode(
+                new LessNode(new MemberNode(arg.Name), new LiteralNode(0, typeof(int))),
+                new BodyNode(
+                [
+                    new ReturnNode(new LiteralNode(subRes, subRes.GetType()))
+                ]),
+                new BodyNode(
+                [
+                    new ReturnNode(new LiteralNode(nontRes, nontRes.GetType()))
+                ]))
+        ]);
+
+        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
+        var emitter = new DefaultIlCodeEmitter();
+        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+
+        var type = typeBuilder.CreateType();
+        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+
+        var res1 = method!.Invoke(instance, [-1]);
+        Assert.Equal(subRes, res1);
+        
+        var res2 = method.Invoke(instance, [0]);
+        Assert.Equal(nontRes, res2);
+        
+        var res3 = method.Invoke(instance, [1]);
+        Assert.Equal(nontRes, res3);
+    }
 }
