@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Ast;
+using plamp.Abstractions.Ast;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
@@ -13,7 +13,7 @@ public class TokenizerTests
     [Fact]
     public void TestEmptyString()
     {
-        var result = "".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("").Tokenize(ParserTestHelper.AssemblyName);
         Assert.Single(result.Sequence);
         Assert.Equal(typeof(EndOfLine), result.Sequence.First().GetType());
     }
@@ -21,16 +21,15 @@ public class TokenizerTests
     [Fact]
     public void TestNullSequence()
     {
-        var result = ((string)null).Tokenize();
-        Assert.Single(result.Sequence);
-        Assert.Equal(typeof(EndOfLine), result.Sequence.First().GetType());
+        Assert.Throws<NullReferenceException>(() =>
+            ParserTestHelper.GetSourceCode(null).Tokenize(ParserTestHelper.AssemblyName));
     }
 
     [Theory]
     [ClassData(typeof(TestSingleTokenProvider))]
     public void TestSingleToken<T>(string code, Type tokenType, Predicate<TokenBase> condition = null)
     {
-        var result = code.Tokenize();
+        var result = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName);
         Assert.Equal(2, result.Sequence.TokenList.Count);
         Assert.IsType(tokenType, result.Sequence.First());
         Assert.Empty(result.Exceptions);
@@ -46,10 +45,10 @@ public class TokenizerTests
     [Fact]
     public void TestEndOfLineTokenization()
     {
-        var result = "\n".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("\n").Tokenize(ParserTestHelper.AssemblyName);
         Assert.Equal(2, result.Sequence.TokenList.Count);
         Assert.IsType<EndOfLine>(result.Sequence.First());
-        var token = result.Sequence.First() as EndOfLine;
+        var token = (EndOfLine)result.Sequence.First();
         Assert.Equal(1, token.End.Column);
         Assert.Equal("\r\n", token.GetStringRepresentation());
     }
@@ -58,7 +57,7 @@ public class TokenizerTests
     [ClassData(typeof(TestParserErrorProvider))]
     public void TestParserErrors(string code, List<PlampException> expectedExceptions)
     {
-        var result = code.Tokenize();
+        var result = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName);
         Assert.Equal(expectedExceptions.Count, result.Exceptions.Count);
         foreach (var exception in expectedExceptions.Zip(result.Exceptions))
         {
@@ -76,7 +75,7 @@ public class TokenizerTests
     [Fact]
     public void TestWhiteSpace()
     {
-        var result = "w\t".Tokenize();
+        var result = ParserTestHelper.GetSourceCode("w\t").Tokenize(ParserTestHelper.AssemblyName);
         Assert.Equal(3, result.Sequence.Count());
         Assert.Empty(result.Exceptions);
         Assert.IsType<WhiteSpace>(result.Sequence.TokenList[1]);
@@ -95,7 +94,7 @@ public class TokenizerTests
     [InlineData("\ta    ", new[]{typeof(WhiteSpace), typeof(Word), typeof(WhiteSpace), typeof(EndOfLine)})]
     public void TestScope(string code, Type[] sequenceShould)
     {
-        var result = code.Tokenize();
+        var result = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName);
         Assert.Empty(result.Exceptions);
         Assert.Equal(result.Sequence.Count(), sequenceShould.Length);
         for (var i = 0; i < sequenceShould.Length; i++)
@@ -110,8 +109,7 @@ public class TokenizerTests
     [InlineData("\"\" 222")]
     public void TestOverallConsistency(string code)
     {
-        var codeLength = code.Length + 2; //Plus to because of implicit \r\n addition
-        var tokenSequence = code.Tokenize();
+        var tokenSequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName);
         Assert.Empty(tokenSequence.Exceptions);
         var last = new FilePosition(0, -1);
         foreach (var token in tokenSequence.Sequence)

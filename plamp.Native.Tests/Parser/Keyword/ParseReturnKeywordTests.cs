@@ -1,10 +1,9 @@
-using plamp.Ast;
-using plamp.Ast.Node;
-using plamp.Ast.Node.Binary;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
 
@@ -13,7 +12,7 @@ namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseReturnKeywordTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseReturnKeyword()
@@ -21,16 +20,16 @@ public class ParseReturnKeywordTests
         const string code = """
                             return
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
     
     [Fact]
@@ -39,19 +38,19 @@ public class ParseReturnKeywordTests
         const string code = """
                             return 1+1
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(
                 new PlusNode(
-                    new ConstNode(1, typeof(int)),
-                    new ConstNode(1, typeof(int))));
+                    new LiteralNode(1, typeof(int)),
+                    new LiteralNode(1, typeof(int))));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(5, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(5, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -60,21 +59,22 @@ public class ParseReturnKeywordTests
         const string code = """
                             return 1 1
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ReturnNode(
-                new ConstNode(1, typeof(int)));
+                new LiteralNode(1, typeof(int)));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(5, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(5, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(0, 8), new(0, 11));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+            new(0, 8), new(0, 11),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     #region Symbol dictionary
@@ -85,21 +85,20 @@ public class ParseReturnKeywordTests
         const string code = """
                             return
                             """;
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Single(symbolDictionary);
         Assert.Contains(expression, symbolDictionary);
         var val = symbolDictionary[expression];
         Assert.Empty(val.Children);
         Assert.Single(val.Tokens);
         var token = val.Tokens[0];
-        Assert.Equal(tokenRes.Sequence.TokenList[0], token);
+        Assert.Equal(context.TokenSequence.TokenList[0], token);
     }
 
     public void SymbolReturnWithValue()
@@ -107,21 +106,20 @@ public class ParseReturnKeywordTests
         const string code = """
                             return 0
                             """;
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Single(symbolDictionary);
         Assert.Contains(expression, symbolDictionary);
         var val = symbolDictionary[expression];
         Assert.Single(val.Children);
         Assert.Single(val.Tokens);
         var token = val.Tokens[0];
-        Assert.Equal(tokenRes.Sequence.TokenList[0], token);
+        Assert.Equal(context.TokenSequence.TokenList[0], token);
         Assert.Contains(val.Children[0], symbolDictionary);
     }
     #endregion

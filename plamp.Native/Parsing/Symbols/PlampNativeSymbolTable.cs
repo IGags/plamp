@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using plamp.Ast;
-using plamp.Ast.Node;
+using System.Reflection;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Native.Parsing.Symbols;
 
@@ -15,8 +16,18 @@ internal class PlampNativeSymbolTable : ISymbolTable
         _symbols = symbols;
     }
     
-    public PlampException SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public PlampException SetExceptionToNodeAndChildren(
+        PlampExceptionRecord exceptionRecord,
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
+        if (node.SymbolOverride != null 
+            && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+        {
+            return exception;
+        }
+        
         var symbolStack = new Stack<NodeBase>();
         symbolStack.Push(node);
         var positionMinimum = new FilePosition(int.MaxValue, int.MaxValue);
@@ -48,11 +59,21 @@ internal class PlampNativeSymbolTable : ISymbolTable
             }
         }
 
-        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum, fileName, assemblyName);
     }
 
-    public PlampException SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public PlampException SetExceptionToNodeWithoutChildren(
+        PlampExceptionRecord exceptionRecord, 
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
+        if (node.SymbolOverride != null 
+            && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+        {
+            return exception;
+        }
+        
         if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
         {
             throw new Exception("Symbol is not found in symbol table.");
@@ -73,10 +94,14 @@ internal class PlampNativeSymbolTable : ISymbolTable
                 positionMaximum = token.End;
             }
         }
-        return new PlampException(exceptionRecord, positionMinimum, positionMaximum);
+        return new PlampException(exceptionRecord, positionMinimum, positionMaximum, fileName, assemblyName);
     }
 
-    public List<PlampException> SetExceptionToChildren(PlampExceptionRecord exceptionRecord, NodeBase node)
+    public List<PlampException> SetExceptionToChildren(
+        PlampExceptionRecord exceptionRecord,
+        NodeBase node,
+        string fileName,
+        AssemblyName assemblyName)
     {
         if (!_symbols.TryGetValue(node, out var plampNativeSymbolRecord))
         {
@@ -84,13 +109,37 @@ internal class PlampNativeSymbolTable : ISymbolTable
         }
 
         var childExceptions = new List<PlampException>();
-
+        
         foreach (var child in plampNativeSymbolRecord.Children)
         {
-            var ex = SetExceptionToNodeAndChildren(exceptionRecord, child);
+            if (child.SymbolOverride != null
+                && node.SymbolOverride.TryOverride(exceptionRecord, out var exception))
+            {
+                childExceptions.Add(exception);
+                continue;
+            }
+            
+            var ex = SetExceptionToNodeAndChildren(exceptionRecord, child, fileName, assemblyName);
             childExceptions.Add(ex);
         }
 
         return childExceptions;
+    }
+
+    public bool Contains(NodeBase node)
+    {
+        return _symbols.ContainsKey(node);
+    }
+
+    public bool TryGetChildren(NodeBase node, out IReadOnlyList<NodeBase> children)
+    {
+        if (_symbols.TryGetValue(node, out var value))
+        {
+            children = value.Children;
+            return true;
+        }
+
+        children = null;
+        return false;
     }
 }

@@ -5,9 +5,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\plamp.Assembly\plamp.Assembly.csproj" />
-      <ProjectReference Include="..\plamp.Ast\plamp.Ast.csproj" />
-      <ProjectReference Include="..\plamp.Validators\plamp.Validators.csproj" />
+      <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.0-preview.2.25164.1" />
     </ItemGroup>
 
 </Project>

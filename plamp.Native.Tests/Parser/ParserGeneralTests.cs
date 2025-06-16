@@ -1,18 +1,21 @@
-using plamp.Ast.Node;
-using plamp.Ast.Node.Assign;
-using plamp.Ast.Node.Binary;
-using plamp.Ast.Node.Body;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Ast.Node.Unary;
-using plamp.Ast.NodeComparers;
+using System.Threading;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Abstractions.Extensions.Ast.Comparers;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
 using Xunit;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 namespace plamp.Native.Tests.Parser;
 
 public class ParserGeneralTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseFindMaximum()
@@ -25,8 +28,10 @@ public class ParserGeneralTests
                                         max = item
                                 return max
                             """;
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -53,9 +58,8 @@ public class ParserGeneralTests
                             null,
                             new MemberNode("max")),
                         new CallNode(
-                            new MemberAccessNode(
-                                new MemberNode("int"),
-                                new MemberNode("Min")),
+                            new MemberNode("int"),
+                            new MemberNode("Min"),
                             [])),
                     new ForeachNode(
                         new VariableDefinitionNode(
@@ -100,8 +104,10 @@ public class ParserGeneralTests
                                     if(isComplete) return index
                                 return -1
                             """;
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Single(result.NodeList);
         var expressionShould
@@ -130,10 +136,10 @@ public class ParserGeneralTests
                                 new OrNode(
                                     new EqualNode(
                                         new MemberNode("str"),
-                                        new ConstNode(null, null)),
+                                        new LiteralNode(null, null)),
                                     new EqualNode(
                                         new MemberNode("substr"),
-                                        new ConstNode(null, null))),
+                                        new LiteralNode(null, null))),
                                 new LessNode(
                                     new MemberAccessNode(
                                         new MemberNode("str"),
@@ -145,7 +151,7 @@ public class ParserGeneralTests
                             [
                                 new ReturnNode(
                                     new UnaryMinusNode(
-                                        new ConstNode(1, typeof(int))))
+                                        new LiteralNode(1, typeof(int))))
                             ])),
                         [],
                         null),
@@ -156,7 +162,7 @@ public class ParserGeneralTests
                                     new MemberNode("int"),
                                     null),
                                 new MemberNode("index")),
-                            new ConstNode(0, typeof(int))),
+                            new LiteralNode(0, typeof(int))),
                         new LessNode(
                             new MemberNode("index"),
                             new MinusNode(
@@ -167,7 +173,7 @@ public class ParserGeneralTests
                                     new MemberAccessNode(
                                         new MemberNode("substr"),
                                         new MemberNode("Length"))),
-                                new ConstNode(1, typeof(int)))),
+                                new LiteralNode(1, typeof(int)))),
                         new PostfixIncrementNode(
                             new MemberNode("index")),
                         new BodyNode(
@@ -178,7 +184,7 @@ public class ParserGeneralTests
                                         new MemberNode("bool"),
                                         null),
                                     new MemberNode("isComplete")),
-                                new ConstNode(true, typeof(bool))),
+                                new LiteralNode(true, typeof(bool))),
                             new ForNode(
                                 new AssignNode(
                                     new VariableDefinitionNode(
@@ -186,7 +192,7 @@ public class ParserGeneralTests
                                             new MemberNode("int"),
                                             null),
                                         new MemberNode("i")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new LessNode(
                                     new MemberNode("i"),
                                     new MemberAccessNode(
@@ -220,7 +226,7 @@ public class ParserGeneralTests
                                             [
                                                 new AssignNode(
                                                     new MemberNode("isComplete"),
-                                                    new ConstNode(false, typeof(bool))),
+                                                    new LiteralNode(false, typeof(bool))),
                                                 new BreakNode()
                                             ])),
                                         [],
@@ -239,7 +245,7 @@ public class ParserGeneralTests
                         ])),
                     new ReturnNode(
                         new UnaryMinusNode(
-                            new ConstNode(1, typeof(int))))
+                            new LiteralNode(1, typeof(int))))
                 ]));
         Assert.Equal(expressionShould, result.NodeList[0], Comparer);
     }
@@ -275,7 +281,9 @@ public class ParserGeneralTests
                                 else return list
                             """;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Single(result.NodeList);
         Assert.Empty(result.Exceptions);
         var expressionShould
@@ -307,12 +315,12 @@ public class ParserGeneralTests
                             new OrNode(
                                 new EqualNode(
                                     new MemberNode("list"),
-                                    new ConstNode(null, null)),
+                                    new LiteralNode(null, null)),
                                 new EqualNode(
                                     new MemberAccessNode(
                                         new MemberNode("list"),
                                         new MemberNode("Count")),
-                                    new ConstNode(0, typeof(int)))),
+                                    new LiteralNode(0, typeof(int)))),
                             new BodyNode(
                             [
                                 new ReturnNode(
@@ -327,7 +335,7 @@ public class ParserGeneralTests
                                 new MemberAccessNode(
                                     new MemberNode("list"),
                                     new MemberNode("Count")),
-                                new ConstNode(2, typeof(int))),
+                                new LiteralNode(2, typeof(int))),
                             new BodyNode(
                             [   
                                 new AssignNode(
@@ -338,20 +346,20 @@ public class ParserGeneralTests
                                         new MemberAccessNode(
                                             new MemberNode("list"),
                                             new MemberNode("Count")),
-                                        new ConstNode(2, typeof(int)))),
+                                        new LiteralNode(2, typeof(int)))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("first")),
                                     new CallNode(
+                                        null,
                                         new MemberNode("mergeSort"),
                                         [
                                             new CallNode(
-                                                new MemberAccessNode(
-                                                    new MemberNode("list"),
-                                                    new MemberNode("Span")),
+                                                new MemberNode("list"),
+                                                new MemberNode("Span"),
                                                 [
-                                                    new ConstNode(0, typeof(int)),
+                                                    new LiteralNode(0, typeof(int)),
                                                     new MemberNode("splitBasis")
                                                 ])
                                         ])),
@@ -360,12 +368,12 @@ public class ParserGeneralTests
                                         null,
                                         new MemberNode("second")),
                                     new CallNode(
+                                        null,
                                         new MemberNode("mergeSort"),
                                         [
                                             new CallNode(
-                                                new MemberAccessNode(
-                                                    new MemberNode("list"),
-                                                    new MemberNode("Span")),
+                                                new MemberNode("list"),
+                                                new MemberNode("Span"),
                                                 [
                                                     new MemberNode("splitBasis"),
                                                     new MinusNode(
@@ -379,17 +387,17 @@ public class ParserGeneralTests
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("firstPtr")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("secondPtr")),
-                                    new ConstNode(0, typeof(int))),
+                                    new LiteralNode(0, typeof(int))),
                                 new AssignNode(
                                     new VariableDefinitionNode(
                                         null,
                                         new MemberNode("result")),
-                                    new ConstructorNode(
+                                    new ConstructorCallNode(
                                         new TypeNode(
                                             new MemberNode("List"),
                                             [
@@ -429,9 +437,8 @@ public class ParserGeneralTests
                                                 new BodyNode(
                                                 [
                                                     new CallNode(
-                                                        new MemberAccessNode(
-                                                            new MemberNode("result"),
-                                                            new MemberNode("Add")),
+                                                        new MemberNode("result"),
+                                                        new MemberNode("Add"),
                                                         [
                                                             new IndexerNode(
                                                                 new MemberNode("first"),
@@ -446,9 +453,8 @@ public class ParserGeneralTests
                                             new BodyNode(
                                             [
                                                 new CallNode(
-                                                    new MemberAccessNode(
-                                                        new MemberNode("result"),
-                                                        new MemberNode("Add")),
+                                                    new MemberNode("result"),
+                                                    new MemberNode("Add"),
                                                     [
                                                         new IndexerNode(
                                                             new MemberNode("second"),
@@ -469,7 +475,7 @@ public class ParserGeneralTests
                                     new MemberAccessNode(
                                         new MemberNode("list"),
                                         new MemberNode("Count")),
-                                    new ConstNode(2, typeof(int))),
+                                    new LiteralNode(2, typeof(int))),
                                 new BodyNode(
                                 [
                                     new ConditionNode(
@@ -478,19 +484,18 @@ public class ParserGeneralTests
                                                 new IndexerNode(
                                                     new MemberNode("list"),
                                                     [
-                                                        new ConstNode(1, typeof(int))
+                                                        new LiteralNode(1, typeof(int))
                                                     ]),
                                                 new IndexerNode(
                                                     new MemberNode("list"),
                                                     [
-                                                        new ConstNode(0, typeof(int))
+                                                        new LiteralNode(0, typeof(int))
                                                     ])),
                                             new BodyNode(
                                             [
                                                 new CallNode(
-                                                    new MemberAccessNode(
-                                                        new MemberNode("list"),
-                                                        new MemberNode("Reverse")),
+                                                    new MemberNode("list"),
+                                                    new MemberNode("Reverse"),
                                                     [])
                                             ])),
                                         [],
@@ -531,7 +536,9 @@ public class ParserGeneralTests
                                 return image
                             """;
         var parser = new PlampNativeParser();
-        var result = parser.Parse(code);
+        var source = ParserTestHelper.GetSourceCode(code);
+        var assembly = ParserTestHelper.AssemblyName;
+        var result = parser.Parse(source, assembly, CancellationToken.None);
         Assert.Empty(result.Exceptions);
         Assert.Equal(5, result.NodeList.Count);
         var expressionShould1
@@ -551,7 +558,7 @@ public class ParserGeneralTests
                         new VariableDefinitionNode(
                             null,
                             new MemberNode("im")),
-                        new ConstructorNode(
+                        new ConstructorCallNode(
                             new TypeNode(
                                 new MemberNode("Image"),
                                 null),
@@ -559,17 +566,18 @@ public class ParserGeneralTests
                     new AssignNode(
                         new MemberNode("im"),
                         new CallNode(
+                            null,
                             new MemberNode("fillImage"),
                             [
                                 new MemberNode("im")
                             ])),
                     new CallNode(
+                        null,
                         new MemberNode("print"),
                         [
                             new CallNode(
-                                new MemberAccessNode(
-                                    new MemberNode("im"),
-                                    new MemberNode("generateStory")),
+                                new MemberNode("im"),
+                                new MemberNode("generateStory"),
                                 [])
                         ])
                 ]));
@@ -591,51 +599,44 @@ public class ParserGeneralTests
                 new BodyNode(
                 [
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Joy", typeof(string))
+                            new LiteralNode("Joy", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Temptation", typeof(string))
+                            new LiteralNode("Temptation", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Honey", typeof(string))
+                            new LiteralNode("Honey", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Bees", typeof(string))
+                            new LiteralNode("Bees", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Pain", typeof(string))
+                            new LiteralNode("Pain", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Add")),
+                        new MemberNode("image"),
+                        new MemberNode("Add"),
                         [
-                            new ConstNode("Lesson", typeof(string))
+                            new LiteralNode("Lesson", typeof(string))
                         ]),
                     new CallNode(
-                        new MemberAccessNode(
-                            new MemberNode("image"),
-                            new MemberNode("Build")),
+                        new MemberNode("image"),
+                        new MemberNode("Build"),
                         []),
                     new ReturnNode(
                         new MemberNode("image"))

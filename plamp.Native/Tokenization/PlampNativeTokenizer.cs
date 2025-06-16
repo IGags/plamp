@@ -3,15 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using plamp.Ast;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Compilation;
+using plamp.Abstractions.Compilation.Models;
 using plamp.Native.Tokenization.Enumerations;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Tokenization;
 
-public static partial class PlampNativeTokenizer
+internal static partial class PlampNativeTokenizer
 {
     private readonly record struct Row(int Number, string Value) : IEnumerable<char>
     {
@@ -37,52 +40,53 @@ public static partial class PlampNativeTokenizer
     [GeneratedRegex($"(?:{EndOfLineCrlf}|{EndOfLine})")]
     private static partial Regex EndOfLineRegex();
     
-    public static TokenizationResult Tokenize(this string code)
+    internal static TokenizationResult Tokenize(this SourceFile sourceFile, AssemblyName assemblyName)
     {
-        if (code == null)
+        if (sourceFile.SourceCode == null)
         {
             return new TokenizationResult(new TokenSequence([new EndOfLine(EndOfLineCrlf, new(0, 0), new(0, 1))]), []);
         }
         
-        var rows = EndOfLineRegex().Split(code);
+        var rows = EndOfLineRegex().Split(sourceFile.SourceCode);
         var prepared = rows.Select((t, i) => new Row(i, t));
 
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
+        var context = new TokenizationContext(sourceFile.FileName, rows, tokenList, exceptionList, assemblyName);
         
         foreach (var row in prepared)
         {
-            TokenizeSingleRow(row, tokenList, exceptionList);
+            TokenizeSingleRow(row, context);
         }
         
-        return new TokenizationResult(new TokenSequence(tokenList), exceptionList);
+        return new TokenizationResult(new TokenSequence(context.Tokens), context.Exceptions);
     }
 
-    private static void TokenizeSingleRow(Row row, List<TokenBase> tokenList, List<PlampException> exceptionList)
+    private static void TokenizeSingleRow(Row row, TokenizationContext context)
     {
         for(var i = 0; i < row.Value.Length;)
         {
             if (char.IsLetter(row[i]))
             {
-                tokenList.Add(ParseWord(row, ref i));
+                context.Tokens.Add(ParseWord(row, ref i, context));
             }
             else if(char.IsDigit(row[i]))
             {
-                tokenList.Add(ParseNumber(row, ref i, exceptionList));                
+                context.Tokens.Add(ParseNumber(row, ref i, context));                
             }
             else if (row[i] == '"')
             {
-                var literal = ParseStringLiteral(row, ref i, exceptionList);
+                var literal = ParseStringLiteral(row, ref i, context);
                 if (literal != null)
                 {
-                    tokenList.Add(literal);
+                    context.Tokens.Add(literal);
                 }
             }
             else
             {
-                if (TryParseCustom(row, ref i, out var result, exceptionList))
+                if (TryParseCustom(row, ref i, out var result, context))
                 {
-                    tokenList.Add(result);
+                    context.Tokens.Add(result);
                 }
             }
         }
@@ -90,10 +94,10 @@ public static partial class PlampNativeTokenizer
         //Похоже на костыль
         var start = new FilePosition(row.Number, row.Length);
         var end = new FilePosition(row.Number, row.Length + EndOfLineCrlf.Length - 1);
-        tokenList.Add(new EndOfLine(EndOfLineCrlf, start, end));    
+        context.Tokens.Add(new EndOfLine(EndOfLineCrlf, start, end));    
     }
 
-    private static NumberLiteral ParseNumber(Row row, ref int position, List<PlampException> exceptions)
+    private static NumberLiteral ParseNumber(Row row, ref int position, TokenizationContext context)
     {
         var builder = new StringBuilder();
         var startPosition = new FilePosition(row.Number, position);
@@ -138,7 +142,7 @@ public static partial class PlampNativeTokenizer
         var end = new FilePosition(row.Number, position - 1);
         if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
         {
-            exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end));
+            context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end, context.FileName, context.AssemblyName));
         }
         var (value, type) = cort;
         return new NumberLiteral(numberPart + postfix, startPosition, end, value, type);
@@ -217,7 +221,7 @@ public static partial class PlampNativeTokenizer
         }
     }
     
-    private static TokenBase ParseWord(Row row, ref int position)
+    private static TokenBase ParseWord(Row row, ref int position, TokenizationContext context)
     {
         var builder = new StringBuilder();
         var startPosition = new FilePosition(row.Number, position);
@@ -244,7 +248,7 @@ public static partial class PlampNativeTokenizer
         return new Word(word, startPosition, endPosition);
     }
 
-    private static StringLiteral ParseStringLiteral(Row row, ref int position, List<PlampException> exceptions)
+    private static StringLiteral ParseStringLiteral(Row row, ref int position, TokenizationContext context)
     {
         var startPosition = new FilePosition(row.Number, position);
         var builder = new StringBuilder();
@@ -256,7 +260,7 @@ public static partial class PlampNativeTokenizer
                 case '\n':
                     var end = new FilePosition(row.Number, position - 1);
                     var literal = new StringLiteral(builder.ToString(), startPosition, end); 
-                    exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, end));
+                    context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, end, context.FileName, context.AssemblyName));
                     return literal;
                 case '"':
                     literal = new StringLiteral(builder.ToString(), startPosition, new FilePosition(row.Number, position));
@@ -264,20 +268,20 @@ public static partial class PlampNativeTokenizer
                     return literal;
                 case '\\':
                     position++;
-                    TryParseEscapedSequence(row, ref position, builder, exceptions);
+                    TryParseEscapedSequence(row, ref position, builder, context);
                     break;
                 case '\r':
                 case '\t':
                     if (row.Length < position + 1 && row[position] == EndOfLineCrlf[0] && row[position + 1] == EndOfLineCrlf[1])
                     {
                         var endPosition = new FilePosition(row.Number, position - 1);
-                        exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPosition));
+                        context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPosition, context.FileName, context.AssemblyName));
                         literal = new StringLiteral(builder.ToString(), startPosition, endPosition);
                         return literal;
                     }
                     
-                    exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(),
-                        new FilePosition(row.Number, position), new FilePosition(row.Number, position)));
+                    context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(),
+                        new FilePosition(row.Number, position), new FilePosition(row.Number, position), context.FileName, context.AssemblyName));
                     break;
                 default:
                     builder.Append(row[position]);
@@ -286,12 +290,12 @@ public static partial class PlampNativeTokenizer
         }
 
         var endPos = new FilePosition(row.Number, position - 1);
-        exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos));
+        context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos, context.FileName, context.AssemblyName));
         return new StringLiteral(builder.ToString(), startPosition, endPos);
     }
 
     private static void TryParseEscapedSequence(Row row, ref int position, StringBuilder builder,
-        List<PlampException> exceptions)
+        TokenizationContext context)
     {
         switch (row[position])
         {
@@ -311,13 +315,13 @@ public static partial class PlampNativeTokenizer
                 builder.Append('"');
                 break;
             default:
-                exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
-                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position)));
+                context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
+                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position), context.FileName, context.AssemblyName));
                 return;
         }
     }
     
-    private static bool TryParseCustom(Row row, ref int position, out TokenBase result, List<PlampException> exceptions)
+    private static bool TryParseCustom(Row row, ref int position, out TokenBase result, TokenizationContext context)
     {
         result = null;
         var startPosition = new FilePosition(row.Number, position);
@@ -382,8 +386,8 @@ public static partial class PlampNativeTokenizer
                     result = @operator;
                     return true;
                 }
-                exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnexpectedToken(row[position].ToString()), 
-                    startPosition, startPosition));
+                context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnexpectedToken(row[position].ToString()), 
+                    startPosition, startPosition, context.FileName, context.AssemblyName));
                 position++;
                 return false;
         }

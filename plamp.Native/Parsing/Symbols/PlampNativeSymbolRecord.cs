@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Ast.Node;
+using plamp.Abstractions.Ast.Node;
 using plamp.Native.Tokenization.Token;
 
 namespace plamp.Native.Parsing.Symbols;

@@ -1,5 +1,5 @@
 ﻿using System;
-using plamp.Ast;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Native.Tokenization.Token;
 

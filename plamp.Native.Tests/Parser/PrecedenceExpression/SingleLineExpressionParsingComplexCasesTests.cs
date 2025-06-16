@@ -1,7 +1,7 @@
-using plamp.Ast.Node;
-using plamp.Ast.Node.Assign;
-using plamp.Ast.Node.Binary;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
 using Xunit;
 
@@ -16,8 +16,8 @@ public class SingleLineExpressionParsingComplexCasesTests
     public void DeclareAssignCastAndSub()
     {
         const string code = "int i = (int)(1.2/3 + getRandNum())";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new AssignNode(
@@ -32,13 +32,14 @@ public class SingleLineExpressionParsingComplexCasesTests
                         null),
                     new PlusNode(
                         new DivideNode(
-                            new ConstNode(1.2, typeof(double)),
-                            new ConstNode(3, typeof(int))),
+                            new LiteralNode(1.2, typeof(double)),
+                            new LiteralNode(3, typeof(int))),
                         new CallNode(
+                            null,
                             new MemberNode("getRandNum"),
                             []))));
-        Assert.Equal(expressionShould, expression, new RecursiveComparer());
-        Assert.Equal(19, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(expressionShould, expression, new ExtendedRecursiveComparer());
+        Assert.Equal(19, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 }

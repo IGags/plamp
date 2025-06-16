@@ -1,8 +1,6 @@
-using Microsoft.VisualStudio.TestPlatform.Utilities;
-using plamp.Ast.Node;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Extensions.Ast.Comparers;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -10,35 +8,35 @@ namespace plamp.Native.Tests.Parser.PrecedenceExpression;
 
 public class ConstructorDeclarationTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ValidConstructorDeclaration()
     {
         const string code = "new int()";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("int"),
                     null),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(4, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(4, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ValidConstructorWithGenerics()
     {
         const string code = "new List<int>()";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("List"),
                     [
@@ -48,52 +46,52 @@ public class ConstructorDeclarationTests
                     ]),
                 []);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(7, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(7, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ValidConstructorWithArgs()
     {
         const string code = "new string(1)";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
-            = new ConstructorNode(
+            = new ConstructorCallNode(
                 new TypeNode(
                     new MemberNode("string"),
                     null),
                 [
-                    new ConstNode(1, typeof(int))
+                    new LiteralNode(1, typeof(int))
                 ]);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(5, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(5, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void CtorWithoutParens()
     {
         const string code = "new int";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(-1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void OnlyNewKeyword()
     {
         const string code = "new";
-        var parser = new PlampNativeParser(code);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(-1, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(-1, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol table
@@ -102,18 +100,17 @@ public class ConstructorDeclarationTests
     public void ConstructorWithoutArgsSymbolTest()
     {
         const string code = "new T()";
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
+        var context = ParserTestHelper.GetContext(code);
         
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(3, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Single(symbol.Tokens);
-        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], symbol.Tokens[0]);
         Assert.Single(symbol.Children);
     }
 
@@ -121,17 +118,16 @@ public class ConstructorDeclarationTests
     public void ConstructorWithArgsSymbolTest()
     {
         const string code = "new List<d>(2222,1111)";
-        var sequence = code.Tokenize().Sequence;
-        var parser = new PlampNativeParser(sequence);
-        var result = parser.TryParseWithPrecedence(out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
         
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-        var symbolTable = parser.TransactionSource.SymbolDictionary;
+        var symbolTable = context.TransactionSource.SymbolDictionary;
         Assert.Equal(7, symbolTable.Count);
         Assert.Contains(expression, symbolTable);
         var symbol = symbolTable[expression];
         Assert.Single(symbol.Tokens);
-        Assert.Equal(sequence.TokenList[0], symbol.Tokens[0]);
+        Assert.Equal(context.TokenSequence.TokenList[0], symbol.Tokens[0]);
         Assert.Equal(3, symbol.Children.Count);
     }
 

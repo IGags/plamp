@@ -1,38 +1,39 @@
 using System.Linq;
-using plamp.Ast;
-using plamp.Ast.Node;
-using plamp.Ast.Node.Assign;
-using plamp.Ast.Node.Binary;
-using plamp.Ast.Node.Body;
-using plamp.Ast.Node.ControlFlow;
-using plamp.Ast.Node.Unary;
-using plamp.Ast.NodeComparers;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Abstractions.Extensions.Ast.Comparers;
+using plamp.Abstractions.Extensions.Ast.Node;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;
 using Xunit;
+using ConditionNode = plamp.Abstractions.Extensions.Ast.Node.ConditionNode;
 
 #pragma warning disable CS0618
 namespace plamp.Native.Tests.Parser.Keyword;
 
 public class ParseConditionTests
 {
-    private static readonly RecursiveComparer Comparer = new();
+    private static readonly ExtendedRecursiveComparer Comparer = new();
     
     [Fact]
     public void ParseValidSingleLineCondition()
     {
         const string code = "if(i==7)k++";
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
                     new EqualNode(
                         new MemberNode("i"),
-                        new ConstNode(7, typeof(int))),
+                        new LiteralNode(7, typeof(int))),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -41,8 +42,8 @@ public class ParseConditionTests
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -54,37 +55,37 @@ public class ParseConditionTests
                                 expose()
                                 return 0
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
                     new EqualNode(
                         new MemberNode("i"),
-                        new ConstNode(3, typeof(int))),
+                        new LiteralNode(3, typeof(int))),
                     new BodyNode(
                         [
                             new PostfixIncrementNode(new MemberNode("i")),
-                            new CallNode(new MemberNode("expose"), []),
-                            new ReturnNode(new ConstNode(0, typeof(int)))
+                            new CallNode(null, new MemberNode("expose"), []),
+                            new ReturnNode(new LiteralNode(0, typeof(int)))
                         ]
                     )),
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(20, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(20, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
     public void ParseIfConditionWithoutPredicate()
     {
         const string code = "if()i++";
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -99,21 +100,21 @@ public class ParseConditionTests
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(5, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(5, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould =
             new PlampException(PlampNativeExceptionInfo.EmptyConditionPredicate(), 
-                new(0, 2), new(0, 3));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
+                new(0, 2), new(0, 3), ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions.First());
     }
 
     [Fact]
     public void ParseIfConditionWithoutClosingParenSingleLine()
     {
         const string code = "if(r return 1";
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -126,12 +127,13 @@ public class ParseConditionTests
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(7, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(7, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.ParenExpressionIsNotClosed(), 
-            new(0, 2), new(0, 14));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
+            new(0, 2), new(0, 14),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions.First());
     }
 
     [Fact]
@@ -141,9 +143,9 @@ public class ParseConditionTests
                             if(r
                                 return 1
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -152,39 +154,42 @@ public class ParseConditionTests
                     new MemberNode("r"),
                     new BodyNode(
                     [
-                        new ReturnNode(new ConstNode(1, typeof(int)))
+                        new ReturnNode(new LiteralNode(1, typeof(int)))
                     ])),
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
-            PlampNativeExceptionInfo.ParenExpressionIsNotClosed(), 
-            new(0, 2), new(0, 5));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions.First());
+            PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
+            new(0, 2), new(0, 5), 
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions.First());
     }
 
     [Fact]
     public void ParseIfOpenParenIsMissing()
     {
         const string code = "if r) return 1";
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedCommit, result);
         Assert.Null(expression);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Equal(2, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Equal(2, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 =
             new PlampException(PlampNativeExceptionInfo.MissingConditionPredicate(), 
-                new(0, 0), new(0, 1));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+                new(0, 0), new(0, 1),
+                ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 =
             new PlampException(PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-                new(0, 2), new(0, 15));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+                new(0, 2), new(0, 15),
+                ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
     }
 
     [Fact]
@@ -194,19 +199,19 @@ public class ParseConditionTests
                             if(true) return 1
                             else i++
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [],
                 new BodyNode(
@@ -215,8 +220,8 @@ public class ParseConditionTests
                         new MemberNode("i"))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(13, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(13, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -228,15 +233,15 @@ public class ParseConditionTests
                                 i--
                                 --i
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -251,8 +256,8 @@ public class ParseConditionTests
                         new MemberNode("i"))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(17, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(17, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -261,14 +266,14 @@ public class ParseConditionTests
         const string code = """
                             else fun
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.FailedNeedPass, result);
         Assert.Null(expression);
-        Assert.Equal(0, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(0, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -278,9 +283,9 @@ public class ParseConditionTests
                             if(i) a()
                             else
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -290,14 +295,14 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
-                            new MemberNode("a"), [])
+                            null, new MemberNode("a"), [])
                     ])),
                 [],
                 new BodyNode(
                     []));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(10, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(10, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -307,9 +312,9 @@ public class ParseConditionTests
                             if(i) a()
                             elif(!i) b()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
             = new ConditionNode(
@@ -318,6 +323,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("a"),
                             [])
                     ])),
@@ -328,14 +334,15 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("b"),
                                 [])
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(18, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(18, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -347,9 +354,9 @@ public class ParseConditionTests
                                 var d = b() + c()
                                 return d
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -359,6 +366,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("a"),
                             [])
                     ])),
@@ -374,9 +382,11 @@ public class ParseConditionTests
                                     new MemberNode("d")),
                                 new PlusNode(
                                     new CallNode(
+                                        null,
                                         new MemberNode("b"), 
                                         []),
                                     new CallNode(
+                                        null,
                                         new MemberNode("c"),
                                         []))),
                             new ReturnNode(
@@ -385,8 +395,8 @@ public class ParseConditionTests
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(36, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(36, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -396,9 +406,9 @@ public class ParseConditionTests
                             if(i) --t
                             elif(t)
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -418,8 +428,8 @@ public class ParseConditionTests
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(12, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(12, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -430,9 +440,9 @@ public class ParseConditionTests
                    elif !i)
                        return !t()
                    """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         var expressionShould
@@ -442,26 +452,30 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("t"),
                             [])
                     ])),
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(22, parser.TokenSequence.Position);
-        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(22, context.TokenSequence.Position);
+        Assert.Equal(3, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
             PlampNativeExceptionInfo.MissingConditionPredicate(), 
-            new(1, 0), new(1, 3));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+            new(1, 0), new(1, 3),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.Expected(nameof(EndOfLine)),
-            new(1, 4), new(1, 9));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+            new(1, 4), new(1, 9),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
         var exceptionShould3 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(2, 4), new(2, 16));
-        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+            new(2, 4), new(2, 16),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould3, context.TransactionSource.Exceptions[2]);
     }
 
     [Fact]
@@ -474,9 +488,9 @@ public class ParseConditionTests
                                 c--
                             elif(false) return 1
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -495,25 +509,26 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("print"),
                                 [
-                                    new ConstNode("hi", typeof(string))
+                                    new LiteralNode("hi", typeof(string))
                                 ]),
                             new PostfixDecrementNode(
                                 new MemberNode("c"))
                         ])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(1, typeof(int)))
+                                new LiteralNode(1, typeof(int)))
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(32, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(32, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -524,9 +539,9 @@ public class ParseConditionTests
                             elif(!i)
                             elif(false) return 1
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -544,17 +559,17 @@ public class ParseConditionTests
                             new MemberNode("i")),
                         new BodyNode([])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(1, typeof(int)))
+                                new LiteralNode(1, typeof(int)))
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(22, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(22, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -566,9 +581,9 @@ public class ParseConditionTests
                             elif(false)
                             else return 2
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -587,20 +602,20 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                         ])),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode([]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(2, typeof(int)))
+                        new LiteralNode(2, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(28, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(28, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -613,15 +628,15 @@ public class ParseConditionTests
                                 c()
                             elif(false) return null
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -629,29 +644,32 @@ public class ParseConditionTests
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(null, null))
+                                new LiteralNode(null, null))
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(28, parser.TokenSequence.Position);
-        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(28, context.TokenSequence.Position);
+        Assert.Equal(3, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
             PlampNativeExceptionInfo.MissingConditionPredicate(), 
-            new(1, 0), new(1, 3));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+            new(1, 0), new(1, 3),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(2, 4), new(2, 8));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+            new(2, 4), new(2, 8),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
         var exceptionShould3 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(3, 4), new(3, 8));
-        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+            new(3, 4), new(3, 8),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould3, context.TransactionSource.Exceptions[2]);
     }
 
     [Fact]
@@ -666,15 +684,15 @@ public class ParseConditionTests
                             else
                                 w()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new PostfixIncrementNode(
@@ -682,34 +700,38 @@ public class ParseConditionTests
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(null, null))
+                                new LiteralNode(null, null))
                         ]))
                 ],
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("w"),
                         [])
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(35, parser.TokenSequence.Position);
-        Assert.Equal(3, parser.TransactionSource.Exceptions.Count);
+        Assert.Equal(35, context.TokenSequence.Position);
+        Assert.Equal(3, context.TransactionSource.Exceptions.Count);
         var exceptionShould1 = new PlampException(
             PlampNativeExceptionInfo.MissingConditionPredicate(), 
-            new(2, 0), new(2, 3));
-        Assert.Equal(exceptionShould1, parser.TransactionSource.Exceptions[0]);
+            new(2, 0), new(2, 3),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould1, context.TransactionSource.Exceptions[0]);
         var exceptionShould2 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(3, 4), new(3, 8));
-        Assert.Equal(exceptionShould2, parser.TransactionSource.Exceptions[1]);
+            new(3, 4), new(3, 8),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould2, context.TransactionSource.Exceptions[1]);
         var exceptionShould3 = new PlampException(
             PlampNativeExceptionInfo.InvalidBody(),
-            new(4, 4), new(4, 8));
-        Assert.Equal(exceptionShould3, parser.TransactionSource.Exceptions[2]);
+            new(4, 4), new(4, 8),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould3, context.TransactionSource.Exceptions[2]);
     }
 
     [Fact]
@@ -722,29 +744,29 @@ public class ParseConditionTests
                             elif(false)
                                 return ++i
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
 
         var expressionShould
             = new ConditionNode(
                 new ClauseNode(
-                    new ConstNode(true, typeof(bool)),
+                    new LiteralNode(true, typeof(bool)),
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(0, typeof(int)))
+                            new LiteralNode(0, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                             []
                         )),
                     new ClauseNode(
-                        new ConstNode(false, typeof(bool)),
+                        new LiteralNode(false, typeof(bool)),
                         new BodyNode(
                         [
                             new ReturnNode(
@@ -754,12 +776,13 @@ public class ParseConditionTests
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(28, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(28, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
-            new(2, 4), new(2, 23));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+            new(2, 4), new(2, 23),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     [Fact]
@@ -772,9 +795,9 @@ public class ParseConditionTests
                                 return urFault
                             else return ourFault
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -784,7 +807,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(0, typeof(int)))
+                            new LiteralNode(0, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -808,12 +831,13 @@ public class ParseConditionTests
                         new MemberNode("ourFault"))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(32, parser.TokenSequence.Position);
-        Assert.Single(parser.TransactionSource.Exceptions);
+        Assert.Equal(32, context.TokenSequence.Position);
+        Assert.Single(context.TransactionSource.Exceptions);
         var exceptionShould = new PlampException(
             PlampNativeExceptionInfo.ParenExpressionIsNotClosed(),
-            new(2, 4), new(2, 7));
-        Assert.Equal(exceptionShould, parser.TransactionSource.Exceptions[0]);
+            new(2, 4), new(2, 7),
+            ParserTestHelper.FileName, ParserTestHelper.AssemblyName);
+        Assert.Equal(exceptionShould, context.TransactionSource.Exceptions[0]);
     }
 
     [Fact]
@@ -825,9 +849,9 @@ public class ParseConditionTests
                             elif(t) return 3
                             else return 4
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
 
@@ -838,7 +862,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -846,24 +870,24 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(2, typeof(int)))
+                                new LiteralNode(2, typeof(int)))
                         ])),
                     new ClauseNode(
                         new MemberNode("t"),
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(3, typeof(int)))
+                                new LiteralNode(3, typeof(int)))
                         ]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(4, typeof(int)))
+                        new LiteralNode(4, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(32, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(32, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -873,9 +897,9 @@ public class ParseConditionTests
                             if(a) t()
                             if(b) d()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -885,14 +909,15 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("t"),
                             [])
                     ])),
                 [],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(8, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(8, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -909,9 +934,9 @@ public class ParseConditionTests
                                 println()
                             """;
         
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -921,6 +946,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [])
                     ])),
@@ -928,12 +954,13 @@ public class ParseConditionTests
                 new BodyNode(
                 [
                     new CallNode(
+                        null,
                         new MemberNode("println"),
                         [])
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(20, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(20, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -947,9 +974,9 @@ public class ParseConditionTests
                             elif(j)
                                 println()
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
 
@@ -960,6 +987,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new CallNode(
+                            null,
                             new MemberNode("print"),
                             [])
                     ])),
@@ -969,13 +997,14 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("println"),
                                 [])
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(21, parser.TokenSequence.Position);
+        Assert.Equal(21, context.TokenSequence.Position);
     }
 
     [Fact]
@@ -989,9 +1018,9 @@ public class ParseConditionTests
                             
                             elif(d) print("tt")
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         
@@ -1010,6 +1039,7 @@ public class ParseConditionTests
                         new BodyNode(
                             [
                                 new CallNode(
+                                    null,
                                     new MemberNode("print"),
                                     [])
                             ])),
@@ -1018,16 +1048,17 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new CallNode(
+                                null,
                                 new MemberNode("print"),
                                 [
-                                    new ConstNode("tt", typeof(string))
+                                    new LiteralNode("tt", typeof(string))
                                 ])
                         ]))
                 ],
                 null);
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(29, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(29, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     [Fact]
@@ -1040,9 +1071,9 @@ public class ParseConditionTests
                             
                             else return 3
                             """;
-        var parser = new PlampNativeParser(code);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var result = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var result = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
         transaction.Commit();
         var expressionShould
@@ -1052,7 +1083,7 @@ public class ParseConditionTests
                     new BodyNode(
                     [
                         new ReturnNode(
-                            new ConstNode(1, typeof(int)))
+                            new LiteralNode(1, typeof(int)))
                     ])),
                 [
                     new ClauseNode(
@@ -1060,17 +1091,17 @@ public class ParseConditionTests
                         new BodyNode(
                         [
                             new ReturnNode(
-                                new ConstNode(2, typeof(int)))
+                                new LiteralNode(2, typeof(int)))
                         ]))
                 ],
                 new BodyNode(
                 [
                     new ReturnNode(
-                        new ConstNode(3, typeof(int)))
+                        new LiteralNode(3, typeof(int)))
                 ]));
         Assert.Equal(expressionShould, expression, Comparer);
-        Assert.Equal(25, parser.TokenSequence.Position);
-        Assert.Empty(parser.TransactionSource.Exceptions);
+        Assert.Equal(25, context.TokenSequence.Position);
+        Assert.Empty(context.TransactionSource.Exceptions);
     }
 
     #region Symbol table
@@ -1081,13 +1112,13 @@ public class ParseConditionTests
         const string code = """
                             if(true) k++
                             """;
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Equal(6, symbolDictionary.Count);
         Assert.Contains(expression, symbolDictionary);
         var first = symbolDictionary[expression];
@@ -1099,7 +1130,7 @@ public class ParseConditionTests
         Assert.Contains(child, symbolDictionary);
         var second = symbolDictionary[child];
         Assert.Single(second.Tokens);
-        var sequence = tokenRes.Sequence;
+        var sequence = context.TokenSequence;
         Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
         Assert.Equal(2, second.Children.Count);
         //Don't need to know what's deeper
@@ -1112,13 +1143,12 @@ public class ParseConditionTests
                             if(true) k++
                             else k--
                             """;
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Equal(9, symbolDictionary.Count);
         Assert.Contains(expression, symbolDictionary);
         
@@ -1131,7 +1161,7 @@ public class ParseConditionTests
         Assert.Contains(child1, symbolDictionary);
         var second = symbolDictionary[child1];
         Assert.Single(second.Tokens);
-        var sequence = tokenRes.Sequence;
+        var sequence = context.TokenSequence;
         Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
         Assert.Equal(2, second.Children.Count);
         
@@ -1150,13 +1180,12 @@ public class ParseConditionTests
                             if(true) k++
                             elif(false) k--
                             """;
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Equal(11, symbolDictionary.Count);
         Assert.Contains(expression, symbolDictionary);
         
@@ -1169,7 +1198,7 @@ public class ParseConditionTests
         Assert.Contains(child1, symbolDictionary);
         var second = symbolDictionary[child1];
         Assert.Single(second.Tokens);
-        var sequence = tokenRes.Sequence;
+        var sequence = context.TokenSequence;
         Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
         Assert.Equal(2, second.Children.Count);
         
@@ -1189,14 +1218,13 @@ public class ParseConditionTests
                             elif(false) k--
                             elif(false) k--
                             """;
-        
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Equal(16, symbolDictionary.Count);
         Assert.Contains(expression, symbolDictionary);
         
@@ -1209,7 +1237,7 @@ public class ParseConditionTests
         Assert.Contains(child1, symbolDictionary);
         var second = symbolDictionary[child1];
         Assert.Single(second.Tokens);
-        var sequence = tokenRes.Sequence;
+        var sequence = context.TokenSequence;
         Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
         Assert.Equal(2, second.Children.Count);
         
@@ -1237,13 +1265,12 @@ public class ParseConditionTests
                             else !k
                             """;
         
-        var tokenRes = code.Tokenize();
-        var parser = new PlampNativeParser(tokenRes.Sequence);
-        var transaction = parser.TransactionSource.BeginTransaction();
-        var res = parser.TryParseKeywordExpression(transaction, out var expression);
+        var context = ParserTestHelper.GetContext(code);
+        var transaction = context.TransactionSource.BeginTransaction();
+        var res = PlampNativeParser.TryParseKeywordExpression(transaction, out var expression, context);
         transaction.Commit();
         Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, res);
-        var symbolDictionary = parser.TransactionSource.SymbolDictionary;
+        var symbolDictionary = context.TransactionSource.SymbolDictionary;
         Assert.Equal(14, symbolDictionary.Count);
         Assert.Contains(expression, symbolDictionary);
         
@@ -1256,7 +1283,7 @@ public class ParseConditionTests
         Assert.Contains(child1, symbolDictionary);
         var second = symbolDictionary[child1];
         Assert.Single(second.Tokens);
-        var sequence = tokenRes.Sequence;
+        var sequence = context.TokenSequence;
         Assert.Equal(sequence.TokenList[0], second.Tokens[0]);
         Assert.Equal(2, second.Children.Count);
         

@@ -1,6 +1,5 @@
-﻿using plamp.Ast.Node;
+﻿using plamp.Abstractions.Ast.Node;
 using plamp.Native.Parsing;
-using plamp.Native.Tokenization;
 using Xunit;
 
 #pragma warning disable CS0618
@@ -27,20 +26,19 @@ public class ParsingNudLiteralTests
 	[InlineData("null", null)]
     public void ParseLiteral(string code, object value)
     {
-	    var tokenSequence = code.Tokenize().Sequence;
-	    var parser = new PlampNativeParser(tokenSequence);
-	    var result = parser.TryParseWithPrecedence(out var expression);
+	    var context = ParserTestHelper.GetContext(code);
+	    var result = PlampNativeParser.TryParseWithPrecedence(out var expression, context);
 	    Assert.Equal(PlampNativeParser.ExpressionParsingResult.Success, result);
-	    Assert.Equal(typeof(ConstNode), expression.GetType());
-	    Assert.Equal(value, ((ConstNode)expression).Value);
-	    Assert.Empty(parser.TransactionSource.Exceptions);
-	    Assert.Equal(0, parser.TokenSequence.Position);
-	    var dictionary = parser.TransactionSource.SymbolDictionary;
+	    Assert.Equal(typeof(LiteralNode), expression.GetType());
+	    Assert.Equal(value, ((LiteralNode)expression).Value);
+	    Assert.Empty(context.TransactionSource.Exceptions);
+	    Assert.Equal(0, context.TokenSequence.Position);
+	    var dictionary = context.TransactionSource.SymbolDictionary;
 	    Assert.Single(dictionary);
 	    Assert.Contains(expression, dictionary);
 	    var symbol = dictionary[expression];
 	    Assert.Single(symbol.Tokens);
-	    Assert.Equal(symbol.Tokens[0], tokenSequence.TokenList[0]);
+	    Assert.Equal(symbol.Tokens[0], context.TokenSequence.TokenList[0]);
 	    Assert.Empty(symbol.Children);
     }
 }

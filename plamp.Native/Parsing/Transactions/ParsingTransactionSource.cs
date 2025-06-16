@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using plamp.Ast;
-using plamp.Ast.Node;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
 using plamp.Native.Parsing.Symbols;
 using plamp.Native.Tokenization;
 using plamp.Native.Tokenization.Token;

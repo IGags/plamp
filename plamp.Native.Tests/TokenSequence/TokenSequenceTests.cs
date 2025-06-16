@@ -21,7 +21,7 @@ public class TokenSequenceTests
     [InlineData("   ", int.MinValue, -1)]
     public void TestSetPosition(string code, int setPos, int targetPos)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         sequence.Position = setPos;
         Assert.Equal(targetPos, sequence.Position);
     }
@@ -35,7 +35,7 @@ public class TokenSequenceTests
     [InlineData("\n ", 2, 1, typeof(WhiteSpace))]
     public void TestGetNextToken(string code, int shift, int position, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (var i = 0; i < shift; i++)
         {
             sequence.GetNextToken();
@@ -63,7 +63,7 @@ public class TokenSequenceTests
     [InlineData(" w", 1, 1, typeof(Word))]
     public void TestGetNextNonWhiteSpace(string code, int shift, int position, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (var i = 0; i < shift; i++)
         {
             sequence.GetNextNonWhiteSpace();
@@ -93,7 +93,7 @@ public class TokenSequenceTests
     [InlineData("w \n", 1, 0, typeof(EndOfLine))]
     public void TestPeekNextNonWhiteSpace(string code, int shift, int position, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (var i = 0; i < shift; i++)
         {
             sequence.GetNextToken();
@@ -125,7 +125,7 @@ public class TokenSequenceTests
     [InlineData("w \n", 1, 0, typeof(WhiteSpace))]
     public void TestPeekNext(string code, int shift, int position, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (var i = 0; i < shift; i++)
         {
             sequence.GetNextToken();
@@ -152,7 +152,7 @@ public class TokenSequenceTests
     [InlineData(" ", 3, null)]
     public void TestCurrent(string code, int shift, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (int i = 0; i < shift; i++)
         {
             sequence.GetNextToken();
@@ -179,7 +179,7 @@ public class TokenSequenceTests
     [InlineData("w \n", 3, 0, typeof(Word))]
     public void TestRollBackToNonWhiteSpace(string code, int shift, int position, Type resultType)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         for (int i = 0; i < shift; i++)
         {
             sequence.GetNextToken();
@@ -206,7 +206,7 @@ public class TokenSequenceTests
     [InlineData("1\"1232321\"", 1, 9)]
     public void TestGetEndPosition(string code, int setPosition, int targetPosition)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         sequence.Position = setPosition;
         Assert.Equal(targetPosition, sequence.CurrentEnd.Column);
     }
@@ -220,7 +220,7 @@ public class TokenSequenceTests
     [InlineData("1\"1232321\"", 1, 1)]
     public void TestGetStartPosition(string code, int setPosition, int targetPosition)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         sequence.Position = setPosition;
         Assert.Equal(targetPosition, sequence.CurrentStart.Column);
     }
@@ -234,7 +234,7 @@ public class TokenSequenceTests
     [InlineData("1\"1232321\"", 1, 1)]
     public void TestSetPositionInTokens(string code, int setPosition, int targetPosition)
     {
-        var sequence = code.Tokenize().Sequence;
+        var sequence = ParserTestHelper.GetSourceCode(code).Tokenize(ParserTestHelper.AssemblyName).Sequence;
         sequence.Position = setPosition;
         Assert.Equal(targetPosition, sequence.Position);
     }

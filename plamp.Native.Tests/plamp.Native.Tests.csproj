@@ -11,11 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\plamp.Assembly\plamp.Assembly.csproj" />
-      <ProjectReference Include="..\plamp.Ast\plamp.Ast.csproj" />
-      <ProjectReference Include="..\plamp.Compiler\plamp.Compiler.csproj" />
+      <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
       <ProjectReference Include="..\plamp.Native\plamp.Native.csproj" />
-      <ProjectReference Include="..\plamp.Validators\plamp.Validators.csproj" />
     </ItemGroup>
 
 </Project>
