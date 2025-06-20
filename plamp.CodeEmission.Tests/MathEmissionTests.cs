@@ -44,27 +44,11 @@ public class MathEmissionTests
             new ReturnNode(new MemberNode("a"))
         ]);
         retAst.InstructionList.InsertRange(0, definitions);
-        await EmitCore(retAst, resultShould, resultTypeShould);
-    }
-
-
-    private async Task EmitCore(BodyNode ast, object resultShould, Type resultTypeShould)
-    {
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _)
-            = EmissionSetupHelper.CreateMethodBuilder(methodName, resultTypeShould, []);
-
-        var context = new CompilerEmissionContext(ast, methodBuilder, [], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], retAst, resultTypeShould);
         var res = method!.Invoke(instance, [])!;
         var resType = res.GetType();
         Assert.Equal(resultTypeShould, resType);
         Assert.Equal(resultShould, res);
-
     }
 
     public static IEnumerable<object[]> SimpleMathDataProvider()

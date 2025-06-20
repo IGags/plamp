@@ -72,16 +72,20 @@ public class ConstantEmissionTests
     [InlineData(false)]
     public async Task EmitConstantValid(object? constantValue, Type? constantType = null)
     {
-        constantType ??= constantValue?.GetType();
-        const string methodName = "Test";
-        var emitter = new DefaultIlCodeEmitter();
-        var (_, typeBuilder, methodBuilder, _) 
-            = EmissionSetupHelper.CreateMethodBuilder(methodName, constantType!, []);
-        var context = CreateContext(constantValue, constantType, methodBuilder);
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+        constantType ??= constantValue?.GetType()!;
+        var tempVarName = "temp";
+        /*
+         * var temp
+         * temp = literal
+         * return var1
+         */
+        var ast = new BodyNode([
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new MemberNode(tempVarName)),
+            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue, constantType)),
+            new ReturnNode(new MemberNode(tempVarName))
+        ]);
 
-        var builtType = typeBuilder.CreateType();
-        var (instance, createdMethod) = EmissionSetupHelper.CreateObject(builtType, methodName);
+        var (instance, createdMethod) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], ast, constantType);
         var result = createdMethod!.Invoke(instance, []);
 
         if (constantValue == null)
@@ -112,12 +116,6 @@ public class ConstantEmissionTests
         var emitter = new DefaultIlCodeEmitter();
         var (_, _, methodBuilder, _) 
             = EmissionSetupHelper.CreateMethodBuilder(methodName, constantType!, []);
-        var context = CreateContext(constantValue, constantType, methodBuilder);
-        await Assert.ThrowsAsync(exceptionType, async () => await emitter.EmitMethodBodyAsync(context, CancellationToken.None));
-    }
-
-    private CompilerEmissionContext CreateContext(object? constantValue, Type constantType, MethodBuilder method)
-    {
         var tempVarName = "temp";
         /*
          * var temp
@@ -129,8 +127,7 @@ public class ConstantEmissionTests
             new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue, constantType)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        
-        var context = new CompilerEmissionContext(ast, method, [], null, null);
-        return context;
+        var context = new CompilerEmissionContext(ast, methodBuilder, [], null, null);
+        await Assert.ThrowsAsync(exceptionType, async () => await emitter.EmitMethodBodyAsync(context, CancellationToken.None));
     }
 }

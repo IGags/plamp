@@ -46,11 +46,7 @@ public class MemberAccessTests
     [MemberData(nameof(GetMemberDataProvider))]
     public async Task GetMember(object arg, MemberInfo member, Type returnType, object expectedVal)
     {
-        const string methodName = "Test";
-        var argType = arg.GetType();
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, returnType, [argType]);
-
-        var objParam = new TestParameter(argType, "obj");
+        var objParam = new TestParameter(arg.GetType(), "obj");
         const string tempVarName = "prop";
 
         NodeBase memberNode;
@@ -76,7 +72,7 @@ public class MemberAccessTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(
-                EmissionSetupHelper.CreateTypeNode(argType),
+                EmissionSetupHelper.CreateTypeNode(objParam.ParameterType),
                 new MemberNode(tempVarName)
                 ),
             new AssignNode(
@@ -84,11 +80,7 @@ public class MemberAccessTests
                 memberNode),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var ctx = new CompilerEmissionContext(body, methodBuilder, [objParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(ctx, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam], body, returnType);
         var res = method!.Invoke(instance, [arg])!;
         Assert.Equal(expectedVal, res);
         Assert.Equal(returnType, res.GetType());
@@ -111,14 +103,8 @@ public class MemberAccessTests
     [MemberData(nameof(SetMemberDataProvider))]
     public async Task SetMember(object arg, MemberInfo member, object memberVal)
     {
-        const string methodName = "Test";
-        var argType = arg.GetType();
-        var valType = memberVal.GetType();
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, argType, [argType, valType]);
-        var argName = "obj";
-        var valName = "val";
-        var objParam = new TestParameter(argType, argName);
-        var valParam = new TestParameter(valType, valName);
+        var objParam = new TestParameter(arg.GetType(), "obj");
+        var valParam = new TestParameter(memberVal.GetType(), "val");
         
         /*
          * obj.Member = val
@@ -147,13 +133,10 @@ public class MemberAccessTests
             memberNode,
             new ReturnNode(new MemberNode(objParam.Name))
         ]);
+
+        var (instance, method) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam, valParam], body, arg.GetType());
         
-        var ctx = new CompilerEmissionContext(body,  methodBuilder, [objParam, valParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        
-        await emitter.EmitMethodBodyAsync(ctx, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
         var res = method!.Invoke(instance, [arg, memberVal])!;
         Assert.Equal(arg.GetType(), res.GetType());
 
@@ -210,13 +193,8 @@ public class MemberAccessTests
     [MemberData(nameof(GetIndexerDataProvider))]
     public async Task GetByIndexer(object arg, MethodInfo indexerGetter, int index, int resShould)
     {
-        const string methodName = "Test";
-        var passType = index.GetType();
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, resShould.GetType(), [arg.GetType(), passType]);
-        var argName = "obj";
-        var ixName = "ix";
-        var objParam = new TestParameter(arg.GetType(), argName);
-        var valParam = new TestParameter(index.GetType(), ixName);
+        var objParam = new TestParameter(arg.GetType(), "obj");
+        var valParam = new TestParameter(index.GetType(), "ix");
         const string tempVarName = "temp";
         
         /*
@@ -236,12 +214,10 @@ public class MemberAccessTests
                 ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
+
+        var (instance, method) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam, valParam], body, resShould.GetType());
         
-        var ctx = new CompilerEmissionContext(body, methodBuilder, [objParam, valParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(ctx, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
         var res = method!.Invoke(instance, [arg, index])!;
         Assert.Equal(resShould, res);
         Assert.Equal(resShould.GetType(), res.GetType());
@@ -268,16 +244,9 @@ public class MemberAccessTests
     [MemberData(nameof(SetByIndexerDataProvider))]
     public async Task EmitSetByIndexer(object arg, MethodInfo indexerSetter, int index, int value, FieldInfo innerDictGetter)
     {
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _) 
-            = EmissionSetupHelper.CreateMethodBuilder(methodName, arg.GetType(), [arg.GetType(), index.GetType(), value.GetType()]);
-        
-        var argName = "obj";
-        var ixName = "ix";
-        var valueName = "val";
-        var objParam = new TestParameter(arg.GetType(), argName);
-        var indexerParam = new TestParameter(index.GetType(), ixName);
-        var valueParam = new TestParameter(value.GetType(), valueName);
+        var objParam = new TestParameter(arg.GetType(), "obj");
+        var indexerParam = new TestParameter(index.GetType(), "ix");
+        var valueParam = new TestParameter(value.GetType(), "val");
         
         /*
          * obj.set_indexer(ix, value)
@@ -286,21 +255,22 @@ public class MemberAccessTests
         var body = new BodyNode(
         [
             EmissionSetupHelper.CreateCallNode(
-                new MemberNode(argName),
+                new MemberNode(objParam.Name),
                 indexerSetter,
                 [
-                    new MemberNode(ixName),
-                    new MemberNode(valueName),
+                    new MemberNode(indexerParam.Name),
+                    new MemberNode(valueParam.Name),
                 ]
                 ),
             new ReturnNode(new MemberNode(objParam.Name))
         ]);
+
+        var (instance, method) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+                [objParam, indexerParam, valueParam],
+                body,
+                arg.GetType());
         
-        var ctx = new CompilerEmissionContext(body, methodBuilder, [objParam, indexerParam, valueParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(ctx, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
         var res = method!.Invoke(instance, [arg, index, value])!;
         Assert.Equal(arg.GetType(), res.GetType());
         var innerDict = (Dictionary<int, int>)innerDictGetter.GetValue(res)!;
