@@ -5,17 +5,33 @@ using plamp.Abstractions.Ast.Node.Body;
 
 namespace plamp.Abstractions.Extensions.Ast.Node;
 
-public class ForeachNode : NodeBase, ILoopNode
+public class ForeachNode : NodeBase
 {
-    public NodeBase Iterator { get; }
-    public NodeBase Iterable { get; }
-    public NodeBase Body { get; }
+    public NodeBase Iterator { get; private set; }
+    public NodeBase Iterable { get; private set; }
+    public NodeBase Body { get; private set; }
 
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Iterator;
         yield return Iterable;
         yield return Body;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (Iterator == child)
+        {
+            Iterator = newChild;
+        }
+        else if (Iterable == child)
+        {
+            Iterable = newChild;
+        }
+        else if (Body == child)
+        {
+            Body = newChild;
+        }
     }
 
     public ForeachNode(NodeBase iterator, NodeBase iterable, BodyNode body)

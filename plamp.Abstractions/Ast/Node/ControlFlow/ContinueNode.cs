@@ -8,4 +8,6 @@ public class ContinueNode : NodeBase
     {
         return [];
     }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

@@ -16,11 +16,6 @@ public class LoopEmissionTests
     [Fact]
     public async Task EmitWhileLoop()
     {
-        const string methodName = "WhileIter";
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(int), [argType]);
-        var arg = new TestParameter(argType, "n");
 
         /*
          * int iter = 0
@@ -29,7 +24,7 @@ public class LoopEmissionTests
          * return iter
          */
         bool iter;
-        
+        var arg = new TestParameter(typeof(int), "n");
         var body = new BodyNode(
         [
             new AssignNode(
@@ -48,12 +43,7 @@ public class LoopEmissionTests
             new ReturnNode(new MemberNode(nameof(iter)))
         ]);
 
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
-
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
         for (var i = 0; i < 10; i++)
         {
             var rnd = Random.Shared.Next(10000);
@@ -68,18 +58,12 @@ public class LoopEmissionTests
     [Fact]
     public async Task EmitEternalLoop()
     {
-        const string methodName = "EternalWhileIter";
-        var argType = typeof(CancellationToken);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(void), [argType]);
-        var arg = new TestParameter(argType, "cancellation");
-        
         /*
          * while(!cancellation.IsCancellationRequested)
          *     nop
          * return
          */
-
+        var arg = new TestParameter(typeof(CancellationToken), "cancellation");
         var getter = typeof(CancellationToken).GetProperty(
                 nameof(CancellationToken.IsCancellationRequested),
                 BindingFlags.Instance | BindingFlags.Public)!
@@ -95,13 +79,15 @@ public class LoopEmissionTests
                 ])),
             new ReturnNode(null)
         ]);
-        
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(void));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         method!.Invoke(instance, [cts.Token]);
+    }
+
+    [Fact]
+    public async Task EmitNested()
+    {
+        const string methodName = "NestedLoop";
+        
     }
 }

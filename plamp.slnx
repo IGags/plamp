@@ -5,7 +5,6 @@
   </Folder>
   <Project Path="plamp.Abstractions.Extensions\plamp.Abstractions.Extensions.csproj" Type="Classic C#" />
   <Project Path="plamp.Abstractions\plamp.Abstractions.csproj" Type="Classic C#" />
-  <Project Path="plamp.Assembly.SignatureBuilding\plamp.Assembly.SignatureBuilding.csproj" Type="Classic C#" />
   <Project Path="plamp.Assembly\plamp.Assembly.csproj" Type="Classic C#" />
   <Project Path="plamp.Compiler\plamp.Compiler.csproj" Type="Classic C#" />
   <Project Path="plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" Type="Classic C#" />

@@ -1,4 +1,4 @@
-namespace plamp.Abstractions.Compilation;
+namespace plamp.Compiler;
 
 public enum ResourceType
 {

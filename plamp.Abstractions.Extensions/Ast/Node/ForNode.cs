@@ -4,12 +4,12 @@ using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Abstractions.Extensions.Ast.Node;
 
-public class ForNode : NodeBase, ILoopNode
+public class ForNode : NodeBase
 {
-    public NodeBase IteratorVar { get; }
-    public NodeBase TilCondition { get; }
-    public NodeBase Counter { get; }
-    public NodeBase Body { get; }
+    public NodeBase IteratorVar { get; private set; }
+    public NodeBase TilCondition { get; private set; }
+    public NodeBase Counter { get; private set; }
+    public NodeBase Body { get; private set; }
 
     public override IEnumerable<NodeBase> Visit()
     {
@@ -17,6 +17,26 @@ public class ForNode : NodeBase, ILoopNode
         yield return TilCondition;
         yield return Counter;
         yield return Body;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (IteratorVar == child)
+        {
+            IteratorVar = newChild;
+        }
+        else if (TilCondition == child)
+        {
+            TilCondition = newChild;
+        }
+        else if (Counter == child)
+        {
+            Counter = newChild;
+        }
+        else if (Body == child)
+        {
+            Body = newChild;
+        }
     }
 
     public ForNode(NodeBase iteratorVar, NodeBase tilCondition, NodeBase counter, NodeBase body)

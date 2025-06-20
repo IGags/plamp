@@ -7,7 +7,7 @@ public class MemberNode : NodeBase
 {
     public string MemberName { get; }
 
-    public virtual MemberInfo Symbol { get; } = null;
+    public virtual MemberInfo Symbol { get; init; } = null;
 
     public MemberNode(string memberName)
     {
@@ -18,4 +18,6 @@ public class MemberNode : NodeBase
     {
         return [];
     }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

@@ -1,17 +1,16 @@
-﻿using System.Threading;
-using plamp.Abstractions.Ast;
+﻿using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Validation;
-using plamp.Abstractions.Validation.Models;
+using plamp.Abstractions.AstManipulation.Validation;
+using plamp.Abstractions.AstManipulation.Validation.Models;
 
 namespace plamp.Validators.BasicSemanticsValidators;
 
 public class ReturnStatementValidator : BaseValidator<ValidationContext>
 {
-    public override ValidationResult Validate(ValidationContext context, CancellationToken cancellationToken)
+    public override ValidationResult Validate(NodeBase ast, ValidationContext context)
     {
-        VisitInternal(context.Ast, context);
+        VisitInternal(ast, context);
         return new ValidationResult() { Exceptions = context.Exceptions };
     }
 
@@ -31,7 +30,7 @@ public class ReturnStatementValidator : BaseValidator<ValidationContext>
     private bool VisitBody(BodyNode node, bool isInCycleContext)
     {
         var returnsFully = true;
-        foreach (var instruction in node.InstructionList)
+        foreach (var instruction in node.ExpressionList)
         {
             switch (instruction)
             {
@@ -47,11 +46,11 @@ public class ReturnStatementValidator : BaseValidator<ValidationContext>
                 case ConditionNode cond:
                     returnsFully &= VisitCondition(cond, isInCycleContext, returnsFully);
                     break;
-                case ILoopNode loopNode:
-                    if (loopNode.Body is BodyNode forBody)
-                        returnsFully &= VisitBody(forBody, true);
-                    else returnsFully = false;
-                    break;
+                // case ILoopNode loopNode:
+                //     if (loopNode.Body is BodyNode forBody)
+                //         returnsFully &= VisitBody(forBody, true);
+                //     else returnsFully = false;
+                //     break;
             }
         }
 

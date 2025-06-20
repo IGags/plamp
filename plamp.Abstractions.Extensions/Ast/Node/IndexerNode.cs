@@ -5,13 +5,15 @@ namespace plamp.Abstractions.Extensions.Ast.Node;
 
 public class IndexerNode : NodeBase
 {
-    public NodeBase ToIndex { get; }
-    public List<NodeBase> Arguments { get; }
+    private readonly List<NodeBase> _arguments;
+    
+    public NodeBase ToIndex { get; private set; }
+    public IReadOnlyList<NodeBase> Arguments => _arguments;
 
     public IndexerNode(NodeBase toIndex, List<NodeBase> arguments)
     {
         ToIndex = toIndex;
-        Arguments = arguments;
+        _arguments = arguments;
     }
 
     public override IEnumerable<NodeBase> Visit()
@@ -20,6 +22,19 @@ public class IndexerNode : NodeBase
         foreach (var argument in Arguments)
         {
             yield return argument;
+        }
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        int argumentIndex;
+        if (ToIndex == child)
+        {
+            ToIndex = newChild;
+        }
+        else if (-1 != (argumentIndex = _arguments.IndexOf(child)))
+        {
+            _arguments[argumentIndex] = newChild;
         }
     }
 }

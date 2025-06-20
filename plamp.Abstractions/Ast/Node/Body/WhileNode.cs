@@ -2,11 +2,11 @@
 
 namespace plamp.Abstractions.Ast.Node.Body;
 
-public class WhileNode : NodeBase, ILoopNode
+public class WhileNode : NodeBase
 {
-    public NodeBase Condition { get; }
+    public NodeBase Condition { get; private set; }
     
-    public NodeBase Body { get; }
+    public NodeBase Body { get; private set; }
 
     public WhileNode(NodeBase condition, BodyNode body)
     {
@@ -18,5 +18,17 @@ public class WhileNode : NodeBase, ILoopNode
     {
         yield return Condition;
         yield return Body;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (Condition == child)
+        {
+            Condition = newChild;
+        }
+        else if (Body == child)
+        {
+            Body = newChild;
+        }
     }
 }

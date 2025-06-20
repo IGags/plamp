@@ -18,4 +18,6 @@ public class LiteralNode : NodeBase
     {
         return [];
     }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

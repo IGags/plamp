@@ -26,11 +26,7 @@ public class CastEmissionTests
     [MemberData(nameof(CastEmissionDataProvider))]
     public async Task EmitCastAsync(Type from, Type to, object? instance = null)
     {
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, to, [from]);
-
         var inParam = new TestParameter(from, "toCast");
-
         const string castResName = "castRes";
         var methodBody = new BodyNode(
         [
@@ -39,19 +35,15 @@ public class CastEmissionTests
             new ReturnNode(new MemberNode(castResName))
         ]);
 
-        var context = new CompilerEmissionContext(methodBody, methodBuilder, [inParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        
-        var type = typeBuilder.CreateType();
-        var (typeInstance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (typeInstance, methodInfo) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([inParam], methodBody, to);
         instance ??= Activator.CreateInstance(from);
         var res = methodInfo!.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
         Assert.Equal(to, res.GetType());
     }
 
-    //I cant create short type variable through obj
+    //I can't store object of type in object typed variable
     [Fact]
     public async Task EmitShortIntConversion()
     {
@@ -78,9 +70,6 @@ public class CastEmissionTests
 
     private async Task<(MethodInfo, object)> CreateConversionDelegate(Type from, Type to)
     {
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, to, [from]);
-
         var inParam = new TestParameter(from, "toCast");
 
         const string castResName = "castRes";
@@ -95,14 +84,8 @@ public class CastEmissionTests
             new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
             new ReturnNode(new MemberNode(castResName))
         ]);
-
-        var context = new CompilerEmissionContext(methodBody, methodBuilder, [inParam], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        
-        var type = typeBuilder.CreateType();
-        var (typeInstance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
-        return (methodInfo, typeInstance)!;
+        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([inParam], methodBody, to);
+        return (methodInfo, instance)!;
     }
 
     public static IEnumerable<object[]> CastEmissionDataProvider()
@@ -127,7 +110,7 @@ public class CastEmissionTests
         yield return [typeof(int), typeof(char), 64];
         yield return [typeof(char), typeof(int), 's'];
 
-        //In runtime no difference between child instance and parent type
+        //In runtime there is no difference between child instance and parent type
         // yield return [typeof(int), typeof(object), 233];
         // yield return [typeof(ExampleChild), typeof(ExampleParent), new ExampleChild()];
         // yield return [typeof(ExampleChild), typeof(object), new ExampleChild()];

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 
-namespace plamp.Abstractions.Validation.Models;
+namespace plamp.Abstractions.AstManipulation.Validation.Models;
 
 public record ValidationResult
 {
