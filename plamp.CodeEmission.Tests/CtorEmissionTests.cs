@@ -59,10 +59,7 @@ public class CtorEmissionTests
     [MemberData(nameof(EmptyCtorDataProvider))]
     public async Task EmitCallClassCtor(Type objectType)
     {
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, objectType, []);
         var ctorInfo = objectType.GetConstructor([])!;
-        
         /*
          * var tempVar
          * tempVar = new CtorClass()
@@ -79,12 +76,7 @@ public class CtorEmissionTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
-        var emissionContext = new CompilerEmissionContext(body, methodBuilder, [], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(emissionContext, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
-
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, objectType);
         var res = method!.Invoke(instance, []);
         Assert.IsType(objectType, res);
     }
@@ -99,16 +91,10 @@ public class CtorEmissionTests
     [MemberData(nameof(CtorWithArgDataProvider))]
     public async Task EmitCallClassArgCtor(Type objectType)
     {
-        const string methodName = "Test";
-        var argType1 = typeof(int);
-        var argType2 = typeof(string);
-        var argType3 = typeof(KeyValuePair<int, int>);
-        
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, objectType, [argType1, argType2, argType3]);
-        var ctorInfo = objectType.GetConstructor([argType1, argType2, argType3])!;
-        var arg1 = new TestParameter(argType1, "arg1");
-        var arg2 = new TestParameter(argType2, "arg2");
-        var arg3 = new TestParameter(argType3, "arg3");
+        var arg1 = new TestParameter(typeof(int), "arg1");
+        var arg2 = new TestParameter(typeof(string), "arg2");
+        var arg3 = new TestParameter(typeof(KeyValuePair<int, int>), "arg3");
+        var ctorInfo = objectType.GetConstructor([arg1.ParameterType, arg2.ParameterType, arg3.ParameterType])!;
         
         var tempVarName = "tempVar";
         /*
@@ -132,12 +118,9 @@ public class CtorEmissionTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg1, arg2, arg3], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
-
+        var (instance, method) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg1, arg2, arg3], body, objectType);
+        
         var arg1Val = 321;
         var arg2Val = "hiiii";
         var arg3Val = new KeyValuePair<int, int>(96, 69);

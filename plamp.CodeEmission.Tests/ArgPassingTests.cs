@@ -20,24 +20,13 @@ public class ArgPassingTests
     public async Task PassAndReturnArg(object? value)
     {
         var argType = value == null ? typeof(object) : value.GetType();
-        const string methodName = "Test";
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, argType, [argType]);
+        var arg = new TestParameter(argType, "a");
         var body = new BodyNode(
         [
             new ReturnNode(new MemberNode("a"))
         ]);
 
-        var parameters = new ParameterInfo[]
-        {
-            new TestParameter(argType, "a")
-        };
-
-        var context = new CompilerEmissionContext(body, methodBuilder, parameters, null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, argType);
         var res = method!.Invoke(instance, [value])!;
         Assert.Equal(value, res);
         if(value != null)
@@ -63,11 +52,7 @@ public class ArgPassingTests
     public async Task PassMultipleArgs()
     {
         const int first = -1, second = 999;
-        const string methodName = "Test";
-        var returnType = typeof(int);
-        var argType =  typeof(int);
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, returnType, [argType, argType]);
-
+        var argType = typeof(int);
         var p1 = new TestParameter(argType, "p1");
         var p2 = new TestParameter(argType, "p2");
         const string tempVarName = "b";
@@ -92,12 +77,8 @@ public class ArgPassingTests
                 ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var parameters = new ParameterInfo[] {p1, p2};
-        var ctx = new CompilerEmissionContext(body, methodBuilder, parameters, null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(ctx, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var returnType = typeof(int);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([p1, p2], body, returnType);
         var res = method!.Invoke(instance, [first, second])!;
         Assert.Equal(998, res);
         Assert.Equal(returnType, res.GetType());

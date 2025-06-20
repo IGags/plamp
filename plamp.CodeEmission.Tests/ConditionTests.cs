@@ -14,13 +14,7 @@ public class ConditionTests
     [Fact]
     public async Task EmitIfCondition()
     {
-        const string methodName = "Test";
-        var retType = typeof(string);
-        var argType = typeof(int);
-
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, retType, [argType]);
-        var arg = new TestParameter(argType, "arg");
+        var arg = new TestParameter(typeof(int), "arg");
 
         var tempVarName = "temp";
         var tempVarName2 = "temp2";
@@ -60,12 +54,9 @@ public class ConditionTests
             new ReturnNode(new MemberNode(tempVarName3))
         ]);
 
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-
-        var type = typeBuilder.CreateType();
-        var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, methodInfo) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+        
         var res = methodInfo!.Invoke(instance, [5])!;
         Assert.Equal(lesser10, res);
         var res2 = methodInfo.Invoke(instance, [882])!;
@@ -75,12 +66,7 @@ public class ConditionTests
     [Fact]
     public async Task EmitIfElseCondition()
     {
-        const string methodName = "Test";
-        var retType = typeof(string);
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, retType, [argType]);
-        var arg = new TestParameter(argType, "arg");
+        var arg = new TestParameter(typeof(int), "arg");
         
         //TODO: phi-funcs need to be added in my cmp :^)
         var tempVarName = "temp";
@@ -143,12 +129,9 @@ public class ConditionTests
                     ])),
             new ReturnNode(new MemberNode(tempVarName5))
         ]);
-        
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
+
+        var (instance, methodInfo) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
         var res = methodInfo!.Invoke(instance, [0])!;
         Assert.Equal(trueBranchVal, res);
         var res2 = methodInfo.Invoke(instance, [1])!;
@@ -158,11 +141,7 @@ public class ConditionTests
     [Fact]
     public async Task EmitIfElifCondition()
     {
-        const string methodName = "Test";
-        var retType = typeof(string);
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, retType, [argType]);
-        var arg = new TestParameter(argType, "arg");
+        var arg = new TestParameter(typeof(int), "arg");
         
         var tempVarName = "temp";
         var tempVarName2 = "temp2";
@@ -236,12 +215,9 @@ public class ConditionTests
             new AssignNode(new MemberNode(tempVarName7), new LiteralNode(rootScope, typeof(string))),
             new ReturnNode(new MemberNode(tempVarName7))
         ]);
-        
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
+
+        var (instance, methodInfo) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
         
         var res = methodInfo!.Invoke(instance, [8])!;
         Assert.Equal(ifClause, res);
@@ -254,11 +230,7 @@ public class ConditionTests
     [Fact]
     public async Task EmitIfManyElifElseClause()
     {
-        const string methodName = "Test";
-        var retType = typeof(string);
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, retType, [argType]);
-        var arg = new TestParameter(argType, "arg");
+        var arg = new TestParameter(typeof(int), "arg");
         
         var tempVarName = "temp";
         var tempVarName2 = "temp2";
@@ -352,12 +324,9 @@ public class ConditionTests
             ),
             new ReturnNode(new MemberNode(tempVarName7))
         ]);
-        
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-        var type = typeBuilder.CreateType();
-        var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
+
+        var (instance, methodInfo) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
         
         var res = methodInfo!.Invoke(instance, [8])!;
         Assert.Equal(ifClause, res);
@@ -372,11 +341,7 @@ public class ConditionTests
     [Fact]
     public async Task EmitReturnInBothClause()
     {
-        const string methodName = "ConditionBoth";
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(string), [argType]);
-        var arg = new TestParameter(argType, "arg");
+        var arg = new TestParameter(typeof(int), "arg");
 
         const string subRes = "sub";
         const string nontRes = "nont";
@@ -400,13 +365,7 @@ public class ConditionTests
                 ]))
         ]);
 
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
-
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
         var res1 = method!.Invoke(instance, [-1]);
         Assert.Equal(subRes, res1);
         

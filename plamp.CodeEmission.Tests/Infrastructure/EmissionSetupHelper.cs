@@ -1,6 +1,10 @@
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.CompilerEmission;
+using plamp.ILCodeEmitters;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 
@@ -61,6 +65,22 @@ public class EmissionSetupHelper
 
     public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
         => new ConcreteConstructorNode(type, args, ctor);
+
+    public static async Task<(object? instance, MethodInfo? methodInfo)> CreateInstanceWithMethodAsync(
+        ParameterInfo[] args,
+        BodyNode body,
+        Type returnType)
+    {
+        var methodName = $"{Guid.NewGuid()} {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}";
+        var argTypes = args.Select(x => x.ParameterType).ToArray();
+        var (_, typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
+        var context = new CompilerEmissionContext(body, methodBuilder, args, null, null);
+        var emitter = new DefaultIlCodeEmitter();
+        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+        var type = typeBuilder.CreateType();
+        var (instance, methodInfo) = CreateObject(type, methodName);
+        return (instance, methodInfo);
+    }
 
     private class ConcreteConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
         : ConstructorCallNode(type, args)

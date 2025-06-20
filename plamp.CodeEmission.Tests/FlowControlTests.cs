@@ -19,11 +19,7 @@ public class FlowControlTests
     [InlineData(9, 5)]
     public async Task ContinueOnEvenNumber(int argValue, int resShould)
     {
-        const string methodName = "ContinueOnMod2";
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(int), [argType]);
-        var arg = new TestParameter(argType, "n");
+        var arg = new TestParameter(typeof(int), "n");
         
         /*
          * int iter = 0
@@ -59,13 +55,7 @@ public class FlowControlTests
             new ReturnNode(new MemberNode(nameof(t)))
         ]);
 
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
         var res = method!.Invoke(instance, [argValue]);
         Assert.Equal(resShould, res);
     }
@@ -73,10 +63,6 @@ public class FlowControlTests
     [Fact]
     public async Task InsideContinueDoesNotAffectsOutside()
     {
-        const string methodName = "DoubleLoop";
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(int), []);
-        
         /*
          * int i = 0
          * int k = 0
@@ -111,12 +97,8 @@ public class FlowControlTests
                 ])),
             new ReturnNode(new PlusNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
         ]);
-        var context = new CompilerEmissionContext(body, methodBuilder, [], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
 
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
         var res = method!.Invoke(instance!, []);
         Assert.Equal(iterationCount, res);
     }
@@ -128,11 +110,7 @@ public class FlowControlTests
     [InlineData(1000)]
     public async Task BreakOnIteration(int iterationNumber)
     {
-        const string methodName = "IterationBreak";
-        var argType = typeof(int);
-        var (_, typeBuilder, methodBuilder, _) =
-            EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(int), [argType]);
-        var arg = new TestParameter(argType, "n");
+        var arg = new TestParameter(typeof(int), "n");
         
         /*
          * var i = 0
@@ -159,12 +137,8 @@ public class FlowControlTests
                 ])),
             new ReturnNode(new MemberNode(nameof(i)))
         ]);
-        var emissionContext = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(emissionContext, CancellationToken.None);
 
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
         var res = method!.Invoke(instance!, [iterationNumber]);
         Assert.Equal(iterationNumber, res);
     }
@@ -172,9 +146,6 @@ public class FlowControlTests
     [Fact]
     public async Task InnerBreakDoesNotBreakOuter()
     {
-        const string methodName = "innerBreak";
-        var (_, typeBuilder, methodBuilder, _) = EmissionSetupHelper.CreateMethodBuilder(methodName, typeof(int), []);
-        
         /*
          * int i = 0
          * while(i < 10)
@@ -205,13 +176,7 @@ public class FlowControlTests
                 ])),
             new ReturnNode(new PlusNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
         ]);
-        var context = new CompilerEmissionContext(body, methodBuilder, [], null, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
-
-        var type = typeBuilder.CreateType();
-        var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
-
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
         var res = method!.Invoke(instance!, []);
         Assert.Equal(iterationCount, res);
     }
