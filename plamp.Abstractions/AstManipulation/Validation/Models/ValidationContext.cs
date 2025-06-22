@@ -4,13 +4,11 @@ using plamp.Abstractions.Assemblies;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 
-namespace plamp.Abstractions.Validation.Models;
+namespace plamp.Abstractions.AstManipulation.Validation.Models;
 
 public record ValidationContext
 { 
     public ISymbolTable Table { get; init; }
-    
-    public NodeBase Ast { get; init; }
 
     public List<PlampException> Exceptions { get; init; } = [];
     
@@ -25,7 +23,6 @@ public record ValidationContext
     public ValidationContext(ValidationContext other)
     {
         Table = other.Table;
-        Ast = other.Ast;
         Exceptions = other.Exceptions;
         AssemblyContainer = other.AssemblyContainer;
         AssemblyName = other.AssemblyName;

@@ -18,7 +18,7 @@ public class BodyComparer : IEqualityComparer<BodyNode>
     public int GetHashCode(BodyNode obj)
     {
         var hashCode = new HashCode();
-        foreach (var instruction in obj.InstructionList)
+        foreach (var instruction in obj.ExpressionList)
         {
             hashCode.Add(instruction);
         }

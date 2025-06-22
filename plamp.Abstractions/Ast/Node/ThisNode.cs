@@ -8,6 +8,8 @@ public class ThisNode : NodeBase
 
     public override IEnumerable<NodeBase> Visit()
     {
-        yield break;
+        return [];
     }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

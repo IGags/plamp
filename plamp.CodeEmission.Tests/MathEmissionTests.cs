@@ -35,15 +35,16 @@ public class MathEmissionTests
          * a = tmpConst1 + tmpConst2
          * return a
          */
-        var retAst = new BodyNode(
-        [
+        var instructionList = new List<NodeBase>()
+        {
             new VariableDefinitionNode(
                 EmissionSetupHelper.CreateTypeNode(resultTypeShould),
                 new MemberNode("a")),
             new AssignNode(new MemberNode("a"), operatorAst),
             new ReturnNode(new MemberNode("a"))
-        ]);
-        retAst.InstructionList.InsertRange(0, definitions);
+        };
+        instructionList.InsertRange(0, definitions);
+        var retAst = new BodyNode(instructionList);
         var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], retAst, resultTypeShould);
         var res = method!.Invoke(instance, [])!;
         var resType = res.GetType();

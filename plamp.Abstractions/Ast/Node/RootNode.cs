@@ -4,15 +4,25 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class RootNode : NodeBase
 {
-    public List<NodeBase> Nodes { get; }
+    private readonly List<NodeBase> _nodes;
+    public IReadOnlyList<NodeBase> Nodes => _nodes;
 
     public RootNode(List<NodeBase> nodes)
     {
-        Nodes = nodes;
+        _nodes = nodes;
     }
     
     public override IEnumerable<NodeBase> Visit()
     {
         return Nodes;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        int nodeIndex;
+        if (-1 != (nodeIndex = _nodes.IndexOf(child)))
+        {
+            _nodes[nodeIndex] = newChild;
+        }
     }
 }

@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
 public class CastNode : NodeBase
 {
-    public NodeBase ToType { get; }
+    public NodeBase ToType { get; private set; }
     
-    public virtual NodeBase FromType { get; }
+    public NodeBase Inner { get; private set; }
     
-    public NodeBase Inner { get; }
+    public Type FromType { get; init; }
 
     public CastNode(NodeBase toType, NodeBase inner)
     {
@@ -20,6 +21,17 @@ public class CastNode : NodeBase
     {
         yield return ToType;
         yield return Inner;
-        if(FromType != null) yield return FromType;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (ToType == child)
+        {
+            ToType = newChild;
+        }
+        else if (Inner == child)
+        {
+            Inner = newChild;
+        }
     }
 }

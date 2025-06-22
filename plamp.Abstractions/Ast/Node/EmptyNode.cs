@@ -8,4 +8,6 @@ public class EmptyNode : NodeBase
     {
         return [];
     }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

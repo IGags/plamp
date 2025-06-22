@@ -17,11 +17,6 @@ public abstract class BaseVisitor<TContext>
         Break,
         SkipChildren
     }
-
-    public virtual void Visit(NodeBase node, TContext context)
-    {
-        _ = VisitInternal(node, context);
-    }
     
     protected virtual VisitResult VisitInternal(NodeBase node, TContext context)
     {
@@ -86,6 +81,8 @@ public abstract class BaseVisitor<TContext>
                 return VisitUse(useNode, context);
             case MemberAccessNode memberAccessNode:
                 return VisitMemberAccess(memberAccessNode, context);
+            case ThisNode thisNode:
+                return VisitThis(thisNode, context);
             case LiteralNode constNode:
                 return VisitLiteral(constNode, context);
             case BaseBinaryNode binaryNode:
@@ -171,6 +168,8 @@ public abstract class BaseVisitor<TContext>
 
         return VisitDefault(node, context);
     }
+
+    protected virtual VisitResult VisitThis(ThisNode thisNode, TContext context) => VisitResult.Continue;
 
     protected virtual VisitResult VisitNull(TContext context) => VisitResult.Continue;
     
@@ -260,5 +259,4 @@ public abstract class BaseVisitor<TContext>
     
     //Continue because possible custom ast node types that compiles in default nodes in future
     protected virtual VisitResult VisitDefault(NodeBase node, TContext context) => VisitResult.Continue;
-    
 }

@@ -5,10 +5,10 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class ConstructorCallNode : NodeBase
 {
-    public NodeBase Type { get; }
-    public List<NodeBase> Args { get; }
+    public NodeBase Type { get; private set; }
+    public List<NodeBase> Args { get; private set; }
 
-    public virtual ConstructorInfo Symbol { get; }
+    public virtual ConstructorInfo Symbol { get; init; }
 
     public ConstructorCallNode(NodeBase type, List<NodeBase> args)
     {
@@ -23,5 +23,10 @@ public class ConstructorCallNode : NodeBase
         {
             yield return argument;
         }
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        
     }
 }

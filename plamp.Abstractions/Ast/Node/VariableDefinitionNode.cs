@@ -4,8 +4,8 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class VariableDefinitionNode : NodeBase
 {
-    public NodeBase Type { get; }
-    public NodeBase Member { get; }
+    public NodeBase Type { get; private set; }
+    public NodeBase Member { get; private set; }
 
     public VariableDefinitionNode(NodeBase type, MemberNode member)
     {
@@ -17,5 +17,17 @@ public class VariableDefinitionNode : NodeBase
     {
         yield return Type;
         yield return Member;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (Type == child)
+        {
+            Type = newChild;
+        }
+        else if (Member == child)
+        {
+            Member = newChild;
+        }
     }
 }

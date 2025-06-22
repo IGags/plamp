@@ -4,7 +4,7 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class UseNode : NodeBase
 {
-    public NodeBase Namespace { get; }
+    public NodeBase Namespace { get; private set; }
 
     public UseNode(NodeBase @namespace)
     {
@@ -14,5 +14,13 @@ public class UseNode : NodeBase
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Namespace;
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        if (Namespace == child)
+        {
+            Namespace = newChild;
+        }        
     }
 }

@@ -4,15 +4,24 @@ namespace plamp.Abstractions.Ast.Node.Body;
 
 public class BodyNode : NodeBase
 {
-    public List<NodeBase> InstructionList { get; }
+    private readonly List<NodeBase> _expressionList;
+
+    public IReadOnlyList<NodeBase> ExpressionList => _expressionList;
+    
+    public BodyNode(List<NodeBase> expressionList)
+    {
+        _expressionList = expressionList;
+    }
 
     public override IEnumerable<NodeBase> Visit()
     {
-        return InstructionList;
+        return ExpressionList;
     }
 
-    public BodyNode(List<NodeBase> instructionList)
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        InstructionList = instructionList;
+        var index = _expressionList.IndexOf(child);
+        if(index < 0) return;
+        _expressionList[index] = newChild;
     }
 }

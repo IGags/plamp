@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Validation.Models;
+using plamp.Abstractions.AstManipulation.Validation.Models;
 
 namespace plamp.Validators.BasicSemanticsValidators;
 

@@ -58,9 +58,8 @@ public class EmissionSetupHelper
 
     public static CastNode CreateCastNode(Type from, Type to, NodeBase inner)
     {
-        var fromTyp = CreateTypeNode(from);
         var toTyp = CreateTypeNode(to);
-        return new ConcreteCastNode(toTyp, inner, fromTyp);
+        return new ConcreteCastNode(toTyp, inner, from);
     }
 
     public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
@@ -82,31 +81,41 @@ public class EmissionSetupHelper
         return (instance, methodInfo);
     }
 
-    private class ConcreteConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
+    private sealed class ConcreteConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
         : ConstructorCallNode(type, args)
     {
-        public override ConstructorInfo Symbol { get; } = ctor;
+        public override ConstructorInfo Symbol { get; init; } = ctor;
     }
     
-    private class ConcreteCastNode(NodeBase toType, NodeBase inner, NodeBase fromType) : CastNode(toType, inner)
+    private sealed class ConcreteCastNode : CastNode
     {
-        public override NodeBase FromType { get; } = fromType;
+        public ConcreteCastNode(NodeBase toType, NodeBase inner, Type fromType) : base(toType, inner)
+        {
+            FromType = fromType;
+        }
     }
     
-    private class ConcreteType(MemberNode name, List<NodeBase> generics, Type symbol) 
-        : TypeNode(name, generics)
+    private sealed class ConcreteType : TypeNode
     {
-        public override Type Symbol { get; } = symbol;
+        public ConcreteType(MemberNode name, List<NodeBase> generics, Type symbol) : base(name, generics)
+        {
+            Symbol = symbol;
+        }
     }
     
-    private class ConcreteMember(string name, MemberInfo symbol) : MemberNode(name)
+    private sealed class ConcreteMember : MemberNode
     {
-        public override MemberInfo Symbol { get; } = symbol;
+        public ConcreteMember(string name, MemberInfo symbol) : base(name)
+        {
+            Symbol = symbol;
+        }
     }
     
-    private class ConcreteCall(NodeBase? from, NodeBase name, List<NodeBase> args, MethodInfo symbol) 
-        : CallNode(from, name, args)
+    private sealed class ConcreteCall : CallNode
     {
-        public override MethodInfo Symbol { get; } = symbol;
+        public ConcreteCall(NodeBase? from, NodeBase name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
+        {
+            Symbol = symbol;
+        }
     }
 }

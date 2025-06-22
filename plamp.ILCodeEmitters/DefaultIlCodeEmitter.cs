@@ -63,7 +63,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         context.LocalVarStack.BeginScope();
         context.Generator.BeginScope();
-        foreach (var instruction in body.InstructionList)
+        foreach (var instruction in body.ExpressionList)
         {
             if(instruction == null) continue;
             EmitExpression(instruction, context);
@@ -125,9 +125,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         if(conditionNode.ElseClause is not null and not BodyNode) return;
         
         string? elseClauseEndLab;
-        if (ifBody.InstructionList.Any(x => x.GetType() == typeof(ReturnNode))
+        if (ifBody.ExpressionList.Any(x => x.GetType() == typeof(ReturnNode))
             && conditionNode.ElseClause != null
-            && ((BodyNode)conditionNode.ElseClause).InstructionList.Any(x => x.GetType() == typeof(ReturnNode)))
+            && ((BodyNode)conditionNode.ElseClause).ExpressionList.Any(x => x.GetType() == typeof(ReturnNode)))
         {
             elseClauseEndLab = null;
         }
@@ -403,7 +403,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         EmitGetLocalVarOrArg((MemberNode)node.Inner, context, false);
         var toType = GetTypeFromNode(node.ToType)!;
-        var fromType = GetTypeFromNode(node.FromType)!;
+        var fromType = node.FromType;
         
         if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
         else if(fromType.IsValueType && !toType.IsValueType) EmitBox(fromType, context);

@@ -4,15 +4,19 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class TypeDefinitionNode : NodeBase
 {
-    public NodeBase Name { get; }
-    public List<NodeBase> Members { get; }
-    public List<NodeBase> Generics { get; }
+    private readonly List<NodeBase> _members;
+
+    private readonly List<NodeBase> _generics;
+    
+    public NodeBase Name { get; private set; }
+    public IReadOnlyList<NodeBase> Members => _members;
+    public IReadOnlyList<NodeBase> Generics => _generics;
 
     public TypeDefinitionNode(NodeBase name, List<NodeBase> members,  List<NodeBase> generics = null)
     {
         Name = name;
-        Members = members;
-        Generics = generics;
+        _members = members;
+        _generics = generics;
     }
     
     public override IEnumerable<NodeBase> Visit()
@@ -29,6 +33,23 @@ public class TypeDefinitionNode : NodeBase
         foreach (var generic in Generics)
         {
             yield return generic;
+        }
+    }
+
+    public override void ReplaceChild(NodeBase child, NodeBase newChild)
+    {
+        int childIndex;
+        if (Name == child)
+        {
+            Name = newChild;
+        }
+        else if (-1 == (childIndex = _members.IndexOf(child)))
+        {
+            _members[childIndex] = newChild;
+        }
+        else if (-1 == (childIndex = _generics.IndexOf(child)))
+        {
+            _generics[childIndex] = newChild;
         }
     }
 }
