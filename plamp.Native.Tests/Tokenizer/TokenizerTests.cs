@@ -21,8 +21,9 @@ public class TokenizerTests
     [Fact]
     public void TestNullSequence()
     {
-        Assert.Throws<NullReferenceException>(() =>
-            ParserTestHelper.GetSourceCode(null).Tokenize(ParserTestHelper.AssemblyName));
+        var result = ParserTestHelper.GetSourceCode(null).Tokenize(ParserTestHelper.AssemblyName);
+        Assert.Single(result.Sequence);
+        Assert.Equal(typeof(EndOfLine), result.Sequence.First().GetType());
     }
 
     [Theory]
