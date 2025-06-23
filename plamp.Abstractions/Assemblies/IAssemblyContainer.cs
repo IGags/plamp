@@ -1,17 +1,17 @@
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 
 namespace plamp.Abstractions.Assemblies;
 
 public interface IAssemblyContainer
 {
-    Type[] GetMatchingTypes(string name);
+    IReadOnlyList<ITypeInfo> GetMatchingTypes(string name);
     
-    FieldInfo[] GetMatchingFields(string name, Type enclosingType);
+    IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType);
 
-    PropertyInfo[] GetMatchingProperties(string name, Type enclosingType);
+    IReadOnlyList<IPropertyInfo> GetMatchingProperties(string name, ITypeInfo enclosingType);
     
-    MethodInfo[] GetMatchingMethods(string name, Type enclosingType, Type[] signature);
+    IReadOnlyList<IMethodInfo> GetMatchingMethods(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature);
 
-    ConstructorInfo[] GetMatchingConstructors(string name, Type enclosingType, Type[] signature);
+    IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature);
 }
