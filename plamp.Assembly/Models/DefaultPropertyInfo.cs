@@ -3,10 +3,10 @@ using plamp.Abstractions.Assemblies;
 
 namespace plamp.Assembly.Models;
 
-public class DefaultPropertyInfo : IPropertyInfo
+internal class DefaultPropertyInfo : IPropertyInfo
 {
-    internal DefaultTypeInfo Type { get; set; }
+    internal required DefaultTypeInfo Type { get; init; }
     public ITypeInfo EnclosingType => Type;
-    public PropertyInfo PropertyInfo { get; set; }
-    public string Alias { get; set; }
+    public required PropertyInfo PropertyInfo { get; init; }
+    public string? Alias { get; set; }
 }

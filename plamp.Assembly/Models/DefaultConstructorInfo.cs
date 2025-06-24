@@ -5,9 +5,9 @@ namespace plamp.Assembly.Models;
 
 internal class DefaultConstructorInfo : IConstructorInfo
 {
-    internal DefaultTypeInfo Type { get; set; }
+    internal required DefaultTypeInfo Type { get; init; }
 
     public ITypeInfo EnclosingType => Type;
     
-    public ConstructorInfo ConstructorInfo { get; set; }
+    public required ConstructorInfo ConstructorInfo { get; init; }
 }

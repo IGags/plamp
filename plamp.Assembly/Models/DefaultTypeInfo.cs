@@ -5,7 +5,7 @@ namespace plamp.Assembly.Models;
 
 internal class DefaultTypeInfo : ITypeInfo
 {
-    public Type Type { get; set; }
-    public string Alias { get; set; }
-    public string Module { get; set; }
+    public required Type Type { get; init; }
+    public string? Alias { get; set; }
+    public required string Module { get; init; }
 }

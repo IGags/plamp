@@ -14,4 +14,8 @@ public interface IAssemblyContainer
     IReadOnlyList<IMethodInfo> GetMatchingMethods(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature);
 
     IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature);
+
+    IReadOnlyList<IIndexerInfo> GetMatchingIndexers(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature);
+
+    public IEnumerable<ITypeInfo> EnumerateTypes();
 }

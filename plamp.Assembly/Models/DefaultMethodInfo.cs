@@ -3,10 +3,10 @@ using plamp.Abstractions.Assemblies;
 
 namespace plamp.Assembly.Models;
 
-public class DefaultMethodInfo : IMethodInfo
+internal class DefaultMethodInfo : IMethodInfo
 {
-    internal DefaultTypeInfo Type { get; set; }
+    internal required DefaultTypeInfo Type { get; init; }
     public ITypeInfo EnclosingType => Type;
-    public MethodInfo MethodInfo { get; set; }
-    public string Alias { get; set; }
+    public required MethodInfo MethodInfo { get; init; }
+    public string? Alias { get; set; }
 }

@@ -8,15 +8,17 @@ namespace plamp.Assembly;
 
 internal class DefaultAssemblyContainer : IAssemblyContainer
 {
-    internal Dictionary<string, List<DefaultTypeInfo>> Types { get; } = [];
+    internal required Dictionary<string, List<DefaultTypeInfo>> Types { get; init; } = [];
 
-    internal Dictionary<ITypeInfo, List<DefaultFieldInfo>> Fields { get; } = [];
+    internal required Dictionary<ITypeInfo, List<DefaultFieldInfo>> Fields { get; init; } = [];
 
-    internal Dictionary<ITypeInfo, List<DefaultPropertyInfo>> Properties { get; } = [];
+    internal required Dictionary<ITypeInfo, List<DefaultPropertyInfo>> Properties { get; init; } = [];
 
-    internal Dictionary<ITypeInfo, List<DefaultMethodInfo>> Methods { get; } = [];
+    internal required Dictionary<ITypeInfo, List<DefaultMethodInfo>> Methods { get; init; } = [];
 
-    internal Dictionary<ITypeInfo, List<DefaultConstructorInfo>> Constructors { get; } = [];
+    internal required Dictionary<ITypeInfo, List<DefaultConstructorInfo>> Constructors { get; init; } = [];
+
+    internal required Dictionary<ITypeInfo, List<DefaultIndexerInfo>> Indexers { get; init; } = [];
         
     public IReadOnlyList<ITypeInfo> GetMatchingTypes(string name)
     {
@@ -48,6 +50,20 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
             .Where(x => SignatureMatch(x.ConstructorInfo, signature))
             .ToList() ?? [];
     }
+
+    public IReadOnlyList<IIndexerInfo> GetMatchingIndexers(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature)
+    {
+        var indexers = Indexers[enclosingType];
+        var getterMatches = indexers
+            .Where(x => x.IndexerProperty.CanRead)
+            .Where(x => SignatureMatch(x.IndexerProperty.GetGetMethod(), signature));
+        var setterMatches = indexers.Where(x => x.IndexerProperty.CanWrite)
+            .Where(x => x.IndexerProperty.CanWrite)
+            .Where(x => SignatureMatch(x.IndexerProperty.GetSetMethod(), signature));
+        return getterMatches.Concat(setterMatches).Distinct().ToList();
+    }
+
+    public IEnumerable<ITypeInfo> EnumerateTypes() => Types.Values.SelectMany(x => x);
 
     private bool SignatureMatch(MethodBase method, IReadOnlyList<ITypeInfo> signature)
     {
