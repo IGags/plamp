@@ -16,7 +16,7 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
     {
         if (methodExpression.Body is not MethodCallExpression call)
             throw ThrowInvalidMethodExpression(nameof(methodExpression));
-        var info = call.Method;
+        var info = GetMethodOrGenericDefinition(call.Method);
         return AddMethod(info);
     }
 
@@ -36,7 +36,13 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         {
             throw ThrowInvalidMethodExpression(nameof(methodExpression));
         }
+        
+        methodInfo = GetMethodOrGenericDefinition(methodInfo);
+        return AddMethod(methodInfo);
+    }
 
+    public MethodInfo GetMethodOrGenericDefinition(MethodInfo methodInfo)
+    {
         if (methodInfo.IsConstructedGenericMethod)
         {
             methodInfo = methodInfo.GetGenericMethodDefinition();
@@ -47,7 +53,7 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             methodInfo = (MethodInfo)MethodBase.GetMethodFromHandle(methodInfo.MethodHandle, typeBuilder.TypeInfo.Type.TypeHandle)!;
         }
 
-        return AddMethod(methodInfo);
+        return methodInfo;
     }
 
     public IOptionalAliasBuilder<T> AddMethod(MethodInfo methodInfo)
@@ -63,14 +69,34 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             typeBuilder.ModuleBuilder.ContainerBuilder.MethodInfoDict.Add(typeBuilder.TypeInfo, methods);
         }
 
+        CheckMatchMethods(methods, methodInfo.Name, methodInfo);
+        
         DefaultMethodInfo? existingMethod;
         if ((existingMethod = methods.FirstOrDefault(x => x.MethodInfo == methodInfo)) == null)
         {
-            existingMethod = new DefaultMethodInfo() { MethodInfo = methodInfo, Type = typeBuilder.TypeInfo };
+            existingMethod = new DefaultMethodInfo(typeBuilder.TypeInfo, methodInfo, methodInfo.Name);
             methods.Add(existingMethod);
         }
-        _aliasAssignmentFn = s => existingMethod.Alias = s;
+        else
+        {
+            existingMethod.Alias = methodInfo.Name;
+        }
+        
+        _aliasAssignmentFn = s =>
+        {
+            CheckMatchMethods(methods, s, methodInfo);
+            existingMethod.Alias = s;
+        };
+        
         return this;
+
+        void CheckMatchMethods(List<DefaultMethodInfo> methodInfos, string alias, MethodInfo method)
+        {
+            var matchMethods = methodInfos
+                .Where(x => x.MethodInfo != method && x.Alias == alias)
+                .Select(x => x.MethodInfo);
+            ThrowIfSignatureMatches(matchMethods, method, alias);
+        }
     }
 
     public IMemberBuilder<T> AddCtor(Expression<Func<T>> ctorExpression)
@@ -103,8 +129,7 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
 
         if (constructors.FirstOrDefault(x => x.ConstructorInfo == constructorInfo) == null)
         {
-            var existingCtor = new DefaultConstructorInfo()
-                { ConstructorInfo = constructorInfo, Type = typeBuilder.TypeInfo };
+            var existingCtor = new DefaultConstructorInfo(typeBuilder.TypeInfo, constructorInfo);
             constructors.Add(existingCtor);
         }
 
@@ -151,14 +176,18 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             typeBuilder.ModuleBuilder.ContainerBuilder.FieldInfoDict.Add(typeBuilder.TypeInfo, fields);
         }
 
-        DefaultFieldInfo? existingFields;
-        if ((existingFields = fields.FirstOrDefault(x => x.FieldInfo == fieldInfo)) == null)
+        DefaultFieldInfo? existingField;
+        if ((existingField = fields.FirstOrDefault(x => x.FieldInfo == fieldInfo)) == null)
         {
-            existingFields = new DefaultFieldInfo() { FieldInfo = fieldInfo, Type = typeBuilder.TypeInfo };
-            fields.Add(existingFields);
+            existingField = new DefaultFieldInfo(typeBuilder.TypeInfo, fieldInfo.Name, fieldInfo);
+            fields.Add(existingField);
+        }
+        else
+        {
+            existingField.Alias = fieldInfo.Name;
         }
 
-        _aliasAssignmentFn = s => existingFields.Alias = s;
+        _aliasAssignmentFn = s => existingField.Alias = s;
         return this;
     }
 
@@ -176,8 +205,12 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         DefaultPropertyInfo? existingProps;
         if ((existingProps = props.FirstOrDefault(x => x.PropertyInfo == propertyInfo)) == null)
         {
-            existingProps = new DefaultPropertyInfo() { PropertyInfo = propertyInfo, Type = typeBuilder.TypeInfo };
+            existingProps = new DefaultPropertyInfo(propertyInfo.Name, typeBuilder.TypeInfo, propertyInfo);
             props.Add(existingProps);
+        }
+        else
+        {
+            existingProps.Alias = propertyInfo.Name;
         }
 
         _aliasAssignmentFn = s => existingProps.Alias = s;
@@ -212,7 +245,8 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             .Where(x => x.GetIndexParameters().Length > 0)
             .Where(x => x.CanWrite);
 
-        var indexerProperty = existingIndexers.FirstOrDefault(x => x.GetGetMethod() == indexerMethod);
+        //Need to throw
+        var indexerProperty = existingIndexers.SingleOrDefault(x => x.GetGetMethod() == indexerMethod);
         if (indexerProperty == null)
         {
             throw ThrowInvalidIndexer(nameof(indexerExpression));
@@ -236,9 +270,8 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
 
         if (indexers.FirstOrDefault(x => x.IndexerProperty == propertyInfo) == null)
         {
-            var existingCtor = new DefaultIndexerInfo
-                { IndexerProperty = propertyInfo, TypeInfo = typeBuilder.TypeInfo };
-            indexers.Add(existingCtor);
+            var existingIndexer = new DefaultIndexerInfo(typeBuilder.TypeInfo, propertyInfo);
+            indexers.Add(existingIndexer);
         }
 
         return this;
@@ -252,10 +285,38 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         return this;
     }
 
+    //TODO: directional modifiers(in, out, ref)
+    private void ThrowIfSignatureMatches(IEnumerable<MethodInfo> signatures, MethodInfo toMatch, string alias)
+    {
+        var parameterToMatch = toMatch.GetParameters();
+        foreach (var signature in signatures)
+        {
+            var parameters = signature.GetParameters();
+            if (parameters.Length == parameterToMatch.Length
+                && parameters.Zip(parameterToMatch)
+                    .All(x => x.First.ParameterType == x.Second.ParameterType))
+            {
+                throw new ArgumentException($"Method with alias: {alias} already was defined in {typeBuilder.TypeInfo.Alias}");
+            }
+        }
+    }
+
     private void ThrowIfOwnerTypeMismatch(MemberInfo member, Type fromType)
     {
-        if (member.DeclaringType != fromType) 
-            throw new ArgumentException($"Member {member} does not belong to {fromType.Name}");
+        var text = $"Member {member} does not belong to {fromType.Name}";
+        if (!member.DeclaringType!.IsAssignableFrom(fromType))
+        {
+            throw new ArgumentException(text);
+        }
+        
+        try
+        {
+            fromType.GetMemberWithSameMetadataDefinitionAs(member);
+        }
+        catch (Exception)
+        {
+            throw new ArgumentException(text);
+        }
     }
 
     private ArgumentException ThrowInvalidIndexer(string indexerExpressionName)

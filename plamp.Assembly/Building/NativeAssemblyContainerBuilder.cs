@@ -38,7 +38,7 @@ public class NativeAssemblyContainerBuilder : IContainerBuilder
             Properties = PropInfoDict.ToDictionary(x => (ITypeInfo)x.Key, x => x.Value),
             Fields = FieldInfoDict.ToDictionary(x => (ITypeInfo)x.Key, x => x.Value),
             Types = TypeInfoDict
-                .GroupBy(x => x.Value.Alias ?? x.Value.Type.Name)
+                .GroupBy(x => x.Value.Alias)
                 .ToDictionary(x => x.Key, x => x.Select(y => y.Value).ToList()),
             Indexers = IndexerInfoDict.ToDictionary(x => (ITypeInfo)x.Key, x => x.Value)
         };

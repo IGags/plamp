@@ -30,11 +30,22 @@ internal class ModuleBuilderSyntax(string moduleName, NativeAssemblyContainerBui
 
     private DefaultTypeInfo AddTypeToDictionary(Type type)
     {
-        if (containerBuilder.TypeInfoDict.TryGetValue(type, out var info)) 
-            throw new ArgumentException($"Type already exists in container in module {info.Module} as {info.Alias ?? info.Type.Name}");
-        var typeInfo = new DefaultTypeInfo{ Type = type, Module = moduleName };
-        containerBuilder.TypeInfoDict.Add(type, typeInfo);
-        _definedTypes.Add(typeInfo);
+        if (containerBuilder.TypeInfoDict.TryGetValue(type, out var info) && info.Module != moduleName) 
+            throw new ArgumentException($"Type already exists in container in module {info.Module} as {info.Alias}");
+        
+        DefaultTypeInfo typeInfo;
+        if (info == null)
+        {
+            typeInfo = new DefaultTypeInfo(type.Name, type, moduleName);
+            containerBuilder.TypeInfoDict.Add(type, typeInfo);
+            _definedTypes.Add(typeInfo);
+        }
+        else
+        {
+            typeInfo = info;
+            typeInfo.Alias = type.Name;
+        }
+        
         return typeInfo;
     }
 

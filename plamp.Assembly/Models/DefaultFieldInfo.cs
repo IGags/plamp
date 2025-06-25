@@ -5,8 +5,18 @@ namespace plamp.Assembly.Models;
 
 internal class DefaultFieldInfo : IFieldInfo
 {
-    internal required DefaultTypeInfo Type { get; init; }
+    internal DefaultTypeInfo Type { get; set; }
+
     public ITypeInfo EnclosingType => Type;
-    public required FieldInfo FieldInfo { get; init; }
-    public string? Alias { get; set; }
+
+    public FieldInfo FieldInfo { get; set; }
+
+    public string Alias { get; set; }
+
+    public DefaultFieldInfo(DefaultTypeInfo type, string alias, FieldInfo fieldInfo)
+    {
+        Type = type;
+        Alias = alias;
+        FieldInfo = fieldInfo;
+    }
 }

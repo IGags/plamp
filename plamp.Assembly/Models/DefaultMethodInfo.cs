@@ -5,8 +5,18 @@ namespace plamp.Assembly.Models;
 
 internal class DefaultMethodInfo : IMethodInfo
 {
-    internal required DefaultTypeInfo Type { get; init; }
+    internal DefaultTypeInfo Type { get; set; }
+
     public ITypeInfo EnclosingType => Type;
-    public required MethodInfo MethodInfo { get; init; }
-    public string? Alias { get; set; }
+
+    public MethodInfo MethodInfo { get; set; }
+
+    public string Alias { get; set; }
+
+    public DefaultMethodInfo(DefaultTypeInfo type, MethodInfo methodInfo, string alias)
+    {
+        Type = type;
+        MethodInfo = methodInfo;
+        Alias = alias;
+    }
 }

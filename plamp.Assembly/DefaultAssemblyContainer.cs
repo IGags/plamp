@@ -22,44 +22,45 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
         
     public IReadOnlyList<ITypeInfo> GetMatchingTypes(string name)
     {
-        return Types[name] ?? [];
+        return Types.TryGetValue(name, out var list) ? list : [];
     }
 
     public IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType)
     {
-        return Fields[enclosingType]?.Where(x => x.Alias.Equals(name)).ToList() ?? [];
+        return Fields.TryGetValue(enclosingType, out var list) ? list.Where(x => x.Alias.Equals(name)).ToList() : [];
     }
 
     public IReadOnlyList<IPropertyInfo> GetMatchingProperties(string name, ITypeInfo enclosingType)
     {
-        return Properties[enclosingType]?.Where(x => x.Alias.Equals(name)).ToList() ?? [];
+        return Properties.TryGetValue(enclosingType, out var list) ? list.Where(x => x.Alias.Equals(name)).ToList() : [];
     }
 
-    public IReadOnlyList<IMethodInfo> GetMatchingMethods(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature)
+    public IReadOnlyList<IMethodInfo> GetMatchingMethods(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo>? signature = null)
     {
-        return Methods[enclosingType]?
-            .Where(x => x.Alias.Equals(name))
-            .Where(x => SignatureMatch(x.MethodInfo, signature))
-            .ToList() ?? [];
+        return Methods.TryGetValue(enclosingType, out var list)
+            ? list.Where(x => x.Alias.Equals(name))
+            .Where(x => signature == null || SignatureMatch(x.MethodInfo, signature))
+            .ToList() : [];
     }
 
-    public IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature)
+    public IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo>? signature = null)
     {
-        return Constructors[enclosingType]?
-            .Where(x => x.EnclosingType.Alias.Equals(name))
-            .Where(x => SignatureMatch(x.ConstructorInfo, signature))
-            .ToList() ?? [];
+        return Constructors.TryGetValue(enclosingType, out var list)
+            ? list.Where(x => x.EnclosingType.Alias.Equals(name))
+            .Where(x => signature == null || SignatureMatch(x.ConstructorInfo, signature))
+            .ToList() : [];
     }
 
-    public IReadOnlyList<IIndexerInfo> GetMatchingIndexers(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature)
+    public IReadOnlyList<IIndexerInfo> GetMatchingIndexers(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo>? signature = null)
     {
-        var indexers = Indexers[enclosingType];
-        var getterMatches = indexers
+        if (!Indexers.TryGetValue(enclosingType, out var list)) return [];
+        
+        var getterMatches = list
             .Where(x => x.IndexerProperty.CanRead)
-            .Where(x => SignatureMatch(x.IndexerProperty.GetGetMethod(), signature));
-        var setterMatches = indexers.Where(x => x.IndexerProperty.CanWrite)
+            .Where(x => signature == null || SignatureMatch(x.IndexerProperty.GetGetMethod()!, signature));
+        var setterMatches = list.Where(x => x.IndexerProperty.CanWrite)
             .Where(x => x.IndexerProperty.CanWrite)
-            .Where(x => SignatureMatch(x.IndexerProperty.GetSetMethod(), signature));
+            .Where(x => signature == null || SignatureMatch(x.IndexerProperty.GetSetMethod()!, signature));
         return getterMatches.Concat(setterMatches).Distinct().ToList();
     }
 
@@ -72,7 +73,7 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
         return argPairs.All(x => ArgTypesMatch(x.First, x.Second));
     }
 
-    private bool ArgTypesMatch(ParameterInfo parameter, ITypeInfo typeInfo)
+    private bool ArgTypesMatch(ParameterInfo parameter, ITypeInfo? typeInfo)
     {
         if (typeInfo == null 
             && (parameter.IsOptional 

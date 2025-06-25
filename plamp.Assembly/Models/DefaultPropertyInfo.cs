@@ -5,8 +5,18 @@ namespace plamp.Assembly.Models;
 
 internal class DefaultPropertyInfo : IPropertyInfo
 {
-    internal required DefaultTypeInfo Type { get; init; }
+    internal DefaultTypeInfo Type { get; set; }
+
     public ITypeInfo EnclosingType => Type;
-    public required PropertyInfo PropertyInfo { get; init; }
-    public string? Alias { get; set; }
+
+    public PropertyInfo PropertyInfo { get; set; }
+
+    public string Alias { get; set; }
+
+    public DefaultPropertyInfo(string alias, DefaultTypeInfo type, PropertyInfo propertyInfo)
+    {
+        Alias = alias;
+        Type = type;
+        PropertyInfo = propertyInfo;
+    }
 }
