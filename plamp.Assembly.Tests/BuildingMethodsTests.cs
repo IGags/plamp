@@ -112,7 +112,7 @@ public class BuildingMethodsTests
             .AddMethod(x => x.Add(Arg.OfType<int>()));
         var container = builder.CreateContainer();
         var methodInfo = typeof(List<int>).GetMethod(nameof(List<int>.Add));
-        var type = container.GetMatchingTypes(typeof(List<int>).Name).Single();
+        var type = container.GetMatchingTypes(nameof(List<int>), 1).Single();
         var methods = container.GetMatchingMethods(nameof(List<int>.Add), type).ToList();
         Assert.Single(methods);
         Assert.Equal(methodInfo, methods[0].MethodInfo);
@@ -140,7 +140,7 @@ public class BuildingMethodsTests
 
         var container = builder.CreateContainer();
         var methodInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
-        var type = container.GetMatchingTypes(typeof(List<int>).Name).Single();
+        var type = container.GetMatchingTypes(nameof(List<int>), 1).Single();
         var methods = container.GetMatchingMethods(nameof(List<int>.Add), type).ToList();
         Assert.Single(methods);
         Assert.Equal(methodInfo, methods[0].MethodInfo);
@@ -158,7 +158,7 @@ public class BuildingMethodsTests
         
         var container = builder.CreateContainer();
         var methodInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
-        var type = container.GetMatchingTypes(typeof(List<int>).Name).Single();
+        var type = container.GetMatchingTypes(nameof(List<int>), 1).Single();
         var methods = container.GetMatchingMethods(alias, type).ToList();
         Assert.Single(methods);
         Assert.Equal(methodInfo, methods[0].MethodInfo);
@@ -175,7 +175,7 @@ public class BuildingMethodsTests
             .AddGenericTypeDefinition<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>()));
 
         var container = builder.CreateContainer();
-        var types = container.GetMatchingTypes(typeof(List<int>).Name);
+        var types = container.GetMatchingTypes(nameof(List<int>), 1);
 
         var generalInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
         var implementationInfo = typeof(List<int>).GetMethod(nameof(List<int>.Add));
@@ -257,7 +257,7 @@ public class BuildingMethodsTests
 
         var methodInfo = typeof(ExampleGeneric<int>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .First(x => x.GetParameters().Length == 1 && x.GetGenericArguments().Length == 1);
-        var types = container.GetMatchingTypes(typeof(ExampleGeneric<>).Name);
+        var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
         var type = Assert.Single(types);
         var methods = container.GetMatchingMethods(nameof(ExampleGeneric<int>.ExampleGenericMth), type);
         var method = Assert.Single(methods);
@@ -277,7 +277,7 @@ public class BuildingMethodsTests
 
         var methodInfo = typeof(ExampleGeneric<int>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .First(x => x.GetParameters().Length == 2 && x.GetGenericArguments().Length == 1);
-        var types = container.GetMatchingTypes(typeof(ExampleGeneric<>).Name);
+        var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
         var type = Assert.Single(types);
         var methods = container.GetMatchingMethods(nameof(ExampleGeneric<int>.ExampleGenericMth), type);
         var method = Assert.Single(methods);
@@ -298,7 +298,7 @@ public class BuildingMethodsTests
         
         var methodInfo = typeof(ExampleGeneric<>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .First(x => x.GetParameters().Length == 1 && x.GetGenericArguments().Length == 1);
-        var types = container.GetMatchingTypes(typeof(ExampleGeneric<>).Name);
+        var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
         var type = Assert.Single(types);
         var methods = container.GetMatchingMethods(nameof(ExampleGeneric<int>.ExampleGenericMth), type);
         var method = Assert.Single(methods);
@@ -319,7 +319,7 @@ public class BuildingMethodsTests
         
         var methodInfo = typeof(ExampleGeneric<>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .First(x => x.GetParameters().Length == 2 && x.GetGenericArguments().Length == 1);
-        var types = container.GetMatchingTypes(typeof(ExampleGeneric<>).Name);
+        var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
         var type = Assert.Single(types);
         var methods = container.GetMatchingMethods(nameof(ExampleGeneric<int>.ExampleGenericMth), type);
         var method = Assert.Single(methods);

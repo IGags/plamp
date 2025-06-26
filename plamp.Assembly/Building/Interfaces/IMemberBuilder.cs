@@ -16,7 +16,7 @@ public interface IMemberBuilder<T>
 
     public IMemberBuilder<T> AddCtor(ConstructorInfo constructorInfo);
 
-    public IOptionalAliasBuilder<T> AddMember(Expression<Func<T, object>> memberExpression);
+    public IOptionalAliasBuilder<T> AddPropertyOrField(Expression<Func<T, object>> memberExpression);
 
     public IOptionalAliasBuilder<T> AddField(FieldInfo fieldInfo);
 

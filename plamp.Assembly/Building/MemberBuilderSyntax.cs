@@ -69,8 +69,8 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             typeBuilder.ModuleBuilder.ContainerBuilder.MethodInfoDict.Add(typeBuilder.TypeInfo, methods);
         }
 
-        CheckMatchMethods(methods, methodInfo.Name, methodInfo);
         
+        ThrowIfMemberNameExists(methodInfo.Name, methodInfo);
         DefaultMethodInfo? existingMethod;
         if ((existingMethod = methods.FirstOrDefault(x => x.MethodInfo == methodInfo)) == null)
         {
@@ -84,19 +84,11 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         
         _aliasAssignmentFn = s =>
         {
-            CheckMatchMethods(methods, s, methodInfo);
+            ThrowIfMemberNameExists(s, methodInfo);
             existingMethod.Alias = s;
         };
         
         return this;
-
-        void CheckMatchMethods(List<DefaultMethodInfo> methodInfos, string alias, MethodInfo method)
-        {
-            var matchMethods = methodInfos
-                .Where(x => x.MethodInfo != method && x.Alias == alias)
-                .Select(x => x.MethodInfo);
-            ThrowIfSignatureMatches(matchMethods, method, alias);
-        }
     }
 
     public IMemberBuilder<T> AddCtor(Expression<Func<T>> ctorExpression)
@@ -142,7 +134,7 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         return this;
     }
 
-    public IOptionalAliasBuilder<T> AddMember(Expression<Func<T, object>> memberExpression)
+    public IOptionalAliasBuilder<T> AddPropertyOrField(Expression<Func<T, object>> memberExpression)
     {
         MemberInfo memberInfo;
         if (memberExpression.Body is MemberExpression member)
@@ -181,7 +173,8 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             fields = [];
             typeBuilder.ModuleBuilder.ContainerBuilder.FieldInfoDict.Add(typeBuilder.TypeInfo, fields);
         }
-
+        
+        ThrowIfMemberNameExists(fieldInfo.Name, fieldInfo);
         DefaultFieldInfo? existingField;
         if ((existingField = fields.FirstOrDefault(x => x.FieldInfo == fieldInfo)) == null)
         {
@@ -193,7 +186,11 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             existingField.Alias = fieldInfo.Name;
         }
 
-        _aliasAssignmentFn = s => existingField.Alias = s;
+        _aliasAssignmentFn = s =>
+        {
+            ThrowIfMemberNameExists(s, fieldInfo);
+            existingField.Alias = s;
+        };
         return this;
     }
 
@@ -208,6 +205,7 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             typeBuilder.ModuleBuilder.ContainerBuilder.PropInfoDict.Add(typeBuilder.TypeInfo, props);
         }
 
+        ThrowIfMemberNameExists(propertyInfo.Name, propertyInfo);
         DefaultPropertyInfo? existingProps;
         if ((existingProps = props.FirstOrDefault(x => x.PropertyInfo == propertyInfo)) == null)
         {
@@ -219,7 +217,11 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
             existingProps.Alias = propertyInfo.Name;
         }
 
-        _aliasAssignmentFn = s => existingProps.Alias = s;
+        _aliasAssignmentFn = s =>
+        {
+            ThrowIfMemberNameExists(s, propertyInfo);
+            existingProps.Alias = s;
+        };
         return this;
     }
 
@@ -291,11 +293,57 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         return this;
     }
 
-    //TODO: directional modifiers(in, out, ref)
-    private void ThrowIfSignatureMatches(IEnumerable<MethodInfo> signatures, MethodInfo toMatch, string alias)
+    private void ThrowIfMemberNameExists(string memberName, MemberInfo memberDefinition)
     {
-        var parameterToMatch = toMatch.GetParameters();
-        foreach (var signature in signatures)
+        if (memberName == typeBuilder.TypeInfo.Alias)
+        {
+            throw new ArgumentException($"Member cannot be named same as enclosing type {memberName}");
+        }
+        
+        var fields = typeBuilder.ModuleBuilder.ContainerBuilder.FieldInfoDict.GetValueOrDefault(typeBuilder.TypeInfo) ?? [];
+        ThrowIfMemberExistsAmongList(fields, m => m.Alias, (m, i) => m.FieldInfo == i, memberName, memberDefinition, "Field");
+        
+        var properties = typeBuilder.ModuleBuilder.ContainerBuilder.PropInfoDict.GetValueOrDefault(typeBuilder.TypeInfo) ?? [];
+        ThrowIfMemberExistsAmongList(properties, m => m.Alias, (m, i) => m.PropertyInfo == i, memberName, memberDefinition, "Property");
+
+        var methods = typeBuilder.ModuleBuilder.ContainerBuilder.MethodInfoDict.GetValueOrDefault(typeBuilder.TypeInfo) ?? [];
+        if (memberDefinition is not MethodInfo methodInfo)
+        {
+            ThrowIfMemberExistsAmongList(methods, m => m.Alias, (m, i) => m.MethodInfo == i, memberName, memberDefinition, "Method");
+        }
+        else
+        {
+            CheckMatchMethods(methods, memberName, methodInfo);
+        }
+    }
+
+    private void ThrowIfMemberExistsAmongList<TMember>(
+        IEnumerable<TMember> members, 
+        Func<TMember, string> aliasAccessor, 
+        Func<TMember, MemberInfo, bool> infoComparer, 
+        string memberName, 
+        MemberInfo memberInfo,
+        string memberTypeName)
+    {
+        foreach (var member in members)
+        {
+            if (aliasAccessor(member) == memberName && !infoComparer(member, memberInfo))
+            {
+                throw new ArgumentException(
+                    $"{memberTypeName} {memberName} already exists in this type {typeBuilder.TypeInfo.Alias}");
+            }
+        }
+    }
+    
+    //TODO: directional modifiers(in, out, ref)
+    private void CheckMatchMethods(List<DefaultMethodInfo> methodInfos, string alias, MethodInfo method)
+    {
+        var matchMethods = methodInfos
+            .Where(x => x.MethodInfo != method && x.Alias == alias)
+            .Select(x => x.MethodInfo);
+        
+        var parameterToMatch = method.GetParameters();
+        foreach (var signature in matchMethods)
         {
             var parameters = signature.GetParameters();
             if (parameters.Length == parameterToMatch.Length

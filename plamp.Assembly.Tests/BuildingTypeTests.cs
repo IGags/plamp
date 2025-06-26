@@ -202,7 +202,7 @@ public class BuildingTypeTests
         var types = container.EnumerateTypes().ToList();
         Assert.Single(types);
         Assert.Equal(typeof(KeyValuePair<,>), types[0].Type);
-        Assert.Equal(typeof(KeyValuePair<,>).Name, types[0].Alias);
+        Assert.Equal(nameof(KeyValuePair<int, int>), types[0].Alias);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class BuildingTypeTests
             .AddGenericTypeDefinition<Dictionary<string, object>>().CompleteType();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
-        var genericList = container.GetMatchingTypes(typeof(Dictionary<,>).Name);
+        var genericList = container.GetMatchingTypes(nameof(Dictionary<object,object>), 2);
         var def = genericList.Single(x => x.Type.IsGenericTypeDefinition);
         var impl = genericList.Single(x => x.Type.IsConstructedGenericType);
         Assert.Equal(2, types.Count);
@@ -232,7 +232,7 @@ public class BuildingTypeTests
             .AddType<Dictionary<int, object>>();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
-        var genericList = container.GetMatchingTypes(typeof(Dictionary<,>).Name);
+        var genericList = container.GetMatchingTypes(nameof(Dictionary<int,string>), 2);
         Assert.Equal(2, types.Count);
         Assert.Equal(2, genericList.Count);
         Assert.Single(genericList, x => x.Type == typeof(Dictionary<int, int>));
@@ -261,5 +261,21 @@ public class BuildingTypeTests
             .AddGenericTypeDefinition<Dictionary<object, object>>().CompleteType().CompleteModule()
             .DefineModule("2");
         Assert.Throws<ArgumentException>(() => syntax.AddGenericTypeDefinition<Dictionary<string, string>>());
+    }
+
+    [Fact]
+    public void CreateSameTypeWithAlias()
+    {
+        const string alias = "listOfInt";
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1")
+            .AddType<List<int>>().CompleteType()
+            .AddType<List<int>>().As(alias);
+        var container = builder.CreateContainer();
+        var types = container.EnumerateTypes().ToList();
+        Assert.Single(types);
+        var type = Assert.Single(container.GetMatchingTypes(alias, 1));
+        Assert.Equal(alias, type.Alias);
+        Assert.Equal(typeof(List<int>), type.Type);
     }
 }

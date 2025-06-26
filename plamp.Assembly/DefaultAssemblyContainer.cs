@@ -20,9 +20,11 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
 
     internal required Dictionary<ITypeInfo, List<DefaultIndexerInfo>> Indexers { get; init; } = [];
         
-    public IReadOnlyList<ITypeInfo> GetMatchingTypes(string name)
+    public IReadOnlyList<ITypeInfo> GetMatchingTypes(string name, int genericsCount = 0)
     {
-        return Types.TryGetValue(name, out var list) ? list : [];
+        return Types.TryGetValue(name, out var list) 
+            ? list.Where(x => x.Type.GetGenericArguments().Length == genericsCount).ToList() 
+            : [];
     }
 
     public IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType)

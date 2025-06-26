@@ -12,11 +12,27 @@ public class BuildingConstructorsTests
     public void AddDefaultStructCtor()
     {
         var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddType<KeyValuePair<int, int>>().WithMembers().AddCtor(() => new());
-        var constructorInfo = typeof(KeyValuePair<int, int>).GetConstructors().Single();
+        builder.DefineModule("1").AddType<ExampleStructCtor>().WithMembers().AddCtor(() => new());
+        var constructorInfo = typeof(ExampleStructCtor).GetConstructors().SingleOrDefault(x => x.GetParameters().Length == 0);
         
         var container = builder.CreateContainer();
-        var types = container.GetMatchingTypes(typeof(KeyValuePair<int, int>).Name);
+        var types = container.GetMatchingTypes(nameof(ExampleStructCtor));
+        var type = Assert.Single(types);
+        var constructors = container.GetMatchingConstructors(type);
+        var ctor = Assert.Single(constructors);
+        Assert.Equal(type, ctor.EnclosingType);
+        Assert.Equal(constructorInfo, ctor.ConstructorInfo);
+    }
+
+    [Fact]
+    public void AddStructCtorWithArgs()
+    {
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<ExampleStructCtor>().WithMembers().AddCtor(() => new(Arg.OfType<int>()));
+        var constructorInfo = typeof(ExampleStructCtor).GetConstructors().SingleOrDefault(x => x.GetParameters().Length == 1);
+        
+        var container = builder.CreateContainer();
+        var types = container.GetMatchingTypes(nameof(ExampleStructCtor));
         var type = Assert.Single(types);
         var constructors = container.GetMatchingConstructors(type);
         var ctor = Assert.Single(constructors);
@@ -96,13 +112,50 @@ public class BuildingConstructorsTests
         Assert.Equal(type, charCtorInfo.EnclosingType);
         Assert.Equal(type, arrayCtorInfo.EnclosingType);
     }
-    
-    // public void AddGener
+
+    [Fact]
+    public void AddGenericImplCtor()
+    {
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<ExampleGenericCtor<int>>().WithMembers()
+            .AddCtor(() => new ExampleGenericCtor<int>(Arg.OfType<int>()));
+        var container = builder.CreateContainer();
+        var ctorInfo = typeof(ExampleGenericCtor<int>).GetConstructor([typeof(int)]);
+        var types = container.GetMatchingTypes(nameof(ExampleGenericCtor<int>), 1);
+        var type = Assert.Single(types);
+        var constructors = container.GetMatchingConstructors(type);
+        var ctor = Assert.Single(constructors);
+        Assert.Equal(type, ctor.EnclosingType);
+        Assert.Equal(ctorInfo, ctor.ConstructorInfo);
+    }
+
+    [Fact]
+    public void AddGenericDefCtor()
+    {
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddGenericTypeDefinition<ExampleGenericCtor<int>>().WithMembers()
+            .AddCtor(() => new ExampleGenericCtor<int>(Arg.OfType<int>()));
+        
+        var container = builder.CreateContainer();
+        var ctorInfo = typeof(ExampleGenericCtor<int>).GetGenericTypeDefinition().GetConstructors().Single();
+        var types = container.GetMatchingTypes(nameof(ExampleGenericCtor<int>), 1);
+        var type = Assert.Single(types);
+        var constructors = container.GetMatchingConstructors(type);
+        var ctor = Assert.Single(constructors);
+        Assert.Equal(type, ctor.EnclosingType);
+        Assert.Equal(ctorInfo, ctor.ConstructorInfo);
+    }
 }
 
 public class ExampleGenericCtor<T>
 {
-    public ExampleGenericCtor(int a) { }
     
     public ExampleGenericCtor(T a) {}
+}
+
+public struct ExampleStructCtor
+{
+    public ExampleStructCtor() { }
+    
+    public ExampleStructCtor(int a) { }
 }

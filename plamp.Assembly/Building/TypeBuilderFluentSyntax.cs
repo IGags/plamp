@@ -14,11 +14,8 @@ internal class TypeBuilderFluentSyntax<T>(DefaultTypeInfo typeInfo, ModuleBuilde
 
     public IMemberBuilder<T> As(string alias)
     {
-        if (builder.DefinedTypes.Any(x => alias.Equals(x.Alias))
-            || builder.DefinedTypes.Any(x => x.Type.Name.Equals(alias)))
-        {
-            throw new ArgumentException($"Type with the name {alias} already declared in this module");
-        }
+        builder.ThrowDuplicateModuleAlias(alias, typeInfo.Type);
+        builder.ThrowMemberNameEquality(alias, typeInfo.Type);
         typeInfo.Alias = alias;
         return new MemberBuilderSyntax<T>(this);
     }

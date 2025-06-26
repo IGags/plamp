@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Assemblies;
 
 public interface IAssemblyContainer
 {
-    IReadOnlyList<ITypeInfo> GetMatchingTypes(string name);
+    IReadOnlyList<ITypeInfo> GetMatchingTypes(string name, int genericsCount = 0);
     
     IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType);
 
