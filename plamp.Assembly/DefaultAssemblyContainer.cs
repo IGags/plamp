@@ -43,11 +43,10 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
             .ToList() : [];
     }
 
-    public IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo>? signature = null)
+    public IReadOnlyList<IConstructorInfo> GetMatchingConstructors(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo>? signature = null)
     {
         return Constructors.TryGetValue(enclosingType, out var list)
-            ? list.Where(x => x.EnclosingType.Alias.Equals(name))
-            .Where(x => signature == null || SignatureMatch(x.ConstructorInfo, signature))
+            ? list.Where(x => signature == null || SignatureMatch(x.ConstructorInfo, signature))
             .ToList() : [];
     }
 

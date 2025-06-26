@@ -101,12 +101,18 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
 
     public IMemberBuilder<T> AddCtor(Expression<Func<T>> ctorExpression)
     {
-        if (ctorExpression.Body is not NewExpression{Constructor: not null } newExpression)
+        const string msg = $"Argument {nameof(ctorExpression)} is not constructor call expression";
+        if (ctorExpression.Body is not NewExpression newExpression)
         {
-            throw new ArgumentException($"Argument {nameof(newExpression)} is not constructor call expression");
+            throw new ArgumentException(msg);
         }
 
-        var ctorInfo = newExpression.Constructor;
+        var ctorInfo = newExpression.Constructor != null ? newExpression.Constructor : newExpression.Type.GetConstructors().FirstOrDefault();
+        if (ctorInfo == null)
+        {
+            throw new ArgumentException(msg);
+        }
+        
         var type = typeBuilder.TypeInfo.Type;
         if (type.IsGenericTypeDefinition)
         {

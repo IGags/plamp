@@ -13,7 +13,7 @@ public interface IAssemblyContainer
     
     IReadOnlyList<IMethodInfo> GetMatchingMethods(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature = null);
 
-    IReadOnlyList<IConstructorInfo> GetMatchingConstructors(string name, ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature = null);
+    IReadOnlyList<IConstructorInfo> GetMatchingConstructors(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature = null);
 
     IReadOnlyList<IIndexerInfo> GetMatchingIndexers(ITypeInfo enclosingType, IReadOnlyList<ITypeInfo> signature = null);
 
