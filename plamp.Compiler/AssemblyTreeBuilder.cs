@@ -17,7 +17,7 @@ internal class AssemblyTreeBuilder
     
     public bool TryBuildAssemblyTree(
         List<CompilationAssemblyModel> assemblies,
-        ICompiledAssemblyContainer compiledAssemblyContainer,
+        IAssemblyContainer assemblyContainer,
         out Queue<ReadOnlyAssemblyTreeNode> jobQueue,
         out List<PlampException> errors)
     {
@@ -32,9 +32,9 @@ internal class AssemblyTreeBuilder
             if (assemblies.Count == previousCount)
             {
                 error = true;
-                ExcludeDependencyErrorAssemblies(assemblies, errors, compiledAssemblyContainer);
+                ExcludeDependencyErrorAssemblies(assemblies, errors, assemblyContainer);
             }
-            var toRemove = FindAssembliesWithAllDependencies(assemblies, compiledAssemblyContainer);
+            var toRemove = FindAssembliesWithAllDependencies(assemblies, assemblyContainer);
             foreach (var assemblyModel in toRemove)
             {
                 assemblies.Remove(assemblyModel);
@@ -47,7 +47,7 @@ internal class AssemblyTreeBuilder
 
     private List<CompilationAssemblyModel> FindAssembliesWithAllDependencies(
         List<CompilationAssemblyModel> assemblies,
-        ICompiledAssemblyContainer compiledAssemblyContainer)
+        IAssemblyContainer assemblyContainer)
     {
         var complete = new List<CompilationAssemblyModel>();
         foreach (var assembly in assemblies)
@@ -58,7 +58,7 @@ internal class AssemblyTreeBuilder
                 out var model);
             
             var allFound = TryFindAllRemainAssemblyReferences(
-                compiledAssemblyContainer,
+                assemblyContainer,
                 remainReferences,
                 out var foundRemainReferenceResult);
             
@@ -106,7 +106,7 @@ internal class AssemblyTreeBuilder
     }
 
     private bool TryFindAllRemainAssemblyReferences(
-        ICompiledAssemblyContainer compiledAssemblyContainer, 
+        IAssemblyContainer assemblyContainer, 
         HashSet<AssemblyName> remainReferences,
         out ReferenceFindResult result)
     {
@@ -116,11 +116,11 @@ internal class AssemblyTreeBuilder
         foreach (var reference in remainReferences)
         {
             Assembly staticAssembly;
-            if ((staticAssembly = compiledAssemblyContainer.GetAssembly(reference)) != null)
-            {
-                result.StaticReferences.Add(staticAssembly);
-                continue;
-            }
+            // if ((staticAssembly = assemblyContainer.GetAssembly(reference)) != null)
+            // {
+            //     result.StaticReferences.Add(staticAssembly);
+            //     continue;
+            // }
 
             if (_ready.TryGetValue(reference, out var dynamicAssembly))
             {
@@ -138,7 +138,7 @@ internal class AssemblyTreeBuilder
     private void ExcludeDependencyErrorAssemblies(
         List<CompilationAssemblyModel> assemblies,
         List<PlampException> errors,
-        ICompiledAssemblyContainer container)
+        IAssemblyContainer container)
     {
         var toRemove = new List<CompilationAssemblyModel>();
         var cycles = DetectCycles(assemblies);
@@ -248,30 +248,30 @@ internal class AssemblyTreeBuilder
     }
 
     private List<MissingDependencyAssemblyRecord> FindMissingDependencies(
-        ICompiledAssemblyContainer container,
+        IAssemblyContainer container,
         List<CompilationAssemblyModel> assemblies)
     {
         var errors = new List<MissingDependencyAssemblyRecord>();
-        foreach (var assembly in assemblies)
-        {
-            var missingRefs = new List<PlampException>();
-            foreach (var reference in assembly.References)
-            {
-                if (container.GetAssembly(reference) != null 
-                    || _ready.ContainsKey(reference) 
-                    || assemblies.Any(x => AssemblyNameEqualityComparer.Equals(x.Name, reference))) 
-                    continue;
-                
-                var exceptionRecord = PlampAssemblyExceptions.MissingDependency(assembly.Name.Name, reference.Name);
-                var exception = new PlampException(exceptionRecord, default, default, null, assembly.Name);
-                missingRefs.Add(exception);
-            }
-
-            if (missingRefs.Any())
-            {
-                errors.Add(new MissingDependencyAssemblyRecord(assembly, missingRefs));
-            }
-        }
+        // foreach (var assembly in assemblies)
+        // {
+        //     var missingRefs = new List<PlampException>();
+        //     foreach (var reference in assembly.References)
+        //     {
+        //         if (container.GetAssembly(reference) != null 
+        //             || _ready.ContainsKey(reference) 
+        //             || assemblies.Any(x => AssemblyNameEqualityComparer.Equals(x.Name, reference))) 
+        //             continue;
+        //         
+        //         var exceptionRecord = PlampAssemblyExceptions.MissingDependency(assembly.Name.Name, reference.Name);
+        //         var exception = new PlampException(exceptionRecord, default, default, null, assembly.Name);
+        //         missingRefs.Add(exception);
+        //     }
+        //
+        //     if (missingRefs.Any())
+        //     {
+        //         errors.Add(new MissingDependencyAssemblyRecord(assembly, missingRefs));
+        //     }
+        // }
 
         return errors;
     }

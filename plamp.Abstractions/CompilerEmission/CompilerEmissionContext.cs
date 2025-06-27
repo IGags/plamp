@@ -10,5 +10,5 @@ public record CompilerEmissionContext(
     BodyNode MethodBody,
     MethodBuilder MethodBuilder,
     ParameterInfo[] Parameters,
-    ICompiledAssemblyContainer CompiledAssemblyContainer, 
+    IAssemblyContainer AssemblyContainer, 
     ISymbolTable SymbolTable);

@@ -12,7 +12,7 @@ public record ValidationContext
 
     public List<PlampException> Exceptions { get; init; } = [];
     
-    public ICompiledAssemblyContainer AssemblyContainer { get; init; }
+    public IAssemblyContainer AssemblyContainer { get; init; }
     
     public AssemblyName AssemblyName { get; init; }
     
