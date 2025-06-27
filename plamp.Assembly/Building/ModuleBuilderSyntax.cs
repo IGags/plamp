@@ -20,6 +20,11 @@ internal class ModuleBuilderSyntax(string moduleName, NativeAssemblyContainerBui
         return new TypeBuilderFluentSyntax<T>(typeInfo, this);
     }
 
+    public IAfterTypeInfoNameBuilder AddType(Type type)
+    {
+        throw new NotImplementedException();
+    }
+
     public IAfterTypeInfoNameBuilder<T> AddGenericTypeDefinition<T>()
     {
         var type = typeof(T);
@@ -27,6 +32,11 @@ internal class ModuleBuilderSyntax(string moduleName, NativeAssemblyContainerBui
         var definition = type.GetGenericTypeDefinition();
         var typeInfo = AddTypeToDictionary(definition);
         return new TypeBuilderFluentSyntax<T>(typeInfo, this);
+    }
+
+    public IAfterTypeInfoNameBuilder AddGenericTypeDefinition(Type type)
+    {
+        throw new NotImplementedException();
     }
 
     public void ThrowDuplicateModuleAlias(string alias, Type thisType)

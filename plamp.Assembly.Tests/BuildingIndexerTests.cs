@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using plamp.Assembly.Building;
 using Xunit;
@@ -78,8 +79,23 @@ public class BuildingIndexerTests
         Assert.Equal(propertyInfo, indexer.IndexerProperty);
         Assert.Equal(type, indexer.EnclosingType);
     }
-    
-    public vo
+
+    [Fact]
+    public void AddNonIndexerPropertyInfo()
+    {
+        var propertyInfo = typeof(ExampleIndexerClass<>).GetProperty(nameof(ExampleIndexerClass<int>.QuiteNotIndexer))!;
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var syntax = builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers();
+        Assert.Throws<ArgumentException>(() => syntax.AddIndexer(propertyInfo));
+    }
+
+    [Fact]
+    public void AddNonIndexerPropertyExpression()
+    {
+        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var syntax = builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers();
+        Assert.Throws<ArgumentException>(() => syntax.AddIndexer(x => x.QuiteNotIndexer));
+    }
 }
 
 public class ExampleIndexerClass<T>
@@ -89,6 +105,6 @@ public class ExampleIndexerClass<T>
     public T? this[T index]
     {
         get => default;
-        set => throw new System.NotImplementedException();
+        set => throw new NotImplementedException();
     }
 }

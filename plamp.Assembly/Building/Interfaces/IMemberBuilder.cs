@@ -28,3 +28,18 @@ public interface IMemberBuilder<T>
 
     public IModuleBuilderSyntax CompleteType();
 }
+
+public interface IMemberBuilder
+{
+    public IOptionalAliasBuilder AddMethod(MethodInfo methodInfo);
+    
+    public IMemberBuilder AddCtor(ConstructorInfo constructorInfo);
+    
+    public IOptionalAliasBuilder AddField(FieldInfo fieldInfo);
+
+    public IOptionalAliasBuilder AddProperty(PropertyInfo propertyInfo);
+    
+    public IMemberBuilder AddIndexer(PropertyInfo propertyInfo);
+
+    public IModuleBuilderSyntax CompleteType();
+}

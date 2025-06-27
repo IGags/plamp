@@ -8,3 +8,12 @@ public interface IAfterTypeInfoNameBuilder<T>
 
     public IModuleBuilderSyntax CompleteType();
 }
+
+public interface IAfterTypeInfoNameBuilder
+{
+    public IMemberBuilder As(string alias);
+
+    public IMemberBuilder WithMembers();
+
+    public IModuleBuilderSyntax CompleteType();
+}
