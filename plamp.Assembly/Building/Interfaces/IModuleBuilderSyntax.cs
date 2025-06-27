@@ -8,9 +8,5 @@ public interface IModuleBuilderSyntax
 
     public IAfterTypeInfoNameBuilder AddType(Type type);
 
-    public IAfterTypeInfoNameBuilder<T> AddGenericTypeDefinition<T>();
-
-    public IAfterTypeInfoNameBuilder AddGenericTypeDefinition(Type type);
-
     public IContainerBuilder CompleteModule();
 }

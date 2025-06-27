@@ -11,7 +11,7 @@ public class BuildingTypeTests
     [Fact]
     public void CreateEmptyContainer()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes();
         Assert.Empty(types);
@@ -20,7 +20,7 @@ public class BuildingTypeTests
     [Fact]
     public void CreateEmptyModule()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         _ = builder.DefineModule("mod1");
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes();
@@ -31,7 +31,7 @@ public class BuildingTypeTests
     public void CreateSingleType()
     {
         const string moduleName = "mod1";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule(moduleName).AddType<object>().CompleteType().CompleteModule();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
@@ -47,14 +47,14 @@ public class BuildingTypeTests
     {
         const string moduleName = "mod1";
         const string aliasName = "IntIntPair";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule(moduleName)
             .AddType<KeyValuePair<int, int>>().As(aliasName).CompleteType().CompleteModule();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
         Assert.Single(types);
         var type = types.First();
-        Assert.Equal(typeof(KeyValuePair<int, int>), type.Type);
+        Assert.Equal(typeof(KeyValuePair<,>), type.Type);
         Assert.Equal(moduleName, type.Module);
         Assert.Equal(aliasName, type.Alias);
     }
@@ -63,7 +63,7 @@ public class BuildingTypeTests
     public void CreateSingleTypeWithoutComplete()
     {
         const string moduleName = "mod1";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule(moduleName).AddType<object>();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
@@ -78,7 +78,7 @@ public class BuildingTypeTests
     public void CreateMultipleNonCollideTypesInSameModule()
     {
         const string moduleName = "mod1";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule(moduleName)
             .AddType<DateTime>().CompleteType()
             .AddType<TimeSpan>().CompleteType();
@@ -102,7 +102,7 @@ public class BuildingTypeTests
     [Fact]
     public void CreateTypeTwiceInTheSameModule()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("123")
             .AddType<object>().CompleteType()
             .AddType<object>();
@@ -114,7 +114,7 @@ public class BuildingTypeTests
     public void CreateSameTypeWithDifferentAliasInTheSameModule()
     {
         const string moduleName = "mod1";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule(moduleName)
             .AddType<object>().As("notObj").CompleteType()
             .AddType<object>();
@@ -128,7 +128,7 @@ public class BuildingTypeTests
     [Fact]
     public void CreateSameTypeInDifferentModule()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder
             .DefineModule("1")
                 .AddType<object>().CompleteType().CompleteModule()
@@ -141,7 +141,7 @@ public class BuildingTypeTests
     {
         const string mod1Name = "1";
         const string mod2Name = "2";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder
             .DefineModule(mod1Name).AddType<int>().CompleteType().CompleteModule()
             .DefineModule(mod2Name).AddType<short>().CompleteType().CompleteModule();
@@ -164,7 +164,7 @@ public class BuildingTypeTests
     public void CreateSameAliasInSameModule()
     {
         const string alias = "date";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1")
             .AddType<DateTime>().As(alias).CompleteType()
             .AddType<TimeSpan>();
@@ -178,7 +178,7 @@ public class BuildingTypeTests
         const string module1Name = "mod1";
         const string module2Name = "mod2";
 
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder
             .DefineModule(module1Name).AddType<DateTime>().As(alias).CompleteType().CompleteModule()
             .DefineModule(module2Name).AddType<TimeSpan>().As(alias).CompleteType().CompleteModule();
@@ -196,8 +196,8 @@ public class BuildingTypeTests
     [Fact]
     public void CreateBaseGenericFromImplementation()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddGenericTypeDefinition<KeyValuePair<object, object>>();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<KeyValuePair<object, object>>();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
         Assert.Single(types);
@@ -206,46 +206,27 @@ public class BuildingTypeTests
     }
 
     [Fact]
-    public void CreateGenericBaseAndImplementationInSameModule()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1")
-            .AddType<Dictionary<string, object>>().CompleteType()
-            .AddGenericTypeDefinition<Dictionary<string, object>>().CompleteType();
-        var container = builder.CreateContainer();
-        var types = container.EnumerateTypes().ToList();
-        var genericList = container.GetMatchingTypes(nameof(Dictionary<object,object>), 2);
-        var def = genericList.Single(x => x.Type.IsGenericTypeDefinition);
-        var impl = genericList.Single(x => x.Type.IsConstructedGenericType);
-        Assert.Equal(2, types.Count);
-        Assert.Equal(2, genericList.Count);
-        Assert.Equal(typeof(Dictionary<,>), def.Type);
-        Assert.Equal(typeof(Dictionary<string, object>), impl.Type);
-    }
-
-    [Fact]
     public void CreateDifferentGenericImplementations()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<Dictionary<int, int>>().CompleteType()
             .AddType<Dictionary<int, object>>();
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
         var genericList = container.GetMatchingTypes(nameof(Dictionary<int,string>), 2);
-        Assert.Equal(2, types.Count);
-        Assert.Equal(2, genericList.Count);
-        Assert.Single(genericList, x => x.Type == typeof(Dictionary<int, int>));
-        Assert.Single(genericList, x => x.Type == typeof(Dictionary<int, object>));
+        Assert.Equal(1, types.Count);
+        Assert.Equal(1, genericList.Count);
+        Assert.Single(genericList, x => x.Type == typeof(Dictionary<,>));
     }
 
     [Fact]
     public void CreateGenericDefinitionTwiceInSameModule()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
-            .AddGenericTypeDefinition<Dictionary<int, string>>().CompleteType()
-            .AddGenericTypeDefinition<Dictionary<string, int>>();
+            .AddType<Dictionary<int, string>>().CompleteType()
+            .AddType<Dictionary<string, int>>();
 
         var container = builder.CreateContainer();
         var types = container.EnumerateTypes().ToList();
@@ -256,18 +237,18 @@ public class BuildingTypeTests
     [Fact]
     public void CreateSameGenericTypeInDifferentModule()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1")
-            .AddGenericTypeDefinition<Dictionary<object, object>>().CompleteType().CompleteModule()
+            .AddType<Dictionary<object, object>>().CompleteType().CompleteModule()
             .DefineModule("2");
-        Assert.Throws<ArgumentException>(() => syntax.AddGenericTypeDefinition<Dictionary<string, string>>());
+        Assert.Throws<ArgumentException>(() => syntax.AddType<Dictionary<string, string>>());
     }
 
     [Fact]
     public void CreateSameTypeWithAlias()
     {
         const string alias = "listOfInt";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<List<int>>().CompleteType()
             .AddType<List<int>>().As(alias);
@@ -276,6 +257,6 @@ public class BuildingTypeTests
         Assert.Single(types);
         var type = Assert.Single(container.GetMatchingTypes(alias, 1));
         Assert.Equal(alias, type.Alias);
-        Assert.Equal(typeof(List<int>), type.Type);
+        Assert.Equal(typeof(List<>), type.Type);
     }
 }

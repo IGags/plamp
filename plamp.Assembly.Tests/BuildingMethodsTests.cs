@@ -12,7 +12,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodInvalidExpression()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1").AddType<object>().WithMembers();
         var ls = new List<int>();
         Assert.Throws<ArgumentException>(() => syntax.AddMethod(x => 1 + 2));
@@ -22,7 +22,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodToTypeMethodInfo()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var info = typeof(object).GetMethod(nameof(ToString))!;
         builder.DefineModule("1").AddType<object>().WithMembers().AddMethod(info);
         var container = builder.CreateContainer();
@@ -37,7 +37,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodToTypeFunc()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<object>().WithMembers().AddMethod(x => x.ToString()!);
         var info = typeof(object).GetMethod(nameof(ToString))!;
         var container = builder.CreateContainer();
@@ -52,7 +52,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodToTypeAction()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<string>().WithMembers().AddMethod(
             x => x.CopyTo(Arg.OfType<int>(), Arg.OfType<char[]>(), Arg.OfType<int>(), Arg.OfType<int>()));
         
@@ -70,7 +70,7 @@ public class BuildingMethodsTests
     public void AddMethodToTypeWithAlias()
     {
         const string aliasName = "notToString";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<object>().WithMembers().AddMethod(x => x.ToString()).As(aliasName);
 
         var info = typeof(object).GetMethod(nameof(ToString));
@@ -87,7 +87,7 @@ public class BuildingMethodsTests
     public void AddMethodTwiceWithDifferentAlias()
     {
         const string aliasName = "notToString";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<object>()
             .WithMembers()
             .AddMethod(x => x.ToString()).As(aliasName)
@@ -104,26 +104,9 @@ public class BuildingMethodsTests
     }
 
     [Fact]
-    public void AddMethodFromGenericTypeImplementation()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1")
-            .AddType<List<int>>().WithMembers()
-            .AddMethod(x => x.Add(Arg.OfType<int>()));
-        var container = builder.CreateContainer();
-        var methodInfo = typeof(List<int>).GetMethod(nameof(List<int>.Add));
-        var type = container.GetMatchingTypes(nameof(List<int>), 1).Single();
-        var methods = container.GetMatchingMethods(nameof(List<int>.Add), type).ToList();
-        Assert.Single(methods);
-        Assert.Equal(methodInfo, methods[0].MethodInfo);
-        Assert.Equal(nameof(List<int>.Add), methods[0].Alias);
-        Assert.Equal(type, methods[0].EnclosingType);
-    }
-
-    [Fact]
     public void AddMethodFromAnotherType()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1")
             .AddType<object>().WithMembers();
         
@@ -134,9 +117,9 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodFromGenericTypeDefinition()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
-            .AddGenericTypeDefinition<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>()));
+            .AddType<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>()));
 
         var container = builder.CreateContainer();
         var methodInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
@@ -152,9 +135,9 @@ public class BuildingMethodsTests
     public void AddMethodFromGenericTypeDefinitionWithAlias()
     {
         const string alias = "push";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
-            .AddGenericTypeDefinition<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>())).As(alias);
+            .AddType<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>())).As(alias);
         
         var container = builder.CreateContainer();
         var methodInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
@@ -167,41 +150,9 @@ public class BuildingMethodsTests
     }
 
     [Fact]
-    public void AddSameMethodFromDefinitionAndImplementation()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1")
-            .AddType<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>())).CompleteType()
-            .AddGenericTypeDefinition<List<int>>().WithMembers().AddMethod(x => x.Add(Arg.OfType<int>()));
-
-        var container = builder.CreateContainer();
-        var types = container.GetMatchingTypes(nameof(List<int>), 1);
-
-        var generalInfo = typeof(List<>).GetMethod(nameof(List<int>.Add));
-        var implementationInfo = typeof(List<int>).GetMethod(nameof(List<int>.Add));
-        
-        var def = Assert.Single(types, x => x.Type == typeof(List<>))!;
-        var impl = Assert.Single(types, x => x.Type == typeof(List<int>))!;
-
-        var defMethods = container.GetMatchingMethods(nameof(List<int>.Add), def);
-        var implMethods = container.GetMatchingMethods(nameof(List<int>.Add), impl);
-
-        var defMethod = Assert.Single(defMethods);
-        var implMethod = Assert.Single(implMethods);
-        
-        Assert.Equal(generalInfo, defMethod.MethodInfo);
-        Assert.Equal(generalInfo!.Name, defMethod.Alias);
-        Assert.Equal(def, defMethod.EnclosingType);
-        
-        Assert.Equal(implementationInfo, implMethod.MethodInfo);
-        Assert.Equal(implementationInfo!.Name, implMethod.Alias);
-        Assert.Equal(impl, implMethod.EnclosingType);
-    }
-
-    [Fact]
     public void AddSeveralOverloads()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<string>().WithMembers()
             .AddMethod(x => x.Trim())
@@ -230,7 +181,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddGenericMethodInNonGenericType()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<ExampleNonGeneric>().WithMembers().AddMethod(x => x.ExampleGenericMth(Arg.OfType<int>()));
 
@@ -247,35 +198,15 @@ public class BuildingMethodsTests
     }
 
     [Fact]
-    public void AddGenericMethodInGenericTypeImpl()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1")
-            .AddType<ExampleGeneric<int>>().WithMembers().AddMethod(x => x.ExampleGenericMth(Arg.OfType<int>()));
-        
-        var container = builder.CreateContainer();
-
-        var methodInfo = typeof(ExampleGeneric<int>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .First(x => x.GetParameters().Length == 1 && x.GetGenericArguments().Length == 1);
-        var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
-        var type = Assert.Single(types);
-        var methods = container.GetMatchingMethods(nameof(ExampleGeneric<int>.ExampleGenericMth), type);
-        var method = Assert.Single(methods);
-        Assert.Equal(methodInfo, method.MethodInfo);
-        Assert.Equal(nameof(ExampleGeneric<int>.ExampleGenericMth), method.Alias);
-        Assert.Equal(type, method.EnclosingType);
-    }
-
-    [Fact]
     public void AddGenericMethodInGenericTypeWithTypeGeneric()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<ExampleGeneric<int>>().WithMembers().AddMethod(x => x.ExampleGenericMth(Arg.OfType<int>(), Arg.OfType<int>()));
         
         var container = builder.CreateContainer();
 
-        var methodInfo = typeof(ExampleGeneric<int>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+        var methodInfo = typeof(ExampleGeneric<>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .First(x => x.GetParameters().Length == 2 && x.GetGenericArguments().Length == 1);
         var types = container.GetMatchingTypes(nameof(ExampleGeneric<int>), 1);
         var type = Assert.Single(types);
@@ -289,9 +220,9 @@ public class BuildingMethodsTests
     [Fact]
     public void AddGenericMethodInGenericDefinitionWithGenericArg()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
-            .AddGenericTypeDefinition<ExampleGeneric<int>>().WithMembers()
+            .AddType<ExampleGeneric<int>>().WithMembers()
             .AddMethod(x => x.ExampleGenericMth(Arg.OfType<int>()));
 
         var container = builder.CreateContainer();
@@ -310,9 +241,9 @@ public class BuildingMethodsTests
     [Fact]
     public void AddGenericMethodInGenericDefinitionWithoutGenericArg()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
-            .AddGenericTypeDefinition<ExampleGeneric<int>>().WithMembers()
+            .AddType<ExampleGeneric<int>>().WithMembers()
             .AddMethod(x => x.ExampleGenericMth(Arg.OfType<int>(), Arg.OfType<object>()));
 
         var container = builder.CreateContainer();
@@ -331,7 +262,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodWithMatchingSignatureAndAlias()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1")
             .AddType<ExampleMethodMatch>().WithMembers()
                 .AddMethod(x => x.Method1(Arg.OfType<int>()))
@@ -342,7 +273,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodWithMatchingAliasSecond()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1")
             .AddType<ExampleMethodMatch>().WithMembers()
             .AddMethod(x => x.Method1(Arg.OfType<int>()))
@@ -353,7 +284,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddSameMethodInTwoSameTypes()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<string>().WithMembers().AddMethod(x => x.ToString()).CompleteType()
             .AddType<string>().WithMembers().AddMethod(x => x.ToString()).CompleteType();
@@ -366,7 +297,7 @@ public class BuildingMethodsTests
     [Fact]
     public void AddMethodOverrideFromBase()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1")
             .AddType<ToStringOverride>().WithMembers().AddMethod(x => x.ToString());
         var container = builder.CreateContainer();

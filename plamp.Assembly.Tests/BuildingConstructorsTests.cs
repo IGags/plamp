@@ -11,7 +11,7 @@ public class BuildingConstructorsTests
     [Fact]
     public void AddDefaultStructCtor()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExampleStructCtor>().WithMembers().AddCtor(() => new());
         var constructorInfo = typeof(ExampleStructCtor).GetConstructors().SingleOrDefault(x => x.GetParameters().Length == 0);
         
@@ -27,7 +27,7 @@ public class BuildingConstructorsTests
     [Fact]
     public void AddStructCtorWithArgs()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExampleStructCtor>().WithMembers().AddCtor(() => new(Arg.OfType<int>()));
         var constructorInfo = typeof(ExampleStructCtor).GetConstructors().SingleOrDefault(x => x.GetParameters().Length == 1);
         
@@ -43,7 +43,7 @@ public class BuildingConstructorsTests
     [Fact]
     public void AddDefaultCtorInfo()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var constructorInfo = typeof(string).GetConstructor([typeof(char), typeof(int)])!;
         builder.DefineModule("1").AddType<string>().WithMembers().AddCtor(constructorInfo);
 
@@ -59,7 +59,7 @@ public class BuildingConstructorsTests
     [Fact]
     public void AddDefaultCtorExpression()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<string>().WithMembers()
             .AddCtor(() => new string(Arg.OfType<char>(), Arg.OfType<int>()));
         var container = builder.CreateContainer();
@@ -77,7 +77,7 @@ public class BuildingConstructorsTests
     public void AddCtorTwice()
     {
         var constructorInfo = typeof(string).GetConstructor([typeof(char), typeof(int)])!;
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<string>().WithMembers()
             .AddCtor(() => new string(Arg.OfType<char>(), Arg.OfType<int>()))
             .AddCtor(constructorInfo);
@@ -94,7 +94,7 @@ public class BuildingConstructorsTests
     [Fact]
     public void AddTwoDifferentCtors()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<string>().WithMembers()
             .AddCtor(() => new string(Arg.OfType<char>(), Arg.OfType<int>()))
             .AddCtor(() => new string(Arg.OfType<char[]>()));
@@ -114,26 +114,10 @@ public class BuildingConstructorsTests
     }
 
     [Fact]
-    public void AddGenericImplCtor()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddType<ExampleGenericCtor<int>>().WithMembers()
-            .AddCtor(() => new ExampleGenericCtor<int>(Arg.OfType<int>()));
-        var container = builder.CreateContainer();
-        var ctorInfo = typeof(ExampleGenericCtor<int>).GetConstructor([typeof(int)]);
-        var types = container.GetMatchingTypes(nameof(ExampleGenericCtor<int>), 1);
-        var type = Assert.Single(types);
-        var constructors = container.GetMatchingConstructors(type);
-        var ctor = Assert.Single(constructors);
-        Assert.Equal(type, ctor.EnclosingType);
-        Assert.Equal(ctorInfo, ctor.ConstructorInfo);
-    }
-
-    [Fact]
     public void AddGenericDefCtor()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddGenericTypeDefinition<ExampleGenericCtor<int>>().WithMembers()
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<ExampleGenericCtor<int>>().WithMembers()
             .AddCtor(() => new ExampleGenericCtor<int>(Arg.OfType<int>()));
         
         var container = builder.CreateContainer();

@@ -10,11 +10,10 @@ public class BuildingIndexerTests
     [Fact]
     public void AddIndexerPropertyInfo()
     {
-        var propertyInfo = typeof(ExampleIndexerClass<string>)
+        var propertyInfo = typeof(ExampleIndexerClass<>)
             .GetProperties()
-            .Single(x =>
-                x.GetIndexParameters().Length == 1 && x.GetIndexParameters()[0].ParameterType == typeof(string));
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+            .Single(x => x.GetIndexParameters().Length == 1);
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExampleIndexerClass<string>>().WithMembers()
             .AddIndexer(propertyInfo);
         var container = builder.CreateContainer();
@@ -29,11 +28,10 @@ public class BuildingIndexerTests
     [Fact]
     public void AddIndexerExpression()
     {
-        var propertyInfo = typeof(ExampleIndexerClass<int>)
+        var propertyInfo = typeof(ExampleIndexerClass<>)
             .GetProperties()
-            .Single(x =>
-                x.GetIndexParameters().Length == 1 && x.GetIndexParameters()[0].ParameterType == typeof(int));
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+            .Single(x => x.GetIndexParameters().Length == 1);
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers()
             .AddIndexer(x => x[Arg.OfType<int>()]);
         var container = builder.CreateContainer();
@@ -47,11 +45,10 @@ public class BuildingIndexerTests
     [Fact]
     public void AddIndexerTwice()
     {
-        var propertyInfo = typeof(ExampleIndexerClass<int>)
+        var propertyInfo = typeof(ExampleIndexerClass<>)
             .GetProperties()
-            .Single(x =>
-                x.GetIndexParameters().Length == 1 && x.GetIndexParameters()[0].ParameterType == typeof(int));
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+            .Single(x => x.GetIndexParameters().Length == 1);
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers()
             .AddIndexer(x => x[Arg.OfType<int>()])
             .AddIndexer(x => x[Arg.OfType<int>()]);
@@ -69,8 +66,8 @@ public class BuildingIndexerTests
     {
         var propertyInfo = typeof(ExampleIndexerClass<>).GetProperties()
             .Single(x => x.GetIndexParameters().Length == 1);
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddGenericTypeDefinition<ExampleIndexerClass<int>>().WithMembers()
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers()
             .AddIndexer(x => x[Arg.OfType<int>()]);
         var container = builder.CreateContainer();
         var type = Assert.Single(container.GetMatchingTypes(nameof(ExampleIndexerClass<int>), 1));
@@ -84,7 +81,7 @@ public class BuildingIndexerTests
     public void AddNonIndexerPropertyInfo()
     {
         var propertyInfo = typeof(ExampleIndexerClass<>).GetProperty(nameof(ExampleIndexerClass<int>.QuiteNotIndexer))!;
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers();
         Assert.Throws<ArgumentException>(() => syntax.AddIndexer(propertyInfo));
     }
@@ -92,7 +89,7 @@ public class BuildingIndexerTests
     [Fact]
     public void AddNonIndexerPropertyExpression()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1").AddType<ExampleIndexerClass<int>>().WithMembers();
         Assert.Throws<ArgumentException>(() => syntax.AddIndexer(x => x.QuiteNotIndexer));
     }

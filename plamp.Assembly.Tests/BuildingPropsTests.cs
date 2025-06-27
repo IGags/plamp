@@ -9,8 +9,8 @@ public class BuildingPropsTests
     [Fact]
     public void AddPropertyInfo()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
+        var propertyInfo = typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers().AddProperty(propertyInfo);
         var container = builder.CreateContainer();
 
@@ -26,12 +26,12 @@ public class BuildingPropsTests
     [Fact]
     public void AddPropertyExpression()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty);
         var container = builder.CreateContainer();
         
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
+        var propertyInfo = typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
         var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
         var type = Assert.Single(types);
         var properties = container.GetMatchingProperties(nameof(ExamplePropClass<int>.SimpleProperty), type);
@@ -45,12 +45,12 @@ public class BuildingPropsTests
     public void AddPropertyAlias()
     {
         const string alias = "notSimpleProperty";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty).As(alias);
 
         var container = builder.CreateContainer();
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
+        var propertyInfo = typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
         var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
         var type = Assert.Single(types);
         var properties = container.GetMatchingProperties(alias, type);
@@ -64,13 +64,13 @@ public class BuildingPropsTests
     public void AddPropertyTwiceRemoveAlias()
     {
         const string alias = "sureNotSimple";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty).As(alias)
             .AddPropertyOrField(x => x.SimpleProperty);
 
         var container = builder.CreateContainer();
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
+        var propertyInfo = typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
         var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
         var type = Assert.Single(types);
         var properties = container.GetMatchingProperties(nameof(ExamplePropClass<int>.SimpleProperty), type);
@@ -84,13 +84,13 @@ public class BuildingPropsTests
     public void AddPropertyTwiceAddAlias()
     {
         const string alias = "sureNotSimple";
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty)
             .AddPropertyOrField(x => x.SimpleProperty).As(alias);
 
         var container = builder.CreateContainer();
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
+        var propertyInfo = typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty))!;
         var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
         var type = Assert.Single(types);
         var properties = container.GetMatchingProperties(alias, type);
@@ -101,29 +101,10 @@ public class BuildingPropsTests
     }
 
     [Fact]
-    public void AddGenericPropertyImpl()
-    {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
-            .AddPropertyOrField(x => x.GenericProperty);
-
-        var container = builder.CreateContainer();
-        var propertyInfo = typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.GenericProperty))!;
-        var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
-        var type = Assert.Single(types);
-        var properties = container.GetMatchingProperties(nameof(ExamplePropClass<int>.GenericProperty), type);
-        var property = Assert.Single(properties);
-        
-        Assert.Equal(type, property.EnclosingType);
-        Assert.Equal(nameof(ExamplePropClass<int>.GenericProperty), property.Alias);
-        Assert.Equal(propertyInfo, property.PropertyInfo);
-    }
-
-    [Fact]
     public void AddGenericPropertyDef()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
-        builder.DefineModule("1").AddGenericTypeDefinition<ExamplePropClass<int>>().WithMembers()
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
+        builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.GenericProperty);
         
         var container = builder.CreateContainer();
@@ -141,16 +122,16 @@ public class BuildingPropsTests
     [Fact]
     public void AddTwoProperties()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty)
             .AddPropertyOrField(x => x.GenericProperty);
 
         var container = builder.CreateContainer();
         var simplePropertyInfo =
-            typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty));
+            typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.SimpleProperty));
         var genericPropertyInfo =
-            typeof(ExamplePropClass<int>).GetProperty(nameof(ExamplePropClass<int>.GenericProperty));
+            typeof(ExamplePropClass<>).GetProperty(nameof(ExamplePropClass<int>.GenericProperty));
         
         var types = container.GetMatchingTypes(nameof(ExamplePropClass<int>), 1);
         var type = Assert.Single(types);
@@ -172,7 +153,7 @@ public class BuildingPropsTests
     [Fact]
     public void AddPropertyWithCollisionName()
     {
-        var builder = NativeAssemblyContainerBuilder.CreateContainerBuilder();
+        var builder = ScriptedContainerBuilder.CreateContainerBuilder();
         var syntax = builder.DefineModule("1").AddType<ExamplePropClass<int>>().WithMembers()
             .AddPropertyOrField(x => x.SimpleProperty).As(nameof(ExamplePropClass<int>.GenericProperty));
 

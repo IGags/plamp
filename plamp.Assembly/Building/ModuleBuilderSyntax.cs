@@ -6,37 +6,28 @@ using plamp.Assembly.Models;
 
 namespace plamp.Assembly.Building;
 
-internal class ModuleBuilderSyntax(string moduleName, NativeAssemblyContainerBuilder containerBuilder) : IModuleBuilderSyntax
+internal class ModuleBuilderSyntax(string moduleName, ScriptedContainerBuilder containerBuilder) : IModuleBuilderSyntax
 {
     private readonly List<DefaultTypeInfo> _definedTypes = [];
 
-    public NativeAssemblyContainerBuilder ContainerBuilder => containerBuilder;
+    public ScriptedContainerBuilder ContainerBuilder => containerBuilder;
     
     public IReadOnlyList<DefaultTypeInfo> DefinedTypes => _definedTypes; 
     
     public IAfterTypeInfoNameBuilder<T> AddType<T>()
     {
-        var typeInfo = AddTypeToDictionary(typeof(T));
-        return new TypeBuilderFluentSyntax<T>(typeInfo, this);
+        var inner = (TypeBuilderFluentSyntax)AddType(typeof(T));
+        return new TypeBuilderFluentSyntax<T>(inner);
     }
 
     public IAfterTypeInfoNameBuilder AddType(Type type)
     {
-        throw new NotImplementedException();
-    }
-
-    public IAfterTypeInfoNameBuilder<T> AddGenericTypeDefinition<T>()
-    {
-        var type = typeof(T);
-        if (!type.IsGenericType) throw new ArgumentException($"Type {type.Name} is not generic type");
-        var definition = type.GetGenericTypeDefinition();
-        var typeInfo = AddTypeToDictionary(definition);
-        return new TypeBuilderFluentSyntax<T>(typeInfo, this);
-    }
-
-    public IAfterTypeInfoNameBuilder AddGenericTypeDefinition(Type type)
-    {
-        throw new NotImplementedException();
+        if (type.IsConstructedGenericType)
+        {
+            type = type.GetGenericTypeDefinition();
+        }
+        var typeInfo = AddTypeToDictionary(type);
+        return new TypeBuilderFluentSyntax(typeInfo, this);
     }
 
     public void ThrowDuplicateModuleAlias(string alias, Type thisType)

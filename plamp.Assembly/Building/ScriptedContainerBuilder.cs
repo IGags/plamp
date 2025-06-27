@@ -7,7 +7,7 @@ using plamp.Assembly.Models;
 
 namespace plamp.Assembly.Building;
 
-public class NativeAssemblyContainerBuilder : IContainerBuilder
+public class ScriptedContainerBuilder : IContainerBuilder
 {
     internal Dictionary<Type, DefaultTypeInfo> TypeInfoDict { get; } = [];
 
@@ -23,7 +23,7 @@ public class NativeAssemblyContainerBuilder : IContainerBuilder
 
     public static IContainerBuilder CreateContainerBuilder()
     {
-        return new NativeAssemblyContainerBuilder();
+        return new ScriptedContainerBuilder();
     }
 
     public IModuleBuilderSyntax DefineModule(string moduleName) => new ModuleBuilderSyntax(moduleName, this);
@@ -40,7 +40,7 @@ public class NativeAssemblyContainerBuilder : IContainerBuilder
             Types = TypeInfoDict
                 .GroupBy(x => x.Value.Alias)
                 .ToDictionary(x => x.Key, x => x.Select(y => y.Value).ToList()),
-            Indexers = IndexerInfoDict.ToDictionary(x => (ITypeInfo)x.Key, x => x.Value)
+            Indexers = IndexerInfoDict.ToDictionary(x => (ITypeInfo)x.Key, x => x.Value),
         };
     }
 }

@@ -5,25 +5,23 @@ using plamp.Assembly.Models;
 
 namespace plamp.Assembly.Building;
 
-internal class TypeBuilderFluentSyntax<T>(DefaultTypeInfo typeInfo, ModuleBuilderSyntax builder)
+internal class TypeBuilderFluentSyntax<T>(TypeBuilderFluentSyntax inner)
     : IAfterTypeInfoNameBuilder<T>, IAliasBuilder<T>
 {
-    private readonly TypeBuilderFluentSyntax _inner = new(typeInfo, builder);
-
     public IMemberBuilder<T> As(string alias)
     {
-        var res = (MemberBuilderSyntax)_inner.As(alias);
+        var res = (MemberBuilderSyntax)inner.As(alias);
         return new MemberBuilderSyntax<T>(res);
     }
 
     public IMemberBuilder<T> WithMembers()
     {
-        return new MemberBuilderSyntax<T>(new MemberBuilderSyntax(_inner));
+        return new MemberBuilderSyntax<T>(new MemberBuilderSyntax(inner));
     }
 
     public IModuleBuilderSyntax CompleteType()
     {
-        return _inner.ModuleBuilder;
+        return inner.ModuleBuilder;
     }
 }
 
