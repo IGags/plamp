@@ -41,21 +41,6 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         return AddMethod(methodInfo);
     }
 
-    public MethodInfo GetMethodOrGenericDefinition(MethodInfo methodInfo)
-    {
-        if (methodInfo.IsConstructedGenericMethod)
-        {
-            methodInfo = methodInfo.GetGenericMethodDefinition();
-        }
-
-        if (typeBuilder.TypeInfo.Type.IsGenericTypeDefinition)
-        {
-            methodInfo = (MethodInfo)MethodBase.GetMethodFromHandle(methodInfo.MethodHandle, typeBuilder.TypeInfo.Type.TypeHandle)!;
-        }
-
-        return methodInfo;
-    }
-
     public IOptionalAliasBuilder<T> AddMethod(MethodInfo methodInfo)
     {
         ThrowIfOwnerTypeMismatch(methodInfo, typeBuilder.TypeInfo.Type);
@@ -246,13 +231,15 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
         {
             throw ThrowInvalidIndexer(nameof(indexerExpression));
         }
-
+        
         var type = typeBuilder.TypeInfo.Type;
+        indexerMethod = GetMethodOrGenericDefinition(indexerMethod);
+        
         var existingIndexers = type
             .GetProperties()
             .Where(x => x.GetIndexParameters().Length > 0)
             .Where(x => x.CanWrite);
-
+        
         //Need to throw
         var indexerProperty = existingIndexers.SingleOrDefault(x => x.GetGetMethod() == indexerMethod);
         if (indexerProperty == null)
@@ -291,6 +278,21 @@ internal class MemberBuilderSyntax<T>(TypeBuilderFluentSyntax<T> typeBuilder) : 
     {
         _aliasAssignmentFn!(alias);
         return this;
+    }
+
+    private MethodInfo GetMethodOrGenericDefinition(MethodInfo methodInfo)
+    {
+        if (methodInfo.IsConstructedGenericMethod)
+        {
+            methodInfo = methodInfo.GetGenericMethodDefinition();
+        }
+
+        if (typeBuilder.TypeInfo.Type.IsGenericTypeDefinition)
+        {
+            methodInfo = (MethodInfo)MethodBase.GetMethodFromHandle(methodInfo.MethodHandle, typeBuilder.TypeInfo.Type.TypeHandle)!;
+        }
+
+        return methodInfo;
     }
 
     private void ThrowIfMemberNameExists(string memberName, MemberInfo memberDefinition)
