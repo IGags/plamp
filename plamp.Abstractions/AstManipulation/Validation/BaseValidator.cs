@@ -4,7 +4,17 @@ using plamp.Abstractions.AstManipulation.Validation.Models;
 
 namespace plamp.Abstractions.AstManipulation.Validation;
 
-public abstract class BaseValidator<TContext> : BaseVisitor<TContext>, IValidator<TContext>
+public abstract class BaseValidator<TOuterContext, TInnerContext> : BaseVisitor<TInnerContext>, IValidator<TOuterContext>
 {
-    public abstract ValidationResult Validate(NodeBase ast, TContext context);
+    public virtual ValidationResult Validate(NodeBase ast, TOuterContext context)
+    {
+        var innerContext = MapContext(context);
+        VisitInternal(ast, innerContext);
+        var result = CreateResult(context, innerContext);
+        return result;
+    }
+
+    protected abstract TInnerContext MapContext(TOuterContext context);
+    
+    protected abstract ValidationResult CreateResult(TOuterContext outerContext, TInnerContext innerContext);
 }
