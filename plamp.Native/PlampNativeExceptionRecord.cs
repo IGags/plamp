@@ -5,7 +5,7 @@ namespace plamp.Native;
 /// <summary>
 /// Exception template
 /// </summary>
-public record PlampNativeExceptionRecord(string Message, int Code, ExceptionLevel Level)
+public record PlampNativeExceptionRecord(string Message, string Code, ExceptionLevel Level)
 {
     public PlampExceptionRecord Format(params string[] inlines) => new()
     {

@@ -3,6 +3,7 @@
     <Project Path="plamp.Assembly.Tests\plamp.Assembly.Tests.csproj" Type="Classic C#" />
     <Project Path="plamp.CodeEmission.Tests\plamp.CodeEmission.Tests.csproj" Type="Classic C#" />
     <Project Path="plamp.Native.Tests\plamp.Native.Tests.csproj" Type="Classic C#" />
+    <Project Path="plamp.Validators.Tests\plamp.Validators.Tests.csproj" Type="Classic C#" />
   </Folder>
   <Project Path="plamp.Abstractions.Extensions\plamp.Abstractions.Extensions.csproj" Type="Classic C#" />
   <Project Path="plamp.Abstractions\plamp.Abstractions.csproj" Type="Classic C#" />

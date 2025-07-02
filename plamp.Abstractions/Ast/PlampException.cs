@@ -12,7 +12,7 @@ public class PlampException : Exception
     public AssemblyName AssemblyName { get; }
     public FilePosition StartPosition { get; }
     public FilePosition EndPosition { get; }
-    public int Code { get; }
+    public string Code { get; }
     public ExceptionLevel Level { get; }
 
     public PlampException(

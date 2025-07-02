@@ -7,7 +7,7 @@ public class MustReturnValueInnerContext
 {
     public required List<PlampException> Exceptions { get; init; } = [];
 
-    public Stack<bool> LexicalScopeAlwaysReturns = [];
+    public bool LexicalScopeAlwaysReturns = false;
     
     public required ISymbolTable SymbolTable { get; init; }
 }

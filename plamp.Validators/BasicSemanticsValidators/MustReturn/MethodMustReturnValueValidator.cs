@@ -1,4 +1,6 @@
-﻿using plamp.Abstractions.Ast.Node.Body;
+﻿using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Abstractions.AstManipulation.Validation.Models;
@@ -15,20 +17,28 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
             Exceptions = context.Exceptions,
             SymbolTable = context.SymbolTable
         };
-        //Root body lexical scope
-        innerContext.LexicalScopeAlwaysReturns.Push(false);
+        
         return innerContext;
     }
 
-    protected override ValidationResult CreateResult(
-        MustReturnValueContext outerContext, 
-        MustReturnValueInnerContext innerContext)
+    protected override ValidationResult CreateResult(MustReturnValueContext outerContext,
+        MustReturnValueInnerContext innerContext) => new() { Exceptions = innerContext.Exceptions };
+
+    protected override VisitResult VisitDef(DefNode node, MustReturnValueInnerContext context)
     {
-        if (!innerContext.LexicalScopeAlwaysReturns.Pop())
-        {
-            var exceptions
-        }
-        return new ValidationResult { Exceptions = innerContext.Exceptions };
+        if (node.ReturnType is TypeNode typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
+        
+        //Root body lexical scope
+        context.LexicalScopeAlwaysReturns = false;
+        VisitChildren(node.Visit(), context);
+        if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
+        
+        var exception =
+            context.SymbolTable.SetExceptionToNodeWithoutChildren(
+                PlampSemanticsExceptions.DefMustReturnValue(), node, null, null);
+        context.Exceptions.Add(exception);
+
+        return VisitResult.SkipChildren;
     }
 
     //TODO: think about easier solution
@@ -36,21 +46,20 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
     {
         if (node.ElseClause == null)
         {
-            context.LexicalScopeAlwaysReturns.Pop();
-            context.LexicalScopeAlwaysReturns.Push(false);
+            context.LexicalScopeAlwaysReturns = false;
             return VisitResult.SkipChildren;
         }
         
-        context.LexicalScopeAlwaysReturns.Push(false);
+        context.LexicalScopeAlwaysReturns = false;
         VisitChildren(node.IfClause.Visit(), context);
-        var ifReturns = context.LexicalScopeAlwaysReturns.Pop();
+        var ifReturns = context.LexicalScopeAlwaysReturns;
+        if (!ifReturns) return VisitResult.SkipChildren;
         
-        context.LexicalScopeAlwaysReturns.Push(false);
+        context.LexicalScopeAlwaysReturns = false;
         VisitChildren(node.ElseClause.Visit(), context);
-        var elseReturns = context.LexicalScopeAlwaysReturns.Pop();
+        var elseReturns = context.LexicalScopeAlwaysReturns;
         
-        context.LexicalScopeAlwaysReturns.Push(ifReturns && elseReturns);
-        
+        context.LexicalScopeAlwaysReturns = ifReturns && elseReturns;
         return VisitResult.SkipChildren;
     }
 
@@ -60,8 +69,7 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
 
     protected override VisitResult VisitReturn(ReturnNode node, MustReturnValueInnerContext context)
     {
-        context.LexicalScopeAlwaysReturns.Pop();
-        context.LexicalScopeAlwaysReturns.Push(true);
+        context.LexicalScopeAlwaysReturns = true;
         return VisitResult.SkipChildren;
     }
 }

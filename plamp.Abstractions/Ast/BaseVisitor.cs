@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -33,7 +34,7 @@ public abstract class BaseVisitor<TContext>
 
     protected virtual VisitResult VisitChildren(IEnumerable<NodeBase> children, TContext context)
     {
-        foreach (var child in children)
+        foreach (var child in children.Where(x => x is not null))
         {
             var res = VisitInternal(child, context);
             if(res == VisitResult.Break) return VisitResult.Break;

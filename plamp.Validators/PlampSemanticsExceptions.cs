@@ -4,15 +4,13 @@ namespace plamp.Validators;
 
 public static class PlampSemanticsExceptions
 {
-    //Semantics ecxceptions(1300-2999) !RESERVED!
-    
     #region Impossible tree
 
     public static PlampExceptionRecord InvalidChildExpression() =>
         new()
         {
             Message = "Invalid child expression",
-            Code = 1300,
+            Code = "SEM1300",
             Level = ExceptionLevel.Error,
         };
 
@@ -20,7 +18,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Assignment is valid only for variables, variable definitions or properties",
-            Code = 1301,
+            Code = "SEM1301",
             Level = ExceptionLevel.Error
         };
 
@@ -28,7 +26,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Change and re-assignment is valid only for variables, or properties",
-            Code = 1302,
+            Code = "SEM1302",
             Level = ExceptionLevel.Error
         };
 
@@ -36,7 +34,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Binary operator requires a right side expression",
-            Code = 1303,
+            Code = "SEM1303",
             Level = ExceptionLevel.Error
         };
 
@@ -44,7 +42,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Binary operator requires a left side expression",
-            Code = 1304,
+            Code = "SEM1304",
             Level = ExceptionLevel.Error
         };
 
@@ -52,7 +50,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "For loop requires a body",
-            Code = 1305,
+            Code = "SEM1305",
             Level = ExceptionLevel.Error
         };
 
@@ -61,7 +59,7 @@ public static class PlampSemanticsExceptions
         {
             Message = "For loop counter can only be method call, " +
                       "indexer, expression.",
-            Code = 1306,
+            Code = "SEM1306",
             Level = ExceptionLevel.Error
         };
 
@@ -69,7 +67,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "For loop iterator must be an assignment expression",
-            Code = 1307,
+            Code = "SEM1307",
             Level = ExceptionLevel.Error
         };
     
@@ -78,7 +76,7 @@ public static class PlampSemanticsExceptions
         {
             Message = "For loop condition can only be method call, " +
                       "indexer, expression.",
-            Code = 1308,
+            Code = "SEM1308",
             Level = ExceptionLevel.Error
         };
 
@@ -86,7 +84,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Foreach loop requires a body",
-            Code = 1309,
+            Code = "SEM1309",
             Level = ExceptionLevel.Error
         };
 
@@ -94,7 +92,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Foreach loop iterator must exist",
-            Code = 1310,
+            Code = "SEM1310",
             Level = ExceptionLevel.Error
         };
 
@@ -102,7 +100,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Foreach iterator must be a variable declaration",
-            Code = 1311,
+            Code = "SEM1311",
             Level = ExceptionLevel.Error
         };
 
@@ -110,7 +108,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Foreach iterable must exist",
-            Code = 1312,
+            Code = "SEM1312",
             Level = ExceptionLevel.Error
         };
 
@@ -118,7 +116,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Foreach iterable must be a variable, method call, constructor, indexer or property",
-            Code = 1313,
+            Code = "SEM1313",
             Level = ExceptionLevel.Error
         };
 
@@ -126,7 +124,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "While loop requires a body",
-            Code = 1314,
+            Code = "SEM1314",
             Level = ExceptionLevel.Error
         };
 
@@ -134,7 +132,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "While loop requires a condition",
-            Code = 1315,
+            Code = "SEM1315",
             Level = ExceptionLevel.Error
         };
 
@@ -142,7 +140,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "While predicate must be a variable, method call, constructor, indexer or property",
-            Code = 1316,
+            Code = "SEM1316",
             Level = ExceptionLevel.Error
         };
 
@@ -150,7 +148,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Condition requires a base clause",
-            Code = 1317,
+            Code = "SEM1317",
             Level = ExceptionLevel.Error
         };
 
@@ -158,7 +156,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Condition requires a body",
-            Code = 1318,
+            Code = "SEM1318",
             Level = ExceptionLevel.Error
         };
 
@@ -166,7 +164,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Condition clause predicate must be a variable, method call, property or indexer",
-            Code = 1319,
+            Code = "SEM1319",
             Level = ExceptionLevel.Error
         };
 
@@ -174,7 +172,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Condition clause predicate must exist",
-            Code = 1320,
+            Code = "SEM1320",
             Level = ExceptionLevel.Error
         };
 
@@ -182,7 +180,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Unary node require inner node",
-            Code = 1321,
+            Code = "SEM1321",
             Level = ExceptionLevel.Error
         };
 
@@ -190,7 +188,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Inner node must be member, property, constant, method call, literal, indexer",
-            Code = 1322,
+            Code = "SEM1322",
             Level = ExceptionLevel.Error
         };
 
@@ -198,7 +196,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Call node requires a caller node",
-            Code = 1323,
+            Code = "SEM1323",
             Level = ExceptionLevel.Error
         };
 
@@ -206,7 +204,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Caller must be a member, property or indexer, cast, unary, binary node",
-            Code = 1324,
+            Code = "SEM1324",
             Level = ExceptionLevel.Error
         };
 
@@ -214,7 +212,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Arg node in args must not be null",
-            Code = 1325,
+            Code = "SEM1325",
             Level = ExceptionLevel.Error
         };
 
@@ -222,7 +220,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Call argument must return a value",
-            Code = 1326,
+            Code = "SEM1326",
             Level = ExceptionLevel.Error
         };
 
@@ -230,7 +228,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Index node requires an indexable node",
-            Code = 1327,
+            Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 
@@ -238,7 +236,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Indexable must be a member, property, indexer, binary, cast, unary",
-            Code = 1328,
+            Code = "SEM1328",
             Level = ExceptionLevel.Error
         };
 
@@ -246,7 +244,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Indexer node argument must return a value",
-            Code = 1329,
+            Code = "SEM1329",
             Level = ExceptionLevel.Error
         };
 
@@ -254,7 +252,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Cannot access member from nothing",
-            Code = 1330,
+            Code = "SEM1330",
             Level = ExceptionLevel.Error
         };
 
@@ -262,7 +260,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Cannot access nothing",
-            Code = 1331,
+            Code = "SEM1331",
             Level = ExceptionLevel.Error
         };
 
@@ -270,7 +268,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Accessible node must return a typed value",
-            Code = 1332,
+            Code = "SEM1332",
             Level = ExceptionLevel.Error
         };
 
@@ -278,7 +276,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Member access target must be a member",
-            Code = 1333,
+            Code = "SEM1333",
             Level = ExceptionLevel.Error
         };
 
@@ -286,7 +284,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Constructor must define type that creates",
-            Code = 1334,
+            Code = "SEM1334",
             Level = ExceptionLevel.Error
         };
 
@@ -294,7 +292,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Constructor target must be a type",
-            Code = 1335,
+            Code = "SEM1335",
             Level = ExceptionLevel.Error
         };
 
@@ -302,7 +300,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Constructor arg must be expression that returns value",
-            Code = 1336,
+            Code = "SEM1336",
             Level = ExceptionLevel.Error
         };
 
@@ -310,7 +308,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Cannot use cast node without type",
-            Code = 1337,
+            Code = "SEM1337",
             Level = ExceptionLevel.Error
         };
 
@@ -318,7 +316,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Cast target type must be a type node",
-            Code = 1338,
+            Code = "SEM1338",
             Level = ExceptionLevel.Error
         };
 
@@ -326,7 +324,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "A cast target expression is required",
-            Code = 1339,
+            Code = "SEM1339",
             Level = ExceptionLevel.Error
         };
 
@@ -334,7 +332,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Cast target expression must return a value",
-            Code = 1340,
+            Code = "SEM1340",
             Level = ExceptionLevel.Error
         };
 
@@ -342,7 +340,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Def node must have return type",
-            Code = 1341,
+            Code = "SEM1341",
             Level = ExceptionLevel.Error
         };
 
@@ -350,7 +348,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Def node return type must be type node",
-            Code = 1342,
+            Code = "SEM1342",
             Level = ExceptionLevel.Error
         };
 
@@ -358,7 +356,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Method must have a name",
-            Code = 1343,
+            Code = "SEM1343",
             Level = ExceptionLevel.Error
         };
 
@@ -366,7 +364,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Method name must be a name node",
-            Code = 1344,
+            Code = "SEM1344",
             Level = ExceptionLevel.Error
         };
 
@@ -374,7 +372,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Method arg must be a parameter",
-            Code = 1345,
+            Code = "SEM1345",
             Level = ExceptionLevel.Error
         };
 
@@ -382,7 +380,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Method must have a body",
-            Code = 1346,
+            Code = "SEM1346",
             Level = ExceptionLevel.Error
         };
 
@@ -390,7 +388,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Use statement must have a target module",
-            Code = 1347,
+            Code = "SEM1347",
             Level = ExceptionLevel.Error
         };
 
@@ -398,7 +396,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Use statement target must be member or member access node",
-            Code = 1348,
+            Code = "SEM1348",
             Level = ExceptionLevel.Error
         };
 
@@ -406,7 +404,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Type node must have a name",
-            Code = 1349,
+            Code = "SEM1349",
             Level = ExceptionLevel.Error
         };
 
@@ -414,7 +412,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Type name must be a member or member access",
-            Code = 1350,
+            Code = "SEM1350",
             Level = ExceptionLevel.Error
         };
 
@@ -422,7 +420,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Generics must not be null",
-            Code = 1351,
+            Code = "SEM1351",
             Level = ExceptionLevel.Error
         };
 
@@ -430,7 +428,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Generics must be a type",
-            Code = 1352,
+            Code = "SEM1352",
             Level = ExceptionLevel.Error
         };
 
@@ -438,7 +436,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Parameter must have a name",
-            Code = 1353,
+            Code = "SEM1353",
             Level = ExceptionLevel.Error
         };
 
@@ -446,7 +444,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Parameter name must be a member",
-            Code = 1354,
+            Code = "SEM1354",
             Level = ExceptionLevel.Error
         };
 
@@ -454,7 +452,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Parameter must have a type",
-            Code = 1355,
+            Code = "SEM1355",
             Level = ExceptionLevel.Error
         };
 
@@ -462,7 +460,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "ParameterType must be a type node",
-            Code = 1356,
+            Code = "SEM1356",
             Level = ExceptionLevel.Error
         };
 
@@ -470,7 +468,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Variable must have a type",
-            Code = 1357,
+            Code = "SEM1357",
             Level = ExceptionLevel.Error
         };
 
@@ -478,7 +476,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Variable name must be a member",
-            Code = 1358,
+            Code = "SEM1358",
             Level = ExceptionLevel.Error
         };
 
@@ -486,7 +484,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Variable type must be a type node",
-            Code = 1359,
+            Code = "SEM1359",
             Level = ExceptionLevel.Error
         };
 
@@ -494,7 +492,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Member name must not be null",
-            Code = 1360,
+            Code = "SEM1360",
             Level = ExceptionLevel.Error
         };
 
@@ -502,7 +500,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Literal with value type must has value type value",
-            Code = 1361,
+            Code = "SEM1361",
             Level = ExceptionLevel.Error
         };
 
@@ -510,7 +508,7 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Literal type and literal value type mismatch",
-            Code = 1362,
+            Code = "SEM1362",
             Level = ExceptionLevel.Error
         };
 
@@ -522,15 +520,9 @@ public static class PlampSemanticsExceptions
         new()
         {
             Message = "Function must return a value",
-            Code = 1400,
+            Code = "SEM1400",
             Level = ExceptionLevel.Error
         };
-
-    #endregion
-
-    #region 
-
-    
 
     #endregion
 }

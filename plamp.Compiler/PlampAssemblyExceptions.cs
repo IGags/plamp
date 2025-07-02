@@ -9,7 +9,7 @@ public static class PlampAssemblyExceptions
         new()
         {
             Message = $"Duplicate assembly name: {assemblyName}",
-            Code = 3000,
+            Code = "CMP3000",
             Level = ExceptionLevel.Error
         };
 
@@ -17,7 +17,7 @@ public static class PlampAssemblyExceptions
         new()
         {
             Message = $"A list of assemblies: {string.Join(", ", assemblies)} creates circular dependency.",
-            Code = 3001,
+            Code = "CMP3001",
             Level = ExceptionLevel.Error
         };
 
@@ -25,7 +25,7 @@ public static class PlampAssemblyExceptions
         new()
         {
             Message = $"Missing dependency: {dependencyName} for {assemblyName}",
-            Code = 3002,
+            Code = "CMP3002",
             Level = ExceptionLevel.Error
         };
 }
