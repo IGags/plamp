@@ -8,6 +8,8 @@ public interface IAssemblyContainer
 {
     IReadOnlyList<ITypeInfo> GetMatchingTypes(string name, int genericsCount = 0, int arrayDimensionsCount = 0);
     
+    IReadOnlyList<ITypeInfo> GetMatchingTypes(Type type);
+    
     IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType);
 
     IReadOnlyList<IPropertyInfo> GetMatchingProperties(string name, ITypeInfo enclosingType);
