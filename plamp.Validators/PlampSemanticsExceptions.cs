@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 
 namespace plamp.Validators;
@@ -525,4 +526,36 @@ public static class PlampSemanticsExceptions
         };
 
     #endregion
+
+    public static PlampExceptionRecord AmbigulousTypeName(string typeName, IEnumerable<string> modules) =>
+        new()
+        {
+            Message = $"Type with name {typeName} is defined in several modules: {string.Join(", ", modules)}",
+            Code = "SEM1401",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord TypeNotFound(string typeName) =>
+        new()
+        {
+            Message = $"Type with name {typeName} not found",
+            Code = "SEM1402",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotInferenceMethod(string typeAlias, string methodName) =>
+        new()
+        {
+            Message = $"Method with name {methodName} from type {typeAlias} cannot be inference by its signature",
+            Code = "SEM1403",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MethodNotFound(string typeAlias, string methodName) =>
+        new()
+        {
+            Message = $"Method with name {methodName} from type {typeAlias} not found",
+            Code = "SEM1404",
+            Level = ExceptionLevel.Error
+        };
 }
