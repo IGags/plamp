@@ -10,7 +10,7 @@ public class TypeInferenceInnerContext
 {
     public required ISymbolTable SymbolTable { get; init; }
 
-    public Dictionary<string, Type?> VariableTypeDict { get; init; } = [];
+    public Dictionary<string, KeyValuePair<NodeBase, Type?>> VariableTypeDict { get; init; } = [];
     
     public required IAssemblyContainer AssemblyContainer { get; init; }
 

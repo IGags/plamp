@@ -25,16 +25,19 @@ public abstract class BaseVisitor<TContext>
         
         if (res == VisitResult.Break) return VisitResult.Break;
         if (res == VisitResult.SkipChildren) return VisitResult.Continue;
-        
-        var children = node.Visit();
-        res = VisitChildren(children, context);
+
+        if (node != null)
+        {
+            var children = node.Visit();
+            res = VisitChildren(children, context);
+        } 
         
         return res == VisitResult.Break ? VisitResult.Break : VisitResult.Continue;
     }
 
     protected virtual VisitResult VisitChildren(IEnumerable<NodeBase> children, TContext context)
     {
-        foreach (var child in children.Where(x => x is not null))
+        foreach (var child in children)
         {
             var res = VisitInternal(child, context);
             if(res == VisitResult.Break) return VisitResult.Break;
@@ -232,7 +235,7 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitCast(CastNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitConstructor(ConstructorCallNode callNode, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitConstructor(ConstructorCallNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitEmpty(EmptyNode node, TContext context) => VisitResult.Continue;
     
@@ -250,11 +253,11 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitLiteral(LiteralNode literalNode, TContext context) => VisitResult.Continue;
 
-    protected virtual VisitResult VisitBitwiseAnd(BitwiseAndNode bitwiseAnd, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitBitwiseAnd(BitwiseAndNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode bitwiseOr, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode node, TContext context) => VisitResult.Continue;
 
-    protected virtual VisitResult VisitXor(XorNode xor, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitXor(XorNode node, TContext context) => VisitResult.Continue;
 
     protected virtual VisitResult VisitTypeDefinition(TypeDefinitionNode node, TContext context) => VisitResult.Continue;
     
