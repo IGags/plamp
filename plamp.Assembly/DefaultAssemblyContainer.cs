@@ -46,6 +46,11 @@ internal class DefaultAssemblyContainer : IAssemblyContainer
         return arrays;
     }
 
+    public IReadOnlyList<ITypeInfo> GetMatchingTypes(Type type)
+    {
+        throw new NotImplementedException();
+    }
+
     public IReadOnlyList<IFieldInfo> GetMatchingFields(string name, ITypeInfo enclosingType)
     {
         return Fields.TryGetValue(enclosingType, out var list) ? list.Where(x => x.Alias.Equals(name)).ToList() : [];

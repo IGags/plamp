@@ -139,8 +139,24 @@ public static class PlampSemanticsExceptions
     public static PlampExceptionRecord AssignmentTypeMismatch(string leftType, string rightType) =>
         new()
         {
-            Message = $"Cannot assign expression of type {rightType} to {rightType} target",
+            Message = $"Cannot assign expression of type {rightType} to {leftType} target",
             Code = "SEM1358",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord MemberAccessCannotAccessNotMember() =>
+        new()
+        {
+            Message = "Cannot access not member",
+            Code = "SEM1359",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord InvalidAccessTarget() =>
+        new()
+        {
+            Message = "Invalid member access target",
+            Code = "SEM1360",
             Level = ExceptionLevel.Error
         };
 

@@ -370,6 +370,64 @@ public class TypeInferenceWeaver : BaseWeaver<TypeInferenceContext, TypeInferenc
     protected override VisitResult VisitEmpty(EmptyNode node, TypeInferenceInnerContext context)
         => NullNodeStub(node, context);
 
+    /*private MethodInfo? UnwrapMemberAccessSetter(MemberAccessNode node, TypeInferenceInnerContext context, bool propertySetter = true)
+    {
+        //Member access can be
+        //variable + fld,
+        //call(in prop context) here does not meets + fld,
+        //fld + fld,
+        //root member access can be
+        //var || arg + member
+        if (node.Member is not MemberNode member)
+        {
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNodeWithoutChildren(PlampSemanticsExceptions.MemberAccessCannotAccessNotMember(), node, null, null));
+            context.PrevInferredType = null;
+            return VisitResult.Break;
+        }
+
+        if (node.From is MemberNode fromMember)
+        {
+            if (context.VariableTypeDict.TryGetValue(fromMember.MemberName, out var pair))
+            {
+                context.PrevInferredType = pair.Value;
+            }
+            //TODO: add self member access
+            else
+            {
+                var types = GetTypeInfoList(fromMember.MemberName, 0, 0, context);
+                if (types.Count > 1)
+                {
+                    context.Exceptions.Add(context.SymbolTable.SetExceptionToNodeWithoutChildren(
+                        PlampSemanticsExceptions.AmbigulousTypeName(fromMember.MemberName, context.ImportedModules),
+                        fromMember, null, null));
+                    return VisitResult.Break;
+                }
+
+                if (types.Count == 1)
+                {
+                    context.PrevInferredType = types[0].Type;
+                }
+            }
+        }
+        else if (node.From is MemberAccessNode fromMemberAccess)
+        {
+            UnwrapMemberAccessSetter(fromMemberAccess, context, false);
+        }
+        else
+        {
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNodeWithoutChildren(PlampSemanticsExceptions.InvalidAccessTarget(), node, null, null));
+            context.PrevInferredType = null;
+            return VisitResult.Break;
+        }
+        if (context.PrevInferredType == null) return VisitResult.Break;
+
+        var typeInfo = GetTypeInfoByType(context.PrevInferredType, context);
+        
+        //TODO: self props
+        var props = context.AssemblyContainer.GetMatchingProperties(member.MemberName, typeInfo);
+        var fields = context.AssemblyContainer.GetMatchingFields(member.MemberName, typeInfo);
+    }*/
+    
     private VisitResult NullNodeStub(NodeBase node, TypeInferenceInnerContext context)
     {
         context.PrevInferredType = null;
