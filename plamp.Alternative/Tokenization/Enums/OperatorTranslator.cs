@@ -25,6 +25,7 @@ public static class OperatorTranslator
             "++" => OperatorEnum.Increment,
             "--" => OperatorEnum.Decrement,
             "%" => OperatorEnum.Modulo,
+            "." => OperatorEnum.Access,
             _ => OperatorEnum.None
         };
     }

@@ -4,11 +4,11 @@ using plamp.Abstractions.Ast.Node.Body;
 
 namespace plamp.Alternative.AstExtensions;
 
-public class RootNode(List<ImportNode> imports, string moduleName, List<DefNode> funcs) : NodeBase
+public class RootNode(List<ImportNode> imports, ModuleDefinitionNode moduleName, List<DefNode> funcs) : NodeBase
 {
     public IReadOnlyList<ImportNode> Imports { get; } = imports;
 
-    public string ModuleName { get; } = moduleName;
+    public ModuleDefinitionNode ModuleName { get; } = moduleName;
 
     public IReadOnlyList<DefNode> Funcs { get; } = funcs;
     
@@ -19,6 +19,8 @@ public class RootNode(List<ImportNode> imports, string moduleName, List<DefNode>
             yield return import;
         }
 
+        yield return moduleName;
+        
         foreach (var func in funcs)
         {
             yield return func;

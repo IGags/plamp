@@ -1,4 +1,5 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Alternative;
 
@@ -123,6 +124,55 @@ public static class PlampNativeExceptionInfo
     
     public static PlampExceptionRecord InvalidDefMissingName()
         => InvalidDefMissingNameRecord.Format();
-    
+
+    public static PlampExceptionRecord AliasExpected() =>
+        new()
+        {
+            Code = "PRS1117",
+            Level = ExceptionLevel.Error,
+            Message = "After as keyword expected alias"
+        };
+
+    public static PlampExceptionRecord ExpectedClosingCurlyBracket() =>
+        new()
+        {
+            Code = "PRS1118",
+            Level = ExceptionLevel.Error,
+            Message = "Expected closing curly bracket"
+        };
+
+    public static PlampExceptionRecord ExpectedEndOfStatement() =>
+        new()
+        {
+            Code = "PRS1119",
+            Level = ExceptionLevel.Error,
+            Message = "Expected end of statement"
+        };
+
+    public static PlampExceptionRecord ExpectedFuncName()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public static PlampExceptionRecord ExpectedOpenParen()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public static PlampExceptionRecord ExpectedCloseParen()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public static PlampExceptionRecord ExpectedTypeName()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public static PlampExceptionRecord ExpectedArgName()
+    {
+        throw new NotImplementedException();
+    }
+
     #endregion
 }

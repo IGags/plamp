@@ -19,5 +19,6 @@ public enum OperatorEnum
     Increment,
     Decrement,
     Modulo,
+    Access,
     None
 }

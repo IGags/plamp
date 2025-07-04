@@ -1,150 +1,97 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 using plamp.Alternative.Tokenization.Token;
 
 namespace plamp.Alternative.Tokenization;
 
-public class TokenSequence : IEnumerable<TokenBase>
+public class TokenSequence(List<TokenBase> tokenList) : IEnumerable<TokenBase>
 {
-    private readonly List<TokenBase> _tokenList;
-    private int _position = -1;
+    private int _position;
     
-    public IReadOnlyList<TokenBase> TokenList => _tokenList;
-    
+    public IReadOnlyList<TokenBase> TokenList => tokenList;
+
     public int Position
     {
         get => _position;
         set
         {
-            if (value < 0)
+            if (value < 0 || value >= tokenList.Count)
             {
-                _position = -1;
+                throw new ArgumentException("Invalid position");
             }
-            else if(value > _tokenList.Count)
-            {
-                _position = _tokenList.Count;
-            }
-            else
-            {
-                _position = value;
-            }
+            _position = value;
         }
     }
 
-    public FilePosition CurrentStart
-    {
-        get
-        {
-            if (_position < 0 || _tokenList.Count == 0)
-            {
-                return new(-1, -1);
-            }
-            return _position >= _tokenList.Count ? new(-1, -1) : Current()!.Start;
-        }
-    }
 
-    public FilePosition CurrentEnd
+    public FilePosition CurrentStart => Current().Start;
+
+    public FilePosition CurrentEnd => Current().End;
+
+    public TokenSequence Fork() => new(tokenList) { _position = _position };
+
+    public bool MoveNext()
     {
-        get
-        {
-            if (_tokenList.Count == 0)
-            {
-                return new(-1, -1);
-            }
-            if (_position >= _tokenList.Count)
-            {
-                return new(-1, -1);
-            }
-            return _position < 0 ? new(-1, -1) : Current()!.End;
-        }
-    }
-    
-    public TokenSequence(List<TokenBase> tokenList)
-    {
-        _tokenList = tokenList;
-    }
-    
-    public TokenBase? GetNextToken()
-    {
+        if (_position + 1 >= tokenList.Count) return false;
         _position++;
-        return Current();
+        return true;
     }
 
-    public TokenBase? GetNextNonWhiteSpace()
+    public bool MoveNextNonWhiteSpace()
     {
-        do
+        while(true)
         {
-            _position++;
+            if(!MoveNext()) return false;
             var current = Current();
-            if (current == null)
-            {
-                break;
-            }
 
             if (current.GetType() != typeof(WhiteSpace))
             {
-                return current;
+                return true;
             }
-        } while (_tokenList.Count > _position);
-
-        return null;
+        }
     }
 
     public TokenBase? PeekNextNonWhiteSpace()
     {
         var pos = _position;
-        do
+        while(true)
         {
-            pos = pos == _tokenList.Count ? pos : ++pos;
-            if (_tokenList.Count <= pos)
+            pos++;
+            if (tokenList.Count <= pos)
             {
                 return null;
             }
 
-            if (_tokenList[pos].GetType() == typeof(WhiteSpace))
+            if (tokenList[pos].GetType() == typeof(WhiteSpace))
             {
                 continue;
             }
 
-            return _tokenList[pos];
-        } while (_tokenList.Count > pos);
-
-        return null;
+            return tokenList[pos];
+        }
     }
 
     public TokenBase? PeekNext()
     {
-        var pos = _position;
-        pos = pos == _tokenList.Count ? pos : ++pos;
-        return _tokenList.Count <= pos ? null : _tokenList[pos];
+        var pos = ++_position;
+        return tokenList.Count <= pos ? null : tokenList[pos];
     }
 
-    public TokenBase? Current()
-    {
-        return _tokenList.Count <= _position || _position < 0 ? null : _tokenList[_position];
-    }
+    public TokenBase Current() => tokenList[_position];
 
-    public TokenBase? RollBackToNonWhiteSpace()
+    public bool RollBackToNonWhiteSpace()
     {
-        do
+        while(true)
         {
-            _position = _position == -1 ? -1 : --_position;
-            var current = Current();
-            if (current == null)
+            if (_position == 0) return false;
+            _position--;
+            if (tokenList[_position].GetType() == typeof(WhiteSpace))
             {
-                return null;
+                return true;
             }
-
-            if (_tokenList[_position].GetType() == typeof(WhiteSpace))
-            {
-                continue;
-            }
-
-            return _tokenList[_position];
-        } while (_position != -1);
-
-        return null;
+        }
     }
 
     /// <summary>
@@ -152,7 +99,7 @@ public class TokenSequence : IEnumerable<TokenBase>
     /// </summary>
     public IEnumerator<TokenBase> GetEnumerator()
     {
-        return _tokenList.GetEnumerator();
+        return tokenList.GetEnumerator();
     }
 
     /// <summary>

@@ -3,16 +3,13 @@ using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Alternative.AstExtensions;
 
-public class ImportNode(string moduleName, List<ImportItemNode>? importedItems) : NodeBase
+public class ModuleDefinitionNode(string moduleName) : NodeBase
 {
-    public IReadOnlyList<ImportItemNode>? ImportedItems { get; } = importedItems;
+    public string ModuleName = moduleName;
 
-    public string ModuleName { get; } = moduleName;
-    
     public override IEnumerable<NodeBase> Visit()
     {
-        if (importedItems == null) return [];
-        return importedItems;
+        return [];
     }
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
