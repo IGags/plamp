@@ -10,8 +10,6 @@ public class TokenSequence(List<TokenBase> tokenList) : IEnumerable<TokenBase>
 {
     private int _position;
     
-    public IReadOnlyList<TokenBase> TokenList => tokenList;
-
     public int Position
     {
         get => _position;
@@ -53,46 +51,7 @@ public class TokenSequence(List<TokenBase> tokenList) : IEnumerable<TokenBase>
         }
     }
 
-    public TokenBase? PeekNextNonWhiteSpace()
-    {
-        var pos = _position;
-        while(true)
-        {
-            pos++;
-            if (tokenList.Count <= pos)
-            {
-                return null;
-            }
-
-            if (tokenList[pos].GetType() == typeof(WhiteSpace))
-            {
-                continue;
-            }
-
-            return tokenList[pos];
-        }
-    }
-
-    public TokenBase? PeekNext()
-    {
-        var pos = ++_position;
-        return tokenList.Count <= pos ? null : tokenList[pos];
-    }
-
     public TokenBase Current() => tokenList[_position];
-
-    public bool RollBackToNonWhiteSpace()
-    {
-        while(true)
-        {
-            if (_position == 0) return false;
-            _position--;
-            if (tokenList[_position].GetType() == typeof(WhiteSpace))
-            {
-                return true;
-            }
-        }
-    }
 
     /// <summary>
     /// For testing purposes

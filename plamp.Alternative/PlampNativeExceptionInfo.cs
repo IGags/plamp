@@ -151,28 +151,117 @@ public static class PlampNativeExceptionInfo
 
     public static PlampExceptionRecord ExpectedFuncName()
     {
-        throw new System.NotImplementedException();
+        return new()
+        {
+            Code = "PRS1120",
+            Level = ExceptionLevel.Error,
+            Message = "Expected function name"
+        };
     }
 
     public static PlampExceptionRecord ExpectedOpenParen()
     {
-        throw new System.NotImplementedException();
+        return new()
+        {
+            Code = "PRS1121",
+            Level = ExceptionLevel.Error,
+            Message = "Expected open paren"
+        };
     }
 
     public static PlampExceptionRecord ExpectedCloseParen()
     {
-        throw new System.NotImplementedException();
+        return new()
+        {
+            Code = "PRS1122",
+            Level = ExceptionLevel.Error,
+            Message = "Expected close paren"
+        };
     }
 
     public static PlampExceptionRecord ExpectedTypeName()
     {
-        throw new System.NotImplementedException();
+        return new()
+        {
+            Code = "PRS1123",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type name"
+        };
     }
 
     public static PlampExceptionRecord ExpectedArgName()
     {
-        throw new NotImplementedException();
+        return new()
+        {
+            Code = "PRS1124",
+            Level = ExceptionLevel.Error,
+            Message = "Expected argument name"
+        };
     }
 
+    public static PlampExceptionRecord ExpectedAssignment()
+    {
+        return new()
+        {
+            Code = "PRS1125",
+            Level = ExceptionLevel.Error,
+            Message = "Expected assignment"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedAssignmentSource()
+    {
+        return new()
+        {
+            Code = "PRS1126",
+            Level = ExceptionLevel.Error,
+            Message = "Expected assignment source"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedVarName()
+    {
+        return new()
+        {
+            Code = "PRS1127",
+            Level = ExceptionLevel.Error,
+            Message = "Expected var name"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedSubmoduleName()
+    {
+        return new()
+        {
+            Code = "PRS1128",
+            Level = ExceptionLevel.Error,
+            Message = "Expected submodule name"
+        };
+    }
+
+    public static PlampExceptionRecord TypesIsNotSupported()
+    {
+        return new()
+        {
+            Code = "PRS1129",
+            Level = ExceptionLevel.Error,
+            Message = "Types is not supported in current version of language",
+        };
+    }
+    
+    #endregion
+
+    #region Semantics
+
+    public static PlampExceptionRecord DuplicateVariableDefinition()
+    {
+        return new()
+        {
+            Code = "SEM1300",
+            Level = ExceptionLevel.Error,
+            Message = "Variable already defined"
+        };
+    }
+    
     #endregion
 }

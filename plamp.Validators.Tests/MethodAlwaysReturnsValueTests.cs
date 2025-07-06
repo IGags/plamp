@@ -164,7 +164,7 @@ public class MethodAlwaysReturnsValueTests
         return new DefNode(
             CreateTypeNode(returnType),
             new MemberNode(name),
-            parameters,
+            parameters.Cast<ParameterNode>().ToList(),
             body
         );
     }

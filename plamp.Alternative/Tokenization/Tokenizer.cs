@@ -33,7 +33,7 @@ public static class Tokenizer
         }
     }
     
-    public static TokenizationResult Tokenize(this SourceFile sourceFile, AssemblyName assemblyName)
+    public static TokenizationResult Tokenize(SourceFile sourceFile)
     {
         if (sourceFile.SourceCode == null)
         {
@@ -45,12 +45,17 @@ public static class Tokenizer
 
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
-        var context = new TokenizationContext(sourceFile.FileName, rows, tokenList, exceptionList, assemblyName);
+        var context = new TokenizationContext(sourceFile.FileName, rows, tokenList, exceptionList);
         
         foreach (var row in prepared)
         {
             TokenizeSingleRow(row, context);
         }
+
+        var endRow = rows.Length == 0 ? rows.Length : rows.Length - 1;
+        var endColumns = rows.Length == 0 ? 0 : rows[endRow].Length;
+        var pos = new FilePosition(endRow, endColumns);
+        context.Tokens.Add(new EndOfFile(pos, pos));   
         
         return new TokenizationResult(new TokenSequence(context.Tokens), context.Exceptions);
     }
@@ -72,9 +77,6 @@ public static class Tokenizer
                 if(result != null) context.Tokens.Add(result);
             }
         }
-        
-        var pos = new FilePosition(row.Number, row.Length);
-        context.Tokens.Add(new EndOfFile(pos, pos));    
     }
 
     #region Words
@@ -155,7 +157,7 @@ public static class Tokenizer
         var end = new FilePosition(row.Number, position - 1);
         if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
         {
-            context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end, context.FileName, context.AssemblyName));
+            context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end, context.FileName, null));
         }
         var (value, type) = cort;
         return new Literal(numberPart + postfix, startPosition, end, value, type!);
@@ -250,7 +252,7 @@ public static class Tokenizer
         }
 
         var endPos = new FilePosition(row.Number, position - 1);
-        context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos, context.FileName, context.AssemblyName));
+        context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos, context.FileName, null));
         return new Literal($"\"{builder}", startPosition, endPos, builder.ToString(), typeof(string));
     }
     
@@ -276,7 +278,7 @@ public static class Tokenizer
                 break;
             default:
                 context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
-                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position), context.FileName, context.AssemblyName));
+                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position), context.FileName, null));
                 return;
         }
     }
@@ -337,7 +339,7 @@ public static class Tokenizer
                     return true;
                 }
                 context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnexpectedToken(row[position].ToString()), 
-                    startPosition, startPosition, context.FileName, context.AssemblyName));
+                    startPosition, startPosition, context.FileName, null));
                 position++;
                 return false;
         }

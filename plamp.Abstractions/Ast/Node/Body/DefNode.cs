@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
+using plamp.Abstractions.Ast.Node.ControlFlow;
 
 namespace plamp.Abstractions.Ast.Node.Body;
 
 public class DefNode : NodeBase
 {
-    private readonly List<NodeBase> _parameterList;
+    private readonly List<ParameterNode> _parameterList;
     
-    public NodeBase ReturnType { get; private set; }
-    public NodeBase Name { get; private set; }
-    public List<NodeBase> ParameterList => _parameterList;
+    public TypeNode ReturnType { get; private set; }
+    public MemberNode Name { get; private set; }
+    public List<ParameterNode> ParameterList => _parameterList;
     public BodyNode Body { get; private set; }
 
     public override IEnumerable<NodeBase> Visit()
@@ -29,17 +30,19 @@ public class DefNode : NodeBase
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         int parameterIndex;
-        if (ReturnType == child)
+        if (ReturnType == child && newChild is TypeNode returnType)
         {
-            ReturnType = newChild;
+            ReturnType = returnType;
         }
-        else if (Name == child)
+        else if (Name == child && newChild is MemberNode member)
         {
-            Name = newChild;
+            Name = member;
         }
-        else if (-1 != (parameterIndex = _parameterList.IndexOf(child)))
+        else if (child is ParameterNode parameterChild &&
+                -1 != (parameterIndex = _parameterList.IndexOf(parameterChild))
+                 && newChild is ParameterNode parameterNode)
         {
-            _parameterList[parameterIndex] = newChild;
+            _parameterList[parameterIndex] = parameterNode;
         }
         else if (Body == child && newChild is BodyNode newBody)
         {
@@ -47,7 +50,7 @@ public class DefNode : NodeBase
         }
     }
 
-    public DefNode(NodeBase returnType, MemberNode name, List<NodeBase> parameterList, BodyNode body)
+    public DefNode(TypeNode returnType, MemberNode name, List<ParameterNode> parameterList, BodyNode body)
     {
         ReturnType = returnType;
         Name = name;

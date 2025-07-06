@@ -9,6 +9,7 @@
   <Project Path="plamp.Abstractions\plamp.Abstractions.csproj" Type="Classic C#" />
   <Project Path="plamp.Alternative\plamp.Alternative.csproj" Type="Classic C#" />
   <Project Path="plamp.Assembly\plamp.Assembly.csproj" Type="Classic C#" />
+  <Project Path="plamp.Cli\plamp.Cli.csproj" Type="Classic C#" />
   <Project Path="plamp.Compiler\plamp.Compiler.csproj" Type="Classic C#" />
   <Project Path="plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" Type="Classic C#" />
   <Project Path="plamp.Native\plamp.Native.csproj" Type="Classic C#" />

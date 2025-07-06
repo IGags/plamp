@@ -235,7 +235,7 @@ public sealed class PlampNativeParser : IParser
         }
 
         var body = ParseOptionalBody(transaction, context);
-        node = new DefNode(typeNode, nameNode, parameterNodes ?? [], body);
+        node = new DefNode(typeNode as TypeNode, nameNode, parameterNodes.Cast<ParameterNode>().ToList(), body);
         var children = new List<NodeBase>()
         {
             typeNode, nameNode
@@ -309,7 +309,7 @@ public sealed class PlampNativeParser : IParser
         var name = new MemberNode(argPeek.GetStringRepresentation());
         transaction.AddSymbol(name, [], [argPeek]);
 
-        parameterNode = new ParameterNode(type, name);
+        parameterNode = new ParameterNode(type as TypeNode, name);
         transaction.AddSymbol(parameterNode, [type, name], []);
         return ExpressionParsingResult.Success;
     }
@@ -357,7 +357,7 @@ public sealed class PlampNativeParser : IParser
         
         
         //Member access should put previous member chain in first arg
-        typeNode = new TypeNode(typeMember, types);
+        typeNode = new TypeNode(typeMember as MemberNode, types);
         var children = new List<NodeBase>{typeMember};
         if(types != null) children.AddRange(types);
         transaction.AddSymbol(typeNode, children.ToArray(), []);
@@ -1051,31 +1051,31 @@ public sealed class PlampNativeParser : IParser
                     output = new ModuloNode(left, right);
                     break;
                 case OperatorEnum.Assign:
-                    output = new AssignNode(left, right);
+                    output = new AssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.PlusAndAssign:
-                    output = new AddAndAssignNode(left, right);
+                    output = new AddAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.MinusAndAssign:
-                    output = new SubAndAssignNode(left, right);
+                    output = new SubAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.MultiplyAndAssign:
-                    output = new MulAndAssignNode(left, right);
+                    output = new MulAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.DivideAndAssign:
-                    output = new DivAndAssignNode(left, right);
+                    output = new DivAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.ModuloAndAssign:
-                    output = new ModuloAndAssignNode(left, right);
+                    output = new ModuloAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.AndAndAssign:
-                    output = new AndAndAssignNode(left, right);
+                    output = new AndAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.OrAndAssign:
-                    output = new OrAndAssignNode(left, right);
+                    output = new OrAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.XorAndAssign:
-                    output = new XorAndAssignNode(left, right);
+                    output = new XorAndAssignNode(left as VariableDefinitionNode, right);
                     break;
                 case OperatorEnum.BitwiseAnd:
                     output = new BitwiseAndNode(left, right);
@@ -1124,7 +1124,7 @@ public sealed class PlampNativeParser : IParser
                 out var name, context))
         {
             var variableName = new MemberNode(name.GetStringRepresentation());
-            variableDeclaration = new VariableDefinitionNode(typ, variableName);
+            variableDeclaration = new VariableDefinitionNode(typ as TypeNode, variableName);
             transaction.AddSymbol(variableName, [], [name]);
             var children = new List<NodeBase>();
             if (typ != null)
