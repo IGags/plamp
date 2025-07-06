@@ -113,7 +113,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, NodeBase name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, NodeBase name, List<NodeBase> args, MethodInfo symbol) : base(from, name as MemberNode, args)
         {
             Symbol = symbol;
         }

@@ -119,9 +119,9 @@ public abstract class BaseVisitor<TContext>
         return VisitDefault(unaryNode, context);
     }
     
-    protected virtual VisitResult VisitBinaryExpression(BaseBinaryNode binaryNode, TContext context)
+    protected virtual VisitResult VisitBinaryExpression(BaseBinaryNode node, TContext context)
     {
-        switch (binaryNode)
+        switch (node)
         {
             case BaseAssignNode baseAssignNode:
                 return VisitBaseAssign(baseAssignNode, context);
@@ -159,7 +159,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitPlus(plusNode, context);
         }
         
-        return VisitDefault(binaryNode, context);
+        return VisitDefault(node, context);
     }
 
     protected virtual VisitResult VisitBaseAssign(BaseAssignNode node, TContext context)

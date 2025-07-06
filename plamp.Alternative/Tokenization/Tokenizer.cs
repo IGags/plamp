@@ -41,7 +41,7 @@ public static class Tokenizer
         }
 
         var rows = sourceFile.SourceCode.Split('\n');
-        var prepared = rows.Select((t, i) => new Row(i, t));
+        var prepared = rows.Select(x => x.Replace("\t", "    ")).Select((t, i) => new Row(i, t));
 
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
@@ -328,8 +328,12 @@ public static class Tokenizer
                 return true;
             case ' ':
             case '\r':
-            case '\t':
                 result = new WhiteSpace(" ", startPosition, endPos, WhiteSpaceKind.WhiteSpace);
+                position++;
+                return true;
+            case '\t':
+                var endPosition = startPosition with { Column = startPosition.Column + 4 };
+                result = new WhiteSpace("    ", startPosition, endPosition, WhiteSpaceKind.WhiteSpace);
                 position++;
                 return true;
             default:

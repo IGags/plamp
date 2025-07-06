@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification.Modlels;
 using plamp.Alternative.Visitors.Base;
 
@@ -115,7 +116,172 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
     protected override VisitResult VisitAssign(AssignNode node, TypeInferenceInnerContext context)
     {
         VisitInternal(node.Left, context);
-        var leftType = context.
+        if (node.Left is VariableDefinitionNode leftDef)
+        {
+            VisitInternal(leftDef, context);
+            var leftType = context.TypeResolveStack.Pop();
+            VisitInternal(node.Right, context);
+            var rightType = context.TypeResolveStack.Pop();
+            CheckDefType(leftDef, leftType, rightType);
+        }
+        else if (node.Left is MemberNode leftMember)
+        {
+            VisitInternal(node.Right, context);
+            var rightType = context.TypeResolveStack.Pop();
+            if (!context.VariableTypeStack.Peek().TryGetValue(leftMember.MemberName, out var def))
+            {
+                TypeNode? type = null;
+                if (rightType != null) type = new TypeNode(new MemberNode(rightType.Name), []) { Symbol = rightType };
+                var newDef = new VariableDefinitionNode(type, leftMember);
+                Replace(leftMember, newDef);
+                context.Symbol.ReplaceSymbol(leftMember, newDef);
+                context.VariableTypeStack.Peek().Add(newDef.Member.MemberName, newDef);
+            }
+            else
+            {
+                CheckDefType(def, def.Type.Symbol, rightType);
+            }
+        }
+
+        return VisitResult.SkipChildren;
+
+        void CheckDefType(VariableDefinitionNode leftDefinition, Type? leftType, Type? rightType)
+        {
+            if (leftType != rightType && leftType != null)
+            {
+                var record = PlampNativeExceptionInfo.CannotAssign();
+                context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+            }
+            else if (leftType == null && leftType != rightType)
+            {
+                var newType = new TypeNode(leftDefinition.Type?.TypeName, []) { Symbol = rightType };
+                var newDef = new VariableDefinitionNode(newType, leftDefinition.Member);
+                Replace(leftDefinition, newDef);
+                context.Symbol.ReplaceSymbol(leftDefinition, newDef);
+                context.VariableTypeStack.Peek().Add(newDef.Member.MemberName, newDef);
+            }
+            else
+            {
+                context.VariableTypeStack.Peek().Add(leftDefinition.Member.MemberName, leftDefinition);
+            }
+        }
+    }
+
+    protected override VisitResult VisitBinaryExpression(BaseBinaryNode node, TypeInferenceInnerContext context)
+    {
+        VisitInternal(node.Left, context);
+        var leftType = context.TypeResolveStack.Pop();
+        VisitInternal(node.Right, context);
+        var rightType = context.TypeResolveStack.Pop();
+        if (leftType != rightType && leftType != null && rightType != null)
+        {
+            var record = PlampNativeExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+            context.TypeResolveStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+
+        if (leftType == rightType && leftType != null)
+        {
+            if ((node is AndNode or OrNode && !TypeResolveHelper.IsLogical(leftType))
+                || (node is not LessNode and not LessOrEqualNode and not GreaterNode and not GreaterOrEqualNode
+                    and not EqualNode and not NotEqualNode
+                && !TypeResolveHelper.IsNumeric(leftType)))
+            {
+                var record = PlampNativeExceptionInfo.CannotApplyOperator();
+                context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+                context.TypeResolveStack.Push(null);
+                return VisitResult.SkipChildren;
+            }
+            context.TypeResolveStack.Push(leftType);
+            return VisitResult.SkipChildren;
+        }
+
+        context.TypeResolveStack.Push(null);
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult VisitUnaryNode(BaseUnaryNode unaryNode, TypeInferenceInnerContext context)
+    {
+        VisitInternal(unaryNode.Inner, context);
+        var innerType = context.TypeResolveStack.Pop();
+        if (innerType == null)
+        {
+            context.TypeResolveStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+
+        if ((TypeResolveHelper.IsLogical(innerType) && unaryNode is not NotNode) ||
+            (!TypeResolveHelper.IsNumeric(innerType) && unaryNode is PrefixIncrementNode or PrefixDecrementNode or UnaryMinusNode))
+        {
+            var record = PlampNativeExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(unaryNode, record, context.FileName));
+            context.TypeResolveStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+        
+        context.TypeResolveStack.Push(innerType);
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult VisitLiteral(LiteralNode literalNode, TypeInferenceInnerContext context)
+    {
+        context.TypeResolveStack.Push(literalNode.Type);
+        return VisitResult.Continue;
+    }
+
+    protected override VisitResult VisitMember(MemberNode node, TypeInferenceInnerContext context)
+    {
+        if (!context.VariableTypeStack.Peek().TryGetValue(node.MemberName, out var value))
+        {
+            var record = PlampNativeExceptionInfo.CannotFindMember();
+            context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+        }
+        context.TypeResolveStack.Push(value?.Type.Symbol);
+        return VisitResult.Continue;
+    }
+
+    protected override VisitResult VisitCall(CallNode node, TypeInferenceInnerContext context)
+    {
+        var name = node.MethodName.MemberName;
+        if (!context.Signature.MethodList.TryGetValue(name, out var signature))
+        {
+            var record = PlampNativeExceptionInfo.UnknownFunction();
+            context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+            context.TypeResolveStack.Push(null);
+            foreach (var arg in node.Args)
+            {
+                VisitInternal(arg, context);
+                context.TypeResolveStack.Pop();
+            }
+            return VisitResult.SkipChildren;
+        }
+
+        if (node.Args.Count != signature.GetParameters().Length)
+        {
+            var record = PlampNativeExceptionInfo.UnknownFunction();
+            context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(node, record, context.FileName));
+            context.TypeResolveStack.Push(null);
+            foreach (var arg in node.Args)
+            {
+                VisitInternal(arg, context);
+                context.TypeResolveStack.Pop();
+            }
+            return VisitResult.SkipChildren;
+        }
+        
+        foreach (var (arg, parameter) in node.Args.Zip(signature.GetParameters()))
+        {
+            VisitInternal(arg, context);
+            var argType = context.TypeResolveStack.Pop();
+            if (argType != parameter.ParameterType)
+            {
+                var record = PlampNativeExceptionInfo.WrongParameterType();
+                context.Exceptions.Add(context.Symbol.CreateExceptionForSymbol(arg, record, context.FileName));
+            }
+        }
+        context.TypeResolveStack.Push(signature.ReturnType);
+        return VisitResult.SkipChildren;
     }
 }
 

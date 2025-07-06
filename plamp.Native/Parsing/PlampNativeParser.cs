@@ -1451,7 +1451,7 @@ public sealed class PlampNativeParser : IParser
         switch (parenRes)
         {
             case ExpressionParsingResult.Success:
-                res = new CallNode(from, input, args);
+                res = new CallNode(from, input as MemberNode, args);
                 var children = new List<NodeBase>{ input };
                 children.AddRange(args);
                 transaction.AddSymbol(res, children.ToArray(), []);

@@ -28,4 +28,11 @@ internal static class TypeResolveHelper
         exceptions.Add(symbols.CreateExceptionForSymbol(type, record, fileName));
         return null;
     }
+
+    public static bool IsNumeric(Type type)
+    {
+        return type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong) || type == typeof(byte) || type == typeof(float) || type == typeof(double);
+    }
+
+    public static bool IsLogical(Type type) => type == typeof(bool);
 }

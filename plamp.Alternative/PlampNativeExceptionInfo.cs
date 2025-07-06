@@ -262,6 +262,56 @@ public static class PlampNativeExceptionInfo
             Message = "Variable already defined"
         };
     }
+
+    public static PlampExceptionRecord CannotAssign()
+    {
+        return new()
+        {
+            Code = "SEM1301",
+            Level = ExceptionLevel.Error,
+            Message = "Assignment target and source types are differs"
+        };
+    }
+
+    public static PlampExceptionRecord CannotFindMember()
+    {
+        return new()
+        {
+            Code = "SEM1302",
+            Level = ExceptionLevel.Error,
+            Message = "Unknown variable or arg"
+        };
+    }
+
+    public static PlampExceptionRecord UnknownFunction()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1303",
+            Level = ExceptionLevel.Error,
+            Message = "Cannot find function within module"
+        };
+    }
+
+    public static PlampExceptionRecord WrongParameterType()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1304",
+            Level = ExceptionLevel.Error,
+            Message = "Wrong parameter type"
+        };
+    }
+
+    public static PlampExceptionRecord CannotApplyOperator()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1305",
+            Level = ExceptionLevel.Error,
+            Message = "Cannot apply operator, types differ"
+        };
+    }
     
     #endregion
 }

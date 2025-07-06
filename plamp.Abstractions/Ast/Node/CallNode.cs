@@ -9,12 +9,12 @@ public class CallNode : NodeBase
     
     public NodeBase From { get; private set; }
     
-    public NodeBase MethodName { get; private set; }
+    public MemberNode MethodName { get; private set; }
     public IReadOnlyList<NodeBase> Args => _args;
 
     public virtual MethodInfo Symbol { get; init; } = null;
 
-    public CallNode(NodeBase from, NodeBase methodName, List<NodeBase> args)
+    public CallNode(NodeBase from, MemberNode methodName, List<NodeBase> args)
     {
         From = from;
         MethodName = methodName;
@@ -37,9 +37,9 @@ public class CallNode : NodeBase
         {
             From = newChild;
         }
-        else if (MethodName == child)
+        else if (MethodName == child && newChild is MemberNode member)
         {
-            MethodName = newChild;
+            MethodName = member;
         }
         else if (-1 != (argIndex = _args.IndexOf(child)))
         {
