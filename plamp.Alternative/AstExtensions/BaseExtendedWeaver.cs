@@ -5,7 +5,7 @@ using RootNode = plamp.Abstractions.Ast.Node.RootNode;
 
 namespace plamp.Alternative.Visitors.Base;
 
-public abstract class BaseExtendedWeaver<TContext, TInnerContext> : BaseWeaver<TContext, TInnerContext>
+public abstract class BaseExtendedWeaver<TContext, TInnerContext, TReturn> : BaseWeaver<TContext, TInnerContext, TReturn>
 {
     protected override VisitResult VisitDefault(NodeBase node, TInnerContext context)
     {

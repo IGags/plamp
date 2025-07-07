@@ -20,7 +20,15 @@ public class SymbolTable
         }
     }
 
-    public KeyValuePair<FilePosition, FilePosition> GetSymbol(NodeBase symbol) => _symbols[symbol];
+    public KeyValuePair<FilePosition, FilePosition>? GetSymbol(NodeBase symbol)
+    {
+        if (_symbols.TryGetValue(symbol, out var pair))
+        {
+            return pair;
+        }
+
+        return null;
+    }
     
     public PlampException CreateExceptionForSymbol(
         NodeBase symbol, 

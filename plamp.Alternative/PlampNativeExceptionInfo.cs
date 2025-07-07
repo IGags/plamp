@@ -289,17 +289,17 @@ public static class PlampNativeExceptionInfo
         {
             Code = "SEM1303",
             Level = ExceptionLevel.Error,
-            Message = "Cannot find function within module"
+            Message = "Cannot find function within module with this signature"
         };
     }
 
-    public static PlampExceptionRecord WrongParameterType()
+    public static PlampExceptionRecord PredicateMustBeBooleanType()
     {
         return new PlampExceptionRecord()
         {
             Code = "SEM1304",
             Level = ExceptionLevel.Error,
-            Message = "Wrong parameter type"
+            Message = "Predicate must be a boolean type"
         };
     }
 
@@ -310,6 +310,16 @@ public static class PlampNativeExceptionInfo
             Code = "SEM1305",
             Level = ExceptionLevel.Error,
             Message = "Cannot apply operator, types differ"
+        };
+    }
+
+    public static PlampExceptionRecord ArgumentAlreadyDefined()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1306",
+            Level = ExceptionLevel.Error,
+            Message = "Argument with same name already defined"
         };
     }
     

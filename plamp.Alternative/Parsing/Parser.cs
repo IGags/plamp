@@ -463,6 +463,7 @@ public static class Parser
             return true;
         }
 
+        context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseBody(context, out var elseBody) || elseBody == null) return false;
         condition = new ConditionNode(expression, body, elseBody);
         context.SymbolTable.AddSymbol(condition, conditionToken.Start, conditionToken.End);
@@ -811,27 +812,24 @@ public static class Parser
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
-            if (prefixFork.Sequence.Current() is not Word prefixMember) return false;
-            
-            var innerMember = new MemberNode(prefixMember.GetStringRepresentation());
+            if (!TryParseNud(prefixFork, out var innerNode)) return false;
             
             switch (op.Operator)
             {
                 case OperatorEnum.Increment:
-                    node = new PrefixIncrementNode(innerMember);
+                    node = new PrefixIncrementNode(innerNode);
                     break;
                 case OperatorEnum.Decrement:
-                    node = new PrefixDecrementNode(innerMember);
+                    node = new PrefixDecrementNode(innerNode);
                     break;
                 case OperatorEnum.Not:
-                    node = new NotNode(innerMember);
+                    node = new NotNode(innerNode);
                     break;
                 case OperatorEnum.Sub:
-                    node = new UnaryMinusNode(innerMember);
+                    node = new UnaryMinusNode(innerNode);
                     break;
             }
             context.Merge(prefixFork);
-            context.SymbolTable.AddSymbol(innerMember, prefixMember.Start, prefixMember.End);
             context.SymbolTable.AddSymbol(node!, op.Start, op.End);
             return true;
         }

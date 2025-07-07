@@ -14,7 +14,7 @@ using plamp.Abstractions.AstManipulation.Modification.Modlels;
 
 namespace plamp.Validators.BasicSemanticsValidators.TypeInference;
 
-public class TypeInferenceWeaver : BaseWeaver<TypeInferenceContext, TypeInferenceInnerContext>
+/*public class TypeInferenceWeaver : BaseWeaver<TypeInferenceContext, TypeInferenceInnerContext>
 {
     protected override TypeInferenceInnerContext CreateInnerContext(TypeInferenceContext context)
     {
@@ -426,7 +426,7 @@ public class TypeInferenceWeaver : BaseWeaver<TypeInferenceContext, TypeInferenc
         //TODO: self props
         var props = context.AssemblyContainer.GetMatchingProperties(member.MemberName, typeInfo);
         var fields = context.AssemblyContainer.GetMatchingFields(member.MemberName, typeInfo);
-    }*/
+    }#1#
     
     private VisitResult NullNodeStub(NodeBase node, TypeInferenceInnerContext context)
     {
@@ -648,4 +648,4 @@ public class TypeInferenceWeaver : BaseWeaver<TypeInferenceContext, TypeInferenc
     {
         public override Type ParameterType { get; } = paramType;
     }
-}
+}*/

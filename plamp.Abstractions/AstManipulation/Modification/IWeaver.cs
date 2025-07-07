@@ -3,7 +3,7 @@ using plamp.Abstractions.AstManipulation.Modification.Modlels;
 
 namespace plamp.Abstractions.AstManipulation.Modification;
 
-public interface IWeaver<in TContext>
+public interface IWeaver<in TContext, out TResult>
 {
-    public WeaveResult WeaveDiffs(NodeBase ast, TContext context);
+    public TResult WeaveDiffs(NodeBase ast, TContext context);
 }
