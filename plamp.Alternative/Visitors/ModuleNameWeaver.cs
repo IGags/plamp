@@ -4,7 +4,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Alternative.AstExtensions;
-using RootNode = plamp.Abstractions.Ast.Node.RootNode;
+using RootNode = plamp.Alternative.AstExtensions.RootNode;
 
 namespace plamp.Alternative.Visitors;
 
@@ -22,34 +22,23 @@ public class ModuleNameWeaver : BaseExtendedWeaver<ModuleNameWeaverContext, Modu
 
     protected override VisitResult VisitRoot(RootNode node, ModuleNameInnerWeaverContext context)
     {
-        base.VisitRoot(node, context);
-        if (context.ModuleName == null) return VisitResult.Break;
-        if (context.ModuleNames.Count > 1)
+        if (node.ModuleName == null)
         {
-            var record = PlampNativeExceptionInfo.DuplicateModuleDefinition();
-            foreach (var module in context.ModuleNames)
-            {
-                context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(module, record, context.FileName));
-            }
+            var record = PlampNativeExceptionInfo.ModuleMustHaveName();
+            context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(node, record, context.FileName));
+            return VisitResult.Break;
         }
-
+        context.ModuleName = node.ModuleName?.ModuleName;
+        if(node.ModuleName == null 
+           || !context.Members.TryGetValue(node.ModuleName.ModuleName, out var members)) return VisitResult.Break;
+        
         var exceptionRecord = PlampNativeExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
-        foreach (var module in context.ModuleNames.Select(x => x.ModuleName).Distinct())
+        foreach (var member in members)
         {
-            if(!context.Members.TryGetValue(module, out var members)) continue;
-            foreach (var member in members)
-            {
-                context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(member, exceptionRecord, context.FileName));
-            }
+            context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(member, exceptionRecord, context.FileName));
         }
 
         return VisitResult.Break;
-    }
-
-    protected override VisitResult VisitModuleDefinition(ModuleDefinitionNode definition, ModuleNameInnerWeaverContext context)
-    {
-        context.ModuleNames.Add(definition);
-        return VisitResult.Continue;
     }
 
     protected override VisitResult VisitDef(DefNode node, ModuleNameInnerWeaverContext context)
@@ -71,11 +60,9 @@ public record ModuleNameWeaverContext(List<PlampException> Exceptions, SymbolTab
 
 public record ModuleNameInnerWeaverContext(List<PlampException> Exceptions, SymbolTable SymbolTable, string FileName)
 {
-    public string? ModuleName => ModuleNames.Count > 1 ? null : ModuleNames.First().ModuleName;
-    
-    public List<ModuleDefinitionNode> ModuleNames { get; } = [];
-
     public Dictionary<string, List<NodeBase>> Members { get; } = [];
+    
+    public string? ModuleName { get; set; }
 }
 
 public record ModuleNameResult(List<PlampException> Exceptions, string? ModuleName);

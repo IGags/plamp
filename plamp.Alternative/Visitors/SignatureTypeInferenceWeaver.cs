@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
-using plamp.Alternative.Visitors.Base;
+using plamp.Alternative.AstExtensions;
 
 namespace plamp.Alternative.Visitors;
 

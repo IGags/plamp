@@ -17,13 +17,6 @@ namespace plamp.Alternative.Parsing;
 
 public static class Parser
 {
-    //TODO: убрать
-    enum State
-    {
-        Imports,
-        ModuleDef
-    }
-    
     public static RootNode ParseFile(ParsingContext context)
     {
         var topLevelList = new List<NodeBase>();
@@ -32,30 +25,41 @@ public static class Parser
             if (TryParseTopLevel(context, out var topLevel) && topLevel != null) topLevelList.Add(topLevel);
         }
 
-        var state = State.Imports;
         var imports = new List<ImportNode>();
-        var module = default(ModuleDefinitionNode);
+        var modules = new List<ModuleDefinitionNode>();
         var funcs = new List<DefNode>();
         foreach (var statement in topLevelList)
         {
-            if (state == State.Imports && statement is ImportNode import)
+            if (statement is ImportNode import)
             {
                 imports.Add(import);
             }
 
-            if (state == State.Imports && statement is ModuleDefinitionNode def)
+            if (statement is ModuleDefinitionNode def)
             {
-                module = def;
-                state = State.ModuleDef;
+                modules.Add(def);
             }
 
-            if (state == State.ModuleDef && statement is DefNode defNode)
+            if (statement is DefNode defNode)
             {
                 funcs.Add(defNode);
             }
         }
 
-        return new RootNode(imports, module, funcs);
+        if (modules.Count > 1)
+        {
+            var record = PlampNativeExceptionInfo.DuplicateModuleDefinition();
+            foreach (var module in modules)
+            {
+                context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(module, record, context.FileName));
+            }
+
+            modules = null;
+        }
+        var moduleDef = modules?.FirstOrDefault();
+        var node = new RootNode(imports, moduleDef, funcs);
+        context.SymbolTable.AddSymbol(node, default, default);
+        return node;
     }
 
     public static bool TryParseTopLevel(ParsingContext context, out NodeBase? topLevel)
@@ -274,7 +278,9 @@ public static class Parser
         if (context.Sequence.Current() is Word) TryParseType(context, out type);
 
         if (!TryParseBody(context, out var body) || body == null) return false;
-        func = new DefNode(type, new MemberNode(name), list, body);
+        var funcNameNode = new MemberNode(name);
+        context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
+        func = new DefNode(type, funcNameNode, list, body);
         context.SymbolTable.AddSymbol(func, fnToken.Start, fnToken.End);
         return true;
     }
@@ -350,7 +356,9 @@ public static class Parser
         }
 
         var end = context.Sequence.CurrentEnd;
-        arg = new ParameterNode(type, new MemberNode(argName.GetStringRepresentation()));
+        var argNameNode = new MemberNode(argName.GetStringRepresentation());
+        context.SymbolTable.AddSymbol(argNameNode, argName.Start, argName.End);
+        arg = new ParameterNode(type, argNameNode);
         context.SymbolTable.AddSymbol(arg, start, end);
         context.Sequence.MoveNextNonWhiteSpace();
         return true;
@@ -460,6 +468,7 @@ public static class Parser
         if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Else })
         {
             condition = new ConditionNode(expression, body, null);
+            context.SymbolTable.AddSymbol(condition, conditionToken.Start, conditionToken.End);
             return true;
         }
 
@@ -664,7 +673,7 @@ public static class Parser
         if (context.Sequence.Current() is CloseParen)
         {
             end = context.Sequence.CurrentEnd;
-            call = new CallNode(new ThisNode(), new MemberNode(funcName.GetStringRepresentation()), argExpressions);
+            call = new CallNode(null, new MemberNode(funcName.GetStringRepresentation()), argExpressions);
             context.Sequence.MoveNextNonWhiteSpace();
             context.SymbolTable.AddSymbol(call, start, end);
             return true;
@@ -702,7 +711,7 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
         }
 
-        call = new CallNode(new ThisNode(), new MemberNode(funcName.GetStringRepresentation()), argExpressions);
+        call = new CallNode(null, new MemberNode(funcName.GetStringRepresentation()), argExpressions);
         context.SymbolTable.AddSymbol(call, start, end);
         return true;
     }
@@ -741,8 +750,10 @@ public static class Parser
         }
         
         context.Sequence.MoveNextNonWhiteSpace();
-        type = new TypeNode(new MemberNode(typeName.GetStringRepresentation()), []);
+        var typeNameNode = new MemberNode(typeName.GetStringRepresentation());
+        type = new TypeNode(typeNameNode, []);
         context.SymbolTable.AddSymbol(type, typeName.Start, typeName.End);
+        context.SymbolTable.AddSymbol(typeNameNode, typeName.Start, typeName.End);
         return true;
     }
 

@@ -9,6 +9,8 @@
 
     <ItemGroup>
       <ProjectReference Include="..\plamp.Alternative\plamp.Alternative.csproj" />
+      <ProjectReference Include="..\plamp.CodeEmission.Tests\plamp.CodeEmission.Tests.csproj" />
+      <ProjectReference Include="..\plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" />
     </ItemGroup>
 
 </Project>

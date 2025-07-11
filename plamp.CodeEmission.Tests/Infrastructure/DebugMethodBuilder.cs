@@ -52,7 +52,7 @@ public class DebugMethodBuilder : MethodBuilder
 
     #endregion
     
-    internal DebugMethodBuilder(MethodBuilder inner)
+    public DebugMethodBuilder(MethodBuilder inner)
     {
         _inner = inner;
     }

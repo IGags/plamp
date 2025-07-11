@@ -8,29 +8,28 @@ namespace plamp.Cli;
 
 class Program
 {
+    private const string File = """
+                                module mymod;
+                                
+                                fn fib(int n) int {
+                                    if(n < 0) return n;
+                                    if(n = 0 || n = 1) return n;
+                                    if(n = 2) return 1;
+                                    return fib(n - 1) + fib(n - 2);
+                                }
+                                """;
+    
     static void Main(string[] args)
     {
-        if (args.Length < 1)
+        var rows = File.Split('\n');
+        var res = CompilationDriver.CompileModule("aaa.plp", File);
+        if (res.Exceptions.Count > 0)
         {
-            Console.WriteLine("Target file does not set");
-        }
-        var file = File.ReadAllText("/home/roma/plamp-snippets/valid.plp");
-        var rows = file.Split('\n');
-        var tokens = Tokenizer.Tokenize(new SourceFile("/home/roma/plamp-snippets/valid.plp", file));
-        if (args.Contains("-t"))
-        {
-            PrintRes(tokens.Exceptions);
-            foreach (var token in tokens.Sequence)
-            {
-                Console.WriteLine($"@@ {token.Start}, {token.End} @@ {token.GetStringRepresentation()}");
-            }
+            PrintRes(res.Exceptions);
             return;
         }
-
-        var context = new ParsingContext(tokens.Sequence, file, tokens.Exceptions, new SymbolTable());
-        var parsed = Parser.ParseFile(context);
-        rows = rows.Select(x => x.Replace("\t", "    ")).ToArray();
-        PrintRes(context.Exceptions);
+        var method = res.Compiled!.Modules.First().GetMethod("fib");
+        Console.WriteLine(method.Invoke(null, [14]));
 
         void PrintRes(List<PlampException> exList)
         {

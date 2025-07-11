@@ -322,6 +322,56 @@ public static class PlampNativeExceptionInfo
             Message = "Argument with same name already defined"
         };
     }
+
+    public static PlampExceptionRecord ReturnTypeMismatch()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1307",
+            Level = ExceptionLevel.Error,
+            Message = "Return expression type should match with return type of func"
+        };
+    }
+
+    public static PlampExceptionRecord DuplicateMemberNameInModule()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1308",
+            Level = ExceptionLevel.Error,
+            Message = "Member with same name already declared in this module"
+        };
+    }
+
+    public static PlampExceptionRecord DuplicateModuleDefinition()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1309",
+            Level = ExceptionLevel.Error,
+            Message = "Module name already declared in this module"
+        };
+    }
+
+    public static PlampExceptionRecord MemberCannotHaveSameNameAsDeclaringModule()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1310",
+            Level = ExceptionLevel.Error,
+            Message = "Member cannot have same name as declaring module"
+        };
+    }
+
+    public static PlampExceptionRecord ModuleMustHaveName()
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1311",
+            Level = ExceptionLevel.Error,
+            Message = "Module must have name"
+        };
+    }
     
     #endregion
 }

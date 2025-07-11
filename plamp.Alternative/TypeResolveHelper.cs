@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 
@@ -21,7 +22,7 @@ internal static class TypeResolveHelper
             case "double": return typeof(double);
             case "bool": return typeof(bool);
             case "string": return typeof(string);
-            case "object": return typeof(object);
+            case "any": return typeof(object);
         }
 
         var record = PlampNativeExceptionInfo.TypesIsNotSupported();
@@ -29,10 +30,12 @@ internal static class TypeResolveHelper
         return null;
     }
 
-    public static bool IsNumeric(Type type)
+    public static MethodInfo? TryGetIntrinsic(string intrinsicName)
     {
-        return type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong) || type == typeof(byte) || type == typeof(float) || type == typeof(double);
+        return intrinsicName switch
+        {
+            "println" => typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(string)]),
+            _ => null
+        };
     }
-
-    public static bool IsLogical(Type type) => type == typeof(bool);
 }

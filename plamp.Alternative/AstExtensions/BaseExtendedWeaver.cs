@@ -1,9 +1,7 @@
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Alternative.AstExtensions;
-using RootNode = plamp.Abstractions.Ast.Node.RootNode;
 
-namespace plamp.Alternative.Visitors.Base;
+namespace plamp.Alternative.AstExtensions;
 
 public abstract class BaseExtendedWeaver<TContext, TInnerContext, TReturn> : BaseWeaver<TContext, TInnerContext, TReturn>
 {
@@ -12,34 +10,34 @@ public abstract class BaseExtendedWeaver<TContext, TInnerContext, TReturn> : Bas
         switch (node)
         {
             case RootNode root:
-                return VisitRoot(root);
+                return VisitRoot(root, context);
             case ImportNode import:
-                return VisitImport(import);
+                return VisitImport(import, context);
             case ImportItemNode importItem:
-                return VisitImportItem(importItem);
+                return VisitImportItem(importItem, context);
             case ModuleDefinitionNode moduleDefinition:
-                return VisitModuleDefinition(moduleDefinition);
+                return VisitModuleDefinition(moduleDefinition, context);
         }
 
         return VisitResult.SkipChildren;
     }
 
-    protected virtual VisitResult VisitRoot(RootNode node)
+    protected virtual VisitResult VisitRoot(RootNode node, TInnerContext context)
     {
         return VisitResult.Continue;
     }
 
-    protected virtual VisitResult VisitImport(ImportNode node)
+    protected virtual VisitResult VisitImport(ImportNode node, TInnerContext context)
     {
         return VisitResult.Continue;
     }
 
-    protected virtual VisitResult VisitImportItem(ImportItemNode node)
+    protected virtual VisitResult VisitImportItem(ImportItemNode node, TInnerContext context)
     {
         return VisitResult.Continue;
     }
 
-    protected virtual VisitResult VisitModuleDefinition(ModuleDefinitionNode definition)
+    protected virtual VisitResult VisitModuleDefinition(ModuleDefinitionNode definition, TInnerContext context)
     {
         return VisitResult.Continue;
     }

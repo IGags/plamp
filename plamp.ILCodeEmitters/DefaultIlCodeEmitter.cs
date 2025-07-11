@@ -492,7 +492,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         
         foreach (var arg in callNode.Args)
         {
-            EmitGetMember(arg, context, true);
+            if(arg is MemberNode) EmitGetMember(arg, context, true);
+            else EmitSingleLineExpression(arg, context);
         }
         EmitMethodCall(callNode.Symbol, context);
     }

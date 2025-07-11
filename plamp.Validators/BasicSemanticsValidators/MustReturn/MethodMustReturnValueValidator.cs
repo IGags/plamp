@@ -26,11 +26,11 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
 
     protected override VisitResult VisitDef(DefNode node, MustReturnValueInnerContext context)
     {
-        if (node.ReturnType is TypeNode typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
+        if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
         
         //Root body lexical scope
         context.LexicalScopeAlwaysReturns = false;
-        VisitChildren(node.Visit(), context);
+        VisitChildren(node, context);
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         
         var exception =
@@ -51,12 +51,12 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
         }
         
         context.LexicalScopeAlwaysReturns = false;
-        VisitChildren(node.IfClause.Visit(), context);
+        VisitChildren(node.IfClause, context);
         var ifReturns = context.LexicalScopeAlwaysReturns;
         if (!ifReturns) return VisitResult.SkipChildren;
         
         context.LexicalScopeAlwaysReturns = false;
-        VisitChildren(node.ElseClause.Visit(), context);
+        VisitChildren(node.ElseClause, context);
         var elseReturns = context.LexicalScopeAlwaysReturns;
         
         context.LexicalScopeAlwaysReturns = ifReturns && elseReturns;
