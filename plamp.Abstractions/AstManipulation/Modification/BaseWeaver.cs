@@ -17,6 +17,11 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext, TResult>
         return CreateWeaveResult(innerContext, context);
     }
 
+    protected sealed override VisitResult VisitInternal(NodeBase node, TInnerContext context)
+    {
+        return base.VisitInternal(node, context);
+    }
+
     protected abstract TInnerContext CreateInnerContext(TOuterContext context);
 
     protected abstract TResult CreateWeaveResult(TInnerContext innerContext, TOuterContext outerContext);

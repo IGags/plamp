@@ -14,6 +14,11 @@ public abstract class BaseValidator<TOuterContext, TInnerContext> : BaseVisitor<
         return result;
     }
 
+    protected sealed override VisitResult VisitInternal(NodeBase node, TInnerContext context)
+    {
+        return base.VisitInternal(node, context);
+    }
+
     protected abstract TInnerContext MapContext(TOuterContext context);
     
     protected abstract ValidationResult CreateResult(TOuterContext outerContext, TInnerContext innerContext);

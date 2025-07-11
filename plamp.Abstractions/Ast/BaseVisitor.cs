@@ -28,16 +28,15 @@ public abstract class BaseVisitor<TContext>
 
         if (node != null)
         {
-            var children = node.Visit();
-            res = VisitChildren(children, context);
+            res = VisitChildren(node, context);
         } 
         
         return res == VisitResult.Break ? VisitResult.Break : VisitResult.Continue;
     }
 
-    protected virtual VisitResult VisitChildren(IEnumerable<NodeBase> children, TContext context)
+    protected virtual VisitResult VisitChildren(NodeBase node, TContext context)
     {
-        foreach (var child in children)
+        foreach (var child in node.Visit())
         {
             var res = VisitInternal(child, context);
             if(res == VisitResult.Break) return VisitResult.Break;
