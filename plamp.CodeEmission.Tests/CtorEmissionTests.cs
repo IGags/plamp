@@ -12,7 +12,7 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
     }
@@ -21,13 +21,12 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
 
-        public CtorClass(string stringProp)
+        public CtorClass()
         {
-            StringProp = stringProp;
         }
 
         public CtorClass(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
@@ -42,13 +41,12 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
 
-        public CtorStruct(string stringProp)
+        public CtorStruct()
         {
-            StringProp = stringProp;
         }
 
         public CtorStruct(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
@@ -75,8 +73,7 @@ public class CtorEmissionTests
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new MemberNode(tempVarName)),
             new AssignNode(
                 new MemberNode(tempVarName), 
-                EmissionSetupHelper.CreateConstructorNode(
-                    EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
+                EmissionSetupHelper.CreateConstructorNode(EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 

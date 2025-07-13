@@ -62,8 +62,12 @@ public class EmissionSetupHelper
         return new ConcreteCastNode(toTyp, inner, from);
     }
 
-    public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
-        => new ConcreteConstructorNode(type, args, ctor);
+    public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor)
+    {
+        var ctorInfo = new ConstructorCallNode(type, args);
+        ctorInfo.SetConstructorInfo(ctor);
+        return ctorInfo;
+    }
 
     public static async Task<(object? instance, MethodInfo? methodInfo)> CreateInstanceWithMethodAsync(
         ParameterInfo[] args,
@@ -79,12 +83,6 @@ public class EmissionSetupHelper
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = CreateObject(type, methodName);
         return (instance, methodInfo);
-    }
-
-    private sealed class ConcreteConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
-        : ConstructorCallNode(type, args)
-    {
-        public override ConstructorInfo? Symbol { get; protected set; } = ctor;
     }
     
     private sealed class ConcreteCastNode : CastNode

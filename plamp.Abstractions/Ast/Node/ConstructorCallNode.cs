@@ -5,10 +5,10 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class ConstructorCallNode(NodeBase type, List<NodeBase> args) : NodeBase
 {
-    public NodeBase Type { get; private set; } = type;
-    public List<NodeBase> Args { get; private set; } = args;
+    public NodeBase Type { get; } = type;
+    public List<NodeBase> Args { get; } = args;
 
-    public virtual ConstructorInfo? Symbol { get; protected set; }
+    public ConstructorInfo? Symbol { get; private set; }
 
     public void SetConstructorInfo(ConstructorInfo info) => Symbol = info;
 
