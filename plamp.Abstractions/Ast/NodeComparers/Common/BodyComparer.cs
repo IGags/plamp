@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class BodyComparer : IEqualityComparer<BodyNode>
 {
-    public bool Equals(BodyNode x, BodyNode y)
+    public bool Equals(BodyNode? x, BodyNode? y)
     {
         if(ReferenceEquals(x, y)) return true;
         if(x == null) return false;

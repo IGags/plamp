@@ -1,9 +1,8 @@
 ﻿using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.AstManipulation.Validation.Models;
 
 namespace plamp.Abstractions.AstManipulation.Validation;
 
-public interface IValidator<in TContext>
+public interface IValidator<TContext> where TContext : BaseVisitorContext
 {
-    public ValidationResult Validate(NodeBase ast, TContext context);
+    public TContext Validate(NodeBase ast, TContext context);
 }

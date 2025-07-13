@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class ContinueComparer : IEqualityComparer<ContinueNode>
 {
-    public bool Equals(ContinueNode x, ContinueNode y)
+    public bool Equals(ContinueNode? x, ContinueNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x == null) return false;

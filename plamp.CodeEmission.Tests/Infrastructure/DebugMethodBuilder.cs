@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 
@@ -52,7 +51,7 @@ public class DebugMethodBuilder : MethodBuilder
 
     #endregion
     
-    internal DebugMethodBuilder(MethodBuilder inner)
+    public DebugMethodBuilder(MethodBuilder inner)
     {
         _inner = inner;
     }

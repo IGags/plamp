@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class EmptyComparer : IEqualityComparer<EmptyNode>
 {
-    public bool Equals(EmptyNode x, EmptyNode y)
+    public bool Equals(EmptyNode? x, EmptyNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (ReferenceEquals(x, null)) return false;

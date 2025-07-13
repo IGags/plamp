@@ -7,7 +7,7 @@ public record PlampExceptionRecord
 {
     public required string Message { get; init; }
 
-    public required int Code { get; init; }
+    public required string Code { get; init; }
     
     public required ExceptionLevel Level { get; init; }
 }

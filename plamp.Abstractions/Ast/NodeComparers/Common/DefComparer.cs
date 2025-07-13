@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions;
 
 namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class DefComparer : IEqualityComparer<DefNode>
 {
-    public bool Equals(DefNode x, DefNode y)
+    public bool Equals(DefNode? x, DefNode? y)
     {
         if(ReferenceEquals(x, y)) return true;
         if(x == null) return false;

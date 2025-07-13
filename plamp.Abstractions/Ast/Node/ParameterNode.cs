@@ -1,16 +1,14 @@
 ﻿using System.Collections.Generic;
-using System.Reflection;
 
 namespace plamp.Abstractions.Ast.Node;
 
+//TODO: Maybe we want to store parameter data such as ref in out.
 public class ParameterNode : NodeBase
 {
-    public NodeBase Type { get; private set; }
-    public NodeBase Name { get; private set; }
+    public TypeNode Type { get; private set; }
+    public MemberNode Name { get; private set; }
 
-    public virtual ParameterInfo Symbol { get; init; } = null;
-
-    public ParameterNode(NodeBase type, MemberNode name)
+    public ParameterNode(TypeNode type, MemberNode name)
     {
         Type = type;
         Name = name;
@@ -24,13 +22,13 @@ public class ParameterNode : NodeBase
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        if (Type == child)
+        if (Type == child && newChild is TypeNode newType)
         {
-            Type = newChild;
+            Type = newType;
         }
-        else if (Name == child)
+        else if (Name == child && newChild is MemberNode newMember)
         {
-            Name = newChild;
+            Name = newMember;
         }
     }
 }

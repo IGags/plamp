@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class CastComparer : IEqualityComparer<CastNode>
 {
-    public bool Equals(CastNode x, CastNode y)
+    public bool Equals(CastNode? x, CastNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

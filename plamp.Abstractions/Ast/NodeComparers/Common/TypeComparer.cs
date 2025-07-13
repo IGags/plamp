@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class TypeComparer : IEqualityComparer<TypeNode>
 {
-    public bool Equals(TypeNode x, TypeNode y)
+    public bool Equals(TypeNode? x, TypeNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

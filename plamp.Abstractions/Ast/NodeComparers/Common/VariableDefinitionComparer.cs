@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class VariableDefinitionComparer : IEqualityComparer<VariableDefinitionNode>
 {
-    public bool Equals(VariableDefinitionNode x, VariableDefinitionNode y)
+    public bool Equals(VariableDefinitionNode? x, VariableDefinitionNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

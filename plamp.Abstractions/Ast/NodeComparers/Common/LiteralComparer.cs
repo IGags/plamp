@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class LiteralComparer : IEqualityComparer<LiteralNode>
 {
-    public bool Equals(LiteralNode x, LiteralNode y)
+    public bool Equals(LiteralNode? x, LiteralNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

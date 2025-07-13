@@ -5,10 +5,10 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class LiteralNode : NodeBase
 {
-    public object Value { get; }
+    public object? Value { get; }
     public Type Type { get; }
 
-    public LiteralNode(object value, Type type)
+    public LiteralNode(object? value, Type type)
     {
         Value = value;
         Type = type;

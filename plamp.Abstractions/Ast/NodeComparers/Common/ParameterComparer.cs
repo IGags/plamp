@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class ParameterComparer : IEqualityComparer<ParameterNode>
 {
-    public bool Equals(ParameterNode x, ParameterNode y)
+    public bool Equals(ParameterNode? x, ParameterNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

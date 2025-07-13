@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -8,6 +7,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
+// ReSharper disable EntityNameCapturedOnly.Local
 
 namespace plamp.CodeEmission.Tests;
 
@@ -28,7 +28,7 @@ public class MethodCallTests
     [Fact]
     public async Task EmitActionCall()
     {
-        var method = typeof(CallbackClass).GetMethod(nameof(CallbackClass.TriggerCallback));
+        var method = typeof(CallbackClass).GetMethod(nameof(CallbackClass.TriggerCallback))!;
         var callbackArg = new TestParameter(typeof(CallbackClass), "callbackInstance");
         /*
          * callbackInstance.TriggerCallback()
@@ -80,7 +80,7 @@ public class MethodCallTests
 
     public class CallbackClassWithArg
     {
-        private string _arg1Value;
+        private string _arg1Value = "";
         private int _arg2Value;
         private KeyValuePair<int, int> _arg3Value;
         
@@ -138,11 +138,11 @@ public class MethodCallTests
     
     public static class StaticCallbackClassWithArg
     {
-        private static string _arg1Value;
+        private static string? _arg1Value;
         private static int _arg2Value;
         private static KeyValuePair<int, int> _arg3Value;
         
-        public static string Arg1Value => _arg1Value;
+        public static string? Arg1Value => _arg1Value;
         public static int Arg2Value => _arg2Value;
         public static KeyValuePair<int, int>  Arg3Value => _arg3Value;
         
@@ -204,9 +204,9 @@ public class MethodCallTests
     
     public class CallbackFuncClass
     {
-        public object ReturnValue { private get; set; }
+        public object? ReturnValue { private get; init; }
 
-        public object TriggerCallback() => ReturnValue;
+        public object? TriggerCallback() => ReturnValue;
     }
     
     [Fact]
@@ -243,9 +243,9 @@ public class MethodCallTests
     
     public static class StaticCallbackFuncClass
     {
-        public static object ReturnValue { private get; set; }
+        public static object? ReturnValue { private get; set; }
 
-        public static object TriggerCallback() => ReturnValue;
+        public static object? TriggerCallback() => ReturnValue;
     }
     
     [Fact]
@@ -278,7 +278,7 @@ public class MethodCallTests
     {
         public KeyValuePair<char, char> ReturnValue { private get; set; }
 
-        public string StringValue { get; private set; }
+        public string? StringValue { get; private set; }
         
         public char CharValue { get; private set; }
         
@@ -347,7 +347,7 @@ public class MethodCallTests
     {
         public static KeyValuePair<char, char> ReturnValue { private get; set; }
 
-        public static string StringValue { get; private set; }
+        public static string? StringValue { get; private set; }
         
         public static char CharValue { get; private set; }
         
@@ -437,7 +437,7 @@ public class MethodCallTests
     public async Task EmitStructActionCall()
     {
         var retType = typeof(CallbackStruct);
-        var method = typeof(CallbackStruct).GetMethod(nameof(CallbackStruct.TriggerCallback));
+        var method = typeof(CallbackStruct).GetMethod(nameof(CallbackStruct.TriggerCallback))!;
         var callbackArg = new TestParameter(typeof(CallbackStruct), "callbackInstance");
         
         
@@ -541,7 +541,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(sum)))
         ]);
         
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
+        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null);
         var emitter = new DefaultIlCodeEmitter();
         await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
         var type = typeBuilder.CreateType();
@@ -628,8 +628,8 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
-        var otherContext = new CompilerEmissionContext(otherBody, otherDebugBuilder, [otherArg], null, null);
-        var context = new CompilerEmissionContext(body, greetBuilder, [], null, null);
+        var otherContext = new CompilerEmissionContext(otherBody, otherDebugBuilder, [otherArg], null);
+        var context = new CompilerEmissionContext(body, greetBuilder, [], null);
 
         var emitter = new DefaultIlCodeEmitter();
         await emitter.EmitMethodBodyAsync(otherContext, CancellationToken.None);
@@ -771,8 +771,8 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
-        var context1 = new CompilerEmissionContext(body, methodBuilder, [arg], null, null);
-        var context2 = new CompilerEmissionContext(body2, method2Dbg, [arg], null, null);
+        var context1 = new CompilerEmissionContext(body, methodBuilder, [arg], null);
+        var context2 = new CompilerEmissionContext(body2, method2Dbg, [arg], null);
         var emitter = new DefaultIlCodeEmitter();
         await emitter.EmitMethodBodyAsync(context1, CancellationToken.None);
         await emitter.EmitMethodBodyAsync(context2, CancellationToken.None);

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Abstractions.Ast;
@@ -11,25 +10,17 @@ namespace plamp.Abstractions.Ast;
 /// </summary>
 public interface ISymbolTable
 {
-    PlampException SetExceptionToNodeAndChildren(
-        PlampExceptionRecord exceptionRecord, 
-        NodeBase node,
-        string fileName,
-        AssemblyName assemblyName);
-    
-    PlampException SetExceptionToNodeWithoutChildren(
-        PlampExceptionRecord exceptionRecord,
-        NodeBase node,
-        string fileName,
-        AssemblyName assemblyName);
-    
-    List<PlampException> SetExceptionToChildren(
-        PlampExceptionRecord exceptionRecord, 
-        NodeBase node,
-        string fileName,
-        AssemblyName assemblyName);
+    /// <summary>
+    /// Sets exception to node in symbol table
+    /// </summary>
+    PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord, string fileName);
 
-    bool Contains(NodeBase node);
+    /// <summary>
+    /// Sets exception in min file position and max position of list
+    /// </summary>
+    PlampException SetExceptionToNodeRange(List<NodeBase> nodes, PlampExceptionRecord exceptionRecord, string fileName);
+    
+    bool TryGetSymbol(NodeBase symbol, out KeyValuePair<FilePosition, FilePosition> pair);
 
-    bool TryGetChildren(NodeBase node, out IReadOnlyList<NodeBase> children);
+    void AddSymbol(NodeBase symbol, FilePosition start, FilePosition end);
 }

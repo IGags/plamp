@@ -1,9 +1,8 @@
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.AstManipulation.Modification.Modlels;
 
 namespace plamp.Abstractions.AstManipulation.Modification;
 
-public interface IWeaver<in TContext>
+public interface IWeaver<TContext> where TContext : BaseVisitorContext
 {
-    public WeaveResult WeaveDiffs(NodeBase ast, TContext context);
+    public TContext WeaveDiffs(NodeBase ast, TContext context);
 }

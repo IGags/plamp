@@ -2,9 +2,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
-using plamp.ILCodeEmitters;
 
 namespace plamp.CodeEmission.Tests;
 
@@ -14,7 +12,7 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
     }
@@ -23,11 +21,13 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
-        
-        public CtorClass() { }
+
+        public CtorClass()
+        {
+        }
 
         public CtorClass(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
         {
@@ -41,11 +41,13 @@ public class CtorEmissionTests
     {
         public int IntProp { get; }
         
-        public string StringProp { get; }
+        public string? StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
-        
-        public CtorStruct() { }
+
+        public CtorStruct()
+        {
+        }
 
         public CtorStruct(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
         {
@@ -71,8 +73,7 @@ public class CtorEmissionTests
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new MemberNode(tempVarName)),
             new AssignNode(
                 new MemberNode(tempVarName), 
-                EmissionSetupHelper.CreateConstructorNode(
-                    EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
+                EmissionSetupHelper.CreateConstructorNode(EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
