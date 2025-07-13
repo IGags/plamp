@@ -8,8 +8,6 @@ public class ParameterNode : NodeBase
     public TypeNode Type { get; private set; }
     public MemberNode Name { get; private set; }
 
-    public virtual ParameterInfo Symbol { get; init; } = null;
-
     public ParameterNode(TypeNode type, MemberNode name)
     {
         Type = type;

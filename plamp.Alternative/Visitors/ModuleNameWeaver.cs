@@ -15,7 +15,7 @@ public class ModuleNameWeaver : BaseExtendedWeaver<ModuleNameWeaverContext, Modu
         return new ModuleNameInnerWeaverContext(context.Exceptions, context.SymbolTable, context.FileName);
     }
 
-    protected override ModuleNameResult CreateWeaveResult(ModuleNameInnerWeaverContext innerContext, ModuleNameWeaverContext outerContext)
+    protected override ModuleNameResult MapInnerToOuter(ModuleNameInnerWeaverContext innerContext, ModuleNameWeaverContext outerContext)
     {
         return new ModuleNameResult(innerContext.Exceptions, innerContext.ModuleName);
     }

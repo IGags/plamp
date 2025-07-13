@@ -1,9 +1,11 @@
 ﻿using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.AstManipulation;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.AstExtensions;
 
-public abstract class BaseExtendedValidator<TOuterContext, TInnerContext> : BaseValidator<TOuterContext, TInnerContext>
+public abstract class BaseExtendedValidator<TOuterContext, TInnerContext, TResult> 
+    : BaseValidator<TOuterContext, TInnerContext, TResult> where TOuterContext : BaseVisitorContext
 {
     protected override VisitResult VisitDefault(NodeBase node, TInnerContext context)
     {

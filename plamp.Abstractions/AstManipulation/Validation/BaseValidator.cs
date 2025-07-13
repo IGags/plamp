@@ -1,16 +1,18 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.AstManipulation.Validation.Models;
 
 namespace plamp.Abstractions.AstManipulation.Validation;
 
-public abstract class BaseValidator<TOuterContext, TInnerContext> : BaseVisitor<TInnerContext>, IValidator<TOuterContext>
+public abstract class BaseValidator<TOuterContext, TInnerContext> 
+    : BaseVisitor<TInnerContext>, IValidator<TOuterContext>
+    where TOuterContext : BaseVisitorContext
+    where TInnerContext : BaseVisitorContext
 {
-    public virtual ValidationResult Validate(NodeBase ast, TOuterContext context)
+    public virtual TOuterContext Validate(NodeBase ast, TOuterContext context)
     {
-        var innerContext = MapContext(context);
+        var innerContext = CreateInnerContext(context);
         VisitInternal(ast, innerContext);
-        var result = CreateResult(context, innerContext);
+        var result = MapInnerToOuter(context, innerContext);
         return result;
     }
 
@@ -19,7 +21,7 @@ public abstract class BaseValidator<TOuterContext, TInnerContext> : BaseVisitor<
         return base.VisitInternal(node, context);
     }
 
-    protected abstract TInnerContext MapContext(TOuterContext context);
+    protected abstract TInnerContext CreateInnerContext(TOuterContext context);
     
-    protected abstract ValidationResult CreateResult(TOuterContext outerContext, TInnerContext innerContext);
+    protected abstract TOuterContext MapInnerToOuter(TOuterContext outerContext, TInnerContext innerContext);
 }

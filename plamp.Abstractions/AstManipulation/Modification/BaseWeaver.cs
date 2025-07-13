@@ -1,20 +1,21 @@
 using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.AstManipulation.Modification.Modlels;
 
 namespace plamp.Abstractions.AstManipulation.Modification;
 
-public abstract class BaseWeaver<TOuterContext, TInnerContext, TResult> 
-    : BaseVisitor<TInnerContext>, IWeaver<TOuterContext, TResult>
+public abstract class BaseWeaver<TOuterContext, TInnerContext> 
+    : BaseVisitor<TInnerContext>, IWeaver<TOuterContext> 
+    where TOuterContext : BaseVisitorContext 
+    where TInnerContext : BaseVisitorContext
 {
     protected Dictionary<NodeBase, NodeBase> ReplacementDict { get; } = [];
     
-    public virtual TResult WeaveDiffs(NodeBase ast, TOuterContext context)
+    public virtual TOuterContext WeaveDiffs(NodeBase ast, TOuterContext context)
     {
         var innerContext = CreateInnerContext(context);
         VisitInternal(ast, innerContext);
-        return CreateWeaveResult(innerContext, context);
+        return MapInnerToOuter(innerContext, context);
     }
 
     protected sealed override VisitResult VisitInternal(NodeBase node, TInnerContext context)
@@ -24,12 +25,9 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext, TResult>
 
     protected abstract TInnerContext CreateInnerContext(TOuterContext context);
 
-    protected abstract TResult CreateWeaveResult(TInnerContext innerContext, TOuterContext outerContext);
+    protected abstract TOuterContext MapInnerToOuter(TInnerContext innerContext, TOuterContext outerContext);
 
-    protected void Replace(NodeBase from, NodeBase to)
+    protected void Replace(NodeBase from, NodeBase to, TInnerContext context)
     {
-        ReplacementDict.Add(from, to);
     }
-
-    
 }

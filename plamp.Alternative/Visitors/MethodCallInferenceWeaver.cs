@@ -11,7 +11,7 @@ public class MethodCallInferenceWeaver : BaseExtendedWeaver<MethodCallInferenceC
 {
     protected override MethodCallInferenceContext CreateInnerContext(MethodCallInferenceContext context) => context;
 
-    protected override MethodCallInferenceResult CreateWeaveResult(MethodCallInferenceContext innerContext,
+    protected override MethodCallInferenceResult MapInnerToOuter(MethodCallInferenceContext innerContext,
         MethodCallInferenceContext outerContext)
     {
         return new();

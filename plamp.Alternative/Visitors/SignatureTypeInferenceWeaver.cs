@@ -16,7 +16,7 @@ public class SignatureTypeInferenceWeaver : BaseExtendedWeaver<SignatureInferenc
         return new InnerSignatureInferenceContext([], context.Exceptions, context.SymbolTable, context.FileName);
     }
 
-    protected override SignatureInferenceResult CreateWeaveResult(InnerSignatureInferenceContext innerContext, SignatureInferenceContext outerContext)
+    protected override SignatureInferenceResult MapInnerToOuter(InnerSignatureInferenceContext innerContext, SignatureInferenceContext outerContext)
     {
         return new SignatureInferenceResult(innerContext.Signatures, innerContext.Exceptions);
     }

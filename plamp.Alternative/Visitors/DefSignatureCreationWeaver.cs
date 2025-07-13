@@ -12,7 +12,8 @@ public class DefSignatureCreationWeaver : BaseExtendedWeaver<DefSignatureCreatio
 {
     protected override DefSignatureCreationContextInner CreateInnerContext(DefSignatureCreationContext context) => new (context.ModuleBuilder);
 
-    protected override DefSignatureCreationResult CreateWeaveResult(DefSignatureCreationContextInner innerContext,
+    protected override DefSignatureCreationResult MapInnerToOuter(
+        DefSignatureCreationContextInner innerContext,
         DefSignatureCreationContext outerContext)
     {
         return new(innerContext.Methods);

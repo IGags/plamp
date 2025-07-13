@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Reflection.Emit;
-using plamp.Abstractions.Assemblies;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Body;
 
@@ -10,5 +9,5 @@ public record CompilerEmissionContext(
     BodyNode MethodBody,
     MethodBuilder MethodBuilder,
     ParameterInfo[] Parameters,
-    IAssemblyContainer AssemblyContainer, 
+    object AssemblyContainer, 
     ISymbolTable SymbolTable);

@@ -1,9 +1,11 @@
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.AstManipulation;
 using plamp.Abstractions.AstManipulation.Modification;
 
 namespace plamp.Alternative.AstExtensions;
 
-public abstract class BaseExtendedWeaver<TContext, TInnerContext, TReturn> : BaseWeaver<TContext, TInnerContext, TReturn>
+public abstract class BaseExtendedWeaver<TContext, TInnerContext, TReturn> : BaseWeaver<TContext, TInnerContext, TReturn> 
+    where TContext : BaseVisitorContext
 {
     protected override VisitResult VisitDefault(NodeBase node, TInnerContext context)
     {

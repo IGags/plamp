@@ -9,7 +9,7 @@ namespace plamp.Validators.BasicSemanticsValidators.MustReturn;
 
 public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueContext, MustReturnValueInnerContext>
 {
-    protected override MustReturnValueInnerContext MapContext(
+    protected override MustReturnValueInnerContext CreateInnerContext(
         MustReturnValueContext context)
     {
         var innerContext = new MustReturnValueInnerContext

@@ -29,7 +29,7 @@ class Program
             return;
         }
         var method = res.Compiled!.Modules.First().GetMethod("fib");
-        Console.WriteLine(method.Invoke(null, [14]));
+        Console.WriteLine("PROGRAM OUTPUT: " + method.Invoke(null, [14]));
 
         void PrintRes(List<PlampException> exList)
         {

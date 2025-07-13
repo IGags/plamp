@@ -12,7 +12,7 @@ public class CompilationWeaver : BaseExtendedWeaver<CompilationContext, Compilat
 {
     protected override CompilationContext CreateInnerContext(CompilationContext context) => context;
 
-    protected override CompilationResult CreateWeaveResult(CompilationContext innerContext, CompilationContext outerContext) => new();
+    protected override CompilationResult MapInnerToOuter(CompilationContext innerContext, CompilationContext outerContext) => new();
 
     protected override VisitResult VisitDef(DefNode node, CompilationContext context)
     {

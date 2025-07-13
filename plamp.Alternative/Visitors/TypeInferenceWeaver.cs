@@ -20,7 +20,7 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
             context.Exceptions, [], [], []);
     }
 
-    protected override TypeInferenceResult CreateWeaveResult(TypeInferenceInnerContext innerContext, TypeInferenceContext outerContext)
+    protected override TypeInferenceResult MapInnerToOuter(TypeInferenceInnerContext innerContext, TypeInferenceContext outerContext)
     {
         return new TypeInferenceResult(innerContext.Exceptions);
     }

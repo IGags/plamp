@@ -6,6 +6,7 @@ using plamp.Alternative;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors;
+using plamp.Validators.BasicSemanticsValidators.MustReturn;
 
 namespace plamp.Cli;
 
@@ -34,10 +35,14 @@ public class CompilationDriver
         var defSignatures = memberSignatureRes.Signatures
             .GroupBy(x => x.Name).Where(x => x.Count() == 1)
             .SelectMany(x => x).ToDictionary(x => x.Name.MemberName, x => x);
+
+        var funcReturnVisitor = new MethodMustReturnValueValidator();
+        var funcReturnRes = funcReturnVisitor.Validate(ast,
+            new MustReturnValueContext() { Exceptions = memberSignatureRes.Exceptions, SymbolTable = symbolTable });
         
         var typeInferenceVisitor = new TypeInferenceWeaver();
         var typeInferenceRes = typeInferenceVisitor.WeaveDiffs(ast,
-            new TypeInferenceContext(symbolTable, fileName, defSignatures, memberSignatureRes.Exceptions));
+            new TypeInferenceContext(symbolTable, fileName, defSignatures, funcReturnRes.Exceptions));
 
         if (typeInferenceRes.Exceptions.Count != 0)
         {
