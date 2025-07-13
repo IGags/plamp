@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class CallComparer : IEqualityComparer<CallNode>
 {
-    public bool Equals(CallNode x, CallNode y)
+    public bool Equals(CallNode? x, CallNode? y)
     {
         if(ReferenceEquals(x, y)) return true;
         if (ReferenceEquals(x, null)) return false;

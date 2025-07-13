@@ -1,8 +1,4 @@
 ﻿using plamp.Abstractions.Ast;
-using plamp.Abstractions.Compilation.Models;
-using plamp.Alternative;
-using plamp.Alternative.Parsing;
-using plamp.Alternative.Tokenization;
 
 namespace plamp.Cli;
 
@@ -19,7 +15,7 @@ class Program
                                 }
                                 """;
     
-    static void Main(string[] args)
+    static void Main()
     {
         var rows = File.Split('\n');
         var res = CompilationDriver.CompileModule("aaa.plp", File);
@@ -29,7 +25,7 @@ class Program
             return;
         }
         var method = res.Compiled!.Modules.First().GetMethod("fib");
-        Console.WriteLine("PROGRAM OUTPUT: " + method.Invoke(null, [14]));
+        Console.WriteLine("PROGRAM OUTPUT: " + method!.Invoke(null, [14]));
 
         void PrintRes(List<PlampException> exList)
         {

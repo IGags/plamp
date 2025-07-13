@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class WhileComparer : IEqualityComparer<WhileNode>
 {
-    public bool Equals(WhileNode x, WhileNode y)
+    public bool Equals(WhileNode? x, WhileNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

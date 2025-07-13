@@ -6,6 +6,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Ast.NodeComparers.Common;
 
@@ -13,9 +14,9 @@ namespace plamp.Abstractions.Ast.NodeComparers;
 
 public class RecursiveComparer : IEqualityComparer<NodeBase>
 {
-    public bool Equals(NodeBase x, NodeBase y)
+    public bool Equals(NodeBase? x, NodeBase? y)
     {
-        var comparisionStack = new Stack<KeyValuePair<NodeBase, NodeBase>>();
+        var comparisionStack = new Stack<KeyValuePair<NodeBase?, NodeBase?>>();
         comparisionStack.Push(new (x, y));
         while (comparisionStack.Count > 0)
         {
@@ -33,9 +34,9 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
         throw new NotImplementedException();
     }
 
-    private bool CompareInner(NodeBase first, NodeBase second, 
+    private bool CompareInner(NodeBase? first, NodeBase? second, 
         //For readability
-        ref Stack<KeyValuePair<NodeBase, NodeBase>> comparisionStack)
+        ref Stack<KeyValuePair<NodeBase?, NodeBase?>> comparisionStack)
     {
         if (ReferenceEquals(first, second)) return true;
         if (first == null || second == null) return false;
@@ -119,11 +120,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!unaryComparer.Equals(node, (BaseUnaryNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case UseNode node:
-                    var useComparer = new UseComparer();
-                    if (!useComparer.Equals(node, (UseNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 case VariableDefinitionNode node:
                     var variableDefinitionComparer = new VariableDefinitionComparer();
                     if (!variableDefinitionComparer.Equals(node, (VariableDefinitionNode)second)) return false;
@@ -151,7 +147,7 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
         return false;
     }
 
-    protected void PushChildren(Stack<KeyValuePair<NodeBase, NodeBase>> comparisionStack, NodeBase first, NodeBase second)
+    protected void PushChildren(Stack<KeyValuePair<NodeBase?, NodeBase?>> comparisionStack, NodeBase? first, NodeBase? second)
     {
         var kvpArray = MakeVisitPair(first, second);
         foreach (var pair in kvpArray)
@@ -160,13 +156,13 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
         }
     }
     
-    protected KeyValuePair<NodeBase, NodeBase>[] MakeVisitPair(NodeBase first, NodeBase second)
+    protected KeyValuePair<NodeBase?, NodeBase?>[] MakeVisitPair(NodeBase? first, NodeBase? second)
     {
-        var firstEnum = first.Visit().ToArray();
-        var secondEnum = second.Visit().ToArray();
+        var firstEnum = first?.Visit().ToArray() ?? [];
+        var secondEnum = second?.Visit().ToArray() ?? [];
         
         Debug.Assert(firstEnum.Length == secondEnum.Length);
-        var res = new KeyValuePair<NodeBase, NodeBase>[firstEnum.Length];
+        var res = new KeyValuePair<NodeBase?, NodeBase?>[firstEnum.Length];
         for (var i = 0; i < firstEnum.Length; i++)
         {
             res[i] = new(firstEnum[i], secondEnum[i]);
@@ -175,7 +171,7 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
         return res;
     }
 
-    public virtual bool CompareCustom(NodeBase first, NodeBase second, Stack<KeyValuePair<NodeBase, NodeBase>> comparisionStack)
+    public virtual bool CompareCustom(NodeBase? first, NodeBase? second, Stack<KeyValuePair<NodeBase?, NodeBase?>> comparisionStack)
     {
         return false;
     }

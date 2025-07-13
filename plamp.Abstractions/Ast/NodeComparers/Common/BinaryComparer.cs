@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class BinaryComparer : IEqualityComparer<BaseBinaryNode>
 {
-    public bool Equals(BaseBinaryNode x, BaseBinaryNode y)
+    public bool Equals(BaseBinaryNode? x, BaseBinaryNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

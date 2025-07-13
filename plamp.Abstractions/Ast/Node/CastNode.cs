@@ -3,19 +3,18 @@ using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class CastNode : NodeBase
+public class CastNode(NodeBase toType, NodeBase inner) : NodeBase
 {
-    public NodeBase ToType { get; private set; }
-    
-    public NodeBase Inner { get; private set; }
-    
-    public Type FromType { get; init; }
+    public NodeBase ToType { get; private set; } = toType;
 
-    public CastNode(NodeBase toType, NodeBase inner)
-    {
-        ToType = toType;
-        Inner = inner;
-    }
+    public NodeBase Inner { get; private set; } = inner;
+
+    /// <summary>
+    /// Inference in visitor
+    /// </summary>
+    public Type? FromType { get; protected set; }
+
+    public void SetFromType(Type type) => FromType = type; 
 
     public override IEnumerable<NodeBase> Visit()
     {

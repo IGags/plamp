@@ -8,7 +8,7 @@ namespace plamp.Alternative;
 
 internal static class TypeResolveHelper
 {
-    public static Type? ResolveType(TypeNode type, List<PlampException> exceptions, SymbolTable symbols, string fileName)
+    public static Type? ResolveType(TypeNode type, List<PlampException> exceptions, ISymbolTable symbols, string fileName)
     {
         switch (type.TypeName.MemberName)
         {
@@ -25,8 +25,8 @@ internal static class TypeResolveHelper
             case "any": return typeof(object);
         }
 
-        var record = PlampNativeExceptionInfo.TypesIsNotSupported();
-        exceptions.Add(symbols.CreateExceptionForSymbol(type, record, fileName));
+        var record = PlampExceptionInfo.TypesIsNotSupported();
+        exceptions.Add(symbols.SetExceptionToNode(type, record, fileName));
         return null;
     }
 

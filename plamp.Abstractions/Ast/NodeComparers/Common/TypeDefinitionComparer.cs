@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
 
 namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class TypeDefinitionComparer : IEqualityComparer<TypeDefinitionNode>
 {
-    public bool Equals(TypeDefinitionNode x, TypeDefinitionNode y)
+    public bool Equals(TypeDefinitionNode? x, TypeDefinitionNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;
@@ -24,7 +24,6 @@ public class TypeDefinitionComparer : IEqualityComparer<TypeDefinitionNode>
             hashCode.Add(member);
         }
 
-        if (obj.Generics == null) return hashCode.ToHashCode();
         foreach (var generic in obj.Generics)
         {
             hashCode.Add(generic);

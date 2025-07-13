@@ -5,6 +5,7 @@ using System.Text;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 
+// ReSharper disable once InconsistentNaming
 public class DebugILGenerator : ILGenerator
 {
     private readonly ILGenerator _inner;

@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class ReturnComparer : IEqualityComparer<ReturnNode>
 {
-    public bool Equals(ReturnNode x, ReturnNode y)
+    public bool Equals(ReturnNode? x, ReturnNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

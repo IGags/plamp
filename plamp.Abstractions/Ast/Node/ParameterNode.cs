@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Reflection;
 
 namespace plamp.Abstractions.Ast.Node;
 
+//TODO: Maybe we want to store parameter data such as ref in out.
 public class ParameterNode : NodeBase
 {
     public TypeNode Type { get; private set; }

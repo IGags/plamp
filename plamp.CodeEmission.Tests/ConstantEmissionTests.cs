@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
@@ -72,7 +70,7 @@ public class ConstantEmissionTests
     [InlineData(false)]
     public async Task EmitConstantValid(object? constantValue, Type? constantType = null)
     {
-        constantType ??= constantValue?.GetType()!;
+        constantType ??= constantValue!.GetType();
         var tempVarName = "temp";
         /*
          * var temp
@@ -81,7 +79,7 @@ public class ConstantEmissionTests
          */
         var ast = new BodyNode([
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new MemberNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue, constantType)),
+            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
@@ -101,14 +99,14 @@ public class ConstantEmissionTests
     }
 
     [Theory]
-    [InlineData(null, typeof(NullReferenceException), typeof(int))]
-    [InlineData(null, typeof(NullReferenceException), typeof(long))]
-    [InlineData(null, typeof(NullReferenceException), typeof(byte))]
-    [InlineData(null, typeof(NullReferenceException), typeof(bool))]
-    [InlineData(null, typeof(NullReferenceException), typeof(short))]
-    [InlineData(null, typeof(NullReferenceException), typeof(ushort))]
-    [InlineData(null, typeof(NullReferenceException), typeof(uint))]
-    [InlineData(null, typeof(NullReferenceException), typeof(ulong))]
+    [InlineData(null, typeof(ArgumentException), typeof(int))]
+    [InlineData(null, typeof(ArgumentException), typeof(long))]
+    [InlineData(null, typeof(ArgumentException), typeof(byte))]
+    [InlineData(null, typeof(ArgumentException), typeof(bool))]
+    [InlineData(null, typeof(ArgumentException), typeof(short))]
+    [InlineData(null, typeof(ArgumentException), typeof(ushort))]
+    [InlineData(null, typeof(ArgumentException), typeof(uint))]
+    [InlineData(null, typeof(ArgumentException), typeof(ulong))]
     public async Task EmitConstantInvalid(object? constantValue, Type exceptionType, Type? constantType = null)
     {
         constantType ??= constantValue?.GetType();
@@ -123,11 +121,11 @@ public class ConstantEmissionTests
          * return var1
          */
         var ast = new BodyNode([
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new MemberNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue, constantType)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType!), new MemberNode(tempVarName)),
+            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType!)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var context = new CompilerEmissionContext(ast, methodBuilder, [], null, null);
+        var context = new CompilerEmissionContext(ast, methodBuilder, [], null);
         await Assert.ThrowsAsync(exceptionType, async () => await emitter.EmitMethodBodyAsync(context, CancellationToken.None));
     }
 }

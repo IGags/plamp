@@ -3,29 +3,23 @@ using System.Reflection;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class CallNode : NodeBase
+public class CallNode(NodeBase? from, MemberNode methodName, List<NodeBase> args) : NodeBase
 {
-    private readonly List<NodeBase> _args;
-    
-    public NodeBase From { get; private set; }
-    
-    public MemberNode MethodName { get; private set; }
-    public IReadOnlyList<NodeBase> Args => _args;
+    /// <summary>
+    /// Null when call local member or member is not defined(implicit module member)
+    /// </summary>
+    public NodeBase? From { get; private set; } = from;
 
-    public virtual MethodInfo Symbol { get; protected set; } = null;
+    public MemberNode MethodName { get; private set; } = methodName;
+    public IReadOnlyList<NodeBase> Args => args;
+
+    public virtual MethodInfo? Symbol { get; protected set; }
 
     public void SetInfo(MethodInfo symbol) => Symbol = symbol;
 
-    public CallNode(NodeBase from, MemberNode methodName, List<NodeBase> args)
-    {
-        From = from;
-        MethodName = methodName;
-        _args = args ?? [];
-    }
-
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return From;
+        if(From != null) yield return From;
         foreach (var arg in Args)
         {
             yield return arg;
@@ -43,9 +37,9 @@ public class CallNode : NodeBase
         {
             MethodName = member;
         }
-        else if (-1 != (argIndex = _args.IndexOf(child)))
+        else if (-1 != (argIndex = args.IndexOf(child)))
         {
-            _args[argIndex] = newChild;
+            args[argIndex] = newChild;
         }
     }
 }

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Body;
 
-namespace plamp.Alternative.AstExtensions;
+namespace plamp.Abstractions.Ast.Node.Definitions;
 
 public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<DefNode> funcs) : NodeBase
 {

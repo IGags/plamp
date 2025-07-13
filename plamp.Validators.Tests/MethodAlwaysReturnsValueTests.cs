@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Validators.BasicSemanticsValidators.MustReturn;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;
 
 namespace plamp.Validators.Tests;
@@ -19,13 +20,9 @@ public class MethodAlwaysReturnsValueTests
     {
         var defNode = CreateMethod(returnType, methodName, [], body);
         var validator = new MethodMustReturnValueValidator();
-        var context = new MustReturnValueContext()
-        {
-            Exceptions = [],
-            SymbolTable = new MockSymbolTable()
-        };
+        var context = new PreCreationContext("aaa", new MockSymbolTable());
         
-        var res = validator.Validate(defNode, context)!;
+        var res = validator.Validate(defNode, context);
         
         if (shouldExcept)
         {
@@ -148,13 +145,9 @@ public class MethodAlwaysReturnsValueTests
             ]);
         
         var validator = new MethodMustReturnValueValidator();
-        var context = new MustReturnValueContext()
-        {
-            Exceptions = [],
-            SymbolTable = new MockSymbolTable()
-        };
+        var context = new PreCreationContext("aaa", new MockSymbolTable());
         
-        var res = validator.Validate(node, context)!;
+        var res = validator.Validate(node, context);
         Assert.Equal(2, res.Exceptions.Count);
         Assert.All(res.Exceptions, Assert.NotNull);
     }
@@ -169,37 +162,33 @@ public class MethodAlwaysReturnsValueTests
         );
     }
     
-    private static TypeNode CreateTypeNode(Type fromType) => new(null, null) { Symbol = fromType };
+    private static TypeNode CreateTypeNode(Type fromType)
+    {
+        var type = new TypeNode(new MemberNode(""));
+        type.SetType(fromType);
+        return type;
+    }
 
     private class MockSymbolTable : ISymbolTable
     {
-        public PlampException? SetExceptionToNodeAndChildren(PlampExceptionRecord exceptionRecord, NodeBase node, string fileName,
-            AssemblyName assemblyName)
+        public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord, string fileName)
         {
-            return node is DefNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName, assemblyName) : null;
+            return node is DefNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName) : throw new ArgumentException();
         }
 
-        public PlampException? SetExceptionToNodeWithoutChildren(PlampExceptionRecord exceptionRecord, NodeBase node, string fileName,
-            AssemblyName assemblyName)
+        public PlampException SetExceptionToNodeRange(List<NodeBase> nodes, PlampExceptionRecord exceptionRecord, string fileName)
         {
-            return node is DefNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName, assemblyName) : null;
+            throw new NotImplementedException();
         }
 
-        public List<PlampException?> SetExceptionToChildren(PlampExceptionRecord exceptionRecord, NodeBase node, string fileName,
-            AssemblyName assemblyName)
+        public bool TryGetSymbol(NodeBase symbol, out KeyValuePair<FilePosition, FilePosition> pair)
         {
-            return node
-                .Visit()
-                .Select(x => SetExceptionToNodeWithoutChildren(exceptionRecord, x, fileName, assemblyName))
-                .ToList();
+            throw new NotImplementedException();
         }
 
-        public bool Contains(NodeBase node) => false;
-
-        public bool TryGetChildren(NodeBase node, out IReadOnlyList<NodeBase> children)
+        public void AddSymbol(NodeBase symbol, FilePosition start, FilePosition end)
         {
-            children = [];
-            return false;
+            throw new NotImplementedException();
         }
     }
 }

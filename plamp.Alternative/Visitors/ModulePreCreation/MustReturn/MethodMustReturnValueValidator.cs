@@ -1,29 +1,12 @@
-﻿using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Body;
+﻿using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.AstManipulation.Validation;
-using plamp.Abstractions.AstManipulation.Validation.Models;
 
-namespace plamp.Validators.BasicSemanticsValidators.MustReturn;
+namespace plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 
-public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueContext, MustReturnValueInnerContext>
+public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, MustReturnValueInnerContext>
 {
-    protected override MustReturnValueInnerContext CreateInnerContext(
-        MustReturnValueContext context)
-    {
-        var innerContext = new MustReturnValueInnerContext
-        {
-            Exceptions = context.Exceptions,
-            SymbolTable = context.SymbolTable
-        };
-        
-        return innerContext;
-    }
-
-    protected override ValidationResult CreateResult(MustReturnValueContext outerContext,
-        MustReturnValueInnerContext innerContext) => new() { Exceptions = innerContext.Exceptions };
-
     protected override VisitResult VisitDef(DefNode node, MustReturnValueInnerContext context)
     {
         if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
@@ -34,8 +17,7 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         
         var exception =
-            context.SymbolTable.SetExceptionToNodeWithoutChildren(
-                PlampSemanticsExceptions.DefMustReturnValue(), node, null, null);
+            context.SymbolTable.SetExceptionToNode(node, PlampExceptionInfo.FuncMustReturnValue(), context.FileName);
         context.Exceptions.Add(exception);
 
         return VisitResult.SkipChildren;
@@ -72,4 +54,8 @@ public class MethodMustReturnValueValidator : BaseValidator<MustReturnValueConte
         context.LexicalScopeAlwaysReturns = true;
         return VisitResult.SkipChildren;
     }
+
+    protected override MustReturnValueInnerContext CreateInnerContext(PreCreationContext context) => new(context);
+
+    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, MustReturnValueInnerContext innerContext) => outerContext;
 }

@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class ConstructorComparer : IEqualityComparer<ConstructorCallNode>
 {
-    public bool Equals(ConstructorCallNode x, ConstructorCallNode y)
+    public bool Equals(ConstructorCallNode? x, ConstructorCallNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

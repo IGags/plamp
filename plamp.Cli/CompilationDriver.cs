@@ -5,8 +5,13 @@ using plamp.Abstractions.Compilation.Models;
 using plamp.Alternative;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.Tokenization;
-using plamp.Alternative.Visitors;
-using plamp.Validators.BasicSemanticsValidators.MustReturn;
+using plamp.Alternative.Visitors.ModuleCreation;
+using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
+using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
+using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
+using plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
+using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 namespace plamp.Cli;
 
@@ -20,59 +25,49 @@ public class CompilationDriver
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, fileName, tokenizationResult.Exceptions,
             symbolTable);
         var ast = Parser.ParseFile(parsingContext);
+        var context = new PreCreationContext(fileName, symbolTable);
         
-        var moduleNameVisitor = new ModuleNameWeaver();
-        var moduleNameRes = moduleNameVisitor.WeaveDiffs(ast,
-            new ModuleNameWeaverContext(tokenizationResult.Exceptions, symbolTable, fileName));
+        var moduleNameVisitor = new ModuleNameValidator();
+        context = moduleNameVisitor.Validate(ast, context);
         
         var memberNameVisitor = new MemberNameUniquenessValidator();
-        var memberNameVisitorRes = memberNameVisitor.Validate(ast,
-            new MemberNameUniquenessValidatorContext(moduleNameRes.Exceptions, symbolTable, fileName));
+        context = memberNameVisitor.Validate(ast, context);
 
-        var memberSignatureVisitor = new SignatureTypeInferenceWeaver();
-        var memberSignatureRes = memberSignatureVisitor.WeaveDiffs(ast, new SignatureInferenceContext(memberNameVisitorRes.Exceptions, symbolTable, fileName));
-
-        var defSignatures = memberSignatureRes.Signatures
-            .GroupBy(x => x.Name).Where(x => x.Count() == 1)
-            .SelectMany(x => x).ToDictionary(x => x.Name.MemberName, x => x);
+        var memberSignatureVisitor = new SignatureTypeInferenceValidator();
+        context = memberSignatureVisitor.Validate(ast, context);
 
         var funcReturnVisitor = new MethodMustReturnValueValidator();
-        var funcReturnRes = funcReturnVisitor.Validate(ast,
-            new MustReturnValueContext() { Exceptions = memberSignatureRes.Exceptions, SymbolTable = symbolTable });
+        context = funcReturnVisitor.Validate(ast, context);
         
         var typeInferenceVisitor = new TypeInferenceWeaver();
-        var typeInferenceRes = typeInferenceVisitor.WeaveDiffs(ast,
-            new TypeInferenceContext(symbolTable, fileName, defSignatures, funcReturnRes.Exceptions));
+        context = typeInferenceVisitor.WeaveDiffs(ast, context);
 
-        if (typeInferenceRes.Exceptions.Count != 0)
+        if (context.Exceptions.Count != 0)
         {
-            return new(typeInferenceRes.Exceptions, null);
+            return new(context.Exceptions, null);
         }
         
         var assemblyName = new AssemblyName(DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-        var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleNameRes.ModuleName!);
-        var signatureVisitor = new DefSignatureCreationWeaver();
-        var methods = signatureVisitor.WeaveDiffs(ast, new DefSignatureCreationContext(moduleBuilder)).Methods;
-        var callVisitor = new MethodCallInferenceWeaver();
-        callVisitor.WeaveDiffs(ast, new MethodCallInferenceContext(methods, symbolTable));
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule(context.ModuleName!);
 
-        var compilationVisitor = new CompilationWeaver();
-        var argDict = defSignatures.ToDictionary(
-            x => x.Key,
-            x => x.Value
-                .ParameterList.Select(y => new ParamImpl(y.Type.Symbol, y.Name.MemberName))
-                .Cast<ParameterInfo>().ToArray());
-        compilationVisitor.WeaveDiffs(ast, new CompilationContext(methods, argDict));
+        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, context);
+        var signatureVisitor = new DefSignatureCreationValidator();
+        compilationContext = signatureVisitor.Validate(ast, compilationContext);
+        var callVisitor = new MethodCallInferenceWeaver();
+        compilationContext = callVisitor.Validate(ast, compilationContext);
+
+        var compilationVisitor = new CompilationValidator();
+        compilationVisitor.Validate(ast, compilationContext);
         moduleBuilder.CreateGlobalFunctions();
         return new CompilationRes([], assemblyBuilder);
     }
     
-    private class ParamImpl(Type type, string name) : ParameterInfo
-    {
-        public override Type ParameterType => type;
-        public override string Name => name;
-    }
-
     public record CompilationRes(List<PlampException> Exceptions, Assembly? Compiled);
+}
+
+public class ParamImpl(Type type, string name) : ParameterInfo
+{
+    public override Type ParameterType => type;
+    public override string Name => name;
 }

@@ -73,7 +73,7 @@ public class EmissionSetupHelper
         var methodName = $"{Guid.NewGuid()} {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}";
         var argTypes = args.Select(x => x.ParameterType).ToArray();
         var (_, typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
-        var context = new CompilerEmissionContext(body, methodBuilder, args, null, null);
+        var context = new CompilerEmissionContext(body, methodBuilder, args, null);
         var emitter = new DefaultIlCodeEmitter();
         await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
         var type = typeBuilder.CreateType();
@@ -84,7 +84,7 @@ public class EmissionSetupHelper
     private sealed class ConcreteConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor) 
         : ConstructorCallNode(type, args)
     {
-        public override ConstructorInfo Symbol { get; init; } = ctor;
+        public override ConstructorInfo? Symbol { get; protected set; } = ctor;
     }
     
     private sealed class ConcreteCastNode : CastNode
@@ -113,7 +113,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, NodeBase name, List<NodeBase> args, MethodInfo symbol) : base(from, name as MemberNode, args)
+        public ConcreteCall(NodeBase? from, MemberNode name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
         {
             Symbol = symbol;
         }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Binary;
 
 namespace plamp.Abstractions.Ast.Node.Assign;

@@ -1,30 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Alternative.AstExtensions;
+using plamp.Abstractions.AstManipulation.Modification;
 
-namespace plamp.Alternative.Visitors;
+namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
-public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, TypeInferenceInnerContext, TypeInferenceResult>
+public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceInnerContext>
 {
-    protected override TypeInferenceInnerContext CreateInnerContext(TypeInferenceContext context)
-    {
-        return new TypeInferenceInnerContext(context.Symbols, context.ModuleSignatures, context.FileName,
-            context.Exceptions, [], [], []);
-    }
-
-    protected override TypeInferenceResult MapInnerToOuter(TypeInferenceInnerContext innerContext, TypeInferenceContext outerContext)
-    {
-        return new TypeInferenceResult(innerContext.Exceptions);
-    }
-
     protected override VisitResult VisitDef(DefNode node, TypeInferenceInnerContext context)
     {
         context.CurrentFunc = node;
@@ -65,24 +54,26 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
     {
         if (context.Arguments.ContainsKey(node.Member.MemberName))
         {
-            var record = PlampNativeExceptionInfo.ArgumentAlreadyDefined();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.ArgumentAlreadyDefined();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             return VisitResult.SkipChildren;
         }
 
         if (context.VariableDefinitions.TryGetValue(node.Member.MemberName, out _))
         {
-            var record = PlampNativeExceptionInfo.DuplicateVariableDefinition();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.DuplicateVariableDefinition();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             return VisitResult.SkipChildren;
         }
 
-        var variableType = TypeResolveHelper.ResolveType(node.Type, context.Exceptions, context.Symbols, context.FileName);
-        if (variableType != null)
+        if (node.Type != null)
         {
-            var newTypeNode = new TypeNode(node.Type.TypeName, []) { Symbol = variableType };
-            ReplaceChild(node, node.Type, newTypeNode, context);
-            context.InnerExpressionType = variableType;
+            var variableType = TypeResolveHelper.ResolveType(node.Type, context.Exceptions, context.SymbolTable, context.FileName);
+            if (variableType != null)
+            {
+                node.Type.SetType(variableType);
+                context.InnerExpressionType = variableType;
+            }
         }
         
         context.CurrentScopeDefinitions.Add(node.Member.MemberName);
@@ -95,21 +86,21 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         if (context.InnerExpressionType == typeof(bool)
             && unaryNode is not NotNode)
         {
-            var record = PlampNativeExceptionInfo.CannotApplyOperator();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(unaryNode, record, context.FileName));
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(unaryNode, record, context.FileName));
             context.InnerExpressionType = null;
         }
         else if (context.InnerExpressionType != typeof(bool) && unaryNode is NotNode)
         {
-            var record = PlampNativeExceptionInfo.CannotApplyOperator();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(unaryNode, record, context.FileName));
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(unaryNode, record, context.FileName));
             context.InnerExpressionType = typeof(bool);
         }
         else if (context.InnerExpressionType != null && !Numeric(context.InnerExpressionType) &&
                 unaryNode is PrefixIncrementNode or PrefixDecrementNode or PostfixDecrementNode or PostfixIncrementNode or UnaryMinusNode)
         {
-            var record = PlampNativeExceptionInfo.CannotApplyOperator();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(unaryNode, record, context.FileName));
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(unaryNode, record, context.FileName));
             context.InnerExpressionType = null;
         }
         else
@@ -140,8 +131,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
             if ((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType))
                 || leftType != rightType)
             {
-                var record = PlampNativeExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+                var record = PlampExceptionInfo.CannotApplyOperator();
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
                 context.InnerExpressionType = null;
                 return VisitResult.SkipChildren;
             }
@@ -153,16 +144,16 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
             context.InnerExpressionType = typeof(bool);
             if (leftType != null && rightType != null && leftType != rightType)
             {
-                var record = PlampNativeExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+                var record = PlampExceptionInfo.CannotApplyOperator();
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
                 return VisitResult.SkipChildren;
             }
             
             if((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType)
                && node is not EqualNode and not NotEqualNode))
             {
-                var record = PlampNativeExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+                var record = PlampExceptionInfo.CannotApplyOperator();
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
                 return VisitResult.SkipChildren;
             }
         }
@@ -170,8 +161,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         {
             if ((leftType != null && leftType != typeof(bool)) || (rightType != null && rightType != typeof(bool)))
             {
-                var record = PlampNativeExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+                var record = PlampExceptionInfo.CannotApplyOperator();
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             }
 
             context.InnerExpressionType = typeof(bool);
@@ -191,7 +182,7 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
             returnType = intrinsic.ReturnType;
         }
         
-        if (!context.ModuleSignatures.TryGetValue(node.MethodName.MemberName, out var def) && intrinsic == null)
+        if (!context.Functions.TryGetValue(node.MethodName.MemberName, out var def) && intrinsic == null)
         {
             AddUnexpectedCallExceptionAndValidateChildren();
             context.InnerExpressionType = null;
@@ -200,8 +191,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
 
         if (def != null)
         {
-            defArgTypes = def.ParameterList.Select(x => x.Type?.Symbol).ToList();
-            returnType = def.ReturnType.Symbol;
+            defArgTypes = def.ParameterList.Select(x => x.Type.Symbol).ToList();
+            returnType = def.ReturnType?.Symbol;
         }
 
         context.InnerExpressionType = returnType;
@@ -225,16 +216,16 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
 
         if (invalid)
         {
-            var record = PlampNativeExceptionInfo.UnknownFunction();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.UnknownFunction();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
         
         return VisitResult.SkipChildren;
         
         void AddUnexpectedCallExceptionAndValidateChildren()
         {
-            var record = PlampNativeExceptionInfo.UnknownFunction();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.UnknownFunction();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             foreach (var parameter in node.Args)
             {
                 VisitChildren(parameter, context);
@@ -255,13 +246,13 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var variable) 
             && !context.Arguments.TryGetValue(node.MemberName, out arg))
         {
-            var record = PlampNativeExceptionInfo.CannotFindMember();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.CannotFindMember();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             context.InnerExpressionType = null;
             return VisitResult.SkipChildren;
         }
         
-        context.InnerExpressionType = variable?.Type.Symbol ?? arg?.Type.Symbol;
+        context.InnerExpressionType = variable?.Type?.Symbol ?? arg?.Type.Symbol;
         return VisitResult.SkipChildren;
     }
 
@@ -277,11 +268,14 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
                 TypeNode? typeNode = null;
                 if (rightType != null)
                 {
-                    var memberSymbol = context.Symbols.GetSymbol(leftMember)!.Value;
+                    if (!context.SymbolTable.TryGetSymbol(leftMember, out var symbol))
+                        throw new ArgumentException("Parser error, symbol should exist");
+                    
                     var typeName = new MemberNode(rightType.Name);
-                    context.Symbols.AddSymbol(typeName, memberSymbol.Key, memberSymbol.Value);
-                    typeNode = new TypeNode(typeName, []) { Symbol = rightType };
-                    context.Symbols.AddSymbol(typeNode, memberSymbol.Key, memberSymbol.Value);
+                    context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
+                    typeNode = new TypeNode(typeName, []);
+                    typeNode.SetType(rightType);
+                    context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
                 }
 
                 var definition = new VariableDefinitionNode(typeNode, leftMember);
@@ -291,22 +285,17 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
                 return VisitResult.SkipChildren;
             }
 
-            if (variable.Type.Symbol != null && rightType != null && variable.Type.Symbol != rightType)
-            {
-                var record = PlampNativeExceptionInfo.CannotAssign();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
-                return VisitResult.SkipChildren;
-            }
+            if (variable.Type?.Symbol == null || rightType == null || variable.Type.Symbol == rightType) return VisitResult.SkipChildren;
+            var record = PlampExceptionInfo.CannotAssign();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
         else if (node.Left is VariableDefinitionNode leftDef)
         {
             VisitVariableDefinition(leftDef, context);
             var leftType = context.InnerExpressionType;
-            if (leftType != null && rightType != null && leftType != rightType)
-            {
-                var record = PlampNativeExceptionInfo.CannotAssign();
-                context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
-            }
+            if (leftType == null || rightType == null || leftType == rightType) return VisitResult.SkipChildren;
+            var record = PlampExceptionInfo.CannotAssign();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
         return VisitResult.SkipChildren;
     }
@@ -317,8 +306,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         var predicateType = context.InnerExpressionType;
         if (predicateType != null && predicateType != typeof(bool))
         {
-            var record = PlampNativeExceptionInfo.PredicateMustBeBooleanType();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.PredicateMustBeBooleanType();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
 
         VisitNodeBase(node.Body, context);
@@ -331,8 +320,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         var predicateType = context.InnerExpressionType;
         if (predicateType != null && predicateType != typeof(bool))
         {
-            var record = PlampNativeExceptionInfo.PredicateMustBeBooleanType();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.PredicateMustBeBooleanType();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
 
         VisitNodeBase(node.IfClause, context);
@@ -347,15 +336,17 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
         var returnType = context.InnerExpressionType;
         if (context.CurrentFunc?.ReturnType?.Symbol != null && returnType != context.CurrentFunc.ReturnType.Symbol)
         {
-            var record = PlampNativeExceptionInfo.ReturnTypeMismatch();
-            context.Exceptions.Add(context.Symbols.CreateExceptionForSymbol(node, record, context.FileName));
+            var record = PlampExceptionInfo.ReturnTypeMismatch();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
         return VisitResult.SkipChildren;
     }
 
     private void ReplaceChild(NodeBase node, NodeBase oldChild, NodeBase newChild, TypeInferenceInnerContext context)
     {
-        context.Symbols.ReplaceSymbol(oldChild, newChild);
+        if (!context.SymbolTable.TryGetSymbol(oldChild, out var oldSymbol))
+            throw new ArgumentException("Invalid symbol, parser error");
+        context.SymbolTable.AddSymbol(newChild, oldSymbol.Key, oldSymbol.Value);
         node.ReplaceChild(oldChild, newChild);
     }
 
@@ -370,26 +361,8 @@ public class TypeInferenceWeaver : BaseExtendedWeaver<TypeInferenceContext, Type
 
     private bool ComparisionNode(BaseBinaryNode baseBinary) => baseBinary is EqualNode or NotEqualNode or LessNode
         or LessOrEqualNode or GreaterNode or GreaterOrEqualNode;
-}
 
-public record TypeInferenceContext(
-    SymbolTable Symbols,
-    string FileName,
-    Dictionary<string, DefNode> ModuleSignatures,
-    List<PlampException> Exceptions);
+    protected override TypeInferenceInnerContext CreateInnerContext(PreCreationContext context) => new(context);
 
-public record TypeInferenceInnerContext(
-    SymbolTable Symbols,
-    Dictionary<string, DefNode> ModuleSignatures,
-    string FileName,
-    List<PlampException> Exceptions,
-    Dictionary<string, VariableDefinitionNode> VariableDefinitions,
-    Dictionary<string, ParameterNode> Arguments,
-    List<string> CurrentScopeDefinitions)
-{
-    public Type? InnerExpressionType { get; set; }
-    
-    public DefNode? CurrentFunc { get; set; }
+    protected override PreCreationContext MapInnerToOuter(TypeInferenceInnerContext innerContext, PreCreationContext outerContext) => new(innerContext);
 }
-    
-public record TypeInferenceResult(List<PlampException> Exceptions);

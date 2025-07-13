@@ -1,24 +1,16 @@
 using System.Collections.Generic;
 
-namespace plamp.Abstractions.Ast.Node;
+namespace plamp.Abstractions.Ast.Node.Definitions;
 
-public class TypeDefinitionNode : NodeBase
+public class TypeDefinitionNode(NodeBase name, List<NodeBase> members, List<NodeBase>? generics = null)
+    : NodeBase
 {
-    private readonly List<NodeBase> _members;
-
-    private readonly List<NodeBase> _generics;
+    private readonly List<NodeBase> _generics = generics ?? [];
     
-    public NodeBase Name { get; private set; }
-    public IReadOnlyList<NodeBase> Members => _members;
+    public NodeBase Name { get; private set; } = name;
+    public IReadOnlyList<NodeBase> Members => members;
     public IReadOnlyList<NodeBase> Generics => _generics;
 
-    public TypeDefinitionNode(NodeBase name, List<NodeBase> members,  List<NodeBase> generics = null)
-    {
-        Name = name;
-        _members = members;
-        _generics = generics;
-    }
-    
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Name;
@@ -27,8 +19,6 @@ public class TypeDefinitionNode : NodeBase
         {
             yield return member;
         }
-        
-        if(Generics == null) yield break;
 
         foreach (var generic in Generics)
         {
@@ -43,9 +33,9 @@ public class TypeDefinitionNode : NodeBase
         {
             Name = newChild;
         }
-        else if (-1 == (childIndex = _members.IndexOf(child)))
+        else if (-1 == (childIndex = members.IndexOf(child)))
         {
-            _members[childIndex] = newChild;
+            members[childIndex] = newChild;
         }
         else if (-1 == (childIndex = _generics.IndexOf(child)))
         {

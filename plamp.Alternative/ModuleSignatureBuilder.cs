@@ -4,9 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Body;
-using RootNode = plamp.Alternative.AstExtensions.RootNode;
+using plamp.Abstractions.Ast.Node.Definitions;
+using RootNode = plamp.Abstractions.Ast.Node.Definitions.RootNode;
 
 namespace plamp.Alternative;
 

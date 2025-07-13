@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 

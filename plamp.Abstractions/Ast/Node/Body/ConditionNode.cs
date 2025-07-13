@@ -6,9 +6,9 @@ public class ConditionNode : NodeBase
 {
     public NodeBase Predicate { get; private set; }
     public NodeBase IfClause { get; private set; }
-    public NodeBase ElseClause { get; private set; }
+    public NodeBase? ElseClause { get; private set; }
 
-    public ConditionNode(NodeBase predicate, NodeBase ifClause, NodeBase elseClause)
+    public ConditionNode(NodeBase predicate, NodeBase ifClause, NodeBase? elseClause)
     {
         Predicate = predicate;
         IfClause = ifClause;
@@ -19,7 +19,10 @@ public class ConditionNode : NodeBase
     {
         yield return Predicate;
         yield return IfClause;
-        yield return ElseClause;
+        if (ElseClause != null)
+        {
+            yield return ElseClause;
+        }
     }
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)

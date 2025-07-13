@@ -4,10 +4,10 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class VariableDefinitionNode : NodeBase
 {
-    public TypeNode Type { get; private set; }
+    public TypeNode? Type { get; private set; }
     public MemberNode Member { get; private set; }
 
-    public VariableDefinitionNode(TypeNode type, MemberNode member)
+    public VariableDefinitionNode(TypeNode? type, MemberNode member)
     {
         Type = type;
         Member = member;
@@ -15,7 +15,7 @@ public class VariableDefinitionNode : NodeBase
 
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return Type;
+        if(Type != null) yield return Type;
         yield return Member;
     }
 

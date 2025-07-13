@@ -2,9 +2,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
-using plamp.ILCodeEmitters;
 
 namespace plamp.CodeEmission.Tests;
 
@@ -26,8 +24,11 @@ public class CtorEmissionTests
         public string StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
-        
-        public CtorClass() { }
+
+        public CtorClass(string stringProp)
+        {
+            StringProp = stringProp;
+        }
 
         public CtorClass(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
         {
@@ -44,8 +45,11 @@ public class CtorEmissionTests
         public string StringProp { get; }
         
         public KeyValuePair<int, int> PairProp { get; }
-        
-        public CtorStruct() { }
+
+        public CtorStruct(string stringProp)
+        {
+            StringProp = stringProp;
+        }
 
         public CtorStruct(int intProp, string stringProp, KeyValuePair<int, int> pairProp)
         {

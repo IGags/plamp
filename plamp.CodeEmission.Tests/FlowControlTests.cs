@@ -3,9 +3,8 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
-using plamp.ILCodeEmitters;
+// ReSharper disable EntityNameCapturedOnly.Local
 
 namespace plamp.CodeEmission.Tests;
 

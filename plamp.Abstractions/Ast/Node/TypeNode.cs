@@ -3,24 +3,19 @@ using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class TypeNode : NodeBase
+public class TypeNode(MemberNode typeName, List<NodeBase>? innerGenerics = null) : NodeBase
 {
-    private readonly List<NodeBase> _innerGenerics;
-    public MemberNode TypeName { get; private set; }
+    private List<NodeBase> _innerGenerics = innerGenerics ?? [];
+    public MemberNode TypeName { get; private set; } = typeName;
     public IReadOnlyList<NodeBase> InnerGenerics => _innerGenerics;
 
-    public virtual Type Symbol { get; init; } = null;
+    public Type? Symbol { get; protected set; }
 
-    public TypeNode(MemberNode typeName, List<NodeBase> innerGenerics)
-    {
-        TypeName = typeName;
-        _innerGenerics = innerGenerics;
-    }
+    public void SetType(Type type) => Symbol = type;
 
     public override IEnumerable<NodeBase> Visit()
     {
         yield return TypeName;
-        if(InnerGenerics == null) yield break;
         foreach (var generic in InnerGenerics)
         {
             yield return generic;

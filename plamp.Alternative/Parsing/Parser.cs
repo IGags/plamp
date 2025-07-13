@@ -7,11 +7,11 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Alternative.AstExtensions;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
-using RootNode = plamp.Alternative.AstExtensions.RootNode;
+using RootNode = plamp.Abstractions.Ast.Node.Definitions.RootNode;
 
 namespace plamp.Alternative.Parsing;
 
@@ -48,10 +48,10 @@ public static class Parser
 
         if (modules.Count > 1)
         {
-            var record = PlampNativeExceptionInfo.DuplicateModuleDefinition();
+            var record = PlampExceptionInfo.DuplicateModuleDefinition();
             foreach (var module in modules)
             {
-                context.Exceptions.Add(context.SymbolTable.CreateExceptionForSymbol(module, record, context.FileName));
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(module, record, context.FileName));
             }
 
             modules = null;
@@ -113,9 +113,9 @@ public static class Parser
             return true;
         }
 
-        var record = PlampNativeExceptionInfo.ExpectedEndOfStatement();
+        var record = PlampExceptionInfo.ExpectedEndOfStatement();
         context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd,
-            context.FileName, null));
+            context.FileName));
         return false;
     }
 
@@ -136,9 +136,9 @@ public static class Parser
             }
             else
             {
-                var record = PlampNativeExceptionInfo.ExpectedSubmoduleName();
+                var record = PlampExceptionInfo.ExpectedSubmoduleName();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentStart, context.FileName, null));
+                    context.Sequence.CurrentStart, context.FileName));
                 break;
             }
         }
@@ -159,9 +159,9 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
             if (context.Sequence.Current() is not Word alias)
             {
-                var record = PlampNativeExceptionInfo.AliasExpected();
+                var record = PlampExceptionInfo.AliasExpected();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
                 return false;
             }
             importEnd = context.Sequence.CurrentEnd;
@@ -213,9 +213,9 @@ public static class Parser
             importedItem = null;
         }
 
-        var record = PlampNativeExceptionInfo.ExpectedClosingCurlyBracket();
+        var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
         context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd,
-            context.FileName, null));
+            context.FileName));
 
         return true;
     }
@@ -236,8 +236,8 @@ public static class Parser
         FilePosition defEnd;
         if (context.Sequence.Current() is not EndOfStatement)
         {
-            var record = PlampNativeExceptionInfo.ExpectedEndOfStatement();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedEndOfStatement();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
             defEnd = context.Sequence.CurrentStart;
             context.SymbolTable.AddSymbol(module, defStart, defEnd);
             return true;
@@ -268,8 +268,8 @@ public static class Parser
         else
         {
             var current = context.Sequence.Current();
-            var record = PlampNativeExceptionInfo.ExpectedFuncName();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedFuncName();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
             return false;
         }
 
@@ -291,8 +291,8 @@ public static class Parser
         if (context.Sequence.Current() is not OpenParen)
         {
             var current = context.Sequence.Current();
-            var record = PlampNativeExceptionInfo.ExpectedOpenParen();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedOpenParen();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
             return false;
         }
         context.Sequence.MoveNextNonWhiteSpace();
@@ -318,18 +318,18 @@ public static class Parser
             }
             else
             {
-                var record = PlampNativeExceptionInfo.ExpectedArgDefinition();
+                var record = PlampExceptionInfo.ExpectedArgDefinition();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
                 return false;
             }
         }
 
         if (context.Sequence.Current() is not CloseParen)
         {
-            var record = PlampNativeExceptionInfo.ExpectedCloseParen();
+            var record = PlampExceptionInfo.ExpectedCloseParen();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
         }
         else
         {
@@ -348,9 +348,9 @@ public static class Parser
         
         if (context.Sequence.Current() is not Word argName)
         {
-            var record = PlampNativeExceptionInfo.ExpectedArgName();
+            var record = PlampExceptionInfo.ExpectedArgName();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             arg = null;
             return false;
         }
@@ -372,8 +372,8 @@ public static class Parser
     {
         var token = context.Sequence.Current();
         var record =
-            PlampNativeExceptionInfo.UnexpectedToken(token.GetStringRepresentation());
-        context.Exceptions.Add(new PlampException(record, token.Start, token.End, context.FileName, null));
+            PlampExceptionInfo.UnexpectedToken(token.GetStringRepresentation());
+        context.Exceptions.Add(new PlampException(record, token.Start, token.End, context.FileName));
     }
 
     public static bool TryParseBody(ParsingContext context, out BodyNode? body)
@@ -399,9 +399,9 @@ public static class Parser
         }
         if (context.Sequence.Current() is EndOfFile)
         {
-            var record = PlampNativeExceptionInfo.ExpectedClosingCurlyBracket();
+            var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             body = new BodyNode(expressions);
             end = context.Sequence.CurrentStart;
             context.SymbolTable.AddSymbol(body, start, end);
@@ -497,8 +497,8 @@ public static class Parser
         conditionPredicate = null;
         if (context.Sequence.Current() is not OpenParen)
         {
-            var record = PlampNativeExceptionInfo.ExpectedOpenParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedOpenParen();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
             return false;
         }
 
@@ -508,8 +508,8 @@ public static class Parser
 
         if (context.Sequence.Current() is not CloseParen)
         {
-            var record = PlampNativeExceptionInfo.ExpectedCloseParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedCloseParen();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
         }
         else
         {
@@ -547,8 +547,8 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
             return;
         }
-        var record = PlampNativeExceptionInfo.ExpectedEndOfStatement();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+        var record = PlampExceptionInfo.ExpectedEndOfStatement();
+        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
     }
     
     public static bool TryParseExpression(ParsingContext context, out NodeBase? expression)
@@ -582,8 +582,8 @@ public static class Parser
         }
         
         context.Sequence.MoveNextNonWhiteSpace();
-        var record = PlampNativeExceptionInfo.ExpectedExpression();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+        var record = PlampExceptionInfo.ExpectedExpression();
+        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
         return false;
     }
 
@@ -591,30 +591,30 @@ public static class Parser
     {
         assignment = null;
         var definitionFork = context.Fork();
-        if (TryParseVariableDefinition(definitionFork, out var definition))
+        if (TryParseVariableDefinition(definitionFork, out var definition) && definition != null)
         {
             context.Merge(definitionFork);
             if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Assign })
             {
-                var record = PlampNativeExceptionInfo.ExpectedAssignment();
+                var record = PlampExceptionInfo.ExpectedAssignment();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
                 return false;
             }
 
             var assign = context.Sequence.Current();
             context.Sequence.MoveNextNonWhiteSpace();
             
-            if (TryParsePrecedence(context, out var right))
+            if (TryParsePrecedence(context, out var right) && right != null)
             {
-                assignment = new AssignNode(definition as VariableDefinitionNode, right);
+                assignment = new AssignNode(definition, right);
                 context.SymbolTable.AddSymbol(assignment, assign.Start, assign.End);
                 return true;
             }
 
-            var exceptionRecord = PlampNativeExceptionInfo.ExpectedAssignmentSource();
+            var exceptionRecord = PlampExceptionInfo.ExpectedAssignmentSource();
             context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             return false;
         }
 
@@ -625,27 +625,27 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
             if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Assign })
             {
-                var record = PlampNativeExceptionInfo.ExpectedAssignment();
+                var record = PlampExceptionInfo.ExpectedAssignment();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
                 return false;
             }
 
             var assign = context.Sequence.Current();
             context.Sequence.MoveNextNonWhiteSpace();
             
-            if (TryParsePrecedence(context, out var right))
+            if (TryParsePrecedence(context, out var right) && right != null)
             {
                 definition = new MemberNode(member.GetStringRepresentation());
                 context.SymbolTable.AddSymbol(definition, member.Start, member.End);
-                assignment = new AssignNode(definition as VariableDefinitionNode, right);
+                assignment = new AssignNode(definition, right);
                 context.SymbolTable.AddSymbol(assignment, assign.Start, assign.End);
                 return true;
             }
 
-            var exceptionRecord = PlampNativeExceptionInfo.ExpectedAssignmentSource();
+            var exceptionRecord = PlampExceptionInfo.ExpectedAssignmentSource();
             context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
         }
 
         return false;
@@ -660,9 +660,9 @@ public static class Parser
         
         if (context.Sequence.Current() is not OpenParen)
         {
-            var record = PlampNativeExceptionInfo.ExpectedOpenParen();
+            var record = PlampExceptionInfo.ExpectedOpenParen();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             return false;
         }
 
@@ -691,18 +691,18 @@ public static class Parser
             }
             else
             {
-                var record = PlampNativeExceptionInfo.ExpectedExpression();
+                var record = PlampExceptionInfo.ExpectedExpression();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
                 return false;
             }
         }
         
         if (context.Sequence.Current() is not CloseParen)
         {
-            var record = PlampNativeExceptionInfo.ExpectedCloseParen();
+            var record = PlampExceptionInfo.ExpectedCloseParen();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             end = context.Sequence.CurrentStart;
         }
         else
@@ -719,14 +719,14 @@ public static class Parser
     public static bool TryParseVariableDefinition(ParsingContext context, out NodeBase? variableDefinition)
     {
         variableDefinition = null;
-        if (!TryParseType(context, out var type)) return false;
+        if (!TryParseType(context, out var type) || type == null) return false;
         var start = context.Sequence.CurrentStart;
         context.Sequence.MoveNextNonWhiteSpace();
         if (context.Sequence.Current() is not Word variableName)
         {
-            var record = PlampNativeExceptionInfo.ExpectedVarName();
+            var record = PlampExceptionInfo.ExpectedVarName();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName, null));
+                context.Sequence.CurrentEnd, context.FileName));
             return false;
         }
 
@@ -744,8 +744,8 @@ public static class Parser
         type = null;
         if (context.Sequence.Current() is not Word typeName)
         {
-            var record = PlampNativeExceptionInfo.ExpectedTypeName();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName, null));
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
             return false;
         }
         
@@ -778,9 +778,9 @@ public static class Parser
         {
             if (parenFork.Sequence.Current() is not CloseParen)
             {
-                var record = PlampNativeExceptionInfo.ExpectedCloseParen();
+                var record = PlampExceptionInfo.ExpectedCloseParen();
                 parenFork.Exceptions.Add(new PlampException(record, parenFork.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName, null));
+                    context.Sequence.CurrentEnd, context.FileName));
             }
             else
             {
@@ -823,7 +823,7 @@ public static class Parser
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
-            if (!TryParseNud(prefixFork, out var innerNode)) return false;
+            if (!TryParseNud(prefixFork, out var innerNode) || innerNode == null) return false;
             
             switch (op.Operator)
             {
@@ -862,7 +862,7 @@ public static class Parser
         opFork.Sequence.MoveNextNonWhiteSpace();
 
         var res = TryParsePrecedence(opFork, out var right, precedence);
-        if (!res) return false;
+        if (!res || right == null) return false;
         switch (token.Operator)
         {
             case OperatorEnum.Mul:
@@ -905,7 +905,7 @@ public static class Parser
                 output = new ModuloNode(left, right);
                 break;
             case OperatorEnum.Assign:
-                output = new AssignNode(left as VariableDefinitionNode, right);
+                output = new AssignNode(left, right);
                 break;
             default:
                 throw new Exception();

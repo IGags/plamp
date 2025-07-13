@@ -7,7 +7,9 @@ public class MemberNode : NodeBase
 {
     public string MemberName { get; }
 
-    public virtual MemberInfo Symbol { get; init; } = null;
+    public virtual MemberInfo? Symbol { get; protected set; }
+
+    public void SetMemberInfo(MemberInfo info) => Symbol = info;
 
     public MemberNode(string memberName)
     {

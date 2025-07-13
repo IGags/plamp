@@ -8,6 +8,5 @@ namespace plamp.Abstractions.CompilerEmission;
 public record CompilerEmissionContext(
     BodyNode MethodBody,
     MethodBuilder MethodBuilder,
-    ParameterInfo[] Parameters,
-    object AssemblyContainer, 
-    ISymbolTable SymbolTable);
+    ParameterInfo[] Parameters, 
+    ISymbolTable? SymbolTable);

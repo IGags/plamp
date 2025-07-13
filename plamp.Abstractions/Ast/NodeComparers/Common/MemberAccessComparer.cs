@@ -6,7 +6,7 @@ namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
 public class MemberAccessComparer : IEqualityComparer<MemberAccessNode>
 {
-    public bool Equals(MemberAccessNode x, MemberAccessNode y)
+    public bool Equals(MemberAccessNode? x, MemberAccessNode? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (x is null) return false;

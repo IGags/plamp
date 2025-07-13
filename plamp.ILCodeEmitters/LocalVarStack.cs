@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 
 namespace plamp.ILCodeEmitters;
@@ -42,5 +43,5 @@ internal class LocalVarStack
         _currentScope.Add(new (name, type));
     }
     
-    public bool TryGetValue(string name, out LocalBuilder builder) => _vars.TryGetValue(name, out builder);
+    public bool TryGetValue(string name, [MaybeNullWhen(false)]out LocalBuilder builder) => _vars.TryGetValue(name, out builder);
 }

@@ -65,7 +65,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         context.Generator.BeginScope();
         foreach (var instruction in body.ExpressionList)
         {
-            if(instruction == null) continue;
             EmitExpression(instruction, context);
         }
         context.Generator.EndScope();
@@ -261,7 +260,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         {
             context.Generator.Emit(OpCodes.Stfld, emitFld);
         }
-        else if (assignNode.Left is VariableDefinitionNode {Member: MemberNode varMember})
+        else if (assignNode.Left is VariableDefinitionNode {Member: { } varMember})
         {
             EmitSetLocalVarOrArg(varMember, context);
         }
@@ -404,7 +403,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         EmitGetLocalVarOrArg((MemberNode)node.Inner, context, false);
         var toType = GetTypeFromNode(node.ToType)!;
         var fromType = node.FromType;
-        
+
+        if (fromType == null) throw new ArgumentException("From type cannot be null semantics exception");
         if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
         else if(fromType.IsValueType && !toType.IsValueType) EmitBox(fromType, context);
         else if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
@@ -441,8 +441,10 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         {
             if (literalNode.Value == null) context.Generator.Emit(OpCodes.Ldnull);
             else context.Generator.Emit(OpCodes.Ldstr, (string)literalNode.Value);
+            return;
         }
-        else if (literalNode.Type == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        if(literalNode.Value == null) throw new ArgumentException("Cannot emit load null to value type");
+        if (literalNode.Type == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
         else if (literalNode.Type == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, BitConverter.ToInt32(BitConverter.GetBytes((uint)literalNode.Value)));
         else if (literalNode.Type == typeof(long)) context.Generator.Emit(OpCodes.Ldc_I8, (long)literalNode.Value);
         else if (literalNode.Type == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, BitConverter.ToInt64(BitConverter.GetBytes((ulong)literalNode.Value)));
@@ -459,8 +461,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
-        if(variableDefinitionNode.Type is not TypeNode type) return;
-        if(variableDefinitionNode.Member is not MemberNode member) return;
+        if(variableDefinitionNode.Type is not { } type) return;
+        if(variableDefinitionNode.Member is not { } member) return;
+        if (type.Symbol == null) throw new ArgumentException("Cannot emit variable definition with null type");
         var builder = context.Generator.DeclareLocal(type.Symbol);
         context.LocalVarStack.Add(member.MemberName, builder);
     }

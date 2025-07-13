@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using plamp.Abstractions.Ast.Node;
 
-namespace plamp.Alternative.AstExtensions;
+namespace plamp.Abstractions.Ast.Node.Definitions;
 
 public class ImportItemNode(string name, string alias) : NodeBase
 {

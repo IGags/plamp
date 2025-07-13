@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Compilation.Models;
@@ -35,11 +34,6 @@ public static class Tokenizer
     
     public static TokenizationResult Tokenize(SourceFile sourceFile)
     {
-        if (sourceFile.SourceCode == null)
-        {
-            return new TokenizationResult(new TokenSequence([new EndOfFile(default, default)]), []);
-        }
-
         var rows = sourceFile.SourceCode.Split('\n');
         var prepared = rows.Select(x => x.Replace("\t", "    ")).Select((t, i) => new Row(i, t));
 
@@ -157,7 +151,7 @@ public static class Tokenizer
         var end = new FilePosition(row.Number, position - 1);
         if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
         {
-            context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnknownNumberFormat, startPosition, end, context.FileName, null));
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnknownNumberFormat(), startPosition, end, context.FileName));
         }
         var (value, type) = cort;
         return new Literal(numberPart + postfix, startPosition, end, value, type!);
@@ -252,7 +246,7 @@ public static class Tokenizer
         }
 
         var endPos = new FilePosition(row.Number, position - 1);
-        context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.StringIsNotClosed(), startPosition, endPos, context.FileName, null));
+        context.Exceptions.Add(new PlampException(PlampExceptionInfo.StringIsNotClosed(), startPosition, endPos, context.FileName));
         return new Literal($"\"{builder}", startPosition, endPos, builder.ToString(), typeof(string));
     }
     
@@ -277,8 +271,8 @@ public static class Tokenizer
                 builder.Append('"');
                 break;
             default:
-                context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
-                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position), context.FileName, null));
+                context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidEscapeSequence($"\\{row[position]}"),
+                    new FilePosition(row.Number, position - 1), new FilePosition(row.Number, position), context.FileName));
                 return;
         }
     }
@@ -342,8 +336,8 @@ public static class Tokenizer
                     result = @operator;
                     return true;
                 }
-                context.Exceptions.Add(new PlampException(PlampNativeExceptionInfo.UnexpectedToken(row[position].ToString()), 
-                    startPosition, startPosition, context.FileName, null));
+                context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnexpectedToken(row[position].ToString()), 
+                    startPosition, startPosition, context.FileName));
                 position++;
                 return false;
         }

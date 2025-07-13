@@ -23,7 +23,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
-      <ProjectReference Include="..\plamp.Validators\plamp.Validators.csproj" />
+      <ProjectReference Include="..\plamp.Alternative\plamp.Alternative.csproj" />
     </ItemGroup>
 
 </Project>

@@ -3,18 +3,14 @@ using System.Reflection;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class ConstructorCallNode : NodeBase
+public class ConstructorCallNode(NodeBase type, List<NodeBase> args) : NodeBase
 {
-    public NodeBase Type { get; private set; }
-    public List<NodeBase> Args { get; private set; }
+    public NodeBase Type { get; private set; } = type;
+    public List<NodeBase> Args { get; private set; } = args;
 
-    public virtual ConstructorInfo Symbol { get; init; }
+    public virtual ConstructorInfo? Symbol { get; protected set; }
 
-    public ConstructorCallNode(NodeBase type, List<NodeBase> args)
-    {
-        Type = type;
-        Args = args;
-    }
+    public void SetConstructorInfo(ConstructorInfo info) => Symbol = info;
 
     public override IEnumerable<NodeBase> Visit()
     {
