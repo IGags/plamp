@@ -1,4 +1,3 @@
-using System.Linq;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
@@ -21,7 +20,7 @@ public class FuncSignatureInferenceVisitorTests
         var root = new RootNode([], null, []);
         table.AddSymbol(root, new FilePosition(-1, -1), new FilePosition(-1, -1));
         var context = new PreCreationContext(FileName, table);
-        var visitor = new SignatureTypeInferenceValidator();
+        var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(root, context);
         Assert.Empty(result.Functions);
         Assert.Empty(result.Exceptions);
@@ -42,7 +41,7 @@ public class FuncSignatureInferenceVisitorTests
         table.AddSymbol(func1Body, new FilePosition(1, 0), new FilePosition(1, 1));
 
         var context = new PreCreationContext(FileName, table);
-        var visitor = new SignatureTypeInferenceValidator();
+        var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(root, context);
         Assert.Empty(result.Exceptions);
         var func = Assert.Single(result.Functions);
@@ -70,7 +69,7 @@ public class FuncSignatureInferenceVisitorTests
         table.AddSymbol(typeName, new FilePosition(1, 0), new FilePosition(1, 1));
         
         var context = new PreCreationContext(FileName, table);
-        var visitor = new SignatureTypeInferenceValidator();
+        var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(root, context);
         Assert.Empty(result.Exceptions);
         var func = Assert.Single(result.Functions);

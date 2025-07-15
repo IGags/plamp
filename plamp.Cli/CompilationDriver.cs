@@ -33,7 +33,7 @@ public class CompilationDriver
         var memberNameVisitor = new MemberNameUniquenessValidator();
         context = memberNameVisitor.Validate(ast, context);
 
-        var memberSignatureVisitor = new SignatureTypeInferenceValidator();
+        var memberSignatureVisitor = new SignatureTypeInferenceWeaver();
         context = memberSignatureVisitor.WeaveDiffs(ast, context);
 
         var funcReturnVisitor = new MethodMustReturnValueValidator();

@@ -8,7 +8,7 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 /// <summary>
 /// Определяет только типы аргументов
 /// </summary>
-public class SignatureTypeInferenceValidator : BaseWeaver<PreCreationContext, PreCreationContext>
+public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, PreCreationContext>
 {
     protected override VisitResult VisitDef(DefNode node, PreCreationContext context)
     {
