@@ -92,8 +92,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitLiteral(constNode, context);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context);
-            case TypeDefinitionNode typeDefinitionNode:
-                return VisitTypeDefinition(typeDefinitionNode, context);
         }
         
         return VisitDefault(node, context);
@@ -255,8 +253,6 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult VisitBitwiseOr(BitwiseOrNode node, TContext context) => VisitResult.Continue;
 
     protected virtual VisitResult VisitXor(XorNode node, TContext context) => VisitResult.Continue;
-
-    protected virtual VisitResult VisitTypeDefinition(TypeDefinitionNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitRoot(RootNode node, TContext context) => VisitResult.Continue;
 

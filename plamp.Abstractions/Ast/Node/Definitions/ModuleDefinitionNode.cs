@@ -11,8 +11,5 @@ public class ModuleDefinitionNode(string moduleName) : NodeBase
         return [];
     }
 
-    public override void ReplaceChild(NodeBase child, NodeBase newChild)
-    {
-        throw new System.NotImplementedException();
-    }
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

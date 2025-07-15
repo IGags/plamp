@@ -13,7 +13,5 @@ public class ImportItemNode(string name, string alias) : NodeBase
         return [];
     }
 
-    public override void ReplaceChild(NodeBase child, NodeBase newChild)
-    {
-    }
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

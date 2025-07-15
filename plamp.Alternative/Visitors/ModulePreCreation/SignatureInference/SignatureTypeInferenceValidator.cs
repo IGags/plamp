@@ -1,14 +1,14 @@
 using System;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
-using plamp.Abstractions.AstManipulation.Validation;
+using plamp.Abstractions.AstManipulation.Modification;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 
 /// <summary>
 /// Определяет только типы аргументов
 /// </summary>
-public class SignatureTypeInferenceValidator : BaseValidator<PreCreationContext, PreCreationContext>
+public class SignatureTypeInferenceValidator : BaseWeaver<PreCreationContext, PreCreationContext>
 {
     protected override VisitResult VisitDef(DefNode node, PreCreationContext context)
     {
@@ -21,6 +21,9 @@ public class SignatureTypeInferenceValidator : BaseValidator<PreCreationContext,
                 throw new ArgumentException("Symbol is not found, parser error");
             
             context.SymbolTable.AddSymbol(type, nameSymbol.Key, nameSymbol.Value);
+            var newDef = new DefNode(type, node.Name, node.ParameterList, node.Body);
+            Replace(node, newDef, context);
+            node = newDef;
         }
         else
         {

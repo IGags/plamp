@@ -34,7 +34,7 @@ public class CompilationDriver
         context = memberNameVisitor.Validate(ast, context);
 
         var memberSignatureVisitor = new SignatureTypeInferenceValidator();
-        context = memberSignatureVisitor.Validate(ast, context);
+        context = memberSignatureVisitor.WeaveDiffs(ast, context);
 
         var funcReturnVisitor = new MethodMustReturnValueValidator();
         context = funcReturnVisitor.Validate(ast, context);

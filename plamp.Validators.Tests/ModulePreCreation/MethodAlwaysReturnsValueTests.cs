@@ -10,7 +10,7 @@ using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;
 
-namespace plamp.Validators.Tests;
+namespace plamp.Validators.Tests.ModulePreCreation;
 
 public class MethodAlwaysReturnsValueTests
 {
@@ -137,8 +137,7 @@ public class MethodAlwaysReturnsValueTests
     [Fact]
     public void VisitMultipleInvalidMethods()
     {
-        var node = new TypeDefinitionNode(
-            new MemberNode("123"),
+        var node = new RootNode([], null,
             [
                 CreateMethod(typeof(int), "1", [], new BodyNode([])),
                 CreateMethod(typeof(int), "1", [], new BodyNode([]))

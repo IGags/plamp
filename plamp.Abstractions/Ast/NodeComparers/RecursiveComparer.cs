@@ -135,11 +135,6 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if(!bodyComparer.Equals(node, (BodyNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case TypeDefinitionNode node:
-                    var typeDefinitionComparer = new TypeDefinitionComparer();
-                    if (!typeDefinitionComparer.Equals(node, (TypeDefinitionNode)second)) return false;
-                    PushChildren(comparisionStack, node, second);
-                    return true;
                 default:
                     return CompareCustom(first, second, comparisionStack);
             }
