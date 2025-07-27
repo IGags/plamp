@@ -92,6 +92,8 @@ public abstract class BaseVisitor<TContext>
                 return VisitLiteral(constNode, context);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context);
+            case BaseUnaryNode unaryNode:
+                return VisitUnaryNode(unaryNode, context);
         }
         
         return VisitDefault(node, context);

@@ -2,12 +2,11 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
-using plamp.Alternative;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
 using Xunit;
 
-namespace plamp.Validators.Tests.ModulePreCreation;
+namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 
 public class MemberNameUniquenessVisitorTests
 {

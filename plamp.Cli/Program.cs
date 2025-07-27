@@ -5,8 +5,7 @@ namespace plamp.Cli;
 class Program
 {
     private const string File = """
-                                module mymod;
-                                
+                                module a2;
                                 fn fib(int n) int {
                                     if(n < 0) return n;
                                     if(n = 0 || n = 1) return n;
@@ -33,7 +32,7 @@ class Program
             {
                 var row = rows[ex.StartPosition.Row];
                 var str = $"@@ {ex.StartPosition.Row}, {ex.StartPosition.Column} @@ {ex.Message}" + '\n' + row + '\n';
-                str += new string(' ', ex.StartPosition.Column) + $"^\n@@ {ex.EndPosition.Row}, {ex.EndPosition.Column} @@";
+                str += new string(' ', ex.StartPosition.Column) + $"^\n@@ {ex.EndPosition.Row}, {ex.EndPosition.Column} @@ {ex.FileName}";
                 Console.WriteLine(str);
             }
         }

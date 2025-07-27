@@ -8,9 +8,9 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 /// <summary>
 /// Определяет только типы аргументов
 /// </summary>
-public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, PreCreationContext>
+public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, SignatureInferenceInnerContext>
 {
-    protected override VisitResult VisitDef(DefNode node, PreCreationContext context)
+    protected override VisitResult VisitDef(DefNode node, SignatureInferenceInnerContext context)
     {
         var returnType = node.ReturnType;
         if (returnType == null)
@@ -39,12 +39,20 @@ public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, PreCr
             if (actualParameterType == null) continue;
             parameterType.SetType(actualParameterType);
         }
+
+        if (context.Functions.Remove(node.Name.MemberName))
+        {
+            context.MemberSet.Add(node.Name.MemberName);
+        }
+        else if (!context.MemberSet.Contains(node.Name.MemberName))
+        {
+            context.Functions.Add(node.Name.MemberName, node);
+        }
         
-        context.Functions.Add(node.Name.MemberName, node);
         return VisitResult.SkipChildren;
     }
 
-    protected override PreCreationContext CreateInnerContext(PreCreationContext context) => context;
+    protected override SignatureInferenceInnerContext CreateInnerContext(PreCreationContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, PreCreationContext innerContext) => innerContext;
+    protected override PreCreationContext MapInnerToOuter(SignatureInferenceInnerContext innerContext, PreCreationContext outerContext) => innerContext;
 }

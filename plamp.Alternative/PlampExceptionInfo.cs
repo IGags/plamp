@@ -303,7 +303,7 @@ public static class PlampExceptionInfo
         {
             Code = "SEM1311",
             Level = ExceptionLevel.Error,
-            Message = "Module must have name"
+            Message = "The code file must have a module name that belongs to. Add \"module MODULE_NAME;\""
         };
     }
     

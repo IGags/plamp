@@ -10,7 +10,7 @@ using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;
 
-namespace plamp.Validators.Tests.ModulePreCreation;
+namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 
 public class MethodAlwaysReturnsValueTests
 {
