@@ -42,7 +42,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             if (child is VariableDefinitionNode emptyDef)
             {
                 var assign = WeaveAssignmentDefault(emptyDef, context);
-                if(assign != null) Replace(node, assign, context);
+                if(assign != null) Replace(child, assign, context);
             }
             context.NextInstruction();
         }
@@ -122,50 +122,11 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         context.InnerExpressionType = null;
 
         if (leftType == null && rightType == null) return VisitResult.SkipChildren;
-        
-        if (Arithmetic(node))
-        {
-            if ((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType))
-                || leftType != rightType)
-            {
-                var record = PlampExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-                context.InnerExpressionType = null;
-                return VisitResult.SkipChildren;
-            }
 
-            context.InnerExpressionType = leftType ?? rightType;
-        }
-        else if (ComparisionNode(node))
-        {
-            context.InnerExpressionType = typeof(bool);
-            if (leftType != null && rightType != null && leftType != rightType)
-            {
-                var record = PlampExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-                return VisitResult.SkipChildren;
-            }
-            
-            if((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType)
-               && node is not EqualNode and not NotEqualNode))
-            {
-                var record = PlampExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-                return VisitResult.SkipChildren;
-            }
-        }
-        else if(BinaryLogicGate(node))
-        {
-            if ((leftType != null && leftType != typeof(bool)) || (rightType != null && rightType != typeof(bool)))
-            {
-                var record = PlampExceptionInfo.CannotApplyOperator();
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-            }
-
-            context.InnerExpressionType = typeof(bool);
-        }
-
-        return VisitResult.SkipChildren;
+        if (Arithmetic(node)) return ValidateBinaryArithmetic(node, leftType, rightType, context);
+        if (ComparisionNode(node)) return ValidateBinaryComparision(node, leftType, rightType, context);
+        if (BinaryLogicGate(node)) return ValidateBinaryLogical(node, leftType, rightType, context);
+        throw new ArgumentException("Unexpected binary operator type");
     }
 
     protected override VisitResult VisitCall(CallNode node, TypeInferenceInnerContext context)
@@ -253,59 +214,23 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         VisitNodeBase(node.Right, context);
         var rightType = context.InnerExpressionType;
         context.InnerExpressionType = null;
-        if (node.Left is VariableDefinitionNode leftDef)
-        {
-            VisitVariableDefinition(leftDef, context);
-            var leftType = context.InnerExpressionType;
-            if (leftType == null || rightType == null || leftType == rightType) return VisitResult.SkipChildren;
-            var record = PlampExceptionInfo.CannotAssign();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-            return VisitResult.SkipChildren;
-        }
+        if (node.Left is VariableDefinitionNode leftDef) return ValidateAssignmentToDefinition(node, leftDef, context, rightType);
+        
         //Then left is member or parser error
         if (node.Left is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
         
         if (context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
         {
-            PlampExceptionRecord record;
-            if (context.InstructionInScopePosition.Depth < withPosition.InScopePositionList.Depth)
-            {
-                record = PlampExceptionInfo.DuplicateVariableDefinition();
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(withPosition.Variable, record, context.FileName));
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(leftMember, record, context.FileName));
-                return VisitResult.SkipChildren;
-            }
-
-            if (withPosition.Variable.Type?.Symbol is not {} leftType
-                || rightType == null 
-                || leftType == rightType)
-            {
-                return VisitResult.SkipChildren;
-            }
-            
-            record = PlampExceptionInfo.CannotAssign();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
-            return VisitResult.SkipChildren;
+            return ValidateExistingDefinition(node, leftMember, context, withPosition, rightType);
         }
         
         TypeNode? typeNode = null;
-        if (rightType != null)
-        {
-            if (!context.SymbolTable.TryGetSymbol(leftMember, out var symbol))
-                throw new ArgumentException("Parser error, symbol should exist");
-                
-            var typeName = new MemberNode(rightType.Name);
-            context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
-            typeNode = new TypeNode(typeName, []);
-            typeNode.SetType(rightType);
-            context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
-        }
+        if (rightType != null) typeNode = CreateTypeForMember(leftMember, context, rightType);
 
         var definition = new VariableDefinitionNode(typeNode, leftMember);
         Replace(leftMember, definition, context);
         
-        context.VariableDefinitions[leftMember.MemberName] 
-            = new VariableWithPosition(definition, context.InstructionInScopePosition);
+        context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(definition, context.InstructionInScopePosition);
         return VisitResult.SkipChildren;
     }
 
@@ -351,6 +276,120 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.SkipChildren;
     }
 
+    private VisitResult ValidateBinaryLogical(
+        BaseBinaryNode node,
+        Type? leftType,
+        Type? rightType,
+        TypeInferenceInnerContext context)
+    {
+        if ((leftType != null && leftType != typeof(bool)) || (rightType != null && rightType != typeof(bool)))
+        {
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+        }
+
+        context.InnerExpressionType = typeof(bool);
+        return VisitResult.SkipChildren;
+    }
+    
+    private VisitResult ValidateBinaryComparision(
+        BaseBinaryNode node,
+        Type? leftType, 
+        Type? rightType, 
+        TypeInferenceInnerContext context)
+    {
+        context.InnerExpressionType = typeof(bool);
+        if (leftType != null && rightType != null && leftType != rightType)
+        {
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+            return VisitResult.SkipChildren;
+        }
+            
+        if((leftType != null && !Numeric(leftType)) 
+           || (rightType != null && !Numeric(rightType) && node is not EqualNode and not NotEqualNode))
+        {
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+        }
+
+        return VisitResult.SkipChildren;
+    }
+    
+    private VisitResult ValidateBinaryArithmetic(
+        BaseBinaryNode node,
+        Type? leftType, 
+        Type? rightType, 
+        TypeInferenceInnerContext context)
+    {
+        if ((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType))
+                                                     || leftType != rightType)
+        {
+            var record = PlampExceptionInfo.CannotApplyOperator();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+            context.InnerExpressionType = null;
+            return VisitResult.SkipChildren;
+        }
+
+        context.InnerExpressionType = leftType ?? rightType;
+        return VisitResult.SkipChildren;
+    }
+
+    private VisitResult ValidateAssignmentToDefinition(
+        AssignNode assign, 
+        VariableDefinitionNode left, 
+        TypeInferenceInnerContext context,
+        Type? rightType)
+    {
+        VisitVariableDefinition(left, context);
+        var leftType = context.InnerExpressionType;
+        if (leftType == null || rightType == null || leftType == rightType) return VisitResult.SkipChildren;
+        var record = PlampExceptionInfo.CannotAssign();
+        context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(assign, record, context.FileName));
+        return VisitResult.SkipChildren;
+    }
+
+    private VisitResult ValidateExistingDefinition(
+        AssignNode assign,
+        MemberNode left,
+        TypeInferenceInnerContext context,
+        VariableWithPosition existingVar,
+        Type? rightType)
+    {
+        PlampExceptionRecord record;
+        if (context.InstructionInScopePosition.Depth < existingVar.InScopePositionList.Depth)
+        {
+            record = PlampExceptionInfo.DuplicateVariableDefinition();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(existingVar.Variable, record, context.FileName));
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(left, record, context.FileName));
+            return VisitResult.SkipChildren;
+        }
+
+        if (existingVar.Variable.Type?.Symbol is not {} leftType
+            || rightType == null 
+            || leftType == rightType)
+        {
+            return VisitResult.SkipChildren;
+        }
+            
+        record = PlampExceptionInfo.CannotAssign();
+        context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(assign, record, context.FileName));
+        return VisitResult.SkipChildren;
+    }
+
+    private TypeNode CreateTypeForMember(MemberNode leftMember, TypeInferenceInnerContext context, Type rightType)
+    {
+        if (!context.SymbolTable.TryGetSymbol(leftMember, out var symbol))
+            throw new ArgumentException("Parser error, symbol should exist");
+                
+        var typeName = new MemberNode(rightType.Name);
+        context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
+        var typeNode = new TypeNode(typeName, []);
+        typeNode.SetType(rightType);
+        context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
+        return typeNode;
+    }
+
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition, TypeInferenceInnerContext context)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
@@ -365,7 +404,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         {
             return new AssignNode(variableDefinition, new LiteralNode(null, type));
         }
-
         
         if (type is { IsPrimitive: true })
         {

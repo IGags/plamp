@@ -11,29 +11,29 @@ using Xunit;
 
 namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
-public class LoopTypeInferenceTests
+public class ConditionTypeInferenceTests
 {
     [Theory, AutoData]
-    public void WhileLoopWithCorrectCondition_ReturnNoException(
+    public void ConditionWithCorrectPredicateType_ReturnNoException(
         [Frozen] Mock<ISymbolTable> symbolTable,
         string fileName, 
         TypeInferenceWeaver visitor)
     {
-        var ast = new WhileNode(
+        var ast = new ConditionNode(
             new LiteralNode(true, typeof(bool)),
-            new BodyNode([]));
+            new BodyNode([]), null);
         SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
     }
 
     [Theory, AutoData]
-    public void WhileLoopWithIncorrectConditionType_ReturnsException(
+    public void ConditionWithIncorrectPredicateType_ReturnsException(
         [Frozen] Mock<ISymbolTable> symbolTable,
         string fileName,
         TypeInferenceWeaver visitor)
     {
-        var ast = new WhileNode(
+        var ast = new ConditionNode(
             new LiteralNode(1, typeof(int)),
-            new BodyNode([]));
+            new BodyNode([]), new BodyNode([]));
         
         SetupExceptionGenerationMock(symbolTable, fileName);
         var context = new PreCreationContext(fileName, symbolTable.Object);
