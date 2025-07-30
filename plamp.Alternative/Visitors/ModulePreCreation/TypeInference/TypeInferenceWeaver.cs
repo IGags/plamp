@@ -24,7 +24,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             context.Arguments.Add(parameterNode.Name.MemberName, parameterNode);
         }
 
-        VisitChildren(node.Body, context);
+        VisitInternal(node.Body, context);
         
         context.Arguments.Clear();
         context.CurrentFunc = null;
@@ -265,14 +265,33 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override VisitResult VisitReturn(ReturnNode node, TypeInferenceInnerContext context)
     {
-        if (node.ReturnValue == null) return VisitResult.Continue;
-        VisitChildren(node, context);
-        var returnType = context.InnerExpressionType;
-        if (context.CurrentFunc?.ReturnType?.Symbol != null && returnType != context.CurrentFunc.ReturnType.Symbol)
+        Type? returnType = null;
+        if (node.ReturnValue is not null)
         {
+            VisitInternal(node.ReturnValue, context);
+            returnType = context.InnerExpressionType;
+        }
+
+        if (context.CurrentFunc?.ReturnType?.Symbol == null) return VisitResult.SkipChildren;
+        
+        if (context.CurrentFunc?.ReturnType?.Symbol != typeof(void) && node.ReturnValue is null)
+        {
+            var record = PlampExceptionInfo.ReturnValueIsMissing();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+        }
+        else if (context.CurrentFunc?.ReturnType?.Symbol == typeof(void) && node.ReturnValue is not null)
+        {
+            var record = PlampExceptionInfo.CannotReturnValue();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+        }
+        else if (context.CurrentFunc?.ReturnType?.Symbol != typeof(void) && returnType is not null)
+        {
+            if (returnType == context.CurrentFunc?.ReturnType?.Symbol) return VisitResult.SkipChildren;
+            
             var record = PlampExceptionInfo.ReturnTypeMismatch();
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
+        
         return VisitResult.SkipChildren;
     }
 

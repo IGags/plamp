@@ -314,6 +314,22 @@ public static class PlampExceptionInfo
             Code = "SEM1312",
             Level = ExceptionLevel.Error
         };
-    
+
+    public static PlampExceptionRecord ReturnValueIsMissing() =>
+        new()
+        {
+            Message = "Return value is missing",
+            Code = "SEM1313",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotReturnValue() =>
+        new()
+        {
+            Message = "Cannot return value from a void function",
+            Code = "SEM1314",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }
