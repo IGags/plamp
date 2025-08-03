@@ -164,7 +164,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var invalid = false;
         foreach (var (arg, defType) in node.Args.Zip(defArgTypes))
         {
-            VisitChildren(arg, context);
+            VisitInternal(arg, context);
             var argType = context.InnerExpressionType;
             if (argType != defType) invalid = true;
         }
@@ -213,6 +213,12 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         VisitNodeBase(node.Right, context);
         var rightType = context.InnerExpressionType;
+        if (rightType is not null && rightType == typeof(void))
+        {
+            var record = PlampExceptionInfo.CannotAssignNone();
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+        }
+        
         context.InnerExpressionType = null;
         if (node.Left is VariableDefinitionNode leftDef) return ValidateAssignmentToDefinition(node, leftDef, context, rightType);
         

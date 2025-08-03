@@ -31,8 +31,4 @@
       <ProjectReference Include="..\plamp.Alternative\plamp.Alternative.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Visitors\ModuleCreation\" />
-    </ItemGroup>
-
 </Project>

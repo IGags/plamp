@@ -81,6 +81,7 @@ public static class Parser
                 return true;
             default:
                 AddUnexpectedTokenException(context);
+                context.Sequence.MoveNextNonWhiteSpace();
                 return false;
         }
     }

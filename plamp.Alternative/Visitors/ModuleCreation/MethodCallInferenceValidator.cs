@@ -1,11 +1,10 @@
-﻿
-using System.Linq;
+﻿using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModuleCreation;
 
-public class MethodCallInferenceWeaver : BaseValidator<CreationContext, CreationContext>
+public class MethodCallInferenceValidator : BaseValidator<CreationContext, CreationContext>
 {
     protected override VisitResult VisitCall(CallNode node, CreationContext context)
     {

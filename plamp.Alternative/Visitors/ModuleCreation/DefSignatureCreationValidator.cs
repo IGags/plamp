@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.AstManipulation.Validation;
@@ -8,10 +7,9 @@ namespace plamp.Alternative.Visitors.ModuleCreation;
 
 public class DefSignatureCreationValidator : BaseValidator<CreationContext, CreationContext>
 {
-
     protected override VisitResult VisitDef(DefNode node, CreationContext context)
     {
-        Type?[] signature = node.ParameterList.Select(x => x.Type.Symbol).ToArray();
+        var signature = node.ParameterList.Select(x => x.Type.Symbol).ToArray();
         if (signature.Any(x => x == null)) return VisitResult.SkipChildren;
         var retType = node.ReturnType?.Symbol;
         if(retType == null) return VisitResult.SkipChildren;

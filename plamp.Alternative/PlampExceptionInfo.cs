@@ -331,5 +331,13 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord CannotAssignNone() =>
+        new()
+        {
+            Message = "Cannot assign type of none",
+            Code = "SEM1315",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }
