@@ -21,8 +21,5 @@ public class ConstructorCallNode(NodeBase type, List<NodeBase> args) : NodeBase
         }
     }
 
-    public override void ReplaceChild(NodeBase child, NodeBase newChild)
-    {
-        
-    }
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

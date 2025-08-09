@@ -80,9 +80,9 @@ public class RecursiveComparer : IEqualityComparer<NodeBase>
                     if (!continueComparer.Equals(node, (ContinueNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
-                case DefNode node:
+                case FuncNode node:
                     var defComparer = new DefComparer();
-                    if (!defComparer.Equals(node, (DefNode)second)) return false;
+                    if (!defComparer.Equals(node, (FuncNode)second)) return false;
                     PushChildren(comparisionStack, node, second);
                     return true;
                 case EmptyNode node:

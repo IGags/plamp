@@ -10,7 +10,7 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 /// </summary>
 public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, SignatureInferenceInnerContext>
 {
-    protected override VisitResult VisitDef(DefNode node, SignatureInferenceInnerContext context)
+    protected override VisitResult VisitDef(FuncNode node, SignatureInferenceInnerContext context)
     {
         var returnType = node.ReturnType;
         if (returnType == null)
@@ -21,7 +21,7 @@ public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, Signa
                 throw new ArgumentException("Symbol is not found, parser error");
             
             context.SymbolTable.AddSymbol(type, nameSymbol.Key, nameSymbol.Value);
-            var newDef = new DefNode(type, node.Name, node.ParameterList, node.Body);
+            var newDef = new FuncNode(type, node.Name, node.ParameterList, node.Body);
             Replace(node, newDef, context);
             node = newDef;
         }

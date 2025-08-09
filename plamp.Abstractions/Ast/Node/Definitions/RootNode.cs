@@ -2,14 +2,14 @@ using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node.Definitions;
 
-public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<DefNode> funcs) : NodeBase
+public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<FuncNode> functions) : NodeBase
 {
     private ModuleDefinitionNode? _moduleName = moduleName;
     public IReadOnlyList<ImportNode> Imports => imports;
 
     public ModuleDefinitionNode? ModuleName => _moduleName;
 
-    public IReadOnlyList<DefNode> Funcs => funcs;
+    public IReadOnlyList<FuncNode> Functions => functions;
     
     public override IEnumerable<NodeBase> Visit()
     {
@@ -20,7 +20,7 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
 
         if(_moduleName != null) yield return _moduleName;
         
-        foreach (var func in funcs)
+        foreach (var func in functions)
         {
             yield return func;
         }
@@ -39,11 +39,11 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         {
             _moduleName = moduleDefChild;
         }
-        else if (newChild is DefNode defChild
-                 && child is DefNode oldDef
-                 && (ix = funcs.IndexOf(oldDef)) != -1)
+        else if (newChild is FuncNode defChild
+                 && child is FuncNode oldDef
+                 && (ix = functions.IndexOf(oldDef)) != -1)
         {
-            funcs[ix] = defChild;
+            functions[ix] = defChild;
         }
     }
 }

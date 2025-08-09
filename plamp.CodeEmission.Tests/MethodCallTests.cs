@@ -529,15 +529,15 @@ public class MethodCallTests
                     ]), null),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new MemberNode(nameof(nm1))),
-            new AssignNode(new MemberNode(nameof(nm1)), new MinusNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))),
+            new AssignNode(new MemberNode(nameof(nm1)), new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))),
             new AssignNode(new MemberNode(nameof(nm1)), EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm1))])),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new MemberNode(nameof(nm2))),
-            new AssignNode(new MemberNode(nameof(nm2)), new MinusNode(new MemberNode(arg.Name), new MemberNode(nameof(two)))),
+            new AssignNode(new MemberNode(nameof(nm2)), new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(two)))),
             new AssignNode(new MemberNode(nameof(nm2)), EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm2))])),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new MemberNode(nameof(sum))),
-            new AssignNode(new MemberNode(nameof(sum)), new PlusNode(new MemberNode(nameof(nm1)), new MemberNode (nameof(nm2)))),
+            new AssignNode(new MemberNode(nameof(sum)), new AddNode(new MemberNode(nameof(nm1)), new MemberNode (nameof(nm2)))),
             new ReturnNode(new MemberNode(nameof(sum)))
         ]);
         

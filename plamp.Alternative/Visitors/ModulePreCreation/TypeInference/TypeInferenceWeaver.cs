@@ -16,7 +16,7 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceInnerContext>
 {
-    protected override VisitResult VisitDef(DefNode node, TypeInferenceInnerContext context)
+    protected override VisitResult VisitDef(FuncNode node, TypeInferenceInnerContext context)
     {
         context.CurrentFunc = node;
         foreach (var parameterNode in node.ParameterList)
@@ -462,7 +462,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                                          type == typeof(double);
 
     private bool Arithmetic(BaseBinaryNode baseBinary) =>
-        baseBinary is PlusNode or MinusNode or MultiplyNode or DivideNode or ModuloNode;
+        baseBinary is AddNode or SubNode or MulNode or DivNode or ModuloNode;
 
     private bool BinaryLogicGate(BaseBinaryNode baseBinary) => baseBinary is OrNode or AndNode;
 

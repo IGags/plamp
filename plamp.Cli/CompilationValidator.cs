@@ -11,7 +11,7 @@ namespace plamp.Cli;
 public class CompilationValidator : BaseValidator<CreationContext, InnerCompilationContext>
 {
 
-    protected override VisitResult VisitDef(DefNode node, InnerCompilationContext context)
+    protected override VisitResult VisitDef(FuncNode node, InnerCompilationContext context)
     {
         var builder = context.Methods.Single(x => x.Name == node.Name.MemberName);
         var emitter = new DefaultIlCodeEmitter();

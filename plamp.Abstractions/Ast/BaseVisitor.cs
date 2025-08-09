@@ -58,7 +58,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitBody(bodyNode, context);
             case ConditionNode conditionNode:
                 return VisitCondition(conditionNode, context);
-            case DefNode defNode:
+            case FuncNode defNode:
                 return VisitDef(defNode, context);
             case WhileNode whileNode:
                 return VisitWhile(whileNode, context);
@@ -134,7 +134,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitXor(xorNode, context);
             case AndNode andNode:
                 return VisitAnd(andNode, context);
-            case DivideNode divideNode:
+            case DivNode divideNode:
                 return VisitDivide(divideNode, context);
             case EqualNode equalNode:
                 return VisitEqual(equalNode, context);
@@ -146,17 +146,17 @@ public abstract class BaseVisitor<TContext>
                 return VisitLess(lessNode, context);
             case LessOrEqualNode lessOrEqualNode:
                 return VisitLessOrEqual(lessOrEqualNode, context);
-            case MinusNode minusNode:
+            case SubNode minusNode:
                 return VisitMinus(minusNode, context);
             case ModuloNode moduloNode:
                 return VisitModulo(moduloNode, context);
-            case MultiplyNode multiplyNode:
+            case MulNode multiplyNode:
                 return VisitMultiply(multiplyNode, context);
             case NotEqualNode notEqualNode:
                 return VisitNotEqual(notEqualNode, context);
             case OrNode orNode:
                 return VisitOr(orNode, context);
-            case PlusNode plusNode:
+            case AddNode plusNode:
                 return VisitPlus(plusNode, context);
         }
         
@@ -180,7 +180,7 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitAnd(AndNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitDivide(DivideNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitDivide(DivNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitEqual(EqualNode node, TContext context) => VisitResult.Continue;
     
@@ -192,23 +192,23 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult VisitLessOrEqual(LessOrEqualNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitMinus(MinusNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitMinus(SubNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitModulo(ModuloNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitMultiply(MultiplyNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitMultiply(MulNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitNotEqual(NotEqualNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitOr(OrNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitPlus(PlusNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitPlus(AddNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitBody(BodyNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitCondition(ConditionNode node, TContext context) => VisitResult.Continue;
     
-    protected virtual VisitResult VisitDef(DefNode node, TContext context) => VisitResult.Continue;
+    protected virtual VisitResult VisitDef(FuncNode node, TContext context) => VisitResult.Continue;
     
     protected virtual VisitResult VisitWhile(WhileNode node, TContext context) => VisitResult.Continue;
     

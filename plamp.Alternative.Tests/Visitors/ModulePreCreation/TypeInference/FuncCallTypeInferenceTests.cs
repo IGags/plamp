@@ -34,8 +34,8 @@ public class FuncCallTypeInferenceTests
         
         var retType = new TypeNode(new MemberNode("void"));
         retType.SetType(typeof(void));
-        var def = new DefNode(retType, new MemberNode("a"), [], new BodyNode([]));
-        var funcDict = new Dictionary<string, DefNode>()
+        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
@@ -53,8 +53,8 @@ public class FuncCallTypeInferenceTests
 
         var retType = new TypeNode(new MemberNode("int"));
         retType.SetType(typeof(int));
-        var def = new DefNode(retType, new MemberNode("a"), [], new BodyNode([]));
-        var funcDict = new Dictionary<string, DefNode>()
+        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
@@ -75,7 +75,7 @@ public class FuncCallTypeInferenceTests
         firstArgType.SetType(typeof(int));
         secondArgType.SetType(typeof(string));
         
-        var def = new DefNode(
+        var def = new FuncNode(
             retType, 
             new MemberNode("a"), 
             [
@@ -83,7 +83,7 @@ public class FuncCallTypeInferenceTests
                 new ParameterNode(secondArgType, new MemberNode("s"))
             ], 
             new BodyNode([]));
-        var funcDict = new Dictionary<string, DefNode>()
+        var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
@@ -100,8 +100,8 @@ public class FuncCallTypeInferenceTests
         
         var retType = new TypeNode(new MemberNode("void"));
         retType.SetType(typeof(void));
-        var def = new DefNode(retType, new MemberNode("a"), [], new BodyNode([]));
-        var funcDict = new Dictionary<string, DefNode>()
+        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
@@ -134,7 +134,7 @@ public class FuncCallTypeInferenceTests
         firstArgType.SetType(typeof(int));
         secondArgType.SetType(typeof(string));
         
-        var def = new DefNode(
+        var def = new FuncNode(
             retType, 
             new MemberNode("a"), 
             [
@@ -142,7 +142,7 @@ public class FuncCallTypeInferenceTests
                 new ParameterNode(secondArgType, new MemberNode("s"))
             ], 
             new BodyNode([]));
-        var funcDict = new Dictionary<string, DefNode>()
+        var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
@@ -174,7 +174,7 @@ public class FuncCallTypeInferenceTests
         Mock<ISymbolTable> symbolTable, 
         string fileName, 
         TypeInferenceWeaver visitor, 
-        Dictionary<string, DefNode> funcs)
+        Dictionary<string, FuncNode> funcs)
     {
         var filePosition = new KeyValuePair<FilePosition, FilePosition>();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);

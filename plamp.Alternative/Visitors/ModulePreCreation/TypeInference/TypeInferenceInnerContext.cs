@@ -13,7 +13,7 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
     public Type? InnerExpressionType { get; set; }
     
-    public DefNode? CurrentFunc { get; set; }
+    public FuncNode? CurrentFunc { get; set; }
 
     public ScopeLocation InstructionInScopePosition { get; private set; } = new(-1, -1, -1);
 

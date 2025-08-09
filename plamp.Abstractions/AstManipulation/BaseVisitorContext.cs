@@ -12,7 +12,7 @@ public abstract class BaseVisitorContext(string fileName, ISymbolTable symbolTab
     
     public ISymbolTable SymbolTable { get; init; } = symbolTable;
 
-    public Dictionary<string, DefNode> Functions { get; init; } = [];
+    public Dictionary<string, FuncNode> Functions { get; init; } = [];
 
     public List<PlampException> Exceptions { get; init; } = [];
 

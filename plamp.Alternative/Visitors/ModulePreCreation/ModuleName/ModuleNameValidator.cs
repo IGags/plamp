@@ -30,7 +30,7 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
         return VisitResult.Break;
     }
 
-    protected override VisitResult VisitDef(DefNode node, ModuleNameValidatorContext context)
+    protected override VisitResult VisitDef(FuncNode node, ModuleNameValidatorContext context)
     {
         if (!context.Members.TryGetValue(node.Name.MemberName, out var members))
         {

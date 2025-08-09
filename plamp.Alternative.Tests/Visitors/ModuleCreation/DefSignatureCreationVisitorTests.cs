@@ -29,7 +29,7 @@ public class DefSignatureCreationVisitorTests
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new MemberNode(returnTypeObject.Name));
         returnType.SetType(returnTypeObject);
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType,
             new MemberNode(funcName),
             [], 
@@ -58,7 +58,7 @@ public class DefSignatureCreationVisitorTests
         argType.SetType(typeof(int));
         var arg = new ParameterNode(argType, new MemberNode("first"));
         
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType,
             new MemberNode(funcName),
             [arg],
@@ -87,7 +87,7 @@ public class DefSignatureCreationVisitorTests
         argType.SetType(typeof(int));
         var arg = new ParameterNode(argType, new MemberNode("first"));
         
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType,
             new MemberNode(funcName),
             [arg],
@@ -112,7 +112,7 @@ public class DefSignatureCreationVisitorTests
         var argType = new TypeNode(new MemberNode("int"));
         var arg = new ParameterNode(argType, new MemberNode("first"));
         
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType,
             new MemberNode(funcName),
             [arg],

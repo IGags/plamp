@@ -12,8 +12,7 @@ internal record EmissionContext(
 {
     private readonly Stack<CycleContext> _currentCycles = [];
 
-    public void EnterCycleContext(string startLabel, string endLabel) 
-        => _currentCycles.Push(new(startLabel, endLabel));        
+    public void EnterCycleContext(string startLabel, string endLabel) => _currentCycles.Push(new(startLabel, endLabel));        
     
     public void ExitCycleContext() => _currentCycles.Pop();
     

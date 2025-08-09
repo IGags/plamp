@@ -18,7 +18,7 @@ public class MemberNameUniquenessVisitorTests
         var table = new SymbolTable();
         var func1Name = new MemberNode("fn1");
         var funcBody = new BodyNode([]);
-        var func1 = new DefNode(null, func1Name, [], funcBody);
+        var func1 = new FuncNode(null, func1Name, [], funcBody);
         var root = new RootNode([], null, [func1]);
         table.AddSymbol(func1Name, new FilePosition(0, 1), new FilePosition(0, 2));
         table.AddSymbol(funcBody, new FilePosition(1, 0), new FilePosition(1, 1));
@@ -36,11 +36,11 @@ public class MemberNameUniquenessVisitorTests
         var table = new SymbolTable();
         var func1Name = new MemberNode("fn1");
         var funcBody = new BodyNode([]);
-        var func1 = new DefNode(null, func1Name, [], funcBody);
+        var func1 = new FuncNode(null, func1Name, [], funcBody);
         
         var func2Name = new MemberNode("fn2");
         var func2Body = new BodyNode([]);
-        var func2 = new DefNode(null, func2Name, [], func2Body);
+        var func2 = new FuncNode(null, func2Name, [], func2Body);
         
         var root = new RootNode([], null, [func1, func2]);
         
@@ -66,11 +66,11 @@ public class MemberNameUniquenessVisitorTests
         var table = new SymbolTable();
         var func1Name = new MemberNode("fn1");
         var funcBody = new BodyNode([]);
-        var func1 = new DefNode(null, func1Name, [], funcBody);
+        var func1 = new FuncNode(null, func1Name, [], funcBody);
         
         var func2Name = new MemberNode("fn1");
         var func2Body = new BodyNode([]);
-        var func2 = new DefNode(null, func2Name, [], func2Body);
+        var func2 = new FuncNode(null, func2Name, [], func2Body);
         
         var root = new RootNode([], null, [func1, func2]);
         

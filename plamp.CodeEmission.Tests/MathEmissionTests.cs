@@ -109,18 +109,18 @@ public class MathEmissionTests
             new AssignNode(falseName, falseLiteral)
         };
         
-        yield return [intDefs, new PlusNode(firstName, secondName), -1, typeof(int)];
-        yield return [intDefs, new MinusNode(firstName, secondName), 5, typeof(int)];
-        yield return [intDefs, new MultiplyNode(firstName, secondName), -6, typeof(int)];
-        yield return [intDefs, new DivideNode(firstName, secondName), 0, typeof(int)];
-        yield return [floatDefs, new PlusNode(firstName, secondName), fl1 + fl2, typeof(float)];
-        yield return [floatDefs, new MinusNode(firstName, secondName), fl1 - fl2, typeof(float)];
-        yield return [floatDefs, new MultiplyNode(firstName, secondName), fl1 * fl2, typeof(float)];
-        yield return [floatDefs, new DivideNode(firstName, secondName), fl1 / fl2, typeof(float)];
-        yield return [doubleDefs, new PlusNode(firstName, secondName), d1 + d2, typeof(double)];
-        yield return [doubleDefs, new MinusNode(firstName, secondName), d1 - d2, typeof(double)];
-        yield return [doubleDefs, new MultiplyNode(firstName, secondName), d1 * d2, typeof(double)];
-        yield return [doubleDefs, new DivideNode(firstName, secondName), d1 / d2, typeof(double)];
+        yield return [intDefs, new AddNode(firstName, secondName), -1, typeof(int)];
+        yield return [intDefs, new SubNode(firstName, secondName), 5, typeof(int)];
+        yield return [intDefs, new MulNode(firstName, secondName), -6, typeof(int)];
+        yield return [intDefs, new DivNode(firstName, secondName), 0, typeof(int)];
+        yield return [floatDefs, new AddNode(firstName, secondName), fl1 + fl2, typeof(float)];
+        yield return [floatDefs, new SubNode(firstName, secondName), fl1 - fl2, typeof(float)];
+        yield return [floatDefs, new MulNode(firstName, secondName), fl1 * fl2, typeof(float)];
+        yield return [floatDefs, new DivNode(firstName, secondName), fl1 / fl2, typeof(float)];
+        yield return [doubleDefs, new AddNode(firstName, secondName), d1 + d2, typeof(double)];
+        yield return [doubleDefs, new SubNode(firstName, secondName), d1 - d2, typeof(double)];
+        yield return [doubleDefs, new MulNode(firstName, secondName), d1 * d2, typeof(double)];
+        yield return [doubleDefs, new DivNode(firstName, secondName), d1 / d2, typeof(double)];
         yield return [intDefs, new EqualNode(firstName, secondName), false, typeof(bool)];
         yield return [intDefs, new EqualNode(firstName, firstName), true, typeof(bool)];
         yield return [intDefs, new NotEqualNode(firstName, secondName), true, typeof(bool)];

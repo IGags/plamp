@@ -2,16 +2,10 @@
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class MemberAccessNode : NodeBase
+public class MemberAccessNode(NodeBase from, NodeBase member) : NodeBase
 {
-    public NodeBase From { get; private set; }
-    public NodeBase Member { get; private set; }
-
-    public MemberAccessNode(NodeBase from, NodeBase member)
-    {
-        From = from;
-        Member = member;
-    }
+    public NodeBase From { get; private set; } = from;
+    public NodeBase Member { get; private set; } = member;
 
     public override IEnumerable<NodeBase> Visit()
     {
@@ -21,13 +15,7 @@ public class MemberAccessNode : NodeBase
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        if (From == child)
-        {
-            From = newChild;
-        }
-        else if (Member == child)
-        {
-            Member = newChild;
-        }
+        if (From == child) From = newChild;
+        else if (Member == child) Member = newChild;
     }
 }

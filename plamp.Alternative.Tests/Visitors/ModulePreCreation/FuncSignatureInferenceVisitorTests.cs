@@ -35,7 +35,7 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(
+                new FuncNode(
                     null, new MemberNode(funcName), [], 
                     new BodyNode([]))
             ]);
@@ -48,7 +48,7 @@ public class FuncSignatureInferenceVisitorTests
             .ShouldSatisfyAllConditions(
                 x => x.Key.ShouldBe(funcName),
                 x => x.Value.ShouldSatisfyAllConditions(
-                    y => y.ShouldBe(ast.Funcs[0]),
+                    y => y.ShouldBe(ast.Functions[0]),
                     y => y.ReturnType.ShouldNotBeNull()
                         .Symbol.ShouldBe(typeof(void))));
     }
@@ -63,7 +63,7 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(
+                new FuncNode(
                     new TypeNode(new MemberNode("int")), 
                     new MemberNode(funcName), [], 
                     new BodyNode([]))
@@ -76,7 +76,7 @@ public class FuncSignatureInferenceVisitorTests
             .ShouldSatisfyAllConditions(
                 x => x.Key.ShouldBe(funcName),
                 x => x.Value.ShouldSatisfyAllConditions(
-                    y => y.ShouldBe(ast.Funcs[0]),
+                    y => y.ShouldBe(ast.Functions[0]),
                     y => y.ReturnType.ShouldNotBeNull()
                         .Symbol.ShouldBe(typeof(int))));
     }
@@ -91,7 +91,7 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(
+                new FuncNode(
                     null, 
                     new MemberNode(funcName), 
                     [
@@ -110,7 +110,7 @@ public class FuncSignatureInferenceVisitorTests
                 .ShouldSatisfyAllConditions(
                     y => y.Key.ShouldBe(funcName),
                     y => y.Value.ShouldSatisfyAllConditions(
-                        z => z.ShouldBe(ast.Funcs[0]),
+                        z => z.ShouldBe(ast.Functions[0]),
                         z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldHaveSingleItem()
                             .Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int)))));
@@ -126,7 +126,7 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(
+                new FuncNode(
                     null, 
                     new MemberNode(funcName), 
                     [
@@ -146,7 +146,7 @@ public class FuncSignatureInferenceVisitorTests
                 .ShouldSatisfyAllConditions(
                     y => y.Key.ShouldBe(funcName),
                     y => y.Value.ShouldSatisfyAllConditions(
-                        z => z.ShouldBe(ast.Funcs[0]),
+                        z => z.ShouldBe(ast.Functions[0]),
                         z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldSatisfyAllConditions(
                             w => w[0].Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int)),
@@ -169,8 +169,8 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(null, new MemberNode(funcName), [], new BodyNode([])),
-                new DefNode(null, new MemberNode(funcName2), [], new BodyNode([]))
+                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([])),
+                new FuncNode(null, new MemberNode(funcName2), [], new BodyNode([]))
             ]);
         
         var context = new PreCreationContext(fileName, symbolTableMock.Object);
@@ -183,13 +183,13 @@ public class FuncSignatureInferenceVisitorTests
                 .ShouldSatisfyAllConditions(
                     y => y.ShouldContainKey(funcName),
                     y => y[funcName].ShouldSatisfyAllConditions(
-                        z => z.ShouldBe(ast.Funcs[0]),
+                        z => z.ShouldBe(ast.Functions[0]),
                         z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldBeEmpty()
                     ),
                     y => y.ShouldContainKey(funcName2),
                     y => y[funcName2].ShouldSatisfyAllConditions(
-                        z => z.ShouldBe(ast.Funcs[1]),
+                        z => z.ShouldBe(ast.Functions[1]),
                         z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldBeEmpty()
                     )
@@ -208,8 +208,8 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new DefNode(null, new MemberNode(funcName), [], new BodyNode([])),
-                new DefNode(null, new MemberNode(funcName), [], new BodyNode([]))
+                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([])),
+                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([]))
             ]);
         
         var context = new PreCreationContext(fileName, symbolTableMock.Object);

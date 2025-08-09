@@ -7,7 +7,7 @@ namespace plamp.Alternative.Visitors.ModuleCreation;
 
 public class DefSignatureCreationValidator : BaseValidator<CreationContext, CreationContext>
 {
-    protected override VisitResult VisitDef(DefNode node, CreationContext context)
+    protected override VisitResult VisitDef(FuncNode node, CreationContext context)
     {
         var signature = node.ParameterList.Select(x => x.Type.Symbol).ToArray();
         if (signature.Any(x => x == null)) return VisitResult.SkipChildren;

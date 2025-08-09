@@ -7,7 +7,7 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 
 public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, MustReturnValueInnerContext>
 {
-    protected override VisitResult VisitDef(DefNode node, MustReturnValueInnerContext context)
+    protected override VisitResult VisitDef(FuncNode node, MustReturnValueInnerContext context)
     {
         if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
         

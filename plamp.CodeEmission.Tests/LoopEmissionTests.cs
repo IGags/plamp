@@ -35,7 +35,7 @@ public class LoopEmissionTests
                 [
                     new AssignNode(
                         new MemberNode(nameof(iter)),
-                        new PlusNode(
+                        new AddNode(
                             new MemberNode(nameof(iter)),
                             new LiteralNode(1, typeof(int))))
                 ])),

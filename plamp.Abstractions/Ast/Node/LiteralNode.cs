@@ -3,21 +3,12 @@ using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class LiteralNode : NodeBase
+public class LiteralNode(object? value, Type type) : NodeBase
 {
-    public object? Value { get; }
-    public Type Type { get; }
+    public object? Value { get; } = value;
+    public Type Type { get; } = type;
 
-    public LiteralNode(object? value, Type type)
-    {
-        Value = value;
-        Type = type;
-    }
-
-    public override IEnumerable<NodeBase> Visit()
-    {
-        return [];
-    }
+    public override IEnumerable<NodeBase> Visit() => [];
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

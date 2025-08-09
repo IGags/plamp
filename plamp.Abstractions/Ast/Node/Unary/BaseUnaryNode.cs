@@ -2,15 +2,10 @@
 
 namespace plamp.Abstractions.Ast.Node.Unary;
 
-public abstract class BaseUnaryNode : NodeBase
+public abstract class BaseUnaryNode(NodeBase inner) : NodeBase
 {
-    public NodeBase Inner { get; private set; }
+    public NodeBase Inner { get; private set; } = inner;
 
-    public BaseUnaryNode(NodeBase inner)
-    {
-        Inner = inner;
-    }
-    
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Inner;

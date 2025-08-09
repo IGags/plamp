@@ -18,7 +18,7 @@ public class MemberNameUniquenessValidator : BaseValidator<PreCreationContext, M
         {
             switch (child)
             {
-                case DefNode defNode:
+                case FuncNode defNode:
                     if (!context.Members.TryGetValue(defNode.Name.MemberName, out var members))
                     {
                         members = [];

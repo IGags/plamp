@@ -2,16 +2,10 @@
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class VariableDefinitionNode : NodeBase
+public class VariableDefinitionNode(TypeNode? type, MemberNode member) : NodeBase
 {
-    public TypeNode? Type { get; private set; }
-    public MemberNode Member { get; private set; }
-
-    public VariableDefinitionNode(TypeNode? type, MemberNode member)
-    {
-        Type = type;
-        Member = member;
-    }
+    public TypeNode? Type { get; private set; } = type;
+    public MemberNode Member { get; private set; } = member;
 
     public override IEnumerable<NodeBase> Visit()
     {
@@ -21,13 +15,7 @@ public class VariableDefinitionNode : NodeBase
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        if (Type == child && newChild is TypeNode newType)
-        {
-            Type = newType;
-        }
-        else if (Member == child && newChild is MemberNode newMember)
-        {
-            Member = newMember;
-        }
+        if (Type == child && newChild is TypeNode newType) Type = newType;
+        else if (Member == child && newChild is MemberNode newMember) Member = newMember;
     }
 }

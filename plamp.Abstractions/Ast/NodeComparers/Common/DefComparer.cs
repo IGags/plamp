@@ -4,9 +4,9 @@ using plamp.Abstractions.Ast.Node.Definitions;
 
 namespace plamp.Abstractions.Ast.NodeComparers.Common;
 
-public class DefComparer : IEqualityComparer<DefNode>
+public class DefComparer : IEqualityComparer<FuncNode>
 {
-    public bool Equals(DefNode? x, DefNode? y)
+    public bool Equals(FuncNode? x, FuncNode? y)
     {
         if(ReferenceEquals(x, y)) return true;
         if(x == null) return false;
@@ -15,7 +15,7 @@ public class DefComparer : IEqualityComparer<DefNode>
         return true;
     }
 
-    public int GetHashCode(DefNode obj)
+    public int GetHashCode(FuncNode obj)
     {
         var hashCode = new HashCode();
         hashCode.Add(obj.ReturnType);

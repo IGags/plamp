@@ -22,7 +22,7 @@ public static class ModuleSignatureBuilder
         var assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
         var module = assembly.DefineDynamicModule(node.ModuleName.ModuleName);
         var funcs = new List<MethodBuilder>();
-        foreach (var func in node.Funcs)
+        foreach (var func in node.Functions)
         {
             var signature = CreateMethodSignature(func, context, module);
             if(signature != null) funcs.Add(signature);
@@ -33,7 +33,7 @@ public static class ModuleSignatureBuilder
         return new ModuleBuildingResult(methodSignature, context.Exceptions);
     }
 
-    private static MethodBuilder? CreateMethodSignature(DefNode func, SignatureBuildingContext context, ModuleBuilder moduleBuilder)
+    private static MethodBuilder? CreateMethodSignature(FuncNode func, SignatureBuildingContext context, ModuleBuilder moduleBuilder)
     {
         var exCount = context.Exceptions.Count;
 

@@ -151,9 +151,9 @@ public class MethodAlwaysReturnsValueTests
         Assert.All(res.Exceptions, Assert.NotNull);
     }
 
-    private static DefNode CreateMethod(Type returnType, string name, List<NodeBase> parameters, BodyNode body)
+    private static FuncNode CreateMethod(Type returnType, string name, List<NodeBase> parameters, BodyNode body)
     {
-        return new DefNode(
+        return new FuncNode(
             CreateTypeNode(returnType),
             new MemberNode(name),
             parameters.Cast<ParameterNode>().ToList(),
@@ -172,7 +172,7 @@ public class MethodAlwaysReturnsValueTests
     {
         public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord, string fileName)
         {
-            return node is DefNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName) : throw new ArgumentException();
+            return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName) : throw new ArgumentException();
         }
 
         public PlampException SetExceptionToNodeRange(List<NodeBase> nodes, PlampExceptionRecord exceptionRecord, string fileName)

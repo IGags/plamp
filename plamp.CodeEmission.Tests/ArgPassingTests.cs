@@ -67,7 +67,7 @@ public class ArgPassingTests
                 ),
             new AssignNode(
                 new MemberNode(tempVarName), 
-                new PlusNode(
+                new AddNode(
                     new MemberNode(p1.Name), 
                     new MemberNode(p2.Name)
                     )

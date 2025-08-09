@@ -89,14 +89,14 @@ public class OperatorTypeInferenceTests
     [Theory, AutoData]
     public void BinaryArithmeticalDifferentType_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
     {
-        var ast = new PlusNode(new LiteralNode(2, typeof(int)), new LiteralNode(true, typeof(bool)));
+        var ast = new AddNode(new LiteralNode(2, typeof(int)), new LiteralNode(true, typeof(bool)));
         SetupMockAndAssertError(ast, symbolTable, fileName, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryArithmeticalSameType_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
     {
-        var ast = new DivideNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int)));
+        var ast = new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int)));
         SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
     }
 

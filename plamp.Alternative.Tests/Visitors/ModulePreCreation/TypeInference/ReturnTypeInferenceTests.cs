@@ -20,7 +20,7 @@ public class ReturnTypeInferenceTests
     [Theory, AutoData]
     public void UnresolvedFuncReturnType_ReturnNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
     {
-        var ast = new DefNode(
+        var ast = new FuncNode(
             new TypeNode(new MemberNode("abc")),
             new MemberNode("aaa"),
             [],
@@ -33,7 +33,7 @@ public class ReturnTypeInferenceTests
     {
         var returnType = new TypeNode(new MemberNode("int"));
         returnType.SetType(typeof(int));
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType, new MemberNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1, typeof(int)))]));
         SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
@@ -44,7 +44,7 @@ public class ReturnTypeInferenceTests
     {
         var returnType = new TypeNode(new MemberNode("void"));
         returnType.SetType(typeof(void));
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType, new MemberNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
         SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
@@ -56,7 +56,7 @@ public class ReturnTypeInferenceTests
     {
         var returnType = new TypeNode(new MemberNode("int"));
         returnType.SetType(typeof(int));
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType, new MemberNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1d, typeof(double)))]));
         SetupExceptionMock(symbolTable, fileName);
@@ -74,7 +74,7 @@ public class ReturnTypeInferenceTests
     {
         var returnType = new TypeNode(new MemberNode("void"));
         returnType.SetType(typeof(void));
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType, new MemberNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1, typeof(int)))]));
         SetupExceptionMock(symbolTable, fileName);
@@ -92,7 +92,7 @@ public class ReturnTypeInferenceTests
     {
         var returnType = new TypeNode(new MemberNode("int"));
         returnType.SetType(typeof(int));
-        var ast = new DefNode(
+        var ast = new FuncNode(
             returnType, new MemberNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
         SetupExceptionMock(symbolTable, fileName);
