@@ -23,11 +23,11 @@ public abstract class BaseBinaryNode : NodeBase
     {
         if (Left == child)
         {
-            Left = child;
+            Left = newChild;
         }
         else if (Right == child)
         {
-            Right = child;
+            Right = newChild;
         }
     }
 }

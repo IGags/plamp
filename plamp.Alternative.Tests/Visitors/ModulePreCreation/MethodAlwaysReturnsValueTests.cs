@@ -27,7 +27,7 @@ public class MethodAlwaysReturnsValueTests
         if (shouldExcept)
         {
             Assert.Single(res.Exceptions);
-            Assert.NotEqual(null, res.Exceptions[0]);
+            Assert.NotNull(res.Exceptions[0]);
         }
         else
         {

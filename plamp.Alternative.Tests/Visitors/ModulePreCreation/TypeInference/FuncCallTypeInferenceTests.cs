@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using AutoFixture.Xunit2;
@@ -17,12 +16,6 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class FuncCallTypeInferenceTests
 {
-    public void Send() {}
-
-    public int Rand() => Random.Shared.Next();
-
-    public int Ret(int first) => first;
-    
     //Inference call not all required args
     [Theory, AutoData]
     public void CallVoid_ReturnsCorrect([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)

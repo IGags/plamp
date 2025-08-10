@@ -400,7 +400,26 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitTypeConversion(CastNode node, EmissionContext context)
     {
-        EmitGetLocalVarOrArg((MemberNode)node.Inner, context, false);
+        switch (node.Inner)
+        {
+            case MemberNode member:
+                EmitGetLocalVarOrArg(member, context, false);
+                break;
+            case LiteralNode literal:
+                EmitLiteral(literal, context);
+                break;
+            case CallNode call:
+                EmitCall(call, context);
+                break;
+            case BaseBinaryNode binary:
+                EmitBaseBinary(binary, context);
+                break;
+            case BaseUnaryNode unary:
+                EmitUnary(unary, context);
+                break;
+            default: throw new ArgumentException(nameof(node.Inner));
+        }
+        
         var toType = GetTypeFromNode(node.ToType)!;
         var fromType = node.FromType;
 

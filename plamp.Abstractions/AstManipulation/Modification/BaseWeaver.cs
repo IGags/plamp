@@ -55,14 +55,13 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
         {
             foreach (var child in children.ToList())
             {
+                var innerChildren = child.Visit();
+                ProceedRecursive(innerChildren, child);
+                
                 if (ReplacementDict.TryGetValue(child, out var replacement))
                 {
                     parent.ReplaceChild(child, replacement);
-                    continue;
                 }
-
-                var innerChildren = child.Visit();
-                ProceedRecursive(innerChildren, child);
             }
         }
     }

@@ -34,7 +34,7 @@ internal static class TypeResolveHelper
     {
         return intrinsicName switch
         {
-            "println" => typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(string)]),
+            "println" => typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)]),
             _ => null
         };
     }

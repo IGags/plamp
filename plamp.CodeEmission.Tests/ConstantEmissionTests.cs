@@ -23,7 +23,6 @@ public class ConstantEmissionTests
     [InlineData(int.MinValue)]
     //Uint
     [InlineData(0u)]
-    [InlineData(-1024u)]
     [InlineData(1024u)]
     [InlineData(uint.MaxValue)]
     //Short

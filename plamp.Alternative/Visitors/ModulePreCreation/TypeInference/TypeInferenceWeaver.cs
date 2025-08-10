@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
@@ -166,7 +167,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         {
             VisitInternal(arg, context);
             var argType = context.InnerExpressionType;
-            if (argType != defType) invalid = true;
+            
+            if (defType == typeof(object) && defType != argType && argType != null) ExpandType(arg, defType, argType, context);
+            else if (argType != defType) invalid = true;
         }
 
         if (!invalid) return VisitResult.SkipChildren;
@@ -347,17 +350,81 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         Type? rightType, 
         TypeInferenceInnerContext context)
     {
-        if ((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType))
-                                                     || leftType != rightType)
+        if ((leftType != null && !Numeric(leftType)) || (rightType != null && !Numeric(rightType)))
+        {
+            SetCannotApplyException();
+            return VisitResult.SkipChildren;
+        }
+
+        if (leftType != null && Numeric(leftType) && rightType != null && Numeric(rightType) && leftType != rightType)
+        {
+            var toExpand = ChooseChildToExpand(leftType, rightType);
+            switch (toExpand)
+            {
+                case 1:
+                    ExpandType(node.Left, rightType, leftType, context);
+                    break;
+                case -1:
+                    ExpandType(node.Right, leftType, rightType, context);
+                    break;
+                case 0:
+                    SetCannotApplyException();
+                    break;
+            }
+            return VisitResult.SkipChildren;
+        }
+        
+        context.InnerExpressionType = leftType ?? rightType;
+        return VisitResult.SkipChildren;
+
+        void SetCannotApplyException()
         {
             var record = PlampExceptionInfo.CannotApplyOperator();
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             context.InnerExpressionType = null;
-            return VisitResult.SkipChildren;
+        }
+    }
+
+    private void ExpandType(NodeBase from, Type toType, Type fromType, TypeInferenceInnerContext context)
+    {
+        var toTypeNode = new TypeNode(new MemberNode(toType.Name));
+        context.SymbolTable.AddSymbol(toTypeNode, default, default);
+        toTypeNode.SetType(toType);
+        var expanded = new CastNode(toTypeNode, from);
+        expanded.SetFromType(fromType);
+        Replace(from, expanded, context);
+        context.InnerExpressionType = toType;
+    }
+    
+    private static readonly FrozenDictionary<Type, int> TypePriorityDict = new Dictionary<Type, int>()
+    {
+        [typeof(double)] = 6,
+        [typeof(float)] = 5,
+        [typeof(ulong)] = 4,
+        [typeof(long)] = 4,
+        [typeof(uint)] = 3,
+        [typeof(int)] = 3,
+        [typeof(short)] = 2,
+        [typeof(byte)] = 1,
+        
+    }.ToFrozenDictionary();
+    
+    /// <summary>
+    /// 1 - left
+    /// 0 - cannot expand
+    /// -1 right
+    /// </summary>
+    private int ChooseChildToExpand(Type leftType, Type rightType)
+    {
+        if (TypePriorityDict.TryGetValue(leftType, out var leftPriority) 
+            && TypePriorityDict.TryGetValue(rightType, out var rightPriority))
+        {
+            if (leftPriority == rightPriority) return 0;
+            if (leftPriority > rightPriority) return -1;
+            if (leftPriority < rightPriority) return 1;
         }
 
-        context.InnerExpressionType = leftType ?? rightType;
-        return VisitResult.SkipChildren;
+        return 0;
     }
 
     private VisitResult ValidateAssignmentToDefinition(
