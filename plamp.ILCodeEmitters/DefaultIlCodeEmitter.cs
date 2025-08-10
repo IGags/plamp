@@ -177,6 +177,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
+            //TODO: Increment and decrement
         }
     }
 

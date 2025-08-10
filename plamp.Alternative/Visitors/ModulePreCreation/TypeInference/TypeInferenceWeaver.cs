@@ -172,7 +172,11 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             else if (argType != defType) invalid = true;
         }
 
-        if (!invalid) return VisitResult.SkipChildren;
+        if (!invalid)
+        {
+            context.InnerExpressionType = returnType;
+            return VisitResult.SkipChildren;
+        }
         
         var record = PlampExceptionInfo.UnknownFunction();
         context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));

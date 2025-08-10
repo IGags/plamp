@@ -7,7 +7,23 @@ public static class Program
     private const string File = """
                                 module playground;
                                 fn implicit_conv() {
-                                    println(1 + 0.5);
+                                    println("try guess number!");
+                                    att_count := 3;
+                                    number := 5;
+                                    while(att_count > 0) {
+                                        dec := readln();
+                                        if(int(dec) = 5) {
+                                            println("correct!");
+                                            return;
+                                        }
+                                        if(int(dec) < 5) println("the number is greater");
+                                        if(int(dec) > 5) println("the number is lesser");
+                                        println("attempts left:");
+                                        
+                                        att_count := att_count - 1;
+                                        println(att_count);3
+                                    }
+                                    println("you lose");
                                     return;
                                 }
                                 """;
