@@ -29,6 +29,7 @@ public class BodySingleLineExpressionParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseExpression(context, out var expression);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         expression.ShouldBeEquivalentTo(ast);
     }

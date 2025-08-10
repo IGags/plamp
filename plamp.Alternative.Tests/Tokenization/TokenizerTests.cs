@@ -128,6 +128,7 @@ public class TokenizerTests
         yield return ["*", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Mul)];
         yield return ["<", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Lesser)];
         yield return [">", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Greater)];
+        yield return [".", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Access)];
         yield return ["!", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Not)];
         yield return ["use", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Use)];
         yield return ["fn", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Fn)];

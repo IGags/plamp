@@ -182,6 +182,16 @@ public static class PlampExceptionInfo
             Message = "Types is not supported in current version of language",
         };
     }
+
+    public static PlampExceptionRecord ExpectedModuleName()
+    {
+        return new()
+        {
+            Code = "PRS1130",
+            Level = ExceptionLevel.Error,
+            Message = "Expected module name"
+        };
+    }
     
     #endregion
 

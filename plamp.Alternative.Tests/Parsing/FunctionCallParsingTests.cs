@@ -29,6 +29,7 @@ public class FunctionCallParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseFuncCall(context, out var call);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         call.ShouldBeEquivalentTo(ast);
     }

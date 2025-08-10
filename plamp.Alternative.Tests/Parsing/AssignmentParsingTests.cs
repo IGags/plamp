@@ -38,6 +38,7 @@ public class AssignmentParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseAssignment(context, out var assign);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         assign.ShouldBeEquivalentTo(ast);
     }

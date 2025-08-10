@@ -19,6 +19,7 @@ public class ArgParsingTests
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArg(context, out var arg);
         result.ShouldBe(true);
+        context.Exceptions.ShouldBeEmpty();
         arg.ShouldBeEquivalentTo(ast);
     }
 

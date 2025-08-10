@@ -19,6 +19,7 @@ public class TypeParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseType(context, out var type);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         type.ShouldBeEquivalentTo(ast);
     }

@@ -41,6 +41,7 @@ public class BodyParsingTests
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseBody(context, out var body);
+        context.Exceptions.ShouldBeEmpty();
         result.ShouldBe(true);
         body.ShouldBeEquivalentTo(ast);
     }

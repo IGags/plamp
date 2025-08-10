@@ -51,6 +51,7 @@ public class WhileLoopParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseWhileLoop(context, out var loop);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         loop.ShouldBeEquivalentTo(ast);
     }

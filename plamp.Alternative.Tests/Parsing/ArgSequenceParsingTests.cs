@@ -34,6 +34,7 @@ public class ArgSequenceParsingTests
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArgSequence(context, out var list);
         result.ShouldBe(true);
+        context.Exceptions.ShouldBeEmpty();
         list.ShouldBeEquivalentTo(astShould);
     }
 

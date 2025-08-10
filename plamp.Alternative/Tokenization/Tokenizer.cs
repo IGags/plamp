@@ -383,6 +383,7 @@ public static class Tokenizer
             case '^':
             case '<':
             case '>':
+            case '.':
                 var opString = row[position].ToString();
                 @operator = new OperatorToken(opString, startPosition, startPosition, opString.ToOperator());
                 break;

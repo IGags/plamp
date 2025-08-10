@@ -30,6 +30,7 @@ public class ParseBodyLevelStatement
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseStatement(context, out var statement);    
+        context.Exceptions.ShouldBeEmpty();
         result.ShouldBe(true);
         statement.ShouldBeEquivalentTo(ast);
     }

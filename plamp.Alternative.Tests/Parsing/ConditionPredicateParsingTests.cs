@@ -25,6 +25,7 @@ public class ConditionPredicateParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseConditionPredicate(context, out var predicate);
+        context.Exceptions.ShouldBeEmpty();
         result.ShouldBe(true);
         predicate.ShouldBeEquivalentTo(ast);
     }

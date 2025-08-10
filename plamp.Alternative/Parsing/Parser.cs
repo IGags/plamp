@@ -83,15 +83,9 @@ public static class Parser
         if (importKeyword is not KeywordToken { Keyword: Keywords.Use }) return false;
         context.Sequence.MoveNextNonWhiteSpace();
         
-        var moduleName = GetModuleName(context);
-
-        if (context.Sequence.Current() is EndOfStatement)
-        {
-            context.Sequence.MoveNextNonWhiteSpace();
-            importNode = new ImportNode(moduleName, null);
-            context.SymbolTable.AddSymbol(importNode, importKeyword.Start, importKeyword.End);
-            return true;
-        }
+        var moduleName = GetModuleNameOrDefault(context);
+        if (moduleName == null) return false;
+        
         if (context.Sequence.Current() is OpenCurlyBracket)
         {
             var importStart = context.Sequence.CurrentStart;
@@ -101,18 +95,23 @@ public static class Parser
             context.SymbolTable.AddSymbol(importNode, importStart, importEnd);
             return true;
         }
-
-        var record = PlampExceptionInfo.ExpectedEndOfStatement();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd,
-            context.FileName));
-        return false;
+        
+        importNode = new ImportNode(moduleName, null);
+        context.SymbolTable.AddSymbol(importNode, importKeyword.Start, importKeyword.End);
+        ConsumeEndOfStatement(context);
+        return true;
     }
 
-    private static string GetModuleName(ParsingContext context)
+    private static string? GetModuleNameOrDefault(ParsingContext context)
     {
-        var name = string.Empty;
-        if (context.Sequence.Current() is not Word modName) return name;
-        name += modName.GetStringRepresentation();
+        if (context.Sequence.Current() is not Word modName)
+        {
+            var record = PlampExceptionInfo.ExpectedModuleName();
+            var current = context.Sequence.Current();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            return null;
+        }
+        var name = modName.GetStringRepresentation();
         context.Sequence.MoveNextNonWhiteSpace();
         
         while (context.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Access })
@@ -219,21 +218,13 @@ public static class Parser
         if(context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Module }) return false;
         var defStart = context.Sequence.CurrentStart;
         context.Sequence.MoveNextNonWhiteSpace();
-        var moduleName = GetModuleName(context);
+        var moduleName = GetModuleNameOrDefault(context);
+        if (moduleName == null) return false;
         module = new ModuleDefinitionNode(moduleName);
-
-        FilePosition defEnd;
-        if (context.Sequence.Current() is not EndOfStatement)
-        {
-            var record = PlampExceptionInfo.ExpectedEndOfStatement();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
-            defEnd = context.Sequence.CurrentStart;
-            context.SymbolTable.AddSymbol(module, defStart, defEnd);
-            return true;
-        }
-        defEnd = context.Sequence.CurrentEnd;
+        
+        var defEnd = context.Sequence.CurrentEnd;
+        ConsumeEndOfStatement(context);
         context.SymbolTable.AddSymbol(module, defStart, defEnd);
-        context.Sequence.MoveNextNonWhiteSpace();
         return true;
     }
 
@@ -945,7 +936,8 @@ public static class Parser
         opFork.Sequence.MoveNextNonWhiteSpace();
 
         var res = TryParsePrecedence(opFork, out var right, precedence);
-        if (!res || right == null) return false;
+        //Access is not binary operator yet
+        if (!res || right == null || token.Operator == OperatorEnum.Access) return false;
         switch (token.Operator)
         {
             case OperatorEnum.Mul:

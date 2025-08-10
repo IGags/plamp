@@ -31,6 +31,7 @@ public class ReturnParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseReturn(context, out var returnNode);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         returnNode.ShouldBeEquivalentTo(ast);
     }

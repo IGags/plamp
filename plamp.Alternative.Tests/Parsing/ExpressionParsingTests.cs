@@ -37,6 +37,7 @@ public class ExpressionParsingTests
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseNud(context, out var node);
+        context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
     }
