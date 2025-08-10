@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Alternative;
 
+//TODO: Need to fork, for decrease memory consumption
 public class SymbolTable : ISymbolTable
 {
     private readonly Dictionary<NodeBase, KeyValuePair<FilePosition, FilePosition>> _symbols = [];

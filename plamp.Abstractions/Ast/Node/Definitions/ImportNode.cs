@@ -8,14 +8,17 @@ public class ImportNode(string moduleName, List<ImportItemNode>? importedItems) 
 
     public string ModuleName { get; } = moduleName;
     
-    public override IEnumerable<NodeBase> Visit()
-    {
-        if (importedItems == null) return [];
-        return importedItems;
-    }
+    public override IEnumerable<NodeBase> Visit() => importedItems ?? [];
 
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        throw new System.NotImplementedException();
+        if(importedItems == null) return;
+        int ix;
+        if (child is ImportItemNode oldImportItem
+            && newChild is ImportItemNode newImportItem
+            && (ix = importedItems.IndexOf(oldImportItem)) != -1)
+        {
+            importedItems[ix] = newImportItem;
+        }
     }
 }

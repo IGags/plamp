@@ -190,16 +190,16 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         EmitSingleLineExpression(binaryNode.Right, context);
         switch (binaryNode)
         {
-            case PlusNode:
+            case AddNode:
                 EmitPlus(context);
                 break;
-            case MinusNode:
+            case SubNode:
                 EmitMinus(context);
                 break;
-            case MultiplyNode:
+            case MulNode:
                 EmitMultiply(context);
                 break;
-            case DivideNode:
+            case DivNode:
                 EmitDivide(context);
                 break;
             case BitwiseAndNode:

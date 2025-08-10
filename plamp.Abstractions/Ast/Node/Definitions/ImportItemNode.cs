@@ -8,12 +8,7 @@ public class ImportItemNode(string name, string alias) : NodeBase
 
     public string Alias { get; } = alias;
     
-    public override IEnumerable<NodeBase> Visit()
-    {
-        return [];
-    }
+    public override IEnumerable<NodeBase> Visit() => [];
 
-    public override void ReplaceChild(NodeBase child, NodeBase newChild)
-    {
-    }
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

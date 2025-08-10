@@ -1,7 +1,7 @@
 ﻿<Solution>
   <Folder Name="/Tests/">
+    <Project Path="plamp.Alternative.Tests\plamp.Alternative.Tests.csproj" Type="Classic C#" />
     <Project Path="plamp.CodeEmission.Tests\plamp.CodeEmission.Tests.csproj" Type="Classic C#" />
-    <Project Path="plamp.Validators.Tests\plamp.Validators.Tests.csproj" Type="Classic C#" />
   </Folder>
   <Project Path="plamp.Abstractions\plamp.Abstractions.csproj" Type="Classic C#" />
   <Project Path="plamp.Alternative\plamp.Alternative.csproj" Type="Classic C#" />

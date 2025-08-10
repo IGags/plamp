@@ -39,7 +39,7 @@ public static class Tokenizer
 
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
-        var context = new TokenizationContext(sourceFile.FileName, rows, tokenList, exceptionList);
+        var context = new TokenizationContext(sourceFile.FileName, tokenList, exceptionList);
         
         foreach (var row in prepared)
         {
@@ -383,6 +383,7 @@ public static class Tokenizer
             case '^':
             case '<':
             case '>':
+            case '.':
                 var opString = row[position].ToString();
                 @operator = new OperatorToken(opString, startPosition, startPosition, opString.ToOperator());
                 break;

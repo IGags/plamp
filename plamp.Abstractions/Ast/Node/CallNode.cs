@@ -13,7 +13,7 @@ public class CallNode(NodeBase? from, MemberNode methodName, List<NodeBase> args
     public MemberNode MethodName { get; private set; } = methodName;
     public IReadOnlyList<NodeBase> Args => args;
 
-    public virtual MethodInfo? Symbol { get; protected set; }
+    public MethodInfo? Symbol { get; protected set; }
 
     public void SetInfo(MethodInfo symbol) => Symbol = symbol;
 

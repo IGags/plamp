@@ -26,15 +26,15 @@ public class CompilationDriver
             symbolTable);
         var ast = Parser.ParseFile(parsingContext);
         var context = new PreCreationContext(fileName, symbolTable);
-        
+        context.Exceptions.AddRange(parsingContext.Exceptions);
         var moduleNameVisitor = new ModuleNameValidator();
         context = moduleNameVisitor.Validate(ast, context);
         
         var memberNameVisitor = new MemberNameUniquenessValidator();
         context = memberNameVisitor.Validate(ast, context);
 
-        var memberSignatureVisitor = new SignatureTypeInferenceValidator();
-        context = memberSignatureVisitor.Validate(ast, context);
+        var memberSignatureVisitor = new SignatureTypeInferenceWeaver();
+        context = memberSignatureVisitor.WeaveDiffs(ast, context);
 
         var funcReturnVisitor = new MethodMustReturnValueValidator();
         context = funcReturnVisitor.Validate(ast, context);
@@ -54,7 +54,7 @@ public class CompilationDriver
         var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, context);
         var signatureVisitor = new DefSignatureCreationValidator();
         compilationContext = signatureVisitor.Validate(ast, compilationContext);
-        var callVisitor = new MethodCallInferenceWeaver();
+        var callVisitor = new MethodCallInferenceValidator();
         compilationContext = callVisitor.Validate(ast, compilationContext);
 
         var compilationVisitor = new CompilationValidator();

@@ -29,7 +29,7 @@ internal static class TypeResolveHelper
         exceptions.Add(symbols.SetExceptionToNode(type, record, fileName));
         return null;
     }
-
+    
     public static MethodInfo? TryGetIntrinsic(string intrinsicName)
     {
         return intrinsicName switch

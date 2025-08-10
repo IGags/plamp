@@ -35,10 +35,7 @@ public class PlampException : Exception
     
     public override bool Equals(object? obj)
     {
-        if (obj == null || obj is not PlampException other)
-        {
-            return false;
-        }
+        if (obj is not PlampException other) return false;
 
         return
             StartPosition.Equals(other.StartPosition)

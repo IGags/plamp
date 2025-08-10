@@ -4,15 +4,9 @@ namespace plamp.Abstractions.Ast.Node.Definitions;
 
 public class ModuleDefinitionNode(string moduleName) : NodeBase
 {
-    public string ModuleName = moduleName;
+    public string ModuleName { get; } = moduleName;
 
-    public override IEnumerable<NodeBase> Visit()
-    {
-        return [];
-    }
+    public override IEnumerable<NodeBase> Visit() => [];
 
-    public override void ReplaceChild(NodeBase child, NodeBase newChild)
-    {
-        throw new System.NotImplementedException();
-    }
+    public override void ReplaceChild(NodeBase child, NodeBase newChild) { }
 }

@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Ast.Node;
 
 public class TypeNode(MemberNode typeName, List<NodeBase>? innerGenerics = null) : NodeBase
 {
-    private List<NodeBase> _innerGenerics = innerGenerics ?? [];
+    private readonly List<NodeBase> _innerGenerics = innerGenerics ?? [];
     public MemberNode TypeName { get; private set; } = typeName;
     public IReadOnlyList<NodeBase> InnerGenerics => _innerGenerics;
 
@@ -25,13 +25,7 @@ public class TypeNode(MemberNode typeName, List<NodeBase>? innerGenerics = null)
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         int childIndex;
-        if (TypeName == child && newChild is MemberNode newMember)
-        {
-            TypeName = newMember;
-        }
-        else if (-1 == (childIndex = _innerGenerics.IndexOf(child)))
-        {
-            _innerGenerics[childIndex] = newChild;
-        }
+        if (TypeName == child && newChild is MemberNode newMember) TypeName = newMember;
+        else if (-1 == (childIndex = _innerGenerics.IndexOf(child))) _innerGenerics[childIndex] = newChild;
     }
 }

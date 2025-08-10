@@ -38,7 +38,7 @@ public class FlowControlTests
             new WhileNode(new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
                 new BodyNode(
                 [
-                    new AssignNode(new MemberNode(nameof(iter)), new PlusNode(new MemberNode(nameof(iter)), new LiteralNode(1, typeof(int)))),
+                    new AssignNode(new MemberNode(nameof(iter)), new AddNode(new MemberNode(nameof(iter)), new LiteralNode(1, typeof(int)))),
                     new ConditionNode(
                         new EqualNode(
                             new ModuloNode(
@@ -49,7 +49,7 @@ public class FlowControlTests
                         [
                             new ContinueNode()
                         ]), null),
-                    new AssignNode(new MemberNode(nameof(t)), new PlusNode(new MemberNode(nameof(t)), new LiteralNode(1, typeof(int))))
+                    new AssignNode(new MemberNode(nameof(t)), new AddNode(new MemberNode(nameof(t)), new LiteralNode(1, typeof(int))))
                 ])),
             new ReturnNode(new MemberNode(nameof(t)))
         ]);
@@ -88,13 +88,13 @@ public class FlowControlTests
                         new LessNode(new MemberNode(nameof(j)), new LiteralNode(iterationCount, iterationCount.GetType())),
                         new BodyNode(
                         [
-                            new AssignNode(new MemberNode(nameof(j)), new PlusNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int)))),
+                            new AssignNode(new MemberNode(nameof(j)), new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int)))),
                             new ContinueNode(),
-                            new AssignNode(new MemberNode(nameof(k)), new PlusNode(new MemberNode(nameof(k)), new LiteralNode(1, typeof(int))))
+                            new AssignNode(new MemberNode(nameof(k)), new AddNode(new MemberNode(nameof(k)), new LiteralNode(1, typeof(int))))
                         ])),
-                    new AssignNode(new MemberNode(nameof(i)), new PlusNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
                 ])),
-            new ReturnNode(new PlusNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
+            new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
         ]);
 
         var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
@@ -132,7 +132,7 @@ public class FlowControlTests
                         [
                             new BreakNode()
                         ]), null),
-                    new AssignNode(new MemberNode(nameof(i)), new PlusNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
                 ])),
             new ReturnNode(new MemberNode(nameof(i)))
         ]);
@@ -169,11 +169,11 @@ public class FlowControlTests
                         new BodyNode(
                         [
                             new BreakNode(),
-                            new AssignNode(new MemberNode(nameof(j)), new PlusNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int))))
+                            new AssignNode(new MemberNode(nameof(j)), new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int))))
                         ])),
-                    new AssignNode(new MemberNode(nameof(i)), new PlusNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
                 ])),
-            new ReturnNode(new PlusNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
+            new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
         ]);
         var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
         var res = method!.Invoke(instance!, []);

@@ -11,7 +11,6 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
-using RootNode = plamp.Abstractions.Ast.Node.Definitions.RootNode;
 
 namespace plamp.Alternative.Parsing;
 
@@ -27,23 +26,12 @@ public static class Parser
 
         var imports = new List<ImportNode>();
         var modules = new List<ModuleDefinitionNode>();
-        var funcs = new List<DefNode>();
+        var functions = new List<FuncNode>();
         foreach (var statement in topLevelList)
         {
-            if (statement is ImportNode import)
-            {
-                imports.Add(import);
-            }
-
-            if (statement is ModuleDefinitionNode def)
-            {
-                modules.Add(def);
-            }
-
-            if (statement is DefNode defNode)
-            {
-                funcs.Add(defNode);
-            }
+            if (statement is ImportNode import) imports.Add(import);
+            if (statement is ModuleDefinitionNode def) modules.Add(def);
+            if (statement is FuncNode defNode) functions.Add(defNode);
         }
 
         if (modules.Count > 1)
@@ -57,7 +45,7 @@ public static class Parser
             modules = null;
         }
         var moduleDef = modules?.FirstOrDefault();
-        var node = new RootNode(imports, moduleDef, funcs);
+        var node = new RootNode(imports, moduleDef, functions);
         context.SymbolTable.AddSymbol(node, default, default);
         return node;
     }
@@ -81,6 +69,7 @@ public static class Parser
                 return true;
             default:
                 AddUnexpectedTokenException(context);
+                context.Sequence.MoveNextNonWhiteSpace();
                 return false;
         }
     }
@@ -94,15 +83,9 @@ public static class Parser
         if (importKeyword is not KeywordToken { Keyword: Keywords.Use }) return false;
         context.Sequence.MoveNextNonWhiteSpace();
         
-        var moduleName = GetModuleName(context);
-
-        if (context.Sequence.Current() is EndOfStatement)
-        {
-            context.Sequence.MoveNextNonWhiteSpace();
-            importNode = new ImportNode(moduleName, null);
-            context.SymbolTable.AddSymbol(importNode, importKeyword.Start, importKeyword.End);
-            return true;
-        }
+        var moduleName = GetModuleNameOrDefault(context);
+        if (moduleName == null) return false;
+        
         if (context.Sequence.Current() is OpenCurlyBracket)
         {
             var importStart = context.Sequence.CurrentStart;
@@ -112,18 +95,23 @@ public static class Parser
             context.SymbolTable.AddSymbol(importNode, importStart, importEnd);
             return true;
         }
-
-        var record = PlampExceptionInfo.ExpectedEndOfStatement();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd,
-            context.FileName));
-        return false;
+        
+        importNode = new ImportNode(moduleName, null);
+        context.SymbolTable.AddSymbol(importNode, importKeyword.Start, importKeyword.End);
+        ConsumeEndOfStatement(context);
+        return true;
     }
 
-    private static string GetModuleName(ParsingContext context)
+    private static string? GetModuleNameOrDefault(ParsingContext context)
     {
-        var name = string.Empty;
-        if (context.Sequence.Current() is not Word modName) return name;
-        name += modName.GetStringRepresentation();
+        if (context.Sequence.Current() is not Word modName)
+        {
+            var record = PlampExceptionInfo.ExpectedModuleName();
+            var current = context.Sequence.Current();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            return null;
+        }
+        var name = modName.GetStringRepresentation();
         context.Sequence.MoveNextNonWhiteSpace();
         
         while (context.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Access })
@@ -230,21 +218,13 @@ public static class Parser
         if(context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Module }) return false;
         var defStart = context.Sequence.CurrentStart;
         context.Sequence.MoveNextNonWhiteSpace();
-        var moduleName = GetModuleName(context);
+        var moduleName = GetModuleNameOrDefault(context);
+        if (moduleName == null) return false;
         module = new ModuleDefinitionNode(moduleName);
-
-        FilePosition defEnd;
-        if (context.Sequence.Current() is not EndOfStatement)
-        {
-            var record = PlampExceptionInfo.ExpectedEndOfStatement();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
-            defEnd = context.Sequence.CurrentStart;
-            context.SymbolTable.AddSymbol(module, defStart, defEnd);
-            return true;
-        }
-        defEnd = context.Sequence.CurrentEnd;
+        
+        var defEnd = context.Sequence.CurrentEnd;
+        ConsumeEndOfStatement(context);
         context.SymbolTable.AddSymbol(module, defStart, defEnd);
-        context.Sequence.MoveNextNonWhiteSpace();
         return true;
     }
 
@@ -252,7 +232,7 @@ public static class Parser
 
     #region Parsing func
 
-    public static bool TryParseFunc(ParsingContext context, out DefNode? func)
+    public static bool TryParseFunc(ParsingContext context, out FuncNode? func)
     {
         func = null;
         if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Fn }) return false;
@@ -280,7 +260,7 @@ public static class Parser
         if (!TryParseBody(context, out var body) || body == null) return false;
         var funcNameNode = new MemberNode(name);
         context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
-        func = new DefNode(type, funcNameNode, list, body);
+        func = new FuncNode(type, funcNameNode, list, body);
         context.SymbolTable.AddSymbol(func, fnToken.Start, fnToken.End);
         return true;
     }
@@ -303,11 +283,17 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
             return true;
         }
-        
-        parameterList = new List<ParameterNode>();
-        if (!TryParseArg(context, out var arg) || arg == null) return false;
-        parameterList.Add(arg);
-        
+
+
+        if (!TryParseArg(context, out var arg) || arg == null)
+        {
+            var record = PlampExceptionInfo.ExpectedArgDefinition();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
+                context.Sequence.CurrentEnd, context.FileName));
+            return false;
+        }
+        parameterList = [arg];
+
         while (context.Sequence.Current() is Comma)
         {
             context.Sequence.MoveNextNonWhiteSpace();
@@ -315,6 +301,7 @@ public static class Parser
             if (TryParseArg(fork, out arg) && arg != null)
             {
                 parameterList.Add(arg);
+                context.Merge(fork);
             }
             else
             {
@@ -402,8 +389,8 @@ public static class Parser
             var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
                 context.Sequence.CurrentEnd, context.FileName));
-            body = new BodyNode(expressions);
             end = context.Sequence.CurrentStart;
+            body = new BodyNode(expressions);
             context.SymbolTable.AddSymbol(body, start, end);
             return true;
         }
@@ -428,19 +415,31 @@ public static class Parser
                 if(!TryParseWhileLoop(context, out var loop)) return false;
                 expression = loop;
                 break;
+            //TODO: To separate method.
             case KeywordToken {Keyword: Keywords.Break}:
                 expression = new BreakNode();
+                var current = context.Sequence.Current();
+                context.SymbolTable.AddSymbol(expression, current.Start, current.End);
+                context.Sequence.MoveNextNonWhiteSpace();
+                ConsumeEndOfStatement(context);
                 break;
             case KeywordToken {Keyword: Keywords.Continue}:
                 expression = new ContinueNode();
+                current = context.Sequence.Current();
+                context.SymbolTable.AddSymbol(expression, current.Start, current.End);
+                context.Sequence.MoveNextNonWhiteSpace();
+                ConsumeEndOfStatement(context);
                 break;
             case KeywordToken {Keyword: Keywords.Return}:
                 if(!TryParseReturn(context, out var node)) return false;
                 expression = node;
                 break;
+            case EndOfStatement:
+                ConsumeEndOfStatement(context);
+                break;
             default:
                 var precedenceFork = context.Fork();
-                if (TryParsePrecedence(precedenceFork, out var precedence) && precedence != null)
+                if (TryParseExpression(precedenceFork, out var precedence) && precedence != null)
                 {
                     expression = precedence;
                     context.Merge(precedenceFork);
@@ -503,8 +502,13 @@ public static class Parser
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
-
-        var conditionParsed = TryParsePrecedence(context, out conditionPredicate);
+        if (!TryParsePrecedence(context, out conditionPredicate) || conditionPredicate == null)
+        {
+            var record = PlampExceptionInfo.ExpectedExpression();
+            var current = context.Sequence.Current();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            return false;
+        }
 
         if (context.Sequence.Current() is not CloseParen)
         {
@@ -516,7 +520,7 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
         }
 
-        return conditionParsed;
+        return true;
     }
 
     public static bool TryParseReturn(ParsingContext context, out ReturnNode? node)
@@ -533,7 +537,13 @@ public static class Parser
             return true;
         }
 
-        if (!TryParseExpression(context, out var expr) || expr == null) return false;
+        if (!TryParsePrecedence(context, out var expr) || expr == null)
+        {
+            var record = PlampExceptionInfo.ExpectedExpression();
+            var current = context.Sequence.Current();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            return false;
+        }
         ConsumeEndOfStatement(context);
         node = new ReturnNode(expr);
         context.SymbolTable.AddSymbol(node, returnToken.Start, returnToken.End);
@@ -563,15 +573,6 @@ public static class Parser
             return true;
         }
         
-        var precedenceContext = context.Fork();
-        var unaryParsed = TryParsePrecedence(precedenceContext, out var precedence);
-        if (unaryParsed)
-        {
-            context.Merge(precedenceContext);
-            expression = precedence;
-            return true;
-        }
-        
         var variableDefContext = context.Fork();
         var definitionParsed = TryParseVariableDefinition(variableDefContext, out var definition);
         if (definitionParsed)
@@ -581,12 +582,22 @@ public static class Parser
             return true;
         }
         
+        var precedenceContext = context.Fork();
+        var unaryParsed = TryParsePrecedence(precedenceContext, out var precedence);
+        if (unaryParsed)
+        {
+            context.Merge(precedenceContext);
+            expression = precedence;
+            return true;
+        }
+        
         context.Sequence.MoveNextNonWhiteSpace();
         var record = PlampExceptionInfo.ExpectedExpression();
         context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
         return false;
     }
 
+    //TODO: Split to separate methods
     public static bool TryParseAssignment(ParsingContext context, out NodeBase? assignment)
     {
         assignment = null;
@@ -679,7 +690,13 @@ public static class Parser
             return true;
         }
 
-        if (!TryParsePrecedence(context, out var arg) || arg == null) return false;
+        if (!TryParsePrecedence(context, out var arg) || arg == null)
+        {
+            var record = PlampExceptionInfo.ExpectedExpression();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
+                context.Sequence.CurrentEnd, context.FileName));
+            return false;
+        }
         argExpressions.Add(arg);
         
         while (context.Sequence.Current() is Comma)
@@ -694,6 +711,7 @@ public static class Parser
                 var record = PlampExceptionInfo.ExpectedExpression();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
                     context.Sequence.CurrentEnd, context.FileName));
+                call = null;
                 return false;
             }
         }
@@ -721,7 +739,6 @@ public static class Parser
         variableDefinition = null;
         if (!TryParseType(context, out var type) || type == null) return false;
         var start = context.Sequence.CurrentStart;
-        context.Sequence.MoveNextNonWhiteSpace();
         if (context.Sequence.Current() is not Word variableName)
         {
             var record = PlampExceptionInfo.ExpectedVarName();
@@ -760,6 +777,11 @@ public static class Parser
     public static bool TryParsePrecedence(ParsingContext context, out NodeBase? expression, int rbp = 0)
     {
         if (!TryParseNud(context, out expression) || expression == null) return false;
+        if (TryParsePostfix(context, expression, out var withPostfix) && withPostfix != null)
+        {
+            expression = withPostfix;
+        }
+        
         while (TryParseLed(rbp, expression, out expression, context)) { }
         return true;
     }
@@ -780,7 +802,7 @@ public static class Parser
             {
                 var record = PlampExceptionInfo.ExpectedCloseParen();
                 parenFork.Exceptions.Add(new PlampException(record, parenFork.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                    parenFork.Sequence.CurrentEnd, context.FileName));
             }
             else
             {
@@ -801,6 +823,25 @@ public static class Parser
             return true;
         }
 
+        if (context.Sequence.Current() is KeywordToken keywordToken)
+        {
+            switch (keywordToken.Keyword)
+            {
+                case Keywords.Null:
+                    node = new LiteralNode(null, typeof(object));
+                    context.Sequence.MoveNextNonWhiteSpace();
+                    return true;
+                case Keywords.True:
+                    node = new LiteralNode(true, typeof(bool));
+                    context.Sequence.MoveNextNonWhiteSpace();
+                    return true;
+                case Keywords.False:
+                    node = new LiteralNode(false, typeof(bool));
+                    context.Sequence.MoveNextNonWhiteSpace();
+                    return true;
+            }
+        }
+        
         if (context.Sequence.Current() is Word member)
         {
             node = new MemberNode(member.GetStringRepresentation());
@@ -819,7 +860,12 @@ public static class Parser
         
         var prefixFork = context.Fork();
         if (prefixFork.Sequence.Current() is OperatorToken
-            { Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not or OperatorEnum.Sub })
+            { Operator: OperatorEnum.Increment 
+                or OperatorEnum.Decrement 
+                or OperatorEnum.Not 
+                or OperatorEnum.Sub
+                or OperatorEnum.Add
+            })
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
@@ -839,6 +885,11 @@ public static class Parser
                 case OperatorEnum.Sub:
                     node = new UnaryMinusNode(innerNode);
                     break;
+                //Unary minus does not exist.
+                case OperatorEnum.Add:
+                    node = innerNode;
+                    context.Merge(prefixFork);
+                    return true;
             }
             context.Merge(prefixFork);
             context.SymbolTable.AddSymbol(node!, op.Start, op.End);
@@ -848,7 +899,30 @@ public static class Parser
         return false;
     }
 
-    public static bool TryParseLed(
+    private static bool TryParsePostfix(
+        ParsingContext context,
+        NodeBase inner,
+        out NodeBase? output)
+    {
+        output = null;
+        if (context.Sequence.Current() is not OperatorToken operatorToken) return false;
+        
+        switch (operatorToken.Operator)
+        {
+            case OperatorEnum.Increment:
+                output = new PostfixIncrementNode(inner);
+                context.Sequence.MoveNextNonWhiteSpace();
+                return true;
+            case OperatorEnum.Decrement:
+                output = new PostfixDecrementNode(inner);
+                context.Sequence.MoveNextNonWhiteSpace();
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseLed(
         int rbp, 
         NodeBase left, 
         out NodeBase output, 
@@ -862,20 +936,21 @@ public static class Parser
         opFork.Sequence.MoveNextNonWhiteSpace();
 
         var res = TryParsePrecedence(opFork, out var right, precedence);
-        if (!res || right == null) return false;
+        //Access is not binary operator yet
+        if (!res || right == null || token.Operator == OperatorEnum.Access) return false;
         switch (token.Operator)
         {
             case OperatorEnum.Mul:
-                output = new MultiplyNode(left, right);
+                output = new MulNode(left, right);
                 break;
             case OperatorEnum.Div:
-                output = new DivideNode(left, right);
+                output = new DivNode(left, right);
                 break;
             case OperatorEnum.Add:
-                output = new PlusNode(left, right);
+                output = new AddNode(left, right);
                 break;
             case OperatorEnum.Sub:
-                output = new MinusNode(left, right);
+                output = new SubNode(left, right);
                 break;
             case OperatorEnum.Lesser:
                 output = new LessNode(left, right);

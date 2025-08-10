@@ -5,7 +5,5 @@ namespace plamp.Abstractions.Ast;
 /// </summary>
 public interface ISymbolOverride
 {
-    public bool TryOverride(
-        PlampExceptionRecord exceptionRecord,
-        out PlampException exception);
+    public bool TryOverride(PlampExceptionRecord exceptionRecord, out PlampException exception);
 }

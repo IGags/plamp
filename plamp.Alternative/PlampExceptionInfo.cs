@@ -182,6 +182,16 @@ public static class PlampExceptionInfo
             Message = "Types is not supported in current version of language",
         };
     }
+
+    public static PlampExceptionRecord ExpectedModuleName()
+    {
+        return new()
+        {
+            Code = "PRS1130",
+            Level = ExceptionLevel.Error,
+            Message = "Expected module name"
+        };
+    }
     
     #endregion
 
@@ -303,7 +313,7 @@ public static class PlampExceptionInfo
         {
             Code = "SEM1311",
             Level = ExceptionLevel.Error,
-            Message = "Module must have name"
+            Message = "The code file must have a module name that belongs to. Add \"module MODULE_NAME;\""
         };
     }
     
@@ -314,6 +324,30 @@ public static class PlampExceptionInfo
             Code = "SEM1312",
             Level = ExceptionLevel.Error
         };
-    
+
+    public static PlampExceptionRecord ReturnValueIsMissing() =>
+        new()
+        {
+            Message = "Return value is missing",
+            Code = "SEM1313",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotReturnValue() =>
+        new()
+        {
+            Message = "Cannot return value from a void function",
+            Code = "SEM1314",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotAssignNone() =>
+        new()
+        {
+            Message = "Cannot assign type of none",
+            Code = "SEM1315",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }
