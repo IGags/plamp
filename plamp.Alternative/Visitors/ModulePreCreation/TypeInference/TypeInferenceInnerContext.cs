@@ -10,8 +10,11 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
 {
     private int _monotonicScopeCounter;
     private int _currentDepth;
+    
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
-    public Type? InnerExpressionType { get; set; }
+    public Stack<Type?> InnerExpressionTypeStack { get; set; } = [];
+
+    public Stack<int> StackSizeBeforeCall { get; set; } = [];
     
     public FuncNode? CurrentFunc { get; set; }
 
@@ -20,9 +23,12 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     public Dictionary<string, VariableWithPosition> VariableDefinitions { get; } = [];
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
 
+    public void AddVariableWithPosition(VariableDefinitionNode variable, ScopeLocation position) 
+        => VariableDefinitions[variable.Member.MemberName] = new VariableWithPosition(variable, position);
+
     public void EnterBody()
     {
-        InnerExpressionType = null;
+        InnerExpressionTypeStack = [];
         _currentDepth++;
         if (InstructionInScopePosition.ScopeNumber != -1)
         {
@@ -39,7 +45,7 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
 
     public void NextInstruction()
     {
-        InnerExpressionType = null;
+        InnerExpressionTypeStack = [];
         if (InstructionInScopePosition is not {ScopeNumber: -1})
         {
             InstructionInScopePosition = InstructionInScopePosition with

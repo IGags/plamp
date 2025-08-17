@@ -10,45 +10,30 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 /// </summary>
 public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, SignatureInferenceInnerContext>
 {
-    protected override VisitResult VisitDef(FuncNode node, SignatureInferenceInnerContext context)
+    protected override VisitResult PreVisitFunction(FuncNode node, SignatureInferenceInnerContext context, NodeBase? parent)
     {
-        var returnType = node.ReturnType;
-        if (returnType == null)
-        {
-            var type = new TypeNode(new MemberNode("void"));
-            type.SetType(typeof(void));
-            if(!context.SymbolTable.TryGetSymbol(node.Name, out var nameSymbol)) 
-                throw new ArgumentException("Symbol is not found, parser error");
-            
-            context.SymbolTable.AddSymbol(type, nameSymbol.Key, nameSymbol.Value);
-            var newDef = new FuncNode(type, node.Name, node.ParameterList, node.Body);
-            Replace(node, newDef, context);
-            node = newDef;
-        }
-        else
-        {
-            var actualReturnType = TypeResolveHelper.ResolveType(returnType, context.Exceptions, context.SymbolTable, context.FileName);
-            if (actualReturnType != null) returnType.SetType(actualReturnType);
-        }
-
-        foreach (var parameter in node.ParameterList)
-        {
-            var parameterType = parameter.Type;
-            var actualParameterType = TypeResolveHelper.ResolveType(parameterType, context.Exceptions,
-                context.SymbolTable, context.FileName);
-            if (actualParameterType == null) continue;
-            parameterType.SetType(actualParameterType);
-        }
-
-        if (context.Functions.Remove(node.Name.MemberName))
-        {
-            context.MemberSet.Add(node.Name.MemberName);
-        }
-        else if (!context.MemberSet.Contains(node.Name.MemberName))
-        {
-            context.Functions.Add(node.Name.MemberName, node);
-        }
+        if (node.ReturnType != null) return VisitResult.Continue;
         
+        var type = new TypeNode(new MemberNode("void"));
+        type.SetType(typeof(void));
+
+        if (!context.SymbolTable.TryGetSymbol(node.Name, out var nameSymbol))
+        {
+            throw new ArgumentException("Symbol is not found, parser error");
+        }
+            
+        context.SymbolTable.AddSymbol(type, nameSymbol.Key, nameSymbol.Value);
+        var newDef = new FuncNode(type, node.Name, node.ParameterList, node.Body);
+        Replace(node, newDef, context);
+        return VisitResult.Continue;
+    }
+
+    protected override VisitResult PreVisitType(TypeNode node, SignatureInferenceInnerContext context, NodeBase? parent)
+    {
+        if (parent is not FuncNode or ParameterNode || node.Symbol != null) return VisitResult.SkipChildren;
+        
+        var actualType = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable, context.FileName);
+        if (actualType != null) node.SetType(actualType);
         return VisitResult.SkipChildren;
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Abstractions.CompilerEmission;
@@ -10,8 +11,7 @@ namespace plamp.Cli;
 
 public class CompilationValidator : BaseValidator<CreationContext, InnerCompilationContext>
 {
-
-    protected override VisitResult VisitDef(FuncNode node, InnerCompilationContext context)
+    protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
         var builder = context.Methods.Single(x => x.Name == node.Name.MemberName);
         var emitter = new DefaultIlCodeEmitter();
