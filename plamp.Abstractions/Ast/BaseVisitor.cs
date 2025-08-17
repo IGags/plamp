@@ -23,11 +23,20 @@ public abstract class BaseVisitor<TContext>
     {
         foreach (var child in node.Visit())
         {
-            var res = node is BodyNode 
-                ? VisitCore(child, context, node, PreVisitInstruction, PostVisitInstruction)
-                : VisitNodeBase(child, context, node);
+            var preVisitRes = VisitResult.Continue;
+            if (node is BodyNode)
+            {
+                preVisitRes = PreVisitInstruction(child, context, node);
+                if (preVisitRes == VisitResult.Break) return VisitResult.Break;
+            }
+
+            var visitRes = VisitResult.Continue;
+            if(preVisitRes is not VisitResult.SkipChildren) visitRes = VisitNodeBase(child, context, node);
+            if (visitRes is VisitResult.Break) return VisitResult.Break;
             
-            if(res == VisitResult.Break) return VisitResult.Break;
+            
+            if (node is BodyNode) visitRes = PostVisitInstruction(child, context, node);
+            if (visitRes == VisitResult.Break) return VisitResult.Break;
         }
         return VisitResult.Continue;
     }

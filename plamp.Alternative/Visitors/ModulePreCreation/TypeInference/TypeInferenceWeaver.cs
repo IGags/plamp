@@ -92,6 +92,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.Continue;
     }
 
+    protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    {
+        var type = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable, context.FileName);
+        if(type!= null) node.SetType(type);
+        return VisitResult.SkipChildren;
+    }
+
     protected override VisitResult PostVisitUnary(BaseUnaryNode unaryNode, TypeInferenceInnerContext context, NodeBase? parent)
     {
         var type = context.InnerExpressionTypeStack.Pop();
@@ -368,14 +375,19 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitMember(MemberNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         ParameterNode? arg = null;
+        var assignmentSource = parent is AssignNode assign && assign.Right == node;
+        var uncheckedType = parent is TypeNode or FuncNode or ModuleDefinitionNode or ImportNode or ImportItemNode or VariableDefinitionNode or AssignNode;
         if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var withPosition) 
-            && !context.Arguments.TryGetValue(node.MemberName, out arg))
+            && !context.Arguments.TryGetValue(node.MemberName, out arg)
+            && (assignmentSource || !uncheckedType))
         {
             var record = PlampExceptionInfo.CannotFindMember();
             SetExceptionToSymbol(node, record, context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.SkipChildren;
         }
+
+        if (uncheckedType) return VisitResult.Continue;
         
         var memberType = withPosition?.Variable.Type?.Symbol ?? arg?.Type.Symbol;
         context.InnerExpressionTypeStack.Push(memberType);
@@ -385,14 +397,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitAssign(AssignNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         var rightType = context.InnerExpressionTypeStack.Pop();
-        _ = context.InnerExpressionTypeStack.Pop();
+        var leftType = context.InnerExpressionTypeStack.Pop();
         if (rightType is not null && rightType == typeof(void))
         {
             var record = PlampExceptionInfo.CannotAssignNone();
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
         
-        if (node.Left is VariableDefinitionNode leftDef) return ValidateAssignmentToDefinition(node, leftDef, context, rightType);
+        if (node.Left is VariableDefinitionNode) return ValidateAssignmentToDefinition(node, leftType, context, rightType);
         
         //Then left is member or parser error
         if (node.Left is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
@@ -474,15 +486,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     private VisitResult ValidateAssignmentToDefinition(
         AssignNode assign, 
-        VariableDefinitionNode left, 
+        Type? leftType, 
         TypeInferenceInnerContext context,
         Type? rightType)
     {
-        VisitVariableDefinition(left, context);
-        var leftType = context.InnerExpressionType;
         if (leftType == null || rightType == null || leftType == rightType) return VisitResult.SkipChildren;
         var record = PlampExceptionInfo.CannotAssign();
-        context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(assign, record, context.FileName));
+        SetExceptionToSymbol(assign, record, context);
         return VisitResult.SkipChildren;
     }
 
@@ -497,8 +507,8 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (context.InstructionInScopePosition.Depth < existingVar.InScopePositionList.Depth)
         {
             record = PlampExceptionInfo.DuplicateVariableDefinition();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(existingVar.Variable, record, context.FileName));
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(left, record, context.FileName));
+            SetExceptionToSymbol(existingVar.Variable, record, context);
+            SetExceptionToSymbol(left, record, context);
             return VisitResult.SkipChildren;
         }
 
@@ -510,7 +520,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
             
         record = PlampExceptionInfo.CannotAssign();
-        context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(assign, record, context.FileName));
+        SetExceptionToSymbol(assign, record, context);
         return VisitResult.SkipChildren;
     }
 

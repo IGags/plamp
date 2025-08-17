@@ -12,7 +12,7 @@ public class MethodCallInferenceValidator : BaseValidator<CreationContext, Creat
         var fromContext = context.Methods.FirstOrDefault(x => x.Name == node.MethodName.MemberName);
         if (fromContext != null) info = fromContext;
         if(info != null) node.SetInfo(info);
-        return VisitResult.Continue;
+        return VisitResult.SkipChildren;
     }
 
     protected override CreationContext CreateInnerContext(CreationContext context) => context;
