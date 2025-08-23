@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -9,6 +10,8 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Alternative.Parsing;
+using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using Shouldly;
@@ -154,6 +157,62 @@ public class FuncCallTypeInferenceTests
             x => x.Exceptions.Count.ShouldBe(2),
             x => x.Exceptions.Select(y => y.Code).ShouldContain(PlampExceptionInfo.UnknownFunction().Code),
             x => x.Exceptions.Select(y => y.Code).ShouldContain(PlampExceptionInfo.CannotFindMember().Code));
+    }
+
+    [Fact]
+    private void CallWithFunctionWithAnyTypeArgument_Correct()
+    {
+        const string code = "mock(1);";
+        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+        var result = Parser.TryParseStatement(context, out var expression);
+        result.ShouldBe(true);
+        var visitor = new TypeInferenceWeaver();
+        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+
+        var retType = new TypeNode(new TypeNameNode("void"));
+        retType.SetType(typeof(void));
+        var argType = new TypeNode(new TypeNameNode("any"));
+        argType.SetType(typeof(object));
+        
+        var mockFuncDef = new FuncNode(
+            retType,
+            new FuncNameNode("mock"),
+            [
+                new ParameterNode(argType, new ParameterNameNode("a"))
+            ], new BodyNode([]));
+        
+        preCreation.Functions.Add("mock", mockFuncDef);
+        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        weaveResult.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
+    private void CallWithExpandableType_Correct()
+    {
+        const string code = "mock(1i);";
+        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+        var result = Parser.TryParseStatement(context, out var expression);
+        result.ShouldBe(true);
+        var visitor = new TypeInferenceWeaver();
+        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+
+        var retType = new TypeNode(new TypeNameNode("void"));
+        retType.SetType(typeof(void));
+        var argType = new TypeNode(new TypeNameNode("long"));
+        argType.SetType(typeof(long));
+        
+        var mockFuncDef = new FuncNode(
+            retType,
+            new FuncNameNode("mock"),
+            [
+                new ParameterNode(argType, new ParameterNameNode("a"))
+            ], new BodyNode([]));
+        
+        preCreation.Functions.Add("mock", mockFuncDef);
+        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        weaveResult.Exceptions.ShouldBeEmpty();
     }
     
     private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable, string fileName)

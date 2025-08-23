@@ -260,7 +260,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
     }.ToFrozenDictionary();
 
-    private bool TryExpandNode(NodeBase node, Type toType, Type fromType, TypeInferenceInnerContext context)
+    private bool TryExpandNodeType(NodeBase node, Type toType, Type fromType, TypeInferenceInnerContext context)
     {
         var toExpand = ChooseChildToExpand(toType, fromType);
         if (toExpand is not (0 or -1)) return false;
@@ -373,7 +373,11 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                  argTypes.Zip(defArgTypes).Zip(node.Args).Select(x => (x.First.First, x.First.Second, x.Second)))
         {
             if (defType == typeof(object) && defType != argType && argType != null) ExpandType(arg, defType, argType, context);
-            else if (argType != defType) invalid = true;
+            else if (defType != null && argType != null)
+            {
+                if(!TryExpandNodeType(arg, defType, argType, context)) invalid = true;
+            }
+            else if(argType != defType) invalid = true;
         }
 
         if (!invalid)
@@ -495,7 +499,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         else if (functionReturnType is not null && functionReturnType != typeof(void) && returnType is not null)
         {
             if (returnType == functionReturnType) return VisitResult.SkipChildren;
-            if (TryExpandNode(node.ReturnValue!, functionReturnType, returnType, context)) return VisitResult.SkipChildren;
+            if (TryExpandNodeType(node.ReturnValue!, functionReturnType, returnType, context)) return VisitResult.SkipChildren;
             
             var record = PlampExceptionInfo.ReturnTypeMismatch();
             SetExceptionToSymbol(node, record, context);
@@ -511,7 +515,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         Type? rightType)
     {
         if (leftType == null || rightType == null || leftType == rightType) return;
-        if (TryExpandNode(assign.Right, leftType, rightType, context)) return;
+        if (TryExpandNodeType(assign.Right, leftType, rightType, context)) return;
         var record = PlampExceptionInfo.CannotAssign();
         SetExceptionToSymbol(assign, record, context);
     }
