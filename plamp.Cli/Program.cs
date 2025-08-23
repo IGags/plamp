@@ -24,7 +24,6 @@ public static class Program
                                         println(att_count);
                                     }
                                     println("you lose");
-                                    return;
                                 }
                                 """;
     

@@ -3,7 +3,6 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -26,13 +25,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PreVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         context.CurrentFunc = node;
+        var nonDupArgs = node.ParameterList
+            .GroupBy(x => x.Name)
+            .Where(x => x.Count() == 1)
+            .SelectMany(x => x);
+        
+        foreach (var arg in nonDupArgs) context.Arguments.Add(arg.Name.Value, arg);
         return VisitResult.Continue;
-    }
-
-    protected override VisitResult PreVisitParameter(ParameterNode node, TypeInferenceInnerContext context, NodeBase? parent)
-    {
-        context.Arguments.Add(node.Name.Value, node);
-        return VisitResult.SkipChildren;
     }
 
     protected override VisitResult PostVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
@@ -422,15 +421,20 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             var record = PlampExceptionInfo.CannotAssignNone();
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
         }
-        
-        if (node.Left is VariableDefinitionNode) return ValidateAssignmentToDefinition(node, leftType, context, rightType);
+
+        if (node.Left is VariableDefinitionNode)
+        {
+            ValidateAssignmentToDefinition(node, leftType, context, rightType);
+            return VisitResult.SkipChildren;
+        }
         
         //Then left is member or parser error
         if (node.Left is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
         
         if (context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
         {
-            ValidateExistingDefinition(node, leftMember, context, withPosition, rightType);
+            ValidateAssignmentToDefinition(node, leftType, context, rightType);
+            ValidateExistingDefinition(leftMember, context, withPosition);
             return VisitResult.SkipChildren;
         }
 
@@ -500,44 +504,27 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.SkipChildren;
     }
 
-    private VisitResult ValidateAssignmentToDefinition(
+    private void ValidateAssignmentToDefinition(
         AssignNode assign, 
         Type? leftType, 
         TypeInferenceInnerContext context,
         Type? rightType)
     {
-        if (leftType == null || rightType == null || leftType == rightType) return VisitResult.SkipChildren;
+        if (leftType == null || rightType == null || leftType == rightType) return;
+        if (TryExpandNode(assign.Right, leftType, rightType, context)) return;
         var record = PlampExceptionInfo.CannotAssign();
         SetExceptionToSymbol(assign, record, context);
-        return VisitResult.SkipChildren;
     }
 
-    private void ValidateExistingDefinition(
-        AssignNode assign,
-        MemberNode left,
+    private void ValidateExistingDefinition(MemberNode left,
         TypeInferenceInnerContext context,
-        VariableWithPosition existingVar,
-        Type? rightType)
+        VariableWithPosition existingVar)
     {
-        PlampExceptionRecord record;
-        if (context.InstructionInScopePosition.Depth < existingVar.InScopePositionList.Depth)
-        {
-            record = PlampExceptionInfo.DuplicateVariableDefinition();
-            SetExceptionToSymbol(existingVar.Variable, record, context);
-            SetExceptionToSymbol(left, record, context);
-            return;
-        }
-
-        if (existingVar.Variable.Type?.Symbol is not {} leftType
-            || rightType == null 
-            || leftType == rightType)
-        {
-            return;
-        }
-
-        if (TryExpandNode(assign.Right, leftType, rightType, context)) return;
-        record = PlampExceptionInfo.CannotAssign();
-        SetExceptionToSymbol(assign, record, context);
+        if (context.InstructionInScopePosition.Depth >= existingVar.InScopePositionList.Depth) return;
+        
+        var record = PlampExceptionInfo.DuplicateVariableDefinition();
+        SetExceptionToSymbol(existingVar.Variable, record, context);
+        SetExceptionToSymbol(left, record, context);
     }
 
     private void CreateVariableDefinitionFromMember(MemberNode leftMember, TypeInferenceInnerContext context, Type? rightType)

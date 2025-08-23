@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;

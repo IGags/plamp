@@ -349,5 +349,13 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord DuplicateParameterName() =>
+        new()
+        {
+            Message = "Duplicate parameter name",
+            Code = "SEM1316",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

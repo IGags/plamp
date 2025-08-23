@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 
 namespace plamp.Abstractions.AstManipulation;

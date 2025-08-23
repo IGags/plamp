@@ -28,6 +28,11 @@ public class BinaryArithmeticalExpressionImplicitCastTests
     
     public static IEnumerable<object[]> CreateImplicitCastForArithmeticalBinaryExpression_Correct_DataProvider()
     {
+        yield return
+        [
+            "10 * 11",
+            new MulNode(new LiteralNode(10, typeof(int)), new LiteralNode(11, typeof(int)))
+        ];
         yield return 
         [
             "10i + 1b", 
@@ -82,6 +87,21 @@ public class BinaryArithmeticalExpressionImplicitCastTests
     public void AddLongAndUlong_CannotExpand()
     {
         const string code = "1l + 1ul";
+        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+        var result = Parser.TryParsePrecedence(context, out var expression);
+        result.ShouldBe(true);
+        var visitor = new TypeInferenceWeaver();
+        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var resContext = visitor.WeaveDiffs(expression!, preCreation);
+        var exception = PlampExceptionInfo.CannotApplyOperator().Code;
+        resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);
+    }
+
+    [Fact]
+    public void AddStringToInt_CannotExpand()
+    {
+        const string code = "1 + \"1\"";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParsePrecedence(context, out var expression);

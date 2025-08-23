@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
