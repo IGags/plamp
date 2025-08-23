@@ -3,6 +3,9 @@ using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -17,7 +20,7 @@ public class AssignmentParsingTests
         [
             "int a := 5",
             new AssignNode(
-                new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a")),
+                new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
                 new LiteralNode(5, typeof(int))
             )
         ];

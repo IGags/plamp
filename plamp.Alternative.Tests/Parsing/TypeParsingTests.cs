@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -14,7 +16,7 @@ public class TypeParsingTests
     public void ParseType_Correct()
     {
         const string code = "int";
-        var ast = new TypeNode(new MemberNode("int"));
+        var ast = new TypeNode(new TypeNameNode("int"));
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();

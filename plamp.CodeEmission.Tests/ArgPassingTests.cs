@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.CodeEmission.Tests.Infrastructure;
 
 namespace plamp.CodeEmission.Tests;
@@ -63,7 +64,7 @@ public class ArgPassingTests
         [
             new VariableDefinitionNode(
                 EmissionSetupHelper.CreateTypeNode(argType),
-                new MemberNode(tempVarName)
+                new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
                 new MemberNode(tempVarName), 

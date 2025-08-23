@@ -5,6 +5,9 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 
 namespace plamp.Abstractions.Ast;
@@ -89,6 +92,14 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(thisNode, context, parent, PreVisitThis, PostVisitThis);
             case LiteralNode constNode:
                 return VisitCore(constNode, context, parent, PreVisitLiteral, PostVisitLiteral);
+            case TypeNameNode typeName:
+                return VisitCore(typeName, context, parent, PreVisitTypeName, PostVisitTypeName);
+            case FuncNameNode funcName:
+                return VisitCore(funcName, context, parent, PreVisitFuncName, PostVisitFuncName);
+            case ParameterNameNode parameterName:
+                return VisitCore(parameterName, context, parent, PreVisitParameterName, PostVisitParameterName);
+            case VariableNameNode variableName:
+                return VisitCore(variableName, context, parent, PreVisitVariableName, PostVisitVariableName);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context, parent);
             case BaseUnaryNode unaryNode:
@@ -369,7 +380,21 @@ public abstract class BaseVisitor<TContext>
     
     protected virtual VisitResult PostVisitInstruction(NodeBase node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
+    protected virtual VisitResult PreVisitFuncName(FuncNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
+    protected virtual VisitResult PostVisitFuncName(FuncNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    protected virtual VisitResult PreVisitTypeName(TypeNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitTypeName(TypeNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitParameterName(ParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitParameterName(ParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitVariableName(VariableNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitVariableName(VariableNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
 
     protected virtual VisitResult VisitCore<T>(
         T node, 

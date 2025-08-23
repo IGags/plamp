@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.CodeEmission.Tests.Infrastructure;
 
 namespace plamp.CodeEmission.Tests;
@@ -71,7 +72,7 @@ public class MemberAccessTests
         [
             new VariableDefinitionNode(
                 EmissionSetupHelper.CreateTypeNode(objParam.ParameterType),
-                new MemberNode(tempVarName)
+                new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
                 new MemberNode(tempVarName),
@@ -201,7 +202,7 @@ public class MemberAccessTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(resShould.GetType()), new MemberNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(resShould.GetType()), new VariableNameNode(tempVarName)),
             new AssignNode(
                 new MemberNode(tempVarName), 
                 EmissionSetupHelper.CreateCallNode(

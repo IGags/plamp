@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
@@ -13,14 +14,14 @@ public class MemberNameUniquenessValidator : BaseValidator<PreCreationContext, M
         MemberNameUniquenessValidatorInnerContext innerContext) =>
         outerContext;
 
-    protected override VisitResult PreVisitMember(MemberNode node, MemberNameUniquenessValidatorInnerContext context, NodeBase? parent)
+    protected override VisitResult PreVisitFuncName(FuncNameNode node, MemberNameUniquenessValidatorInnerContext context, NodeBase? parent)
     {
         if (parent is not FuncNode func) return VisitResult.SkipChildren;
         
-        if (!context.Members.TryGetValue(node.MemberName, out var members))
+        if (!context.Members.TryGetValue(node.Value, out var members))
         {
             members = [];
-            context.Members.Add(node.MemberName, members);
+            context.Members.Add(node.Value, members);
         }
         members.Add(func);
 

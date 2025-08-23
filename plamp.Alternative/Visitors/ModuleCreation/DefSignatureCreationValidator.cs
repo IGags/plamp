@@ -2,6 +2,7 @@
 using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModuleCreation;
@@ -15,7 +16,7 @@ public class DefSignatureCreationValidator : BaseValidator<CreationContext, Crea
         var retType = node.ReturnType?.Symbol;
         if(retType == null) return VisitResult.SkipChildren;
         var methodBuilder = context.ModuleBuilder.DefineGlobalMethod(
-            node.Name.MemberName,
+            node.FuncName.Value,
             MethodAttributes.Static | MethodAttributes.Final | MethodAttributes.Public,
             CallingConventions.Standard,
             retType,

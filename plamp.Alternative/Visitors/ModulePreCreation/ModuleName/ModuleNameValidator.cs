@@ -1,5 +1,6 @@
 ﻿using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
@@ -23,9 +24,9 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
         return VisitResult.Continue;
     }
 
-    protected override VisitResult PreVisitMember(MemberNode node, ModuleNameValidatorContext context, NodeBase? parent)
+    protected override VisitResult PreVisitFuncName(FuncNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (parent is not FuncNode || !node.MemberName.Equals(context.ModuleName)) return VisitResult.SkipChildren;
+        if (parent is null || !node.Value.Equals(context.ModuleName)) return VisitResult.SkipChildren;
 
         var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
         SetExceptionToSymbol(parent, record, context);

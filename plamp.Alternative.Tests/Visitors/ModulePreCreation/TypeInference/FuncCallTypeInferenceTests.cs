@@ -7,6 +7,8 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using Shouldly;
@@ -25,9 +27,9 @@ public class FuncCallTypeInferenceTests
             new CallNode(null, new MemberNode("a"), [])
         ]);
         
-        var retType = new TypeNode(new MemberNode("void"));
+        var retType = new TypeNode(new TypeNameNode("void"));
         retType.SetType(typeof(void));
-        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
@@ -44,9 +46,9 @@ public class FuncCallTypeInferenceTests
             new CallNode(null, new MemberNode("a"), [])
         ]);
 
-        var retType = new TypeNode(new MemberNode("int"));
+        var retType = new TypeNode(new TypeNameNode("int"));
         retType.SetType(typeof(int));
-        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
@@ -61,19 +63,19 @@ public class FuncCallTypeInferenceTests
         [
             new CallNode(null, new MemberNode("a"), [new LiteralNode(1, typeof(int)), new LiteralNode("hi", typeof(string))])
         ]);
-        var retType = new TypeNode(new MemberNode("void"));
-        var firstArgType = new TypeNode(new MemberNode("int"));
-        var secondArgType = new TypeNode(new MemberNode("string"));
+        var retType = new TypeNode(new TypeNameNode("void"));
+        var firstArgType = new TypeNode(new TypeNameNode("int"));
+        var secondArgType = new TypeNode(new TypeNameNode("string"));
         retType.SetType(typeof(void));
         firstArgType.SetType(typeof(int));
         secondArgType.SetType(typeof(string));
         
         var def = new FuncNode(
             retType, 
-            new MemberNode("a"), 
+            new FuncNameNode("a"), 
             [
-                new ParameterNode(firstArgType, new MemberNode("f")), 
-                new ParameterNode(secondArgType, new MemberNode("s"))
+                new ParameterNode(firstArgType, new ParameterNameNode("f")), 
+                new ParameterNode(secondArgType, new ParameterNameNode("s"))
             ], 
             new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
@@ -91,9 +93,9 @@ public class FuncCallTypeInferenceTests
             new AssignNode(new MemberNode("b"), new CallNode(null, new MemberNode("a"), []))
         ]);
         
-        var retType = new TypeNode(new MemberNode("void"));
+        var retType = new TypeNode(new TypeNameNode("void"));
         retType.SetType(typeof(void));
-        var def = new FuncNode(retType, new MemberNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
@@ -120,20 +122,20 @@ public class FuncCallTypeInferenceTests
         [
             new CallNode(null, new MemberNode("a"), [new MemberNode("c"), new LiteralNode("hi", typeof(string))])
         ]);
-        var retType = new TypeNode(new MemberNode("void"));
-        var firstArgType = new TypeNode(new MemberNode("int"));
-        var secondArgType = new TypeNode(new MemberNode("string"));
+        var retType = new TypeNode(new TypeNameNode("void"));
+        var firstArgType = new TypeNode(new TypeNameNode("int"));
+        var secondArgType = new TypeNode(new TypeNameNode("string"));
         retType.SetType(typeof(void));
         firstArgType.SetType(typeof(int));
         secondArgType.SetType(typeof(string));
         
         var def = new FuncNode(
             retType, 
-            new MemberNode("a"), 
+            new FuncNameNode("a"), 
             [
-                new ParameterNode(firstArgType, new MemberNode("f")), 
-                new ParameterNode(secondArgType, new MemberNode("s"))
-            ], 
+                new ParameterNode(firstArgType, new ParameterNameNode("f")), 
+                new ParameterNode(secondArgType, new ParameterNameNode("s"))
+            ],
             new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {

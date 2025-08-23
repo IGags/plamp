@@ -4,6 +4,9 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.CodeEmission.Tests.Infrastructure;
 
@@ -12,6 +15,7 @@ namespace plamp.CodeEmission.Tests;
 public class CastEmissionTests
 {
     public class ExampleParent;
+    
     
     public class ExampleChild : ExampleParent, IExampleInterface;
     
@@ -30,7 +34,7 @@ public class CastEmissionTests
         const string castResName = "castRes";
         var methodBody = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new MemberNode(castResName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
             new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
             new ReturnNode(new MemberNode(castResName))
         ]);
@@ -80,7 +84,7 @@ public class CastEmissionTests
          */
         var methodBody = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new MemberNode(castResName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
             new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
             new ReturnNode(new MemberNode(castResName))
         ]);
@@ -126,7 +130,7 @@ public class CastEmissionTests
         /*
          * return (float)43;
          */
-        var to = new TypeNode(new MemberNode("float"));
+        var to = new TypeNode(new TypeNameNode("float"));
         to.SetType(typeof(float));
         const int literal = 43;
         var cast = new CastNode(to, new LiteralNode(literal, typeof(int)));
@@ -151,7 +155,7 @@ public class CastEmissionTests
         /*
          * return (double)Example();
          */
-        var to = new TypeNode(new MemberNode("double"));
+        var to = new TypeNode(new TypeNameNode("double"));
         to.SetType(typeof(double));
         var call = new CallNode(null, new MemberNode("Example"), []);
         call.SetInfo(typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!);
@@ -175,7 +179,7 @@ public class CastEmissionTests
         /*
          * return (short)(32768 - 1);
          */
-        var to = new TypeNode(new MemberNode("short"));
+        var to = new TypeNode(new TypeNameNode("short"));
         to.SetType(typeof(short));
         var cast = new CastNode(to, new SubNode(new LiteralNode(32768, typeof(int)), new LiteralNode(1, typeof(int))));
         cast.SetFromType(typeof(int));
@@ -197,7 +201,7 @@ public class CastEmissionTests
         /*
          * return (int)-1.5;
          */
-        var to = new TypeNode(new MemberNode("int"));
+        var to = new TypeNode(new TypeNameNode("int"));
         to.SetType(typeof(int));
         var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, typeof(float))));
         cast.SetFromType(typeof(float));
@@ -211,5 +215,31 @@ public class CastEmissionTests
         Assert.NotNull(res);
         Assert.Equal(typeof(int), res.GetType());
         Assert.Equal((int)-1.5f, res);
+    }
+
+    [Fact]
+    public async Task CastCast_Correct()
+    {
+        /*
+         * return (int)1.5;
+         */
+        var innerType = new TypeNode(new TypeNameNode("double"));
+        innerType.SetType(typeof(double));
+        var innerCast = new CastNode(innerType, new LiteralNode(1.5f, typeof(float)));
+        innerCast.SetFromType(typeof(float));
+        var to = new TypeNode(new TypeNameNode("int"));
+        to.SetType(typeof(int));
+        var cast = new CastNode(to, innerCast);
+        cast.SetFromType(typeof(double));
+        
+        var methodBody = new BodyNode(
+        [
+            new ReturnNode(cast)
+        ]);
+        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(int));
+        var res = methodInfo!.Invoke(instance, []);
+        Assert.NotNull(res);
+        Assert.Equal(typeof(int), res.GetType());
+        Assert.Equal((int)(double)1.5f, res);
     }
 }

@@ -4,6 +4,8 @@ using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
@@ -17,7 +19,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
 {
     private static CastNode CreateCast(object inner, Type typeFrom, Type typeTo)
     {
-        var castType = new TypeNode(new MemberNode(typeTo.Name));
+        var castType = new TypeNode(new TypeNameNode(typeTo.Name));
         castType.SetType(typeTo);
         var cast = new CastNode(castType, new LiteralNode(inner, typeFrom));
         cast.SetFromType(typeFrom);

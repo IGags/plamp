@@ -1,7 +1,7 @@
 ﻿using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
-using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
@@ -19,6 +19,7 @@ public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, 
 
     protected override VisitResult PostVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
+        if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         SetExceptionToSymbol(node, PlampExceptionInfo.FuncMustReturnValue(), context);
         return VisitResult.Continue;

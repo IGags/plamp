@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.AstManipulation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
@@ -24,7 +26,7 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
 
     public void AddVariableWithPosition(VariableDefinitionNode variable, ScopeLocation position) 
-        => VariableDefinitions[variable.Member.MemberName] = new VariableWithPosition(variable, position);
+        => VariableDefinitions[variable.Name.Value] = new VariableWithPosition(variable, position);
 
     public void EnterBody()
     {

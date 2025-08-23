@@ -9,6 +9,9 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
@@ -269,7 +272,7 @@ public static class Parser
         if (context.Sequence.Current() is Word) TryParseType(context, out type);
 
         if (!TryParseBody(context, out var body)) return false;
-        var funcNameNode = new MemberNode(name);
+        var funcNameNode = new FuncNameNode(name);
         context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
         func = new FuncNode(type, funcNameNode, list, body);
         context.SymbolTable.AddSymbol(func, fnToken.Start, fnToken.End);
@@ -358,7 +361,7 @@ public static class Parser
         }
 
         var end = context.Sequence.CurrentEnd;
-        var argNameNode = new MemberNode(argName.GetStringRepresentation());
+        var argNameNode = new ParameterNameNode(argName.GetStringRepresentation());
         context.SymbolTable.AddSymbol(argNameNode, argName.Start, argName.End);
         arg = new ParameterNode(type, argNameNode);
         context.SymbolTable.AddSymbol(arg, start, end);
@@ -780,7 +783,7 @@ public static class Parser
         }
 
         var end = context.Sequence.CurrentEnd;
-        var name = new MemberNode(variableName.GetStringRepresentation());
+        var name = new VariableNameNode(variableName.GetStringRepresentation());
         context.Sequence.MoveNextNonWhiteSpace();
         
         variableDefinition = new VariableDefinitionNode(type, name);
@@ -801,7 +804,7 @@ public static class Parser
         }
         
         context.Sequence.MoveNextNonWhiteSpace();
-        var typeNameNode = new MemberNode(typeName.GetStringRepresentation());
+        var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
         type = new TypeNode(typeNameNode, []);
         context.SymbolTable.AddSymbol(type, typeName.Start, typeName.End);
         context.SymbolTable.AddSymbol(typeNameNode, typeName.Start, typeName.End);

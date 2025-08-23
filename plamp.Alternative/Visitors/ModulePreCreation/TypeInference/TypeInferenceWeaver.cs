@@ -10,6 +10,9 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification;
 using BindingFlags = System.Reflection.BindingFlags;
@@ -18,14 +21,18 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceInnerContext>
 {
+    #region TopLevel
+
     protected override VisitResult PreVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         context.CurrentFunc = node;
-        foreach (var parameterNode in node.ParameterList)
-        {
-            context.Arguments.Add(parameterNode.Name.MemberName, parameterNode);
-        }
         return VisitResult.Continue;
+    }
+
+    protected override VisitResult PreVisitParameter(ParameterNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    {
+        context.Arguments.Add(node.Name.Value, node);
+        return VisitResult.SkipChildren;
     }
 
     protected override VisitResult PostVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
@@ -53,15 +60,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.Continue;
     }
 
+    #endregion
+
     protected override VisitResult PreVisitVariableDefinition(VariableDefinitionNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        if (context.Arguments.ContainsKey(node.Member.MemberName))
+        if (context.Arguments.ContainsKey(node.Name.Value))
         {
             var record = PlampExceptionInfo.ArgumentAlreadyDefined();
             SetExceptionToSymbol(node, record, context);
         }
 
-        if (context.VariableDefinitions.TryGetValue(node.Member.MemberName, out var other))
+        if (context.VariableDefinitions.TryGetValue(node.Name.Value, out var other))
         {
             var record = PlampExceptionInfo.DuplicateVariableDefinition();
             SetExceptionToSymbol(node, record, context);
@@ -72,7 +81,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var position = context.InstructionInScopePosition;
         context.AddVariableWithPosition(node, position);
 
-        return node.Type == null ? VisitResult.SkipChildren : VisitResult.Continue;
+        return VisitResult.Continue;
     }
 
     protected override VisitResult PostVisitVariableDefinition(VariableDefinitionNode node, TypeInferenceInnerContext context, NodeBase? parent)
@@ -94,8 +103,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
+        if(node.Symbol != null) return VisitResult.Continue;
         var type = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable, context.FileName);
-        if(type!= null) node.SetType(type);
+        if(type != null) node.SetType(type);
         return VisitResult.SkipChildren;
     }
 
@@ -230,7 +240,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     private void ExpandType(NodeBase from, Type toType, Type fromType, TypeInferenceInnerContext context)
     {
-        var toTypeNode = new TypeNode(new MemberNode(toType.Name));
+        var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
         context.SymbolTable.AddSymbol(toTypeNode, default, default);
         toTypeNode.SetType(toType);
         var expanded = new CastNode(toTypeNode, from);
@@ -251,6 +261,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
     }.ToFrozenDictionary();
 
+    private bool TryExpandNode(NodeBase node, Type toType, Type fromType, TypeInferenceInnerContext context)
+    {
+        var toExpand = ChooseChildToExpand(toType, fromType);
+        if (toExpand is not (0 or -1)) return false;
+        ExpandType(node, toType, fromType, context);
+        return true;
+    }
+    
     private bool TryExpandTypeForBinaryNode(
         NodeBase left, 
         NodeBase right, 
@@ -260,7 +278,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         [NotNullWhen(true)] out Type? resultType)
     {
         resultType = null;
-        var toExpand = ChooseChildToExpand();
+        var toExpand = ChooseChildToExpand(leftType, rightType);
         switch (toExpand)
         {
             case 1:
@@ -271,7 +289,10 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                 ExpandType(right, leftType, rightType, context);
                 resultType = leftType;
                 return true;
-            case 0: break;
+            case 0:
+                resultType = leftType;
+                return true;
+            case -2: break;
             case 4:
                 resultType = typeof(long);
                 ExpandType(left, typeof(long), leftType, context);
@@ -280,19 +301,20 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
 
         return false;
-        
-        int ChooseChildToExpand()
-        {
-            if (!TypePriorityDict.TryGetValue(leftType, out var leftPriority) 
-                || !TypePriorityDict.TryGetValue(rightType, out var rightPriority)) return 0;
+    }
+    
+    private int ChooseChildToExpand(Type leftType, Type rightType)
+    {
+        if (leftType == rightType) return 0;
+        if (!TypePriorityDict.TryGetValue(leftType, out var leftPriority) 
+            || !TypePriorityDict.TryGetValue(rightType, out var rightPriority)) return -2;
             
-            if (leftPriority == rightPriority && rightPriority == 3) return 4;
-            if (leftPriority == rightPriority) return 0;
-            if (leftPriority > rightPriority) return -1;
-            if (leftPriority < rightPriority) return 1;
+        if (leftPriority == rightPriority && rightPriority == 3) return 4;
+        if (leftPriority == rightPriority) return -2;
+        if (leftPriority > rightPriority) return -1;
+        if (leftPriority < rightPriority) return 1;
 
-            return 0;
-        }
+        return 0;
     }
 
     #endregion
@@ -375,19 +397,16 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitMember(MemberNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         ParameterNode? arg = null;
-        var assignmentSource = parent is AssignNode assign && assign.Right == node;
-        var uncheckedType = parent is TypeNode or FuncNode or ModuleDefinitionNode or ImportNode or ImportItemNode or VariableDefinitionNode or AssignNode;
+        var assignmentSource = parent is not AssignNode assign || assign.Left != node;
         if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var withPosition) 
             && !context.Arguments.TryGetValue(node.MemberName, out arg)
-            && (assignmentSource || !uncheckedType))
+            && assignmentSource)
         {
             var record = PlampExceptionInfo.CannotFindMember();
             SetExceptionToSymbol(node, record, context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.SkipChildren;
         }
-
-        if (uncheckedType) return VisitResult.Continue;
         
         var memberType = withPosition?.Variable.Type?.Symbol ?? arg?.Type.Symbol;
         context.InnerExpressionTypeStack.Push(memberType);
@@ -411,16 +430,11 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
         if (context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
         {
-            return ValidateExistingDefinition(node, leftMember, context, withPosition, rightType);
+            ValidateExistingDefinition(node, leftMember, context, withPosition, rightType);
+            return VisitResult.SkipChildren;
         }
-        
-        TypeNode? typeNode = null;
-        if (rightType != null) typeNode = CreateTypeForMember(leftMember, context, rightType);
 
-        var definition = new VariableDefinitionNode(typeNode, leftMember);
-        Replace(leftMember, definition, context);
-        
-        context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(definition, context.InstructionInScopePosition);
+        CreateVariableDefinitionFromMember(leftMember, context, rightType);
         return VisitResult.Continue;
     }
 
@@ -456,11 +470,12 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitReturn(ReturnNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         Type? returnType = null;
+        var functionReturnType = context.CurrentFunc?.ReturnType?.Symbol;
         if (node.ReturnValue != null)
         {
             returnType = context.InnerExpressionTypeStack.Pop();
         }
-
+        
         if (context.CurrentFunc?.ReturnType?.Symbol == null) return VisitResult.SkipChildren;
         
         if (context.CurrentFunc?.ReturnType?.Symbol != typeof(void) && node.ReturnValue is null)
@@ -473,9 +488,10 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             var record = PlampExceptionInfo.CannotReturnValue();
             SetExceptionToSymbol(node, record, context);
         }
-        else if (context.CurrentFunc?.ReturnType?.Symbol != typeof(void) && returnType is not null)
+        else if (functionReturnType is not null && functionReturnType != typeof(void) && returnType is not null)
         {
-            if (returnType == context.CurrentFunc?.ReturnType?.Symbol) return VisitResult.SkipChildren;
+            if (returnType == functionReturnType) return VisitResult.SkipChildren;
+            if (TryExpandNode(node.ReturnValue!, functionReturnType, returnType, context)) return VisitResult.SkipChildren;
             
             var record = PlampExceptionInfo.ReturnTypeMismatch();
             SetExceptionToSymbol(node, record, context);
@@ -496,7 +512,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.SkipChildren;
     }
 
-    private VisitResult ValidateExistingDefinition(
+    private void ValidateExistingDefinition(
         AssignNode assign,
         MemberNode left,
         TypeInferenceInnerContext context,
@@ -509,32 +525,40 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             record = PlampExceptionInfo.DuplicateVariableDefinition();
             SetExceptionToSymbol(existingVar.Variable, record, context);
             SetExceptionToSymbol(left, record, context);
-            return VisitResult.SkipChildren;
+            return;
         }
 
         if (existingVar.Variable.Type?.Symbol is not {} leftType
             || rightType == null 
             || leftType == rightType)
         {
-            return VisitResult.SkipChildren;
+            return;
         }
-            
+
+        if (TryExpandNode(assign.Right, leftType, rightType, context)) return;
         record = PlampExceptionInfo.CannotAssign();
         SetExceptionToSymbol(assign, record, context);
-        return VisitResult.SkipChildren;
     }
 
-    private TypeNode CreateTypeForMember(MemberNode leftMember, TypeInferenceInnerContext context, Type rightType)
+    private void CreateVariableDefinitionFromMember(MemberNode leftMember, TypeInferenceInnerContext context, Type? rightType)
     {
         if (!context.SymbolTable.TryGetSymbol(leftMember, out var symbol))
             throw new ArgumentException("Parser error, symbol should exist");
-                
-        var typeName = new MemberNode(rightType.Name);
-        context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
-        var typeNode = new TypeNode(typeName, []);
-        typeNode.SetType(rightType);
-        context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
-        return typeNode;
+        TypeNode? typeNode = null;
+        if (rightType != null)
+        {
+            var typeName = new TypeNameNode(rightType.Name);
+            context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
+            typeNode = new TypeNode(typeName, []);
+            typeNode.SetType(rightType);
+            context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
+        }
+
+        var variableName = new VariableNameNode(leftMember.MemberName);
+        context.SymbolTable.AddSymbol(variableName, symbol.Key, symbol.Value);
+        var variableNode = new VariableDefinitionNode(typeNode, variableName);
+        Replace(leftMember, variableNode, context);
+        context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(variableNode, context.InstructionInScopePosition);
     }
 
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition, TypeInferenceInnerContext context)

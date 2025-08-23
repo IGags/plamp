@@ -5,6 +5,8 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -19,8 +21,8 @@ public class FuncParsingTests
         [
             "fn a() any return 1;",
             new FuncNode(
-                new TypeNode(new MemberNode("any")), 
-                new MemberNode("a"), [],
+                new TypeNode(new TypeNameNode("any")), 
+                new FuncNameNode("a"), [],
                 new BodyNode([
                     new ReturnNode(new LiteralNode(1, typeof(int)))
                 ]))
@@ -30,10 +32,10 @@ public class FuncParsingTests
             "fn b(int x, int y) return;",
             new FuncNode(
                 null,
-                new MemberNode("b"),
+                new FuncNameNode("b"),
                 [
-                    new ParameterNode(new TypeNode(new MemberNode("int")), new MemberNode("x")),
-                    new ParameterNode(new TypeNode(new MemberNode("int")), new MemberNode("y"))
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("x")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("y"))
                 ],
                 new BodyNode([
                     new ReturnNode(null)
@@ -47,10 +49,10 @@ public class FuncParsingTests
             }
             """,
             new FuncNode(
-                new TypeNode(new MemberNode("any")), 
-                new MemberNode("call_any"), 
+                new TypeNode(new TypeNameNode("any")), 
+                new FuncNameNode("call_any"), 
                 [
-                    new ParameterNode(new TypeNode(new MemberNode("any")), new MemberNode("a"))
+                    new ParameterNode(new TypeNode(new TypeNameNode("any")), new ParameterNameNode("a"))
                 ],
                 new BodyNode([
                     new ReturnNode(new MemberNode("a"))
@@ -61,7 +63,7 @@ public class FuncParsingTests
             "fn min();",
             new FuncNode(
                 null,
-                new MemberNode("min"),
+                new FuncNameNode("min"),
                 [],
                 new BodyNode([]))
         ];
@@ -88,7 +90,7 @@ public class FuncParsingTests
         yield return
         [
             "fn a()", new List<string> { PlampExceptionInfo.UnexpectedToken("").Code }, true,
-            new FuncNode(null, new MemberNode("a"), [], new BodyNode([]))
+            new FuncNode(null, new FuncNameNode("a"), [], new BodyNode([]))
         ];
         yield return ["fn a(int a,,int b)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
     }

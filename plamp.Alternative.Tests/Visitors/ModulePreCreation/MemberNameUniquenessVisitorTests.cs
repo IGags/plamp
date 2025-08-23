@@ -2,6 +2,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
 using Xunit;
@@ -16,7 +17,7 @@ public class MemberNameUniquenessVisitorTests
     public void SingleMember_DoesNotReturnExceptions()
     {
         var table = new SymbolTable();
-        var func1Name = new MemberNode("fn1");
+        var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
         var root = new RootNode([], null, [func1]);
@@ -34,11 +35,11 @@ public class MemberNameUniquenessVisitorTests
     public void MultipleMembersWithDifferNames_DoesNotReturnExceptions()
     {
         var table = new SymbolTable();
-        var func1Name = new MemberNode("fn1");
+        var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
         
-        var func2Name = new MemberNode("fn2");
+        var func2Name = new FuncNameNode("fn2");
         var func2Body = new BodyNode([]);
         var func2 = new FuncNode(null, func2Name, [], func2Body);
         
@@ -64,11 +65,11 @@ public class MemberNameUniquenessVisitorTests
     public void MultipleMembersWithSameName_ReturnExceptionsToAllMembers()
     {
         var table = new SymbolTable();
-        var func1Name = new MemberNode("fn1");
+        var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
         
-        var func2Name = new MemberNode("fn1");
+        var func2Name = new FuncNameNode("fn1");
         var func2Body = new BodyNode([]);
         var func2 = new FuncNode(null, func2Name, [], func2Body);
         

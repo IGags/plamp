@@ -6,6 +6,8 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;
@@ -155,7 +157,7 @@ public class MethodAlwaysReturnsValueTests
     {
         return new FuncNode(
             CreateTypeNode(returnType),
-            new MemberNode(name),
+            new FuncNameNode(name),
             parameters.Cast<ParameterNode>().ToList(),
             body
         );
@@ -163,7 +165,7 @@ public class MethodAlwaysReturnsValueTests
     
     private static TypeNode CreateTypeNode(Type fromType)
     {
-        var type = new TypeNode(new MemberNode(""));
+        var type = new TypeNode(new TypeNameNode(""));
         type.SetType(fromType);
         return type;
     }

@@ -21,7 +21,7 @@ public static class Program
                                         println("attempts left:");
                                         
                                         att_count := att_count - 1;
-                                        println(att_count);3
+                                        println(att_count);
                                     }
                                     println("you lose");
                                     return;

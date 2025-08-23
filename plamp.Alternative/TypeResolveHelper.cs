@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 
 namespace plamp.Alternative;
 
@@ -10,7 +11,7 @@ internal static class TypeResolveHelper
 {
     public static Type? ResolveType(TypeNode type, List<PlampException> exceptions, ISymbolTable symbols, string fileName)
     {
-        switch (type.TypeName.MemberName)
+        switch (type.TypeName.Name)
         {
             case "int": return typeof(int);
             case "uint": return typeof(uint);
