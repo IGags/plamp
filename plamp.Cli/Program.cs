@@ -2,19 +2,32 @@
 
 namespace plamp.Cli;
 
-class Program
+public static class Program
 {
     private const string File = """
-                                module a2;
-                                fn fib(int n) int {
-                                    if(n < 0) return n;
-                                    if(n = 0 || n = 1) return n;
-                                    if(n = 2) return 1;
-                                    return fib(n - 1) + fib(n - 2);
+                                module playground;
+                                fn implicit_conv() {
+                                    println("try guess number!");
+                                    att_count := 3;
+                                    number := 5;
+                                    while(att_count > 0) {
+                                        dec := readln();
+                                        if(int(dec) = 5) {
+                                            println("correct!");
+                                            return;
+                                        }
+                                        if(int(dec) < 5) println("the number is greater");
+                                        if(int(dec) > 5) println("the number is lesser");
+                                        println("attempts left:");
+                                        
+                                        att_count := att_count - 1;
+                                        println(att_count);
+                                    }
+                                    println("you lose");
                                 }
                                 """;
     
-    static void Main()
+    public static void Main()
     {
         var rows = File.Split('\n');
         var res = CompilationDriver.CompileModule("aaa.plp", File);
@@ -23,8 +36,8 @@ class Program
             PrintRes(res.Exceptions);
             return;
         }
-        var method = res.Compiled!.Modules.First().GetMethod("fib");
-        Console.WriteLine("PROGRAM OUTPUT: " + method!.Invoke(null, [14]));
+        var method = res.Compiled!.Modules.First().GetMethod("implicit_conv");
+        method!.Invoke(null, []);
 
         void PrintRes(List<PlampException> exList)
         {

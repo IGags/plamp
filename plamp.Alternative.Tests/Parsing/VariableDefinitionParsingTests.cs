@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
-using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -14,7 +16,7 @@ public class VariableDefinitionParsingTests
     public void ParseVariableDefinition_Correct()
     {
         const string code = "int a";
-        var ast = new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a"));
+        var ast = new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"));
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();

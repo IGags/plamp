@@ -5,6 +5,8 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.CompilerEmission;
 
@@ -177,6 +179,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
+            //TODO: Increment and decrement
         }
     }
 
@@ -260,13 +263,13 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         {
             context.Generator.Emit(OpCodes.Stfld, emitFld);
         }
-        else if (assignNode.Left is VariableDefinitionNode {Member: { } varMember})
+        else if (assignNode.Left is VariableDefinitionNode {Name: { } varName})
         {
-            EmitSetLocalVarOrArg(varMember, context);
+            EmitSetLocalVarOrArg(varName.Value, context);
         }
         else if(assignNode.Left is MemberNode memberNode)
         {
-            EmitSetLocalVarOrArg(memberNode, context);
+            EmitSetLocalVarOrArg(memberNode.MemberName, context);
         }
     }
 
@@ -400,7 +403,29 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitTypeConversion(CastNode node, EmissionContext context)
     {
-        EmitGetLocalVarOrArg((MemberNode)node.Inner, context, false);
+        switch (node.Inner)
+        {
+            case MemberNode member:
+                EmitGetLocalVarOrArg(member, context, false);
+                break;
+            case LiteralNode literal:
+                EmitLiteral(literal, context);
+                break;
+            case CallNode call:
+                EmitCall(call, context);
+                break;
+            case BaseBinaryNode binary:
+                EmitBaseBinary(binary, context);
+                break;
+            case BaseUnaryNode unary:
+                EmitUnary(unary, context);
+                break;
+            case CastNode cast:
+                EmitTypeConversion(cast, context);
+                break;
+            default: throw new ArgumentException(nameof(node.Inner));
+        }
+        
         var toType = GetTypeFromNode(node.ToType)!;
         var fromType = node.FromType;
 
@@ -462,10 +487,10 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         EmissionContext context)
     {
         if(variableDefinitionNode.Type is not { } type) return;
-        if(variableDefinitionNode.Member is not { } member) return;
+        if(variableDefinitionNode.Name is not { } member) return;
         if (type.Symbol == null) throw new ArgumentException("Cannot emit variable definition with null type");
         var builder = context.Generator.DeclareLocal(type.Symbol);
-        context.LocalVarStack.Add(member.MemberName, builder);
+        context.LocalVarStack.Add(member.Value, builder);
     }
 
     private void EmitCallCtor(ConstructorCallNode constructorCallNode, EmissionContext context)
@@ -536,10 +561,10 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
         context.Generator.Emit(opcode, ix);
     }
-
-    private void EmitSetLocalVarOrArg(MemberNode member, EmissionContext context)
+    
+    private void EmitSetLocalVarOrArg(string name, EmissionContext context)
     {
-        if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
+        if (context.LocalVarStack.TryGetValue(name, out var builder))
         {
             context.Generator.Emit(OpCodes.Stloc, builder);
             return;

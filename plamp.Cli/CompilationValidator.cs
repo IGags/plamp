@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
-using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Abstractions.CompilerEmission;
 using plamp.Alternative.Visitors.ModuleCreation;
@@ -10,16 +11,15 @@ namespace plamp.Cli;
 
 public class CompilationValidator : BaseValidator<CreationContext, InnerCompilationContext>
 {
-
-    protected override VisitResult VisitDef(FuncNode node, InnerCompilationContext context)
+    protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
-        var builder = context.Methods.Single(x => x.Name == node.Name.MemberName);
+        var builder = context.Methods.Single(x => x.Name == node.FuncName.Value);
         var emitter = new DefaultIlCodeEmitter();
         var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
-            context.FuncParams[node.Name.MemberName], context.SymbolTable);
+            context.FuncParams[node.FuncName.Value], context.SymbolTable);
         emitter.EmitMethodBodyAsync(emissionContext).Wait();
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
@@ -39,7 +39,7 @@ public class InnerCompilationContext : CreationContext
         FuncParams = other.Functions.ToDictionary(
             x => x.Key, 
             x => x.Value.ParameterList
-                .Select(y => new ParamImpl(y.Type.Symbol!, y.Name.MemberName))
+                .Select(y => new ParamImpl(y.Type.Symbol!, y.Name.Value))
                 .Cast<ParameterInfo>().ToArray());
     }
 }

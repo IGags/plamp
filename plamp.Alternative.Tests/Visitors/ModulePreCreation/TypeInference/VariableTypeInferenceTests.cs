@@ -5,6 +5,9 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using Shouldly;
@@ -133,7 +136,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a"))
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
     }
@@ -144,7 +147,7 @@ public class VariableTypeInferenceTests
         var ast = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a")),
+                new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
                 new LiteralNode(1, typeof(int)))
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
@@ -157,8 +160,8 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a")),
-            new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a"))
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))
         ]);
         
         SetupExceptionGenerationMock(symbolTable, fileName);
@@ -219,7 +222,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a")),
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
             new AssignNode(new MemberNode("b"), new MemberNode("a"))
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
@@ -230,7 +233,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new VariableDefinitionNode(new TypeNode(new MemberNode("int")), new MemberNode("a")),
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
             new AssignNode(new MemberNode("a"), new MemberNode("a"))
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);

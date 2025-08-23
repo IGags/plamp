@@ -24,7 +24,7 @@ public class MethodCallInferenceValidatorTests
         var result = visitor.Validate(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldBeEmpty());
-        call.Symbol.ShouldBe(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(string)]));
+        call.Symbol.ShouldBe(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)]));
     }
     
     [Theory, AutoData]

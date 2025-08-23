@@ -2,6 +2,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.CodeEmission.Tests.Infrastructure;
 
 namespace plamp.CodeEmission.Tests;
@@ -70,7 +71,7 @@ public class CtorEmissionTests
         var tempVarName = "tempVar";
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new MemberNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new VariableNameNode(tempVarName)),
             new AssignNode(
                 new MemberNode(tempVarName), 
                 EmissionSetupHelper.CreateConstructorNode(EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
@@ -105,7 +106,7 @@ public class CtorEmissionTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new MemberNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new VariableNameNode(tempVarName)),
             new AssignNode(
                 new MemberNode(tempVarName), 
                 EmissionSetupHelper.CreateConstructorNode(

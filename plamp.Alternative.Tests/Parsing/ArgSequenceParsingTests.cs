@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
-using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -13,15 +15,15 @@ public class ArgSequenceParsingTests
     public static IEnumerable<object[]> ParseArgSequence_Correct_DataProvider()
     {
         yield return ["()", new List<ParameterNode>()];
-        yield return ["(int a)", new List<ParameterNode> { new(new TypeNode(new MemberNode("int")), new MemberNode("a")) }];
+        yield return ["(int a)", new List<ParameterNode> { new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")) }];
         yield return
         [
             "(int a, str b, double c)",
             new List<ParameterNode>
             {
-                new(new TypeNode(new MemberNode("int")), new MemberNode("a")),
-                new(new TypeNode(new MemberNode("str")), new MemberNode("b")),
-                new(new TypeNode(new MemberNode("double")), new MemberNode("c")),
+                new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")),
+                new(new TypeNode(new TypeNameNode("str")), new ParameterNameNode("b")),
+                new(new TypeNode(new TypeNameNode("double")), new ParameterNameNode("c")),
             }
         ];
     }
@@ -46,14 +48,14 @@ public class ArgSequenceParsingTests
         yield return 
         [
             "(int a,, int b", 
-            new List<ParameterNode>{new(new TypeNode(new MemberNode("int")), new MemberNode("a"))}, 
+            new List<ParameterNode>{new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a"))}, 
             false, 
             new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}
         ];
         yield return
         [
             "(int a",
-            new List<ParameterNode>{new(new TypeNode(new MemberNode("int")), new MemberNode("a"))},
+            new List<ParameterNode>{new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a"))},
             true,
             new List<string>{PlampExceptionInfo.ExpectedCloseParen().Code}
         ];

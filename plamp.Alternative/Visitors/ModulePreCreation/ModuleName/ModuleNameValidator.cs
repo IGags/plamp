@@ -1,4 +1,6 @@
-﻿using plamp.Abstractions.Ast.Node.Definitions;
+﻿using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
@@ -9,7 +11,7 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
 
     protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, ModuleNameValidatorContext context) => new(context);
 
-    protected override VisitResult VisitRoot(RootNode node, ModuleNameValidatorContext context)
+    protected override VisitResult PreVisitRoot(RootNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
         if (node.ModuleName == null)
         {
@@ -17,27 +19,18 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
             return VisitResult.Break;
         }
-        context.ModuleName = node.ModuleName?.ModuleName;
-        if(node.ModuleName == null 
-           || !context.Members.TryGetValue(node.ModuleName.ModuleName, out var members)) return VisitResult.Break;
         
-        var exceptionRecord = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
-        foreach (var member in members)
-        {
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(member, exceptionRecord, context.FileName));
-        }
-
-        return VisitResult.Break;
+        context.ModuleName = node.ModuleName?.ModuleName;
+        return VisitResult.Continue;
     }
 
-    protected override VisitResult VisitDef(FuncNode node, ModuleNameValidatorContext context)
+    protected override VisitResult PreVisitFuncName(FuncNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (!context.Members.TryGetValue(node.Name.MemberName, out var members))
-        {
-            members = [];
-            context.Members.Add(node.Name.MemberName, members);
-        }
-        members.Add(node);
+        if (parent is null || !node.Value.Equals(context.ModuleName)) return VisitResult.SkipChildren;
+
+        var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
+        SetExceptionToSymbol(parent, record, context);
+
         return VisitResult.SkipChildren;
     }
 }

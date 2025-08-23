@@ -71,12 +71,11 @@ public class OperatorTypeInferenceTests
         SetupMockAndAssertError(ast, symbolTable, fileName, visitor);
     }
 
-    //TODO: Numeric types need to be implicitly converted
     [Theory, AutoData]
     public void BinaryComparisionDifferentType_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
     {
         var ast = new LessNode(new LiteralNode(1, typeof(int)), new LiteralNode(1.4, typeof(float)));
-        SetupMockAndAssertError(ast, symbolTable, fileName, visitor);
+        SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
     }
 
     [Theory, AutoData]

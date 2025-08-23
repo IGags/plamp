@@ -5,6 +5,8 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 using Shouldly;
@@ -36,7 +38,7 @@ public class FuncSignatureInferenceVisitorTests
             null,
             [
                 new FuncNode(
-                    null, new MemberNode(funcName), [], 
+                    null, new FuncNameNode(funcName), [], 
                     new BodyNode([]))
             ]);
 
@@ -64,8 +66,8 @@ public class FuncSignatureInferenceVisitorTests
             null,
             [
                 new FuncNode(
-                    new TypeNode(new MemberNode("int")), 
-                    new MemberNode(funcName), [], 
+                    new TypeNode(new TypeNameNode("int")), 
+                    new FuncNameNode(funcName), [], 
                     new BodyNode([]))
             ]);
         var context = new PreCreationContext(fileName, symbolTableMock.Object);
@@ -93,9 +95,9 @@ public class FuncSignatureInferenceVisitorTests
             [
                 new FuncNode(
                     null, 
-                    new MemberNode(funcName), 
+                    new FuncNameNode(funcName), 
                     [
-                        new ParameterNode(new TypeNode(new MemberNode("int")), new MemberNode("one"))
+                        new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("one"))
                     ], 
                     new BodyNode([]))
             ]);
@@ -128,10 +130,10 @@ public class FuncSignatureInferenceVisitorTests
             [
                 new FuncNode(
                     null, 
-                    new MemberNode(funcName), 
+                    new FuncNameNode(funcName), 
                     [
-                        new ParameterNode(new TypeNode(new MemberNode("int")), new MemberNode("one")), 
-                        new ParameterNode(new TypeNode(new MemberNode("string")), new MemberNode("two")), 
+                        new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("one")), 
+                        new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("two")), 
                     ], 
                     new BodyNode([]))
             ]);
@@ -169,8 +171,8 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([])),
-                new FuncNode(null, new MemberNode(funcName2), [], new BodyNode([]))
+                new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([])),
+                new FuncNode(null, new FuncNameNode(funcName2), [], new BodyNode([]))
             ]);
         
         var context = new PreCreationContext(fileName, symbolTableMock.Object);
@@ -208,8 +210,8 @@ public class FuncSignatureInferenceVisitorTests
             [],
             null,
             [
-                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([])),
-                new FuncNode(null, new MemberNode(funcName), [], new BodyNode([]))
+                new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([])),
+                new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([]))
             ]);
         
         var context = new PreCreationContext(fileName, symbolTableMock.Object);

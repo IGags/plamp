@@ -1,5 +1,6 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
 using Xunit;

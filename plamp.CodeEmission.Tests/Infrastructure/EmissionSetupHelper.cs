@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.CompilerEmission;
 using plamp.ILCodeEmitters;
 
@@ -49,7 +51,7 @@ public class EmissionSetupHelper
         return (instance, createdMethod);
     }
 
-    public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new MemberNode(type.Name), [], type);
+    public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new TypeNameNode(type.Name), [], type);
 
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
@@ -95,7 +97,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteType : TypeNode
     {
-        public ConcreteType(MemberNode name, List<NodeBase> generics, Type symbol) : base(name, generics)
+        public ConcreteType(TypeNameNode name, List<NodeBase> generics, Type symbol) : base(name, generics)
         {
             Symbol = symbol;
         }

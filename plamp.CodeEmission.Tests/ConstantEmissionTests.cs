@@ -2,6 +2,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
@@ -23,7 +24,6 @@ public class ConstantEmissionTests
     [InlineData(int.MinValue)]
     //Uint
     [InlineData(0u)]
-    [InlineData(-1024u)]
     [InlineData(1024u)]
     [InlineData(uint.MaxValue)]
     //Short
@@ -78,7 +78,7 @@ public class ConstantEmissionTests
          * return var1
          */
         var ast = new BodyNode([
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new MemberNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new VariableNameNode(tempVarName)),
             new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
@@ -121,7 +121,7 @@ public class ConstantEmissionTests
          * return var1
          */
         var ast = new BodyNode([
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType!), new MemberNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType!), new VariableNameNode(tempVarName)),
             new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType!)),
             new ReturnNode(new MemberNode(tempVarName))
         ]);

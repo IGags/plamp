@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
-using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -14,7 +16,7 @@ public class ArgParsingTests
     public void ParseArg_Correct()
     {
         const string code = "int abc";
-        var ast = new ParameterNode(new TypeNode(new MemberNode("int")), new MemberNode("abc"));
+        var ast = new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("abc"));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArg(context, out var arg);

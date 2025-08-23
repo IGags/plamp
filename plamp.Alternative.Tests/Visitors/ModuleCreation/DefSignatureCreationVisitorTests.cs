@@ -5,9 +5,10 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using Shouldly;
@@ -27,11 +28,11 @@ public class DefSignatureCreationVisitorTests
         var fileName = new Fixture().Create<string>();
         var visitor = new Fixture().Create<DefSignatureCreationValidator>();
         const string funcName = "TestFunc";
-        var returnType = new TypeNode(new MemberNode(returnTypeObject.Name));
+        var returnType = new TypeNode(new TypeNameNode(returnTypeObject.Name));
         returnType.SetType(returnTypeObject);
         var ast = new FuncNode(
             returnType,
-            new MemberNode(funcName),
+            new FuncNameNode(funcName),
             [], 
             new BodyNode([]));
 
@@ -51,16 +52,16 @@ public class DefSignatureCreationVisitorTests
     public void VisitWithArgs_ReturnsNoException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
-        var returnType = new TypeNode(new MemberNode("void"));
+        var returnType = new TypeNode(new TypeNameNode("void"));
         returnType.SetType(typeof(void));
 
-        var argType = new TypeNode(new MemberNode("int"));
+        var argType = new TypeNode(new TypeNameNode("int"));
         argType.SetType(typeof(int));
-        var arg = new ParameterNode(argType, new MemberNode("first"));
+        var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
             returnType,
-            new MemberNode(funcName),
+            new FuncNameNode(funcName),
             [arg],
             new BodyNode([]));
 
@@ -81,15 +82,15 @@ public class DefSignatureCreationVisitorTests
         string fileName, DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
-        var returnType = new TypeNode(new MemberNode("void"));
+        var returnType = new TypeNode(new TypeNameNode("void"));
 
-        var argType = new TypeNode(new MemberNode("int"));
+        var argType = new TypeNode(new TypeNameNode("int"));
         argType.SetType(typeof(int));
-        var arg = new ParameterNode(argType, new MemberNode("first"));
+        var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
             returnType,
-            new MemberNode(funcName),
+            new FuncNameNode(funcName),
             [arg],
             new BodyNode([]));
         
@@ -106,15 +107,15 @@ public class DefSignatureCreationVisitorTests
         string fileName, DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
-        var returnType = new TypeNode(new MemberNode("void"));
+        var returnType = new TypeNode(new TypeNameNode("void"));
         returnType.SetType(typeof(void));
         
-        var argType = new TypeNode(new MemberNode("int"));
-        var arg = new ParameterNode(argType, new MemberNode("first"));
+        var argType = new TypeNode(new TypeNameNode("int"));
+        var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
             returnType,
-            new MemberNode(funcName),
+            new FuncNameNode(funcName),
             [arg],
             new BodyNode([]));
         

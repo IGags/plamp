@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 
-namespace plamp.Abstractions.Ast.Node.Definitions;
+namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 
-public class FuncNode(TypeNode? returnType, MemberNode name, List<ParameterNode> parameterList, BodyNode body) : NodeBase
+public class FuncNode(TypeNode? returnType, FuncNameNode funcName, List<ParameterNode> parameterList, BodyNode body) : NodeBase
 {
     //Null when void after parsing
     public TypeNode? ReturnType { get; private set; } = returnType;
-    public MemberNode Name { get; private set; } = name;
+    public FuncNameNode FuncName { get; private set; } = funcName;
     public List<ParameterNode> ParameterList => parameterList;
     public BodyNode Body { get; private set; } = body;
 
@@ -17,7 +18,7 @@ public class FuncNode(TypeNode? returnType, MemberNode name, List<ParameterNode>
         {
             yield return ReturnType;
         }
-        yield return Name;
+        yield return FuncName;
         foreach (var parameter in ParameterList)
         {
             yield return parameter;
@@ -33,9 +34,9 @@ public class FuncNode(TypeNode? returnType, MemberNode name, List<ParameterNode>
         {
             ReturnType = returnType;
         }
-        else if (Name == child && newChild is MemberNode member)
+        else if (FuncName == child && newChild is FuncNameNode member)
         {
-            Name = member;
+            FuncName = member;
         }
         else if (child is ParameterNode parameterChild &&
                 -1 != (parameterIndex = parameterList.IndexOf(parameterChild))

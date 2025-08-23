@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 
 namespace plamp.Abstractions.Ast.Node.Definitions;
 

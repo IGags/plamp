@@ -4,6 +4,7 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.CodeEmission.Tests.Infrastructure;
 // ReSharper disable EntityNameCapturedOnly.Local
@@ -27,7 +28,7 @@ public class LoopEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new MemberNode(nameof(iter))),
+                new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter))),
                 new LiteralNode(0, typeof(int))),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),

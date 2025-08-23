@@ -6,13 +6,13 @@ namespace plamp.Alternative.Visitors.ModuleCreation;
 
 public class MethodCallInferenceValidator : BaseValidator<CreationContext, CreationContext>
 {
-    protected override VisitResult VisitCall(CallNode node, CreationContext context)
+    protected override VisitResult PreVisitCall(CallNode node, CreationContext context, NodeBase? parent)
     {
         var info = TypeResolveHelper.TryGetIntrinsic(node.MethodName.MemberName);
         var fromContext = context.Methods.FirstOrDefault(x => x.Name == node.MethodName.MemberName);
         if (fromContext != null) info = fromContext;
         if(info != null) node.SetInfo(info);
-        return VisitResult.Continue;
+        return VisitResult.SkipChildren;
     }
 
     protected override CreationContext CreateInnerContext(CreationContext context) => context;

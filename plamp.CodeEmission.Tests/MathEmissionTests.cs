@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.CodeEmission.Tests.Infrastructure;
 
@@ -37,7 +38,7 @@ public class MathEmissionTests
         {
             new VariableDefinitionNode(
                 EmissionSetupHelper.CreateTypeNode(resultTypeShould),
-                new MemberNode("a")),
+                new VariableNameNode("a")),
             new AssignNode(new MemberNode("a"), operatorAst),
             new ReturnNode(new MemberNode("a"))
         };
@@ -64,16 +65,18 @@ public class MathEmissionTests
         var secondDouble = new LiteralNode(d2, typeof(double));
 
         var firstName = new MemberNode("tempConst1");
-        var firstDefInt = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstLiteral.Type), firstName);
-        var firstDefDouble = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstDouble.Type), firstName);
-        var firstDefFloat = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstFloat.Type), firstName);
-        var trueDefBool = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(trueLiteral.Type), firstName);
+        var firstVariableName = new VariableNameNode("tempConst1");
+        var firstDefInt = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstLiteral.Type), firstVariableName);
+        var firstDefDouble = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstDouble.Type), firstVariableName);
+        var firstDefFloat = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstFloat.Type), firstVariableName);
+        var trueDefBool = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(trueLiteral.Type), firstVariableName);
         
         var secondName = new MemberNode("tempConst2");
-        var secondDefInt = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(secondLiteral.Type), secondName);
-        var secondDefDouble = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstDouble.Type), secondName);
-        var secondDefFloat = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstFloat.Type), secondName);
-        var falseDefBool = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(falseLiteral.Type), secondName);
+        var secondVariableName = new VariableNameNode("tempConst2");
+        var secondDefInt = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(secondLiteral.Type), secondVariableName);
+        var secondDefDouble = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstDouble.Type), secondVariableName);
+        var secondDefFloat = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(firstFloat.Type), secondVariableName);
+        var falseDefBool = new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(falseLiteral.Type), secondVariableName);
 
         var intDefs = new NodeBase[]
         {
