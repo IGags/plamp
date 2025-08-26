@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
@@ -157,7 +158,7 @@ public class CastEmissionTests
          */
         var to = new TypeNode(new TypeNameNode("double"));
         to.SetType(typeof(double));
-        var call = new CallNode(null, new MemberNode("Example"), []);
+        var call = new CallNode(null, new FuncCallNameNode("Example"), []);
         call.SetInfo(typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!);
         var cast = new CastNode(to, call);
         cast.SetFromType(typeof(int));

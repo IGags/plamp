@@ -4,6 +4,7 @@ using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.CompilerEmission;
 using plamp.ILCodeEmitters;
@@ -56,7 +57,7 @@ public class EmissionSetupHelper
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
     public static CallNode CreateCallNode(NodeBase? from, MethodInfo info, List<NodeBase> args) 
-        => new ConcreteCall(from, new MemberNode(info.Name), args, info);
+        => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info);
 
     public static CastNode CreateCastNode(Type from, Type to, NodeBase inner)
     {
@@ -113,7 +114,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, MemberNode name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
         {
             Symbol = symbol;
         }

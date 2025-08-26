@@ -4,6 +4,7 @@ using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
@@ -18,7 +19,7 @@ public class BodySingleLineExpressionParsingTests
     public static IEnumerable<object[]> ParseBodySingleLineExpression_Correct_DataProvider()
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
-        yield return ["a()", new CallNode(null, new MemberNode("a"), [])];
+        yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [])];
         yield return ["a := 41", new AssignNode(new MemberNode("a"), new LiteralNode(41, typeof(int)))];
         yield return ["!a", new NotNode(new MemberNode("a"))];
         yield return ["int a", new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))];

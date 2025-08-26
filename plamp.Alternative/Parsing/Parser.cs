@@ -717,7 +717,9 @@ public static class Parser
         if (context.Sequence.Current() is CloseParen)
         {
             end = context.Sequence.CurrentEnd;
-            call = new CallNode(null, new MemberNode(funcName.GetStringRepresentation()), argExpressions);
+            var funcNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
+            context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
+            call = new CallNode(null, funcNameNode, argExpressions);
             context.Sequence.MoveNextNonWhiteSpace();
             context.SymbolTable.AddSymbol(call, start, end);
             return true;
@@ -762,7 +764,9 @@ public static class Parser
             context.Sequence.MoveNextNonWhiteSpace();
         }
 
-        call = new CallNode(null, new MemberNode(funcName.GetStringRepresentation()), argExpressions);
+        var funcCallNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
+        context.SymbolTable.AddSymbol(funcCallNameNode, funcName.Start, funcName.End);
+        call = new CallNode(null, funcCallNameNode, argExpressions);
         context.SymbolTable.AddSymbol(call, start, end);
         return true;
     }
