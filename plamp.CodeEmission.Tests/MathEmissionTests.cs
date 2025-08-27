@@ -1,3 +1,4 @@
+using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -333,4 +334,17 @@ public class MathEmissionTests
         yield return [float.MinValue, 1f, typeof(float), float.MinValue - 1];
         yield return [double.MinValue, 1d, typeof(double), double.MinValue - 1];
     }
+
+    [Fact]
+    public async Task ZeroDivision_ThrowsRuntimeException()
+    {
+        var ast = new BodyNode(
+        [
+            new ReturnNode(new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int))))
+        ]);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], ast, typeof(int));
+        Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();
+    }
+    
+    //Возможно следует добавить тесты на арифметику с плавающей точкой, но пока генератор генерирует её без отличий от C#
 }

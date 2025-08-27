@@ -51,11 +51,17 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitReturn(returnNode, context);
                 break;
             case CallNode callNode:
-                EmitCall(callNode, context);
+                EmitCall(callNode, context, true);
                 break;
             case VariableDefinitionNode variableDefinitionNode:
                 EmitVariableDefinition(variableDefinitionNode, context);
                 break;
+            case BaseUnaryNode unary when unary.GetType() != typeof(UnaryMinusNode):
+                EmitIncrementOrDecrement(unary, context, false);
+                break;
+            default:
+                throw new InvalidOperationException(
+                    "Unknown body level instruction. If you see this, report to programmer");
         }
     }
 
@@ -168,8 +174,6 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitUnary(BaseUnaryNode unaryBase, EmissionContext context)
     {
-        const string exceptionMessage = "Compiler error, please report to developer";
-        Type memberType;
         switch (unaryBase)
         {
             case NotNode:
@@ -181,12 +185,23 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
+            default: EmitIncrementOrDecrement(unaryBase, context, true);
+                break;
+        }
+    }
+
+    private void EmitIncrementOrDecrement(BaseUnaryNode unaryBase, EmissionContext context, bool withAssign)
+    {
+        const string exceptionMessage = "Compiler error, please report to developer";
+        Type memberType;
+        switch (unaryBase)
+        {
             case PrefixIncrementNode:
                 if (unaryBase.Inner is not MemberNode prefixIncMember) throw new InvalidOperationException(exceptionMessage);
                 memberType = EmitGetLocalVarOrArg(prefixIncMember, context, true);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
-                context.Generator.Emit(OpCodes.Dup);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 EmitSetLocalVarOrArg(prefixIncMember.MemberName, context);
                 break;
             case PrefixDecrementNode:
@@ -194,13 +209,13 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 memberType = EmitGetLocalVarOrArg(prefixDecMember, context, true);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
-                context.Generator.Emit(OpCodes.Dup);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 EmitSetLocalVarOrArg(prefixDecMember.MemberName, context);
                 break;
             case PostfixIncrementNode:
                 if (unaryBase.Inner is not MemberNode postfixIncMember) throw new InvalidOperationException(exceptionMessage);
                 memberType = EmitGetLocalVarOrArg(postfixIncMember, context, true);
-                context.Generator.Emit(OpCodes.Dup);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
                 EmitSetLocalVarOrArg(postfixIncMember.MemberName, context);
@@ -208,14 +223,14 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             case PostfixDecrementNode:
                 if (unaryBase.Inner is not MemberNode postfixDecMember) throw new InvalidOperationException(exceptionMessage);
                 memberType = EmitGetLocalVarOrArg(postfixDecMember, context, true);
-                context.Generator.Emit(OpCodes.Dup);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
                 EmitSetLocalVarOrArg(postfixDecMember.MemberName, context);
                 break;
             default: throw new InvalidOperationException(exceptionMessage);
         }
-
+        
         void LoadConstant(Type constantType)
         {
             if (constantType == typeof(ulong) || constantType == typeof(long))
@@ -339,7 +354,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitUnary(unaryNode, context);
                 break;
             case CallNode callNode:
-                EmitCall(callNode, context);
+                EmitCall(callNode, context, false);
                 break;
             case ConstructorCallNode constructorCallNode:
                 EmitCallCtor(constructorCallNode, context);
@@ -464,7 +479,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitLiteral(literal, context);
                 break;
             case CallNode call:
-                EmitCall(call, context);
+                EmitCall(call, context, false);
                 break;
             case BaseBinaryNode binary:
                 EmitBaseBinary(binary, context);
@@ -557,7 +572,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
     }
     
-    private void EmitCall(CallNode callNode, EmissionContext context)
+    private void EmitCall(CallNode callNode, EmissionContext context, bool popResult)
     {
         if(callNode.Symbol == null) return;
         
@@ -577,6 +592,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             else EmitSingleLineExpression(arg, context);
         }
         EmitMethodCall(callNode.Symbol, context);
+        
+        if (callNode.Symbol.ReturnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
     }
 
     #endregion

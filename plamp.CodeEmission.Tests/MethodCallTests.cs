@@ -4,10 +4,13 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
+using Shouldly;
+
 // ReSharper disable EntityNameCapturedOnly.Local
 
 namespace plamp.CodeEmission.Tests;
@@ -793,5 +796,34 @@ public class MethodCallTests
         Assert.Equal(m1Literal, emptyRes2);
         var m1Res2 = method2.Invoke(null, [firstName]);
         Assert.Equal(m2Literal, m1Res2);
+    }
+    
+    
+    public class NonVoidCallback
+    {
+        public bool Called { get; private set; }
+
+        public int CallbackWithResult()
+        {
+            Called = true;
+            return 1;
+        }
+    }
+    
+    [Fact]
+    public async Task NonVoidCallWithoutAssign_ReturnsSuccess()
+    {
+        var call = new CallNode(new MemberNode("a"), new FuncCallNameNode(nameof(NonVoidCallback.CallbackWithResult)), []);
+        call.SetInfo(typeof(NonVoidCallback).GetMethod(nameof(NonVoidCallback.CallbackWithResult))!);
+        var ast = new BodyNode(
+        [
+           call,
+           new ReturnNode(null)
+        ]);
+        var arg = new TestParameter(typeof(NonVoidCallback), "a");
+        var (typeBuilder, methodBuilder) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], ast, typeof(void));
+        var argInst = new NonVoidCallback();
+        Should.NotThrow(() => methodBuilder!.Invoke(typeBuilder, [argInst]));
+        argInst.Called.ShouldBe(true);
     }
 }
