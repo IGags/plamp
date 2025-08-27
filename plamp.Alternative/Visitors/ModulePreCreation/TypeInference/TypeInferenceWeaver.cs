@@ -329,7 +329,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         List<Type?> defArgTypes = [];
         Type? returnType = null;
         
-        var intrinsic = TypeResolveHelper.TryGetIntrinsic(node.MethodName.MemberName);
+        var intrinsic = TypeResolveHelper.TryGetIntrinsic(node.Name.Value);
         
         if (intrinsic != null)
         {
@@ -337,7 +337,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             returnType = intrinsic.ReturnType;
         }
         
-        if (!context.Functions.TryGetValue(node.MethodName.MemberName, out var def) && intrinsic == null)
+        if (!context.Functions.TryGetValue(node.Name.Value, out var def) && intrinsic == null)
         {
             var exceptionRecord = PlampExceptionInfo.UnknownFunction();
             SetExceptionToSymbol(node, exceptionRecord, context);

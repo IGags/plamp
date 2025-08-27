@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
 using Shouldly;
@@ -23,8 +24,8 @@ public class ExpressionParsingTests
         yield return ["!true", new NotNode(new LiteralNode(true, typeof(bool)))];
         yield return ["(true)", new LiteralNode(true, typeof(bool))];
         yield return ["(((true)))", new LiteralNode(true, typeof(bool))];
-        yield return ["greet_you()", new CallNode(null, new MemberNode("greet_you"), [])];
-        yield return ["greet_you(1, 2, a)", new CallNode(null, new MemberNode("greet_you"), [new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)), new MemberNode("a")])];
+        yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [])];
+        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)), new MemberNode("a")])];
         yield return ["a", new MemberNode("a")];
         yield return ["\"a\"", new LiteralNode("a", typeof(string))];
     }

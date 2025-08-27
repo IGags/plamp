@@ -3,6 +3,7 @@ using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -21,7 +22,7 @@ public class ConditionParsingTests
             new ConditionNode(
                 new LiteralNode(true, typeof(bool)), 
                 new BodyNode([
-                    new CallNode(null, new MemberNode("fn1"), [])
+                    new CallNode(null, new FuncCallNameNode("fn1"), [])
                 ]), 
                 null)
         ];
@@ -52,7 +53,7 @@ public class ConditionParsingTests
                 new LiteralNode(true, typeof(bool)),
                 new BodyNode([]),
                 new BodyNode([
-                    new CallNode(null, new MemberNode("print"), [])
+                    new CallNode(null, new FuncCallNameNode("print"), [])
                 ]))
         ];
     }

@@ -3,6 +3,7 @@ using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
 using Shouldly;
@@ -19,12 +20,12 @@ public class WhileLoopParsingTests
         [
             "while(!a) fn1();",
             new WhileNode(new NotNode(new MemberNode("a")),
-                new BodyNode([new CallNode(null, new MemberNode("fn1"), [])]))
+                new BodyNode([new CallNode(null, new FuncCallNameNode("fn1"), [])]))
         ];
         yield return
         [
             "while(fn2()) {}",
-            new WhileNode(new CallNode(null, new MemberNode("fn2"), []), new BodyNode([]))
+            new WhileNode(new CallNode(null, new FuncCallNameNode("fn2"), []), new BodyNode([]))
         ];
         yield return
         [
@@ -36,7 +37,7 @@ public class WhileLoopParsingTests
             new WhileNode(
                 new LiteralNode(false, typeof(bool)),
                 new BodyNode([
-                    new CallNode(null, new MemberNode("calli"), 
+                    new CallNode(null, new FuncCallNameNode("calli"), 
                         [new MulNode(new LiteralNode(1245, typeof(int)), new LiteralNode(244, typeof(int)))])
                 ])
             )

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -12,12 +13,12 @@ public class FunctionCallParsingTests
 {
     public static IEnumerable<object[]> ParseFuncCall_Correct_DataProvider()
     {
-        yield return ["fn1()", new CallNode(null, new MemberNode("fn1"), [])];
-        yield return ["fn2(a)", new CallNode(null, new MemberNode("fn2"), [new MemberNode("a")])];
+        yield return ["fn1()", new CallNode(null, new FuncCallNameNode("fn1"), [])];
+        yield return ["fn2(a)", new CallNode(null, new FuncCallNameNode("fn2"), [new MemberNode("a")])];
         yield return
         [
             "fn3(a, b, c)",
-            new CallNode(null, new MemberNode("fn3"), [new MemberNode("a"), new MemberNode("b"), new MemberNode("c")])
+            new CallNode(null, new FuncCallNameNode("fn3"), [new MemberNode("a"), new MemberNode("b"), new MemberNode("c")])
         ];
     }
     
@@ -50,17 +51,17 @@ public class FunctionCallParsingTests
         yield return 
         [
             "fn3(a", new List<string>() { PlampExceptionInfo.ExpectedCloseParen().Code }, true,
-            new CallNode(null, new MemberNode("fn3"), [new MemberNode("a")])
+            new CallNode(null, new FuncCallNameNode("fn3"), [new MemberNode("a")])
         ];
         yield return 
         [
             "fn4(a, b", new List<string>() { PlampExceptionInfo.ExpectedCloseParen().Code }, true,
-            new CallNode(null, new MemberNode("fn4"), [new MemberNode("a"), new MemberNode("b")])
+            new CallNode(null, new FuncCallNameNode("fn4"), [new MemberNode("a"), new MemberNode("b")])
         ];
         yield return 
         [
             "fn5(a b", new List<string>() { PlampExceptionInfo.ExpectedCloseParen().Code }, true,
-            new CallNode(null, new MemberNode("fn5"), [new MemberNode("a")])
+            new CallNode(null, new FuncCallNameNode("fn5"), [new MemberNode("a")])
         ];
         yield return 
         [

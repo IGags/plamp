@@ -6,6 +6,7 @@ using Moq;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using Shouldly;
@@ -18,7 +19,7 @@ public class MethodCallInferenceValidatorTests
     [Theory, AutoData]
     public void InferenceIntrinsic_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, string fileName, MethodCallInferenceValidator visitor)
     {
-        var call = new CallNode(null, new MemberNode("println"), [new LiteralNode("aaa", typeof(string))]);
+        var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", typeof(string))]);
         var ast = new BodyNode([call]);
         var context = CreateContext(fileName, symbolTable);
         var result = visitor.Validate(ast, context);
@@ -31,7 +32,7 @@ public class MethodCallInferenceValidatorTests
     public void InferenceFunction_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
         MethodCallInferenceValidator visitor)
     {
-        var call = new CallNode(null, new MemberNode("Abc"), []);
+        var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
         var ast = new BodyNode([call]);
         var context = CreateContext(fileName, symbolTable);
         var method = context.ModuleBuilder.DefineGlobalMethod("Abc", MethodAttributes.Public | MethodAttributes.Static,
@@ -47,7 +48,7 @@ public class MethodCallInferenceValidatorTests
     public void InferenceFunctionNotExist_ReturnsNull([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
         MethodCallInferenceValidator visitor)
     {
-        var call = new CallNode(null, new MemberNode("Abc"), []);
+        var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
         var ast = new BodyNode([call]);
         var context = CreateContext(fileName, symbolTable);
         var result = visitor.Validate(ast, context);

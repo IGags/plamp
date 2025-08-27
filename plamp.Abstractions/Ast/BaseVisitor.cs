@@ -100,6 +100,8 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(parameterName, context, parent, PreVisitParameterName, PostVisitParameterName);
             case VariableNameNode variableName:
                 return VisitCore(variableName, context, parent, PreVisitVariableName, PostVisitVariableName);
+            case FuncCallNameNode funcCallName:
+                return VisitCore(funcCallName, context, parent, PreVisitFuncCallName, PostVisitFuncCallName);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context, parent);
             case BaseUnaryNode unaryNode:
@@ -395,6 +397,10 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult PreVisitVariableName(VariableNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     protected virtual VisitResult PostVisitVariableName(VariableNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitFuncCallName(FuncCallNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitFuncCallName(FuncCallNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
 
     protected virtual VisitResult VisitCore<T>(
         T node, 

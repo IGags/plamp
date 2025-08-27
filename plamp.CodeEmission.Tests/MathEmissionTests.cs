@@ -1,11 +1,16 @@
+using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.CodeEmission.Tests.Infrastructure;
+using Shouldly;
 
 namespace plamp.CodeEmission.Tests;
 
@@ -57,10 +62,12 @@ public class MathEmissionTests
         var secondLiteral = new LiteralNode(-3, typeof(int));
         var trueLiteral = new LiteralNode(true, typeof(bool));
         var falseLiteral = new LiteralNode(false, typeof(bool));
-        float fl1 = 3.14f, fl2 = 6.81f;
+        const float fl1 = 3.14f;
+        const float fl2 = 6.81f;
         var firstFloat = new LiteralNode(fl1, typeof(float));
         var secondFloat = new LiteralNode(fl2, typeof(float));
-        double d1 = 3e-8d, d2 = 6.81d;
+        const double d1 = 3e-8d;
+        const double d2 = 6.81d;
         var firstDouble = new LiteralNode(d1, typeof(double));
         var secondDouble = new LiteralNode(d2, typeof(double));
 
@@ -160,4 +167,184 @@ public class MathEmissionTests
         yield return [intDefs, new BitwiseAndNode(firstName, secondName), 0, typeof(int)];
         yield return [intDefs, new XorNode(firstName, secondName), -1, typeof(int)];
     }
+    
+    
+    public class CallbackClass
+    {
+        public object? InnerVar { get; private set; }
+        
+        public object? Result { get; private set; }
+
+        public void Callback(object innerVar, object result)
+        {
+            InnerVar = innerVar;
+            Result = result;
+        }
+    }
+    
+    [Theory]
+    [MemberData(nameof(EmitIncrementDecrementDataProvider))]
+    public async Task EmitIncrementDecrement_Success(object inner, TypeNode variableType, Func<NodeBase, NodeBase> createFromInner, object innerShould, object resultShould)
+    {
+        var objParam = new TestParameter(typeof(CallbackClass), "obj");
+        var toType = new TypeNode(new TypeNameNode(nameof(Object)));
+        toType.SetType(typeof(object));
+
+        var firstArg = new CastNode(toType, new MemberNode("a"));
+        firstArg.SetFromType(variableType.Symbol!);
+        
+        var secondArg = new CastNode(toType, new MemberNode("b"));
+        secondArg.SetFromType(variableType.Symbol!);
+        
+        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg]);
+        call.SetInfo(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!);
+        
+        var body = new BodyNode(
+        [
+            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(inner, variableType.Symbol!)),
+            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("b")), createFromInner(new MemberNode("a"))),
+            call,
+            new ReturnNode(null)
+        ]);
+        
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam], body, typeof(void));
+        var callbackClass = new CallbackClass();
+        method!.Invoke(instance, [callbackClass]);
+        callbackClass.InnerVar.ShouldBe(innerShould);
+        callbackClass.Result.ShouldBe(resultShould);
+    }
+
+    public static IEnumerable<object[]> EmitIncrementDecrementDataProvider()
+    {
+        var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)));
+        intTypeNode.SetType(typeof(int));
+        
+        var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)));
+        floatTypeNode.SetType(typeof(float));
+        
+        var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)));
+        uintTypeNode.SetType(typeof(uint));
+        
+        var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)));
+        doubleTypeNode.SetType(typeof(double));
+        
+        var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)));
+        longTypeNode.SetType(typeof(long));
+        
+        var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)));
+        ulongTypeNode.SetType(typeof(ulong));
+        
+        yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2, 2];
+        yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0, 0];
+        yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2, 1];
+        yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0, 1];
+        
+        yield return [1f, floatTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2f, 2f];
+        yield return [1f, floatTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0f, 0f];
+        yield return [1f, floatTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2f, 1f];
+        yield return [1f, floatTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0f, 1f];
+        
+        yield return [1u, uintTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2u, 2u];
+        yield return [1u, uintTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0u, 0u];
+        yield return [1u, uintTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2u, 1u];
+        yield return [1u, uintTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0u, 1u];
+        
+        yield return [1d, doubleTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2d, 2d];
+        yield return [1d, doubleTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0d, 0d];
+        yield return [1d, doubleTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2d, 1d];
+        yield return [1d, doubleTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0d, 1d];
+        
+        yield return [1L, longTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2L, 2L];
+        yield return [1L, longTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0L, 0L];
+        yield return [1L, longTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2L, 1L];
+        yield return [1L, longTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0L, 1L];
+        
+        yield return [1UL, ulongTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2UL, 2UL];
+        yield return [1UL, ulongTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0UL, 0UL];
+        yield return [1UL, ulongTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2UL, 1UL];
+        yield return [1UL, ulongTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixDecrementNode(x)), 0UL, 1UL];
+    }
+    
+    [Theory]
+    [MemberData(nameof(MaxValueOverflowDataProvider))]
+    public async Task MaxValueOverflow_Success(object value, object one, Type actualType, object should)
+    {
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
+        variableType.SetType(actualType);
+        var toType = new TypeNode(new TypeNameNode("object"));
+        toType.SetType(typeof(object));
+        var castToObj = new CastNode(toType, new MemberNode("a"));
+        castToObj.SetFromType(actualType);
+        var body = new BodyNode(
+        [
+            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
+            new AssignNode(new MemberNode("a"), new AddNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new ReturnNode(castToObj)
+        ]);
+        
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(object));
+        var res = method!.Invoke(instance, []);
+        res.ShouldBe(should);
+    }
+
+    public static IEnumerable<object[]> MaxValueOverflowDataProvider()
+    {
+        yield return [int.MaxValue, 1, typeof(int), int.MinValue];
+        yield return [uint.MaxValue, 1u, typeof(uint), uint.MinValue];
+        yield return [short.MaxValue, (short)1, typeof(short), short.MinValue];
+        yield return [ushort.MaxValue, (ushort)1, typeof(ushort), ushort.MinValue];
+        yield return [byte.MaxValue, (byte)1, typeof(byte), byte.MinValue];
+        yield return [long.MaxValue, 1L, typeof(long), long.MinValue];
+        yield return [ulong.MaxValue, 1UL, typeof(ulong), ulong.MinValue];
+        yield return [float.MaxValue, 1f, typeof(float), float.MaxValue + 1];
+        yield return [double.MaxValue, 1d, typeof(double), double.MaxValue + 1];
+    }
+
+    [Theory]
+    [MemberData(nameof(MaxValueUnderflowDataProvider))]
+    public async Task MinValueUnderflow_Success(object value, object one, Type actualType, object should)
+    {
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
+        variableType.SetType(actualType);
+        var toType = new TypeNode(new TypeNameNode("object"));
+        toType.SetType(typeof(object));
+        var castToObj = new CastNode(toType, new MemberNode("a"));
+        castToObj.SetFromType(actualType);
+        var body = new BodyNode(
+        [
+            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
+            new AssignNode(new MemberNode("a"), new SubNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new ReturnNode(castToObj)
+        ]);
+        
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(object));
+        var res = method!.Invoke(instance, []);
+        res.ShouldBe(should);
+    }
+    
+    public static IEnumerable<object[]> MaxValueUnderflowDataProvider()
+    {
+        yield return [int.MinValue, 1, typeof(int), int.MaxValue];
+        yield return [uint.MinValue, 1u, typeof(uint), uint.MaxValue];
+        yield return [short.MinValue, (short)1, typeof(short), short.MaxValue];
+        yield return [ushort.MinValue, (ushort)1, typeof(ushort), ushort.MaxValue];
+        yield return [byte.MinValue, (byte)1, typeof(byte), byte.MaxValue];
+        yield return [long.MinValue, 1L, typeof(long), long.MaxValue];
+        yield return [ulong.MinValue, 1UL, typeof(ulong), ulong.MaxValue];
+        yield return [float.MinValue, 1f, typeof(float), float.MinValue - 1];
+        yield return [double.MinValue, 1d, typeof(double), double.MinValue - 1];
+    }
+
+    [Fact]
+    public async Task ZeroDivision_ThrowsRuntimeException()
+    {
+        var ast = new BodyNode(
+        [
+            new ReturnNode(new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int))))
+        ]);
+        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], ast, typeof(int));
+        Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();
+    }
+    
+    //Возможно следует добавить тесты на арифметику с плавающей точкой, но пока генератор генерирует её без отличий от C#
 }

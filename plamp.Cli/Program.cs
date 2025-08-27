@@ -17,10 +17,10 @@ public static class Program
                                             return;
                                         }
                                         if(int(dec) < 5) println("the number is greater");
-                                        if(int(dec) > 5) println("the number is lesser");
+                                         if(int(dec) > 5) println("the number is lesser");
                                         println("attempts left:");
                                         
-                                        att_count := att_count - 1;
+                                        att_count--;
                                         println(att_count);
                                     }
                                     println("you lose");

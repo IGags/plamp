@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 
 namespace plamp.Abstractions.Ast.Node;
 
-public class CallNode(NodeBase? from, MemberNode methodName, List<NodeBase> args) : NodeBase
+public class CallNode(NodeBase? from, FuncCallNameNode name, List<NodeBase> args) : NodeBase
 {
     /// <summary>
     /// Null when call local member or member is not defined(implicit module member)
     /// </summary>
     public NodeBase? From { get; private set; } = from;
 
-    public MemberNode MethodName { get; private set; } = methodName;
+    public FuncCallNameNode Name { get; private set; } = name;
     public IReadOnlyList<NodeBase> Args => args;
 
     public MethodInfo? Symbol { get; protected set; }
@@ -33,9 +34,9 @@ public class CallNode(NodeBase? from, MemberNode methodName, List<NodeBase> args
         {
             From = newChild;
         }
-        else if (MethodName == child && newChild is MemberNode member)
+        else if (Name == child && newChild is FuncCallNameNode member)
         {
-            MethodName = member;
+            Name = member;
         }
         else if (-1 != (argIndex = args.IndexOf(child)))
         {

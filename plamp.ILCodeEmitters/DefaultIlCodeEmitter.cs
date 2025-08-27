@@ -51,11 +51,17 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitReturn(returnNode, context);
                 break;
             case CallNode callNode:
-                EmitCall(callNode, context);
+                EmitCall(callNode, context, true);
                 break;
             case VariableDefinitionNode variableDefinitionNode:
                 EmitVariableDefinition(variableDefinitionNode, context);
                 break;
+            case BaseUnaryNode unary when unary.GetType() != typeof(UnaryMinusNode):
+                EmitIncrementOrDecrement(unary, context, false);
+                break;
+            default:
+                throw new InvalidOperationException(
+                    "Unknown body level instruction. If you see this, report to programmer");
         }
     }
 
@@ -179,7 +185,68 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitSingleLineExpression(unaryBase.Inner, context);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
-            //TODO: Increment and decrement
+            default: EmitIncrementOrDecrement(unaryBase, context, true);
+                break;
+        }
+    }
+
+    private void EmitIncrementOrDecrement(BaseUnaryNode unaryBase, EmissionContext context, bool withAssign)
+    {
+        const string exceptionMessage = "Compiler error, please report to developer";
+        Type memberType;
+        switch (unaryBase)
+        {
+            case PrefixIncrementNode:
+                if (unaryBase.Inner is not MemberNode prefixIncMember) throw new InvalidOperationException(exceptionMessage);
+                memberType = EmitGetLocalVarOrArg(prefixIncMember, context, true);
+                LoadConstant(memberType);
+                context.Generator.Emit(OpCodes.Add);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                EmitSetLocalVarOrArg(prefixIncMember.MemberName, context);
+                break;
+            case PrefixDecrementNode:
+                if (unaryBase.Inner is not MemberNode prefixDecMember) throw new InvalidOperationException(exceptionMessage);
+                memberType = EmitGetLocalVarOrArg(prefixDecMember, context, true);
+                LoadConstant(memberType);
+                context.Generator.Emit(OpCodes.Sub);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                EmitSetLocalVarOrArg(prefixDecMember.MemberName, context);
+                break;
+            case PostfixIncrementNode:
+                if (unaryBase.Inner is not MemberNode postfixIncMember) throw new InvalidOperationException(exceptionMessage);
+                memberType = EmitGetLocalVarOrArg(postfixIncMember, context, true);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                LoadConstant(memberType);
+                context.Generator.Emit(OpCodes.Add);
+                EmitSetLocalVarOrArg(postfixIncMember.MemberName, context);
+                break;
+            case PostfixDecrementNode:
+                if (unaryBase.Inner is not MemberNode postfixDecMember) throw new InvalidOperationException(exceptionMessage);
+                memberType = EmitGetLocalVarOrArg(postfixDecMember, context, true);
+                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                LoadConstant(memberType);
+                context.Generator.Emit(OpCodes.Sub);
+                EmitSetLocalVarOrArg(postfixDecMember.MemberName, context);
+                break;
+            default: throw new InvalidOperationException(exceptionMessage);
+        }
+        
+        void LoadConstant(Type constantType)
+        {
+            if (constantType == typeof(ulong) || constantType == typeof(long))
+            {
+                context.Generator.Emit(OpCodes.Ldc_I4_1);
+                context.Generator.Emit(OpCodes.Conv_I8);
+            }
+            else if(constantType == typeof(int) 
+                    || constantType == typeof(uint) 
+                    || constantType == typeof(short) 
+                    || constantType == typeof(ushort) 
+                    || constantType == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4_1);
+            else if(constantType == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, 1f);
+            else if(constantType == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, 1d);
+            else
+                throw new InvalidOperationException(exceptionMessage);
         }
     }
 
@@ -287,7 +354,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitUnary(unaryNode, context);
                 break;
             case CallNode callNode:
-                EmitCall(callNode, context);
+                EmitCall(callNode, context, false);
                 break;
             case ConstructorCallNode constructorCallNode:
                 EmitCallCtor(constructorCallNode, context);
@@ -374,13 +441,13 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         => context.Generator.Emit(OpCodes.Ceq);
 
     private void EmitPlus(EmissionContext context)
-        => context.Generator.Emit(OpCodes.Add_Ovf);
+        => context.Generator.Emit(OpCodes.Add);
 
     private void EmitMinus(EmissionContext context)
-        => context.Generator.Emit(OpCodes.Sub_Ovf);
+        => context.Generator.Emit(OpCodes.Sub);
 
     private void EmitMultiply(EmissionContext context)
-        => context.Generator.Emit(OpCodes.Mul_Ovf);
+        => context.Generator.Emit(OpCodes.Mul);
 
     private void EmitDivide(EmissionContext context)
         => context.Generator.Emit(OpCodes.Div);
@@ -412,7 +479,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 EmitLiteral(literal, context);
                 break;
             case CallNode call:
-                EmitCall(call, context);
+                EmitCall(call, context, false);
                 break;
             case BaseBinaryNode binary:
                 EmitBaseBinary(binary, context);
@@ -480,6 +547,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         else if (literalNode.Type == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, (double)literalNode.Value);
         else if (literalNode.Type == typeof(bool)) context.Generator.Emit((bool)literalNode.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
         else if (literalNode.Type == typeof(char)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToUInt32(literalNode.Value));
+        else throw new InvalidOperationException("Unknown literal type. Please report to compiler developer.");
     }
 
     private void EmitVariableDefinition(
@@ -504,7 +572,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
     }
     
-    private void EmitCall(CallNode callNode, EmissionContext context)
+    private void EmitCall(CallNode callNode, EmissionContext context, bool popResult)
     {
         if(callNode.Symbol == null) return;
         
@@ -524,6 +592,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             else EmitSingleLineExpression(arg, context);
         }
         EmitMethodCall(callNode.Symbol, context);
+        
+        if (callNode.Symbol.ReturnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
     }
 
     #endregion
@@ -534,22 +604,23 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
     {
-        var opcode = methodInfo.IsVirtual ? OpCodes.Callvirt : OpCodes.Call;
+        var opcode = methodInfo.IsStatic ? OpCodes.Call : OpCodes.Callvirt;
         context.Generator.Emit(opcode, methodInfo);
     }
 
-    private void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
+    private Type EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
     {
         if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
             context.Generator.Emit(OpCodes.Ldloc, builder);
-            return;
+            return builder.LocalType;
         }
 
         ParameterInfo? arg;
         if ((arg = context.Arguments.FirstOrDefault(x => x.Name == member.MemberName)) == null)
         {
-            return;
+            throw new InvalidOperationException(
+                "Argument does not exists. Invalid compilation. Report to language developer.");
         }
         
         var ix = Array.IndexOf(context.Arguments, arg);
@@ -560,6 +631,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         
         ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
         context.Generator.Emit(opcode, ix);
+        return arg.ParameterType;
     }
     
     private void EmitSetLocalVarOrArg(string name, EmissionContext context)
