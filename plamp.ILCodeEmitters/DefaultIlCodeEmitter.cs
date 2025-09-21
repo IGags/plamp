@@ -4,6 +4,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
@@ -58,6 +59,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
                 break;
             case BaseUnaryNode unary when unary.GetType() != typeof(UnaryMinusNode):
                 EmitIncrementOrDecrement(unary, context, false);
+                break;
+            case ElemSetterNode elemSetterNode:
+                EmitSetArrayElem(elemSetterNode, context);
                 break;
             default:
                 throw new InvalidOperationException(
@@ -344,30 +348,17 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         switch (source)
         {
-            case MemberNode memberNode: 
-                EmitGetLocalVarOrArg(memberNode, context, false);
-                break;
-            case BaseBinaryNode binaryNode:
-                EmitBaseBinary(binaryNode, context);
-                break;
-            case BaseUnaryNode unaryNode:
-                EmitUnary(unaryNode, context);
-                break;
-            case CallNode callNode:
-                EmitCall(callNode, context, false);
-                break;
-            case ConstructorCallNode constructorCallNode:
-                EmitCallCtor(constructorCallNode, context);
-                break;
-            case CastNode castNode:
-                EmitTypeConversion(castNode, context);
-                break;
-            case LiteralNode literalNode:
-                EmitLiteral(literalNode, context);
-                break;
-            case MemberAccessNode memberAccessNode:
-                EmitGetField(memberAccessNode, context);
-                break;
+            case MemberNode          memberNode:          EmitGetLocalVarOrArg(memberNode, context, false); break;
+            case BaseBinaryNode      binaryNode:          EmitBaseBinary(binaryNode, context);              break;
+            case BaseUnaryNode       unaryNode:           EmitUnary(unaryNode, context);                    break;
+            case CallNode            callNode:            EmitCall(callNode, context, false);               break;
+            case ConstructorCallNode constructorCallNode: EmitCallCtor(constructorCallNode, context);       break;
+            case CastNode            castNode:            EmitTypeConversion(castNode, context);            break;
+            case LiteralNode         literalNode:         EmitLiteral(literalNode, context);                break;
+            case MemberAccessNode    memberAccessNode:    EmitGetField(memberAccessNode, context);          break;
+            case InitArrayNode       initArrayNode:       EmitArrayInitialization(initArrayNode, context);  break;
+            case ElemGetterNode      elemGetterNode:      EmitGetArrayElem(elemGetterNode, context);        break;
+            default:                                                                                        throw new Exception();
         }
     }
 
@@ -490,6 +481,9 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
             case CastNode cast:
                 EmitTypeConversion(cast, context);
                 break;
+            case ElemGetterNode elemGetter:
+                EmitGetArrayElem(elemGetter, context);
+                break;
             default: throw new ArgumentException(nameof(node.Inner));
         }
         
@@ -554,8 +548,8 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
         VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
-        if(variableDefinitionNode.Type is not { } type) return;
-        if(variableDefinitionNode.Name is not { } member) return;
+        if(variableDefinitionNode.Type is not { } type) throw new Exception();
+        if(variableDefinitionNode.Name is not { } member) throw new Exception();
         if (type.Symbol == null) throw new ArgumentException("Cannot emit variable definition with null type");
         var builder = context.Generator.DeclareLocal(type.Symbol);
         context.LocalVarStack.Add(member.Value, builder);
@@ -563,7 +557,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
 
     private void EmitCallCtor(ConstructorCallNode constructorCallNode, EmissionContext context)
     {
-        if(constructorCallNode.Symbol == null) return;
+        if(constructorCallNode.Symbol == null) throw new Exception();
         foreach (var arg in constructorCallNode.Args)
         {
             EmitGetMember(arg, context, true);
@@ -574,7 +568,7 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     
     private void EmitCall(CallNode callNode, EmissionContext context, bool popResult)
     {
-        if(callNode.Symbol == null) return;
+        if(callNode.Symbol == null) throw new Exception();
         
         switch (callNode.From)
         {
@@ -653,6 +647,54 @@ public class DefaultIlCodeEmitter : IIlCodeEmitter
     {
         if(node is not MemberNode memberNode) return;
         EmitGetLocalVarOrArg(memberNode, context, byValue);
+    }
+
+    #endregion
+
+    #region Arrays
+
+    private void EmitArrayInitialization(InitArrayNode initArrayNode, EmissionContext context)
+    {
+        if (initArrayNode.ArrayItemType.Symbol == null) throw new Exception();
+        EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
+        context.Generator.Emit(OpCodes.Newarr, initArrayNode.ArrayItemType.Symbol);
+    }
+    
+    private void EmitGetArrayElem(ElemGetterNode elemGetterNode, EmissionContext context)
+    {
+        if (elemGetterNode.ItemType is not {} fromType) throw new Exception();
+        EmitSingleLineExpression(elemGetterNode.From, context);
+        EmitSingleLineExpression(elemGetterNode.ArrayIndexer.IndexMember, context);
+        
+        if(fromType == typeof(int))                                    context.Generator.Emit(OpCodes.Ldelem_I4);
+        else if(fromType == typeof(uint))                              context.Generator.Emit(OpCodes.Ldelem_U4);
+        else if(fromType == typeof(long) || fromType == typeof(ulong)) context.Generator.Emit(OpCodes.Ldelem_I8);
+        else if(fromType == typeof(byte) || fromType == typeof(bool))  context.Generator.Emit(OpCodes.Ldelem_U1);
+        else if(fromType == typeof(char))                              context.Generator.Emit(OpCodes.Ldelem_U2);
+        else if(fromType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
+        else if(fromType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
+        else if(fromType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
+        else if (fromType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem,     fromType);
+        else                                                           throw new Exception();
+    }
+
+    private void EmitSetArrayElem(ElemSetterNode elemSetterNode, EmissionContext context)
+    {
+        if (elemSetterNode.ItemType is not {} fromType) throw new Exception();
+        EmitSingleLineExpression(elemSetterNode.From, context);
+        EmitSingleLineExpression(elemSetterNode.ArrayIndexer.IndexMember, context);
+        EmitSingleLineExpression(elemSetterNode.Value, context);
+        
+        if      (fromType == typeof(int))                               context.Generator.Emit(OpCodes.Stelem_I4);
+        else if (fromType == typeof(uint))                              context.Generator.Emit(OpCodes.Stelem_I4);
+        else if (fromType == typeof(long) || fromType == typeof(ulong)) context.Generator.Emit(OpCodes.Stelem_I8);
+        else if (fromType == typeof(byte) || fromType == typeof(bool))  context.Generator.Emit(OpCodes.Stelem_I );
+        else if (fromType == typeof(char))                              context.Generator.Emit(OpCodes.Stelem_I2);
+        else if (fromType == typeof(float))                             context.Generator.Emit(OpCodes.Stelem_R4);
+        else if (fromType == typeof(double))                            context.Generator.Emit(OpCodes.Stelem_R8);
+        else if (fromType.IsClass)                                      context.Generator.Emit(OpCodes.Stelem_Ref);
+        else if (fromType is { IsPrimitive: false, IsClass: false })    context.Generator.Emit(OpCodes.Stelem,     fromType);
+        else                                                            throw new Exception();
     }
 
     #endregion

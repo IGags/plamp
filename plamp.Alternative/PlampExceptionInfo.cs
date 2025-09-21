@@ -192,6 +192,36 @@ public static class PlampExceptionInfo
             Message = "Expected module name"
         };
     }
+
+    public static PlampExceptionRecord ArrayDefinitionIsNotClosed()
+    {
+        return new()
+        {
+            Code = "PRS1131",
+            Level = ExceptionLevel.Error,
+            Message = "Array definition is not closed"
+        };
+    }
+
+    public static PlampExceptionRecord ArrayInitializationMustHasLength()
+    {
+        return new()
+        {
+            Code = "PRS1132",
+            Level = ExceptionLevel.Error,
+            Message = "Array initialization must has length"
+        };
+    }
+
+    public static PlampExceptionRecord IndexerIsNotClosed()
+    {
+        return new()
+        {
+            Code = "PRS1133",
+            Level = ExceptionLevel.Error,
+            Message = "Indexer is not closed"
+        };
+    }
     
     #endregion
 
@@ -354,6 +384,38 @@ public static class PlampExceptionInfo
         {
             Message = "Duplicate parameter name",
             Code = "SEM1316",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord ArrayLengthMustBeInteger() =>
+        new()
+        {
+            Message = "The array length definition must has integer type",
+            Code = "SEM1317",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord EmptyIndexer() =>
+        new()
+        {
+            Message = "The array indexer is empty",
+            Code = "SEM1318",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IndexerIsNotApplicable() =>
+        new()
+        {
+            Message = "The indexer is not applicable",
+            Code = "SEM1319",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IndexerValueMustBeInteger() =>
+        new()
+        {
+            Message = "The indexer value must be of integer type",
+            Code = "SEM1320",
             Level = ExceptionLevel.Error
         };
 

@@ -6,24 +6,38 @@ public static class Program
 {
     private const string File = """
                                 module playground;
-                                fn implicit_conv() {
-                                    println("try guess number!");
-                                    att_count := 3;
-                                    number := 5;
-                                    while(att_count > 0) {
-                                        dec := readln();
-                                        if(int(dec) = 5) {
-                                            println("correct!");
-                                            return;
-                                        }
-                                        if(int(dec) < 5) println("the number is greater");
-                                         if(int(dec) > 5) println("the number is lesser");
-                                        println("attempts left:");
-                                        
-                                        att_count--;
-                                        println(att_count);
+                                fn array_init() {
+                                    arr := [4]int;
+                                    i := 0;
+                                    arr[i++] := 2;
+                                    arr[i++] := 6;
+                                    arr[i++] := 18;
+                                    arr[i++] := 30;
+                                    
+                                    res := arr.binary_search(30);
+                                    
+                                    if(res >= 0){
+                                        print("The index of an element is: ");
+                                        println(res);
                                     }
-                                    println("you lose");
+                                    else print("Element not found");
+                                }
+                                
+                                fn binary_search([]int array, int num) int {
+                                    if(array.length() = 0) return -1;
+                                    
+                                    left   := 0;
+                                    right  := array.length() - 1;
+                                    
+                                    while(left <= right){
+                                        center := (left + right) / 2;
+                                        
+                                        if(array[center] = num)      return center;
+                                        else if(array[center] < num) left  := center + 1;
+                                        else                         right := center - 1;
+                                    } 
+                                    
+                                    return -1;
                                 }
                                 """;
     
@@ -36,7 +50,7 @@ public static class Program
             PrintRes(res.Exceptions);
             return;
         }
-        var method = res.Compiled!.Modules.First().GetMethod("implicit_conv");
+        var method = res.Compiled!.Modules.First().GetMethod("array_init");
         method!.Invoke(null, []);
 
         void PrintRes(List<PlampException> exList)

@@ -8,11 +8,11 @@ public class MethodCallInferenceValidator : BaseValidator<CreationContext, Creat
 {
     protected override VisitResult PreVisitCall(CallNode node, CreationContext context, NodeBase? parent)
     {
-        var info = TypeResolveHelper.TryGetIntrinsic(node.Name.Value);
+        var info = node.Symbol;
         var fromContext = context.Methods.FirstOrDefault(x => x.Name == node.Name.Value);
         if (fromContext != null) info = fromContext;
         if(info != null) node.SetInfo(info);
-        return VisitResult.SkipChildren;
+        return VisitResult.Continue;
     }
 
     protected override CreationContext CreateInnerContext(CreationContext context) => context;

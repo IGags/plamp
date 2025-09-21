@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -102,6 +103,16 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(variableName, context, parent, PreVisitVariableName, PostVisitVariableName);
             case FuncCallNameNode funcCallName:
                 return VisitCore(funcCallName, context, parent, PreVisitFuncCallName, PostVisitFuncCallName);
+            case InitArrayNode initArray:
+                return VisitCore(initArray, context, parent, PreVisitInitArray, PostVisitInitArray);
+            case ArrayTypeSpecificationNode arrayRank:
+                return VisitCore(arrayRank, context, parent, PreVisitArrayTypeSpecification, PostVisitArrayTypeSpecification);
+            case ElemGetterNode elemGetter:
+                return VisitCore(elemGetter, context, parent, PreVisitElemGetter, PostVisitElemGetter);
+            case ElemSetterNode elemSetter:
+                return VisitCore(elemSetter, context, parent, PreVisitElemSetter, PostVisitElemSetter);
+            case ArrayIndexerNode arrayIndexerNode:
+                return VisitCore(arrayIndexerNode, context, parent, PreVisitArrayIndexer, PostVisitArrayIndexer);
             case BaseBinaryNode binaryNode:
                 return VisitBinaryExpression(binaryNode, context, parent);
             case BaseUnaryNode unaryNode:
@@ -401,6 +412,27 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult PreVisitFuncCallName(FuncCallNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     protected virtual VisitResult PostVisitFuncCallName(FuncCallNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    protected virtual VisitResult PreVisitInitArray(InitArrayNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitInitArray(InitArrayNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitArrayTypeSpecification(ArrayTypeSpecificationNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitArrayTypeSpecification(ArrayTypeSpecificationNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitElemGetter(ElemGetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitElemGetter(ElemGetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PreVisitElemSetter(ElemSetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitElemSetter(ElemSetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    protected virtual VisitResult PreVisitArrayIndexer(ArrayIndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    protected virtual VisitResult PostVisitArrayIndexer(ArrayIndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
 
     protected virtual VisitResult VisitCore<T>(
         T node, 
