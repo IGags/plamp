@@ -19,8 +19,13 @@ fn array_init() {
         println(res);
     }
     else print("Element not found");
+    aaa("hui");
 }
-
+/*
+    pidor
+    gay
+    faggot
+*/
 fn binary_search([]int array, int num) int {
     if(array.length() = 0) return -1;
     
@@ -37,6 +42,8 @@ fn binary_search([]int array, int num) int {
     
     return -1;
 }
+
+fn aaa(string str) { print(str); }
 """;
     
     public static void Main()

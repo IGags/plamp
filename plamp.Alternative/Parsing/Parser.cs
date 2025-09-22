@@ -270,9 +270,10 @@ public static class Parser
 
         if (!TryParseArgSequence(context, out var list)) return false;
         TypeNode? type = null;
-        if (context.Sequence.Current() is Word) TryParseType(context, out type);
+        var typeFork = context.Fork();
+        if (context.Sequence.Current() is Word && TryParseType(typeFork, out type)) context.Merge(typeFork); 
 
-        if (!TryParseBody(context, out var body)) return false;
+        if (!TryParseMultilineBody(context, out var body)) return false;
         var funcNameNode = new FuncNameNode(name);
         context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
         func = new FuncNode(type, funcNameNode, list, body);
@@ -461,19 +462,33 @@ public static class Parser
         [NotNullWhen(true)]out BodyNode? body)
     {
         body = null;
-        var expressions = new List<NodeBase>();
+        
         var start = context.Sequence.CurrentStart;
-        FilePosition end;
+        
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
+            var expressions = new List<NodeBase>();
             if (TryParseStatement(context, out var expression)) expressions.Add(expression);
-            end = context.Sequence.CurrentStart;
+            var end = context.Sequence.CurrentStart;
             body = new BodyNode(expressions);
             context.SymbolTable.AddSymbol(body, start, end);
             return true;
         }
 
+        return TryParseMultilineBody(context, out body);
+    }
+
+    public static bool TryParseMultilineBody(
+        ParsingContext context,
+        [NotNullWhen(true)] out BodyNode? body)
+    {
+        body = null;
+        if (context.Sequence.Current() is not OpenCurlyBracket open) return false;
+
+        var start = open.Start;
         context.Sequence.MoveNextNonWhiteSpace();
+        var expressions = new List<NodeBase>();
+        FilePosition end;
         while (context.Sequence.Current() is not EndOfFile and not CloseCurlyBracket)
         {
             if (!TryParseStatement(context, out var expression)) continue;
@@ -489,7 +504,7 @@ public static class Parser
             context.SymbolTable.AddSymbol(body, start, end);
             return true;
         }
-
+        
         end = context.Sequence.CurrentEnd;
         context.Sequence.MoveNextNonWhiteSpace();
         body = new BodyNode(expressions);

@@ -68,7 +68,9 @@ internal static class TypeResolveHelper
     private static MethodInfo? TryGetLength(Type[] argTypes)
     {
         if (argTypes.Length != 1 || !argTypes[0].IsAssignableTo(typeof(Array))) return null;
-        return typeof(LengthIntrinsics).GetMethod(nameof(LengthIntrinsics.Length));
+        return argTypes[0] == typeof(string) 
+            ? typeof(LengthIntrinsics).GetMethod(nameof(LengthIntrinsics.Length), [typeof(string)])
+            : typeof(LengthIntrinsics).GetMethod(nameof(LengthIntrinsics.Length), [typeof(Array)]);
     }
 
     private static Type MakeArrayFromType(Type originalType, List<ArrayTypeSpecificationNode> arrayDefs) 

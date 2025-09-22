@@ -13,14 +13,14 @@ public static class PrintIntrinsics
     public static void Print(bool value)     => Console.Write(value);
     public static void Print(object value)   => Console.Write(value);
     
-    public static void Println(int value)      => Console.Write(value);
-    public static void Println(uint value)     => Console.Write(value);
-    public static void Println(long value)     => Console.Write(value);
-    public static void Println(float value)    => Console.Write(value);
-    public static void Println(double value)   => Console.Write(value);
-    public static void Println(ulong value)    => Console.Write(value);
-    public static void Println(string value)   => Console.Write(value);
-    public static void Println(char value)     => Console.Write(value);
-    public static void Println(bool value)     => Console.Write(value);
-    public static void Println(object value)   => Console.Write(value);
+    public static void Println(int value)    => Console.WriteLine(value);
+    public static void Println(uint value)   => Console.WriteLine(value);
+    public static void Println(long value)   => Console.WriteLine(value);
+    public static void Println(float value)  => Console.WriteLine(value);
+    public static void Println(double value) => Console.WriteLine(value);
+    public static void Println(ulong value)  => Console.WriteLine(value);
+    public static void Println(string value) => Console.WriteLine(value);
+    public static void Println(char value)   => Console.WriteLine(value);
+    public static void Println(bool value)   => Console.WriteLine(value);
+    public static void Println(object value) => Console.WriteLine(value);
 }
