@@ -2,19 +2,30 @@ using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node.Body;
 
-public class ConditionNode : NodeBase
+/// <summary>
+/// Узел AST обозначающий условие
+/// </summary>
+/// <param name="predicate">Условие, определяющее ветвь</param>
+/// <param name="ifClause">Действие, если условие истинно</param>
+/// <param name="elseClause">Действие, если условие ложно</param>
+public class ConditionNode(NodeBase predicate, NodeBase ifClause, NodeBase? elseClause) : NodeBase
 {
-    public NodeBase Predicate { get; private set; }
-    public NodeBase IfClause { get; private set; }
-    public NodeBase? ElseClause { get; private set; }
-
-    public ConditionNode(NodeBase predicate, NodeBase ifClause, NodeBase? elseClause)
-    {
-        Predicate = predicate;
-        IfClause = ifClause;
-        ElseClause = elseClause;
-    }
+    /// <summary>
+    /// Условие, определяющее ветвь
+    /// </summary>
+    public NodeBase Predicate { get; private set; } = predicate;
     
+    /// <summary>
+    /// Действие, если условие истинно
+    /// </summary>
+    public NodeBase IfClause { get; private set; } = ifClause;
+    
+    /// <summary>
+    /// Действие, если условие ложно
+    /// </summary>
+    public NodeBase? ElseClause { get; private set; } = elseClause;
+
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Predicate;
@@ -25,6 +36,7 @@ public class ConditionNode : NodeBase
         }
     }
 
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         if (Predicate == child)

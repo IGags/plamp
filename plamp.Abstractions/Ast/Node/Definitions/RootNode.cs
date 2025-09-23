@@ -4,15 +4,30 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 
 namespace plamp.Abstractions.Ast.Node.Definitions;
 
+/// <summary>
+/// Корневой узел любого AST, который генерирует парсер на основании кодового файла
+/// </summary>
+/// <param name="imports">Список импортов других модулей</param>
+/// <param name="moduleName">Имя текущего модуля</param>
+/// <param name="functions">Список объявлений функций текущего модуля</param>
 public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<FuncNode> functions) : NodeBase
 {
-    private ModuleDefinitionNode? _moduleName = moduleName;
+    /// <summary>
+    /// Список импортов других модулей
+    /// </summary>
     public IReadOnlyList<ImportNode> Imports => imports;
 
-    public ModuleDefinitionNode? ModuleName => _moduleName;
+    /// <summary>
+    /// Имя текущего модуля
+    /// </summary>
+    public ModuleDefinitionNode? ModuleName { get; private set; } = moduleName;
 
+    /// <summary>
+    /// Список объявлений функций текущего модуля
+    /// </summary>
     public IReadOnlyList<FuncNode> Functions => functions;
     
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         foreach (var import in imports)
@@ -20,7 +35,7 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
             yield return import;
         }
 
-        if(_moduleName != null) yield return _moduleName;
+        if(ModuleName != null) yield return ModuleName;
         
         foreach (var func in functions)
         {
@@ -28,6 +43,7 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         }
     }
 
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         int ix;
@@ -39,7 +55,7 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         }
         else if (newChild is ModuleDefinitionNode moduleDefChild && moduleDefChild == ModuleName)
         {
-            _moduleName = moduleDefChild;
+            ModuleName = moduleDefChild;
         }
         else if (newChild is FuncNode defChild
                  && child is FuncNode oldDef

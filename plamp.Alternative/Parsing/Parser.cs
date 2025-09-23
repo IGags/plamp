@@ -749,13 +749,6 @@ public static class Parser
         {
             if (context.Sequence.Current() is not OpenSquareBracket open) return;
             context.Sequence.MoveNextNonWhiteSpace();
-            var dimensions = 1;
-            while (context.Sequence.Current() is Comma)
-            {
-                dimensions++;
-                context.Sequence.MoveNextNonWhiteSpace();
-            }
-            
             if (context.Sequence.Current() is not CloseSquareBracket close)
             {
                 var currentToken = context.Sequence.Current();
@@ -764,7 +757,7 @@ public static class Parser
                 return;
             }
 
-            var definition = new ArrayTypeSpecificationNode(dimensions);
+            var definition = new ArrayTypeSpecificationNode();
             definitions.Add(definition);
             context.SymbolTable.AddSymbol(definition, open.Start, close.End);
             context.Sequence.MoveNextNonWhiteSpace();

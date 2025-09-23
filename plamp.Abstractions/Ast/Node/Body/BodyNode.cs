@@ -2,26 +2,27 @@
 
 namespace plamp.Abstractions.Ast.Node.Body;
 
-public class BodyNode : NodeBase
+/// <summary>
+/// Узел AST непрерывного списка(блока) инструкций
+/// </summary>
+public class BodyNode(List<NodeBase> expressionList) : NodeBase
 {
-    private readonly List<NodeBase> _expressionList;
+    /// <summary>
+    /// Список выражений в блоке
+    /// </summary>
+    public IReadOnlyList<NodeBase> ExpressionList => expressionList;
 
-    public IReadOnlyList<NodeBase> ExpressionList => _expressionList;
-    
-    public BodyNode(List<NodeBase> expressionList)
-    {
-        _expressionList = expressionList;
-    }
-
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         return ExpressionList;
     }
 
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        var index = _expressionList.IndexOf(child);
+        var index = expressionList.IndexOf(child);
         if(index < 0) return;
-        _expressionList[index] = newChild;
+        expressionList[index] = newChild;
     }
 }
