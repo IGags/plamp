@@ -6,6 +6,7 @@ namespace plamp.Alternative.Visitors.ModuleCreation;
 
 public class MethodCallInferenceValidator : BaseValidator<CreationContext, CreationContext>
 {
+    //TODO: Сломается при перегрузках метода. Нужно чинить.
     protected override VisitResult PreVisitCall(CallNode node, CreationContext context, NodeBase? parent)
     {
         var info = node.Symbol;

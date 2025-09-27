@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
@@ -797,6 +798,35 @@ public class MethodCallTests
         var m1Res2 = method2.Invoke(null, [firstName]);
         Assert.Equal(m2Literal, m1Res2);
     }
+
+    [Fact]
+    public async Task CallWithArrayElementGetter_ReturnsCorrect()
+    {
+        /*
+         * fn call_getter([]int a, int ix) int { return callback(a[ix]); }
+         */
+        var arrayParam = new TestParameter(typeof(int[]), "a");
+        var indexerParam = new TestParameter(typeof(int), "ix");
+
+        var getter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new MemberNode("ix")));
+        getter.SetItemType(typeof(int));
+
+        var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter]);
+        callNode.SetInfo(typeof(MethodCallTests).GetMethod(nameof(Square), [typeof(int)])!);
+        
+        var body = new BodyNode([new ReturnNode(callNode)]);
+        var (instance, method) =
+            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+                [arrayParam, indexerParam], 
+                body, 
+                typeof(int));
+
+        var arr = new[] { 10 };
+        var result = method!.Invoke(instance, [arr, 0]);
+        result.ShouldBeOfType<int>().ShouldBe(Square(10));
+    }
+
+    public static int Square(int value) => value * value;
     
     
     public class NonVoidCallback

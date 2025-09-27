@@ -114,7 +114,7 @@ public class ReturnTypeInferenceTests
     [Fact]
     public void ReturnIntFromLongFunction_Correct()
     {
-        const string code = "fn ret() long return 1i;";
+        const string code = "fn ret() long { return 1i; }";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseTopLevel(context, out var expression);

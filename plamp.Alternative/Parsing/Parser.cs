@@ -271,9 +271,16 @@ public static class Parser
         if (!TryParseArgSequence(context, out var list)) return false;
         TypeNode? type = null;
         var typeFork = context.Fork();
-        if (context.Sequence.Current() is Word && TryParseType(typeFork, out type)) context.Merge(typeFork); 
+        if (context.Sequence.Current() is Word && TryParseType(typeFork, out type)) context.Merge(typeFork);
 
-        if (!TryParseMultilineBody(context, out var body)) return false;
+        if (!TryParseMultilineBody(context, out var body))
+        {
+            var current = context.Sequence.Current();
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            return false;
+        }
+        
         var funcNameNode = new FuncNameNode(name);
         context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
         func = new FuncNode(type, funcNameNode, list, body);
@@ -350,7 +357,10 @@ public static class Parser
     {
         arg = null;
         var start = context.Sequence.CurrentStart;
-        if(!TryParseType(context, out var type)) return false;
+        
+        var typFork = context.Fork();
+        if(!TryParseType(typFork, out var type)) return false;
+        context.Merge(typFork);
         
         if (context.Sequence.Current() is not Word argName)
         {

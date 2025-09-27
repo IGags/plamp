@@ -222,6 +222,16 @@ public static class PlampExceptionInfo
             Message = "Indexer is not closed"
         };
     }
+
+    public static PlampExceptionRecord ExpectedBodyInCurlyBrackets()
+    {
+        return new ()
+        {
+            Code = "PRS1134",
+            Level = ExceptionLevel.Error,
+            Message = "The body is expected in curly brackets."
+        };
+    }
     
     #endregion
 

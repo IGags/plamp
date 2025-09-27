@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -242,5 +243,44 @@ public class CastEmissionTests
         Assert.NotNull(res);
         Assert.Equal(typeof(int), res.GetType());
         Assert.Equal((int)(double)1.5f, res);
+    }
+
+    [Fact]
+    public async Task CastArrayGetter_Correct()
+    {
+        /*
+         * a := [5]double;
+         * return int(a[1]);
+         */
+        var variableType = new TypeNode(new TypeNameNode("double[]"));
+        variableType.SetType(typeof(double[]));
+        var arrayItemType = new TypeNode(new TypeNameNode("double"));
+        arrayItemType.SetType(typeof(double));
+
+        var castToType = new TypeNode(new TypeNameNode("int"));
+        castToType.SetType(typeof(int));
+        
+        var elemGetter = new ElemGetterNode(
+            new MemberNode("a"),
+            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+        elemGetter.SetItemType(typeof(double));
+        
+        var castNode = new CastNode(castToType, elemGetter);
+        castNode.SetFromType(typeof(double));
+        
+        var body = new BodyNode(
+        [
+            new AssignNode(
+                new VariableDefinitionNode(variableType, new VariableNameNode("a")), 
+                new InitArrayNode(arrayItemType, new LiteralNode(5, typeof(int)))
+                ),
+            new ReturnNode(castNode)
+        ]);
+        
+        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var res = methodInfo!.Invoke(instance, []);
+        Assert.NotNull(res);
+        Assert.Equal(typeof(int), res.GetType());
+        Assert.Equal(0, res);
     }
 }
