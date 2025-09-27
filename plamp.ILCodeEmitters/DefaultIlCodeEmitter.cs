@@ -13,7 +13,7 @@ using plamp.Abstractions.CompilerEmission;
 
 namespace plamp.ILCodeEmitters;
 
-public class DefaultIlCodeEmitter : IIlCodeEmitter
+public class DefaultIlCodeEmitter
 {
     public Task EmitMethodBodyAsync(CompilerEmissionContext context, CancellationToken cancellationToken = default)
     {

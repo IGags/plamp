@@ -5,7 +5,7 @@ namespace plamp.Abstractions.Ast;
 /// <summary>
 /// Позиция чего-либо в кодовом файле
 /// </summary>
-/// <remarks>Следует добавить байтовое смещение в файле</remarks>
+//TODO: Следует добавить байтовое смещение в файле. Также рассмотрел бы переход на другую структуру с хранением имени файла.
 public readonly record struct FilePosition(int Row, int Column) : IComparable<FilePosition>
 {
     /// <summary>
