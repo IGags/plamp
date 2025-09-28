@@ -74,5 +74,5 @@ internal static class TypeResolveHelper
     }
 
     private static Type MakeArrayFromType(Type originalType, List<ArrayTypeSpecificationNode> arrayDefs) 
-        => arrayDefs.Aggregate(originalType, (current, _) => current.MakeArrayType(1));
+        => arrayDefs.Aggregate(originalType, (current, _) => current.MakeArrayType());
 }

@@ -15,6 +15,7 @@ namespace plamp.ILCodeEmitters;
 
 public class DefaultIlCodeEmitter
 {
+    //TODO: Перенести на синхронщину так как никакого io здесь нет и вряд ли будет. 
     public Task EmitMethodBodyAsync(CompilerEmissionContext context, CancellationToken cancellationToken = default)
     {
         var varStack = new LocalVarStack();

@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
@@ -81,6 +82,7 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
+        yield return ["a[1]", new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))))];
     }
     
     [Theory]
@@ -93,6 +95,39 @@ public class ExpressionParsingTests
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
+    }
+    
+    public static IEnumerable<object[]> ParseExpressionWithPostfix_Incorrect_DataProvider()
+    {
+        yield return
+        [
+            "a[1", new List<PlampException>
+            {
+                new(
+                    PlampExceptionInfo.IndexerIsNotClosed(),
+                    new FilePosition(0, 3), new FilePosition(0, 3),
+                    "any.plp")
+            },
+            true
+        ];
+    }
+    
+    [Theory]
+    [MemberData(nameof(ParseExpressionWithPostfix_Incorrect_DataProvider))]
+    public void ParseExpressionWithPostfix_Incorrect(string code, List<PlampException> exception, bool expectedResult)
+    {
+        var fixture = new Fixture();
+        fixture.Customizations.Add(new ParserContextCustomization(code));
+        var context = fixture.Create<ParsingContext>();
+        var parsed = Parser.TryParsePrecedence(context, out _);
+        parsed.ShouldBe(expectedResult);
+        var exceptionsShould = ExcludeFields(exception);
+        var exceptionsActual = ExcludeFields(context.Exceptions);
+        exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
+        object ExcludeFields(List<PlampException> exceptions)
+        {
+            return exceptions.Select(x => new { x.Code, x.EndPosition, x.Level, x.StartPosition }).ToList();
+        }
     }
 
     public static IEnumerable<object[]> ParseBinaryExpression_Correct_DataProvider()

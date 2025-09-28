@@ -726,22 +726,29 @@ public static class Parser
     
     public static bool TryParseArrayInitialization(
         ParsingContext context, 
-        [NotNullWhen(true)]out NodeBase? arrayDefinition)
+        [NotNullWhen(true)]out InitArrayNode? arrayDefinition)
     {
         arrayDefinition = null;
         if (context.Sequence.Current() is not OpenSquareBracket start) return false;
         context.Sequence.MoveNextNonWhiteSpace();
-        if (!TryParsePrecedence(context, out var dimension)) return false;
+        
+        var lengthFork = context.Fork();
+        if (!TryParsePrecedence(lengthFork, out var dimension))
+        {
+            var record = PlampExceptionInfo.ArrayInitializationMustHasLength();
+            context.Exceptions.Add(new PlampException(record, start.Start, lengthFork.Sequence.CurrentEnd, context.FileName));
+            return false;
+        }
+        context.Merge(lengthFork);
+        
         if (context.Sequence.Current() is not CloseSquareBracket)
         {
             var record = PlampExceptionInfo.ArrayDefinitionIsNotClosed();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
-        }
-        else
-        {
-            context.Sequence.MoveNextNonWhiteSpace();
-        }
+            return false;
+        } 
 
+        context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseType(context, out var type)) return false;
         arrayDefinition = new InitArrayNode(type, dimension);
         if(!context.SymbolTable.TryGetSymbol(type, out var pair)) throw new InvalidOperationException("Parser code is incorrect");
@@ -749,22 +756,22 @@ public static class Parser
         return true;
     }
     
-    public static void TryParseArrayDefinitionSequence(
+    public static bool TryParseArrayDefinitionSequence(
         ParsingContext context, 
-        out List<ArrayTypeSpecificationNode> definitions)
+        [NotNullWhen(true)]out List<ArrayTypeSpecificationNode>? definitions)
     {
         definitions = [];
-        if (context.Sequence.Current() is not OpenSquareBracket) return;
+        if (context.Sequence.Current() is not OpenSquareBracket) return true;
         while (true)
         {
-            if (context.Sequence.Current() is not OpenSquareBracket open) return;
+            if (context.Sequence.Current() is not OpenSquareBracket open) return true;
             context.Sequence.MoveNextNonWhiteSpace();
             if (context.Sequence.Current() is not CloseSquareBracket close)
             {
                 var currentToken = context.Sequence.Current();
                 var record = PlampExceptionInfo.ArrayDefinitionIsNotClosed();
                 context.Exceptions.Add(new PlampException(record, currentToken.Start, currentToken.End, context.FileName));
-                return;
+                return false;
             }
 
             var definition = new ArrayTypeSpecificationNode();
@@ -1209,7 +1216,7 @@ public static class Parser
     {
         type = null;
         var start = context.Sequence.CurrentStart;
-        TryParseArrayDefinitionSequence(context, out var definitions);
+        if (!TryParseArrayDefinitionSequence(context, out var definitions)) return false;
         
         if (context.Sequence.Current() is not Word typeName)
         {
@@ -1219,6 +1226,7 @@ public static class Parser
         }
         
         context.Sequence.MoveNextNonWhiteSpace();
+        
         var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
         type = new TypeNode(typeNameNode){ArrayDefinitions = definitions};
         context.SymbolTable.AddSymbol(type, start, typeName.End);

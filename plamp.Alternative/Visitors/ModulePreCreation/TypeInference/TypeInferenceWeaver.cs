@@ -347,7 +347,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var arrType = default(Type);
         if (node.ArrayItemType.Symbol != null)
         {
-            arrType = node.ArrayItemType.Symbol.MakeArrayType(1);
+            arrType = node.ArrayItemType.Symbol.MakeArrayType();
         }
 
         context.InnerExpressionTypeStack.Push(arrType);
@@ -613,6 +613,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(variableNode, context.InstructionInScopePosition);
     }
 
+    //TODO: Может упасть с ошибкой таблицы символов. Нужно добавлять символы.
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition, TypeInferenceInnerContext context)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
@@ -623,6 +624,18 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             context.FileName);
 
         if (type is null) return null;
+        
+        if (type is { IsArray: true })
+        {
+            var call = new CallNode(null, new FuncCallNameNode("__FROM_C#__ARRAY::Empty<T>"), []);
+            var methodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
+            var infoConstructed = methodInfo!.MakeGenericMethod(type.GetElementType()!);
+            call.SetInfo(infoConstructed);
+            
+            // []int a; => []int a := Array.Empty<int>()
+            return new AssignNode(variableDefinition, call);
+        }
+        
         if (type is { IsValueType: false, IsPrimitive: false })
         {
             return new AssignNode(variableDefinition, new LiteralNode(null, type));
