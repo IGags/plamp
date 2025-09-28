@@ -7,4 +7,5 @@
   <Project Path="plamp.Alternative\plamp.Alternative.csproj" Type="Classic C#" />
   <Project Path="plamp.Cli\plamp.Cli.csproj" Type="Classic C#" />
   <Project Path="plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" Type="Classic C#" />
+  <Project Path="plamp.Intrinsics\plamp.Intrinsics.csproj" Type="Classic C#" />
 </Solution>

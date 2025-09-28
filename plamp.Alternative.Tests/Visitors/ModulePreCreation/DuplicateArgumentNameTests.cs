@@ -13,7 +13,7 @@ public class DuplicateArgumentNameTests
     [Fact]
     public void DuplicateArgumentName_ReturnException()
     {
-        const string code = "fn dup(int a, string a);";
+        const string code = "fn dup(int a, string a) {}";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseTopLevel(context, out var expression);

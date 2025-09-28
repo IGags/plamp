@@ -2,31 +2,42 @@
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type;
 
-public class TypeNode(TypeNameNode typeName, List<NodeBase>? innerGenerics = null) : NodeBase
+/// <summary>
+/// Узел AST обозначающий использование того или иного типа(ссылка на тип)
+/// </summary>
+/// <param name="typeName">Имя типа</param>
+public class TypeNode(TypeNameNode typeName) : NodeBase
 {
-    private readonly List<NodeBase> _innerGenerics = innerGenerics ?? [];
-    
+    /// <summary>
+    /// Имя типа
+    /// </summary>
     public TypeNameNode TypeName { get; private set; } = typeName;
-    
-    public IReadOnlyList<NodeBase> InnerGenerics => _innerGenerics;
 
+    /// <summary>
+    /// Список объявлений массива от внутреннего ко внешнему
+    /// </summary>
+    public List<ArrayTypeSpecificationNode> ArrayDefinitions { get; init; } = [];
+
+    /// <summary>
+    /// Представление типа внутри .net, на этапе компиляции IL обязано присутствовать.
+    /// </summary>
     public System.Type? Symbol { get; protected set; }
 
+    /// <summary>
+    /// Установка типа из .net
+    /// </summary>
+    /// <param name="type">Тип внутри .net</param>
     public void SetType(System.Type type) => Symbol = type;
 
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         yield return TypeName;
-        foreach (var generic in InnerGenerics)
-        {
-            yield return generic;
-        }
     }
 
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        int childIndex;
         if (TypeName == child && newChild is TypeNameNode newMember) TypeName = newMember;
-        else if (-1 == (childIndex = _innerGenerics.IndexOf(child))) _innerGenerics[childIndex] = newChild;
     }
 }

@@ -2,28 +2,29 @@
 
 namespace plamp.Abstractions.Ast.Node.ControlFlow;
 
-public class ReturnNode : NodeBase
+/// <summary>
+/// Узел AST обозначающий выход из функции
+/// </summary>
+/// <param name="returnValue">Возвращаемое функцией значение. Может быть null, тогда предполагается, что функция имеет возвращаемый тип void</param>
+public class ReturnNode(NodeBase? returnValue) : NodeBase
 {
-    public NodeBase? ReturnValue { get; private set; }
-    
-    public ReturnNode(NodeBase? returnValue)
-    {
-        ReturnValue = returnValue;
-    }
+    /// <summary>
+    /// Возвращаемое функцией значение. Может быть null, тогда предполагается, что функция имеет возвращаемый тип void
+    /// </summary>
+    public NodeBase? ReturnValue { get; private set; } = returnValue;
 
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
-        if (ReturnValue != null)
-        {
-            yield return ReturnValue;
-        }
+        if (ReturnValue == null) yield break;
+        yield return ReturnValue;
     }
 
+    
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
-        if (ReturnValue == child)
-        {
-            ReturnValue = newChild;
-        }
+        if (ReturnValue != child) return;
+        ReturnValue = newChild;
     }
 }

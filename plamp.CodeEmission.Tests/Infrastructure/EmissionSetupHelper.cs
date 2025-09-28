@@ -52,7 +52,7 @@ public class EmissionSetupHelper
         return (instance, createdMethod);
     }
 
-    public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new TypeNameNode(type.Name), [], type);
+    public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new TypeNameNode(type.Name), type);
 
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
@@ -98,7 +98,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteType : TypeNode
     {
-        public ConcreteType(TypeNameNode name, List<NodeBase> generics, Type symbol) : base(name, generics)
+        public ConcreteType(TypeNameNode name, Type symbol) : base(name)
         {
             Symbol = symbol;
         }

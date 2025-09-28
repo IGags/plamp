@@ -14,7 +14,7 @@ public class FuncDefinitionInferenceTests
     public void HandleFuncWithDuplicateArgs_Correct()
     {
         const string code = """
-                            fn nop(int a, string b);
+                            fn nop(int a, string b) {}
                             """;
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();

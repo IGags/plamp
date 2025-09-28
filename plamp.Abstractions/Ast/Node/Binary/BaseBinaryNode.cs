@@ -2,23 +2,29 @@
 
 namespace plamp.Abstractions.Ast.Node.Binary;
 
-public abstract class BaseBinaryNode : NodeBase
+/// <summary>
+/// Базовый класс AST бинарного оператора
+/// </summary>
+public abstract class BaseBinaryNode(NodeBase left, NodeBase right) : NodeBase
 {
-    public NodeBase Left { get; private set; }
-    public NodeBase Right { get; private set; }
+    /// <summary>
+    /// Левый операнд
+    /// </summary>
+    public NodeBase Left { get; private set; } = left;
 
+    /// <summary>
+    /// Правый операнд
+    /// </summary>
+    public NodeBase Right { get; private set; } = right;
+
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Left;
         yield return Right;
     }
 
-    protected BaseBinaryNode(NodeBase left, NodeBase right)
-    {
-        Left = left;
-        Right = right;
-    }
-    
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         if (Left == child)

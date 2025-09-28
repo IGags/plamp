@@ -3,16 +3,43 @@
 namespace plamp.Abstractions.Ast;
 
 /// <summary>
-/// A single class for every plamp error exclude runtime
+/// Общий класс для любой ошибки компилляции языка
 /// </summary>
 public class PlampException : Exception
 {
+    /// <summary>
+    /// Имя исходного файла, в котором произошла ошибка
+    /// </summary>
     public string FileName { get; }
+    
+    /// <summary>
+    /// Позиция в файле, с которой начинается ошибка. (включительно)
+    /// </summary>
     public FilePosition StartPosition { get; }
+    
+    /// <summary>
+    /// Позиция в файле, на котором ошибка заканчивается. (включительно)
+    /// </summary>
     public FilePosition EndPosition { get; }
+    
+    /// <summary>
+    /// Код ошибки.
+    /// </summary>
     public string Code { get; }
+    
+    /// <summary>
+    /// Уровень серьёзности ошибки
+    /// </summary>
     public ExceptionLevel Level { get; }
 
+    /// <summary>
+    /// Создание экземпляра ошибки
+    /// </summary>
+    /// <param name="exceptionFinalRecord">Шаблон, по которому форматируется ошибка</param>
+    /// <param name="startPosition">Позиция начала ошибки в файле</param>
+    /// <param name="endPosition">Позиция конца ошибки в файле</param>
+    /// <param name="fileName">Имя исходного файла, где произошла ошибка</param>
+    /// <exception cref="ArgumentException">Позиция начала меньше позиции конца в файле</exception>
     public PlampException(
         PlampExceptionRecord exceptionFinalRecord, 
         FilePosition startPosition, 

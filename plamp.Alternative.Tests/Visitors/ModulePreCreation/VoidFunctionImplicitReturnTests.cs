@@ -17,7 +17,7 @@ public class VoidFunctionImplicitReturnTests
     [Fact]
     public void VoidFunctionEmptyBody_AddImplicitReturn()
     {
-        const string code = """fn nop();""";
+        const string code = """fn nop() {}""";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseTopLevel(context, out var expression);
@@ -34,7 +34,7 @@ public class VoidFunctionImplicitReturnTests
     [Fact]
     public void VoidFunctionWithNotNullVoidType_AddImplicitReturn()
     {
-        const string code = """fn nop();""";
+        const string code = """fn nop() {}""";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseTopLevel(context, out var expression);
@@ -55,7 +55,7 @@ public class VoidFunctionImplicitReturnTests
     [Fact]
     public void VoidFunctionWithReturn_DoesNothing()
     {
-        const string code = """fn nop() return;""";
+        const string code = """fn nop() { return; }""";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseTopLevel(context, out var expression);

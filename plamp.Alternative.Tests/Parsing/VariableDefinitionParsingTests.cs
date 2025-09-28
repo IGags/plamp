@@ -27,6 +27,23 @@ public class VariableDefinitionParsingTests
     }
 
     [Fact]
+    public void ParseArrayTypedVariableDefinition_Correct()
+    {
+        const string code = "[]int a";
+        var ast = new VariableDefinitionNode(
+            new TypeNode(new TypeNameNode("int")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, 
+            new VariableNameNode("a"));
+        
+        var fixture = new Fixture();
+        fixture.Customizations.Add(new ParserContextCustomization(code));
+        var context = fixture.Create<ParsingContext>();
+        var parsed = Parser.TryParseVariableDefinition(context, out var type);
+        context.Exceptions.ShouldBeEmpty();
+        parsed.ShouldBe(true);
+        type.ShouldBeEquivalentTo(ast);
+    }
+
+    [Fact]
     public void ParseVariableDefinitionWithoutName_Incorrect()
     {
         const string code = "int ";

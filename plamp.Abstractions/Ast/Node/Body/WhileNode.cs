@@ -2,24 +2,29 @@
 
 namespace plamp.Abstractions.Ast.Node.Body;
 
-public class WhileNode : NodeBase
+/// <summary>
+/// Узел AST обозначающий цикл с предусловием
+/// </summary>
+public class WhileNode(NodeBase condition, BodyNode body) : NodeBase
 {
-    public NodeBase Condition { get; private set; }
-    
-    public NodeBase Body { get; private set; }
+    /// <summary>
+    /// Предикат, который определяет возможность совершения итерации
+    /// </summary>
+    public NodeBase Condition { get; private set; } = condition;
 
-    public WhileNode(NodeBase condition, BodyNode body)
-    {
-        Condition = condition;
-        Body = body;
-    }
-    
+    /// <summary>
+    /// Тело цикла
+    /// </summary>
+    public NodeBase Body { get; private set; } = body;
+
+    /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
         yield return Condition;
         yield return Body;
     }
 
+    /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         if (Condition == child)

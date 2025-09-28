@@ -3,6 +3,7 @@ using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
@@ -31,6 +32,32 @@ public class AssignmentParsingTests
                 new MemberNode("a"),
                 new LiteralNode(14.3, typeof(double)))
         ];
+        yield return
+        [
+            "a[1] := 14",
+            new ElemSetterNode(
+                new MemberNode("a"),
+                new ArrayIndexerNode(new LiteralNode(1, typeof(int))),
+                new LiteralNode(14, typeof(int)))
+        ];
+        yield return
+        [
+            "a[b] := 5",
+            new ElemSetterNode(
+                new MemberNode("a"),
+                new ArrayIndexerNode(new MemberNode("b")),
+                new LiteralNode(5, typeof(int)))
+        ];
+        yield return
+        [
+            "a[b][c] := d",
+            new ElemSetterNode(
+                new ElemGetterNode(
+                    new MemberNode("a"), 
+                    new ArrayIndexerNode(new MemberNode("b"))),
+                new ArrayIndexerNode(new MemberNode("c")),
+                new MemberNode("d"))
+        ];
     }
     
     [Theory]
@@ -58,6 +85,12 @@ public class AssignmentParsingTests
         yield return ["a", new List<string>{PlampExceptionInfo.ExpectedAssignment().Code}];
         yield return ["a := ", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
         yield return ["a := use", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
+
+        yield return ["a[", new List<string>{ PlampExceptionInfo.ExpectedAssignment().Code }];
+        yield return ["a[1", new List<string>{ PlampExceptionInfo.IndexerIsNotClosed().Code, PlampExceptionInfo.ExpectedAssignment().Code }];
+        yield return ["a[1]", new List<string>{ PlampExceptionInfo.ExpectedAssignment().Code }];
+        yield return ["a[1] :=", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
+        yield return ["a[1] := +", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
     }
     
     [Theory]

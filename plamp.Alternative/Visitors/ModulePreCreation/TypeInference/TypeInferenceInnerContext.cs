@@ -10,11 +10,11 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
 {
     private int _monotonicScopeCounter;
     private int _currentDepth;
+    private readonly Stack<int> _typeInferenceSizeSnapshotStack = [];
     
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
-    public Stack<Type?> InnerExpressionTypeStack { get; set; } = [];
+    public Stack<Type?> InnerExpressionTypeStack { get; private set; } = [];
 
-    public Stack<int> StackSizeBeforeCall { get; set; } = [];
     
     public FuncNode? CurrentFunc { get; set; }
 
@@ -56,6 +56,10 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     }
 
     private int NextScopeNumber() => _monotonicScopeCounter++;
+
+    public void SaveInferenceStackSize() => _typeInferenceSizeSnapshotStack.Push(InnerExpressionTypeStack.Count);
+
+    public int RestoreInferenceStackSize() => _typeInferenceSizeSnapshotStack.Pop();
 }
 
 /// <summary>

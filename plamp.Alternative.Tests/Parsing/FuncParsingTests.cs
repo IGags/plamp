@@ -19,7 +19,7 @@ public class FuncParsingTests
     {
         yield return
         [
-            "fn a() any return 1;",
+            "fn a() any { return 1; }",
             new FuncNode(
                 new TypeNode(new TypeNameNode("any")), 
                 new FuncNameNode("a"), [],
@@ -29,7 +29,7 @@ public class FuncParsingTests
         ];
         yield return
         [
-            "fn b(int x, int y) return;",
+            "fn b(int x, int y) { return; }",
             new FuncNode(
                 null,
                 new FuncNameNode("b"),
@@ -60,7 +60,7 @@ public class FuncParsingTests
         ];
         yield return
         [
-            "fn min();",
+            "fn min(){}",
             new FuncNode(
                 null,
                 new FuncNameNode("min"),
@@ -87,11 +87,7 @@ public class FuncParsingTests
         yield return ["+", new List<string>(), false, null];
         yield return ["fn", new List<string>{PlampExceptionInfo.ExpectedFuncName().Code}, false, null];
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
-        yield return
-        [
-            "fn a()", new List<string> { PlampExceptionInfo.UnexpectedToken("").Code }, true,
-            new FuncNode(null, new FuncNameNode("a"), [], new BodyNode([]))
-        ];
+        yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code }, false, null];
         yield return ["fn a(int a,,int b)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
     }
 

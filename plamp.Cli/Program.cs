@@ -4,28 +4,47 @@ namespace plamp.Cli;
 
 public static class Program
 {
-    private const string File = """
-                                module playground;
-                                fn implicit_conv() {
-                                    println("try guess number!");
-                                    att_count := 3;
-                                    number := 5;
-                                    while(att_count > 0) {
-                                        dec := readln();
-                                        if(int(dec) = 5) {
-                                            println("correct!");
-                                            return;
-                                        }
-                                        if(int(dec) < 5) println("the number is greater");
-                                         if(int(dec) > 5) println("the number is lesser");
-                                        println("attempts left:");
-                                        
-                                        att_count--;
-                                        println(att_count);
-                                    }
-                                    println("you lose");
-                                }
-                                """;
+    private const string File = 
+"""
+module playground;
+fn array_init() {
+    arr := [100]int;
+    i := 0;
+    while(i < arr.length()) arr[i++] := i * i;
+    
+    res := arr.binary_search(144);
+    
+    if(res >= 0){
+        print("The index of an element is: ");
+        println(res);
+    }
+    else print("Element not found");
+    aaa("hui");
+}
+/*
+    pidor
+    gay
+    faggot
+*/
+fn binary_search([]int array, int num) int {
+    if(array.length() = 0) return -1;
+    
+    left   := 0;
+    right  := array.length() - 1;
+    
+    while(left <= right){
+        center := (left + right) / 2;
+        
+        if(array[center] = num)      return center;
+        else if(array[center] < num) left  := center + 1;
+        else                         right := center - 1;
+    } 
+    
+    return -1;
+}
+
+fn aaa(string str) { print(str); }
+""";
     
     public static void Main()
     {
@@ -36,7 +55,7 @@ public static class Program
             PrintRes(res.Exceptions);
             return;
         }
-        var method = res.Compiled!.Modules.First().GetMethod("implicit_conv");
+        var method = res.Compiled!.Modules.First().GetMethod("array_init");
         method!.Invoke(null, []);
 
         void PrintRes(List<PlampException> exList)

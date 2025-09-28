@@ -12,11 +12,15 @@ namespace plamp.Alternative.Tests.Parsing;
 
 public class ArgParsingTests
 {
-    [Fact]
-    public void ParseArg_Correct()
+    [Theory]
+    [InlineData("int", "int", "arg", 0)]
+    [InlineData("[]int", "int", "arg", 1)]
+    [InlineData("[][]int", "int", "arg", 2)]
+    public void ParseArg_Correct(string argType, string typeNameShould, string argName, int arrayDims)
     {
-        const string code = "int abc";
-        var ast = new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("abc"));
+        var code = $"{argType} {argName}";
+        var arrayDefs = Enumerable.Repeat(new ArrayTypeSpecificationNode(), arrayDims).ToList();
+        var ast = new ParameterNode(new TypeNode(new TypeNameNode(typeNameShould)) {ArrayDefinitions = arrayDefs}, new ParameterNameNode(argName));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArg(context, out var arg);
