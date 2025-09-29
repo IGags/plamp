@@ -58,7 +58,7 @@ public class ArrayElementManipulation
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    public async Task GetArrayElementByIndex_ReturnsCorrect(int index)
+    public void GetArrayElementByIndex_ReturnsCorrect(int index)
     {
         /*
          * return a[ix];
@@ -70,13 +70,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(index);
     }
 
     [Fact]
-    public async Task GetArrayElementByNegativeIndex_ThrowsOutOfRange()
+    public void GetArrayElementByNegativeIndex_ThrowsOutOfRange()
     {
         /*
          * return a[-1];
@@ -88,13 +88,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         Should.Throw<TargetInvocationException>(() => methodInfo!.Invoke(instance, [])).InnerException
             .ShouldBeOfType<IndexOutOfRangeException>();
     }
 
     [Fact]
-    public async Task GetArrayElementByOverflowIndex_ThrowsOutOfRange()
+    public void GetArrayElementByOverflowIndex_ThrowsOutOfRange()
     {
         /*
          * return a[4];
@@ -106,13 +106,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         Should.Throw<TargetInvocationException>(() => methodInfo!.Invoke(instance, [])).InnerException
             .ShouldBeOfType<IndexOutOfRangeException>();
     }
 
     [Fact]
-    public async Task GetArrayElementByUnaryOperatorIndexer_ReturnsCorrect()
+    public void GetArrayElementByUnaryOperatorIndexer_ReturnsCorrect()
     {
         /*
          * i := 0;
@@ -133,13 +133,13 @@ public class ArrayElementManipulation
         bodyItems.AddRange([assign, new ReturnNode(elemGetter)]);
         var body = new BodyNode(bodyItems);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(0);
     }
 
     [Fact]
-    public async Task GetArrayElementByBinaryOperatorIndexer_ReturnsCorrect()
+    public void GetArrayElementByBinaryOperatorIndexer_ReturnsCorrect()
     {
         /*
          * return a[1 + 1];
@@ -153,13 +153,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(2);
     }
 
     [Fact]
-    public async Task GetArrayElementByCastIndexer_ReturnsCorrect()
+    public void GetArrayElementByCastIndexer_ReturnsCorrect()
     {
         /*
          * return a[int(1.0)]
@@ -177,13 +177,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(1);
     }
     
     [Fact]
-    public async Task GetArrayElementByCallIndexer_ReturnsCorrect()
+    public void GetArrayElementByCallIndexer_ReturnsCorrect()
     {
         /*
          * return a[getZero()];
@@ -198,13 +198,13 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(0);
     }
 
     [Fact]
-    public async Task GetArrayElementByArrayElementGetter_ReturnsCorrect()
+    public void GetArrayElementByArrayElementGetter_ReturnsCorrect()
     {
         /*
          * return a[a[1]];
@@ -219,7 +219,7 @@ public class ArrayElementManipulation
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var result = methodInfo!.Invoke(instance, []);
         result.ShouldBeOfType<int>().ShouldBe(1);
     }
@@ -232,7 +232,7 @@ public class ArrayElementManipulation
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    public async Task SetArrayElementByIndex_ReturnsSuccess(int indexer)
+    public void SetArrayElementByIndex_ReturnsSuccess(int indexer)
     {
         /*
          * a[ix] = -ix;
@@ -249,14 +249,14 @@ public class ArrayElementManipulation
         var body = new BodyNode(instructionList);
 
         var indexerParam = new TestParameter(typeof(int), "ix");
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([indexerParam], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([indexerParam], body, typeof(int[]));
 
         var result = methodInfo!.Invoke(instance, [indexer]);
         result.ShouldBeOfType<int[]>();
     }
 
     [Fact]
-    public async Task SetArrayElementByNegativeIndex_ThrowsOutOfRange()
+    public void SetArrayElementByNegativeIndex_ThrowsOutOfRange()
     {
         /*
          * a[-1] := -1;
@@ -271,14 +271,14 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
         Should.Throw<TargetInvocationException>(() => methodInfo!.Invoke(instance, []))
             .InnerException.ShouldBeOfType<IndexOutOfRangeException>();
     }
 
     [Fact]
-    public async Task SetArrayElementByOverflowIndex_ThrowsOutOfRange()
+    public void SetArrayElementByOverflowIndex_ThrowsOutOfRange()
     {
         /*
          * a[4] := 0;
@@ -293,14 +293,14 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
         Should.Throw<TargetInvocationException>(() => methodInfo!.Invoke(instance, []))
             .InnerException.ShouldBeOfType<IndexOutOfRangeException>();
     }
 
     [Fact]
-    public async Task SetArrayElementByUnaryOperatorIndex_ReturnsCorrect()
+    public void SetArrayElementByUnaryOperatorIndex_ReturnsCorrect()
     {
         /*
          * a[-(-1)] := 42;
@@ -315,13 +315,13 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[1].ShouldBe(42);
     }
 
     [Fact]
-    public async Task SetArrayElementByBinaryOperatorIndex_ReturnsCorrect()
+    public void SetArrayElementByBinaryOperatorIndex_ReturnsCorrect()
     {
         /*
          * a[100 - 99] := 98;
@@ -336,13 +336,13 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[1].ShouldBe(98);
     }
 
     [Fact]
-    public async Task SetArrayElementByCastOperatorIndex_ReturnsCorrect()
+    public void SetArrayElementByCastOperatorIndex_ReturnsCorrect()
     {
         /*
          * a[int(2.0)] := 11;
@@ -362,13 +362,13 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[2].ShouldBe(11);
     }
 
     [Fact]
-    public async Task SetArrayElementByFuncCallIndex_ReturnsCorrect()
+    public void SetArrayElementByFuncCallIndex_ReturnsCorrect()
     {
         /*
          * a[getZero()] := -99;
@@ -386,13 +386,13 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[0].ShouldBe(-99);
     }
 
     [Fact]
-    public async Task SetArrayElementByArrayElementIndexer_ReturnsCorrect()
+    public void SetArrayElementByArrayElementIndexer_ReturnsCorrect()
     {
         /*
          * a[a[1]] := -1;
@@ -410,7 +410,7 @@ public class ArrayElementManipulation
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
         var body = new BodyNode(instructionList);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[1].ShouldBe(-1);
     }

@@ -17,7 +17,7 @@ public class FlowControlTests
     [InlineData(2, 1)]
     [InlineData(10, 5)]
     [InlineData(9, 5)]
-    public async Task ContinueOnEvenNumber(int argValue, int resShould)
+    public void ContinueOnEvenNumber(int argValue, int resShould)
     {
         var arg = new TestParameter(typeof(int), "n");
         
@@ -55,13 +55,13 @@ public class FlowControlTests
             new ReturnNode(new MemberNode(nameof(t)))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(int));
         var res = method!.Invoke(instance, [argValue]);
         Assert.Equal(resShould, res);
     }
 
     [Fact]
-    public async Task InsideContinueDoesNotAffectsOutside()
+    public void InsideContinueDoesNotAffectsOutside()
     {
         /*
          * int i = 0
@@ -98,7 +98,7 @@ public class FlowControlTests
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var res = method!.Invoke(instance!, []);
         Assert.Equal(iterationCount, res);
     }
@@ -108,7 +108,7 @@ public class FlowControlTests
     [InlineData(10)]
     [InlineData(100)]
     [InlineData(1000)]
-    public async Task BreakOnIteration(int iterationNumber)
+    public void BreakOnIteration(int iterationNumber)
     {
         var arg = new TestParameter(typeof(int), "n");
         
@@ -138,13 +138,13 @@ public class FlowControlTests
             new ReturnNode(new MemberNode(nameof(i)))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(int));
         var res = method!.Invoke(instance!, [iterationNumber]);
         Assert.Equal(iterationNumber, res);
     }
 
     [Fact]
-    public async Task InnerBreakDoesNotBreakOuter()
+    public void InnerBreakDoesNotBreakOuter()
     {
         /*
          * int i = 0
@@ -176,7 +176,7 @@ public class FlowControlTests
                 ])),
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
         ]);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var res = method!.Invoke(instance!, []);
         Assert.Equal(iterationCount, res);
     }

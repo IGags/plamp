@@ -3,7 +3,7 @@ using System.Reflection.Emit;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Body;
 
-namespace plamp.Abstractions.CompilerEmission;
+namespace plamp.ILCodeEmitters;
 
 /// <summary>
 /// Объект, применяющийся при эмиссии исходного кода в IL сборки.

@@ -43,7 +43,7 @@ public class MemberAccessTests
     /// </summary>
     [Theory]
     [MemberData(nameof(GetMemberDataProvider))]
-    public async Task GetMember(object arg, MemberInfo member, Type returnType, object expectedVal)
+    public void GetMember(object arg, MemberInfo member, Type returnType, object expectedVal)
     {
         var objParam = new TestParameter(arg.GetType(), "obj");
         const string tempVarName = "prop";
@@ -79,7 +79,7 @@ public class MemberAccessTests
                 memberNode),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam], body, returnType);
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([objParam], body, returnType);
         var res = method!.Invoke(instance, [arg])!;
         Assert.Equal(expectedVal, res);
         Assert.Equal(returnType, res.GetType());
@@ -100,7 +100,7 @@ public class MemberAccessTests
 
     [Theory]
     [MemberData(nameof(SetMemberDataProvider))]
-    public async Task SetMember(object arg, MemberInfo member, object memberVal)
+    public void SetMember(object arg, MemberInfo member, object memberVal)
     {
         var objParam = new TestParameter(arg.GetType(), "obj");
         var valParam = new TestParameter(memberVal.GetType(), "val");
@@ -133,8 +133,7 @@ public class MemberAccessTests
             new ReturnNode(new MemberNode(objParam.Name))
         ]);
 
-        var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam, valParam], body, arg.GetType());
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([objParam, valParam], body, arg.GetType());
         
         var res = method!.Invoke(instance, [arg, memberVal])!;
         Assert.Equal(arg.GetType(), res.GetType());
@@ -190,7 +189,7 @@ public class MemberAccessTests
 
     [Theory]
     [MemberData(nameof(GetIndexerDataProvider))]
-    public async Task GetByIndexer(object arg, MethodInfo indexerGetter, int index, int resShould)
+    public void GetByIndexer(object arg, MethodInfo indexerGetter, int index, int resShould)
     {
         var objParam = new TestParameter(arg.GetType(), "obj");
         var valParam = new TestParameter(index.GetType(), "ix");
@@ -215,7 +214,7 @@ public class MemberAccessTests
         ]);
 
         var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam, valParam], body, resShould.GetType());
+            EmissionSetupHelper.CreateInstanceWithMethod([objParam, valParam], body, resShould.GetType());
         
         var res = method!.Invoke(instance, [arg, index])!;
         Assert.Equal(resShould, res);
@@ -241,7 +240,7 @@ public class MemberAccessTests
 
     [Theory]
     [MemberData(nameof(SetByIndexerDataProvider))]
-    public async Task EmitSetByIndexer(object arg, MethodInfo indexerSetter, int index, int value, FieldInfo innerDictGetter)
+    public void EmitSetByIndexer(object arg, MethodInfo indexerSetter, int index, int value, FieldInfo innerDictGetter)
     {
         var objParam = new TestParameter(arg.GetType(), "obj");
         var indexerParam = new TestParameter(index.GetType(), "ix");
@@ -265,7 +264,7 @@ public class MemberAccessTests
         ]);
 
         var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [objParam, indexerParam, valueParam],
                 body,
                 arg.GetType());

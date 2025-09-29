@@ -6,7 +6,6 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.CompilerEmission;
 using plamp.ILCodeEmitters;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
@@ -72,7 +71,7 @@ public class EmissionSetupHelper
         return ctorInfo;
     }
 
-    public static async Task<(object? instance, MethodInfo? methodInfo)> CreateInstanceWithMethodAsync(
+    public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(
         ParameterInfo[] args,
         BodyNode body,
         Type returnType)
@@ -81,8 +80,7 @@ public class EmissionSetupHelper
         var argTypes = args.Select(x => x.ParameterType).ToArray();
         var (_, typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
         var context = new CompilerEmissionContext(body, methodBuilder, args, null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+        IlCodeEmitter.EmitMethodBody(context);
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = CreateObject(type, methodName);
         return (instance, methodInfo);

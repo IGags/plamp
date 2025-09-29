@@ -30,7 +30,7 @@ public class CastEmissionTests
     /// </summary>
     [Theory]
     [MemberData(nameof(CastEmissionDataProvider))]
-    public async Task EmitCastAsync(Type from, Type to, object? instance = null)
+    public void EmitCastAsync(Type from, Type to, object? instance = null)
     {
         var inParam = new TestParameter(from, "toCast");
         const string castResName = "castRes";
@@ -42,7 +42,7 @@ public class CastEmissionTests
         ]);
 
         var (typeInstance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([inParam], methodBody, to);
+            EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to);
         instance ??= Activator.CreateInstance(from);
         var res = methodInfo!.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
@@ -51,30 +51,30 @@ public class CastEmissionTests
 
     //I can't store object of type in object typed variable
     [Fact]
-    public async Task EmitShortIntConversion()
+    public void EmitShortIntConversion()
     {
         var to = typeof(int);
         var from = typeof(short);
         const short instance = 31;
-        var (methodInfo, typeInstance) = await CreateConversionDelegate(from, to);
+        var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
         Assert.Equal(to, res.GetType());
     }
     
     [Fact]
-    public async Task EmitByteIntConversion()
+    public void EmitByteIntConversion()
     {
         var to = typeof(int);
         var from = typeof(byte);
         const byte instance = 31;
-        var (methodInfo, typeInstance) = await CreateConversionDelegate(from, to);
+        var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
         Assert.Equal(to, res.GetType());
     }
 
-    private async Task<(MethodInfo, object)> CreateConversionDelegate(Type from, Type to)
+    private (MethodInfo, object) CreateConversionDelegate(Type from, Type to)
     {
         var inParam = new TestParameter(from, "toCast");
 
@@ -90,7 +90,7 @@ public class CastEmissionTests
             new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
             new ReturnNode(new MemberNode(castResName))
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([inParam], methodBody, to);
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to);
         return (methodInfo, instance)!;
     }
 
@@ -127,7 +127,7 @@ public class CastEmissionTests
     }
 
     [Fact]
-    public async Task LiteralCast_Correct()
+    public void LiteralCast_Correct()
     {
         /*
          * return (float)43;
@@ -142,7 +142,7 @@ public class CastEmissionTests
         [
             new ReturnNode(cast)
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(float));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], methodBody, typeof(float));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(float), res.GetType());
@@ -152,7 +152,7 @@ public class CastEmissionTests
     public static int Example() => 14;
 
     [Fact]
-    public async Task MethodCallCast_Correct()
+    public void MethodCallCast_Correct()
     {
         /*
          * return (double)Example();
@@ -168,7 +168,7 @@ public class CastEmissionTests
         [
             new ReturnNode(cast)
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(double));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], methodBody, typeof(double));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(double), res.GetType());
@@ -176,7 +176,7 @@ public class CastEmissionTests
     }
 
     [Fact]
-    public async Task BinaryCast_Correct()
+    public void BinaryCast_Correct()
     {
         /*
          * return (short)(32768 - 1);
@@ -190,7 +190,7 @@ public class CastEmissionTests
         [
             new ReturnNode(cast)
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(short));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], methodBody, typeof(short));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(short), res.GetType());
@@ -198,7 +198,7 @@ public class CastEmissionTests
     }
 
     [Fact]
-    public async Task UnaryCast_Correct()
+    public void UnaryCast_Correct()
     {
         /*
          * return (int)-1.5;
@@ -212,7 +212,7 @@ public class CastEmissionTests
         [
             new ReturnNode(cast)
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], methodBody, typeof(int));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(int), res.GetType());
@@ -220,7 +220,7 @@ public class CastEmissionTests
     }
 
     [Fact]
-    public async Task CastCast_Correct()
+    public void CastCast_Correct()
     {
         /*
          * return (int)1.5;
@@ -238,7 +238,7 @@ public class CastEmissionTests
         [
             new ReturnNode(cast)
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], methodBody, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], methodBody, typeof(int));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(int), res.GetType());
@@ -246,7 +246,7 @@ public class CastEmissionTests
     }
 
     [Fact]
-    public async Task CastArrayGetter_Correct()
+    public void CastArrayGetter_Correct()
     {
         /*
          * a := [5]double;
@@ -277,7 +277,7 @@ public class CastEmissionTests
             new ReturnNode(castNode)
         ]);
         
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var res = methodInfo!.Invoke(instance, []);
         Assert.NotNull(res);
         Assert.Equal(typeof(int), res.GetType());

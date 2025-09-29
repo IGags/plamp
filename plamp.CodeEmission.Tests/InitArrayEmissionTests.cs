@@ -32,7 +32,7 @@ public class InitArrayEmissionTests
      [InlineData(typeof(string))]
      [InlineData(typeof(char))]
      [InlineData(typeof(TestStruct))]
-     public async Task InitArrayOfType_ReturnsCorrect(Type arrayItemType)
+     public void InitArrayOfType_ReturnsCorrect(Type arrayItemType)
      {
           /*
            * return [4]type;
@@ -43,7 +43,7 @@ public class InitArrayEmissionTests
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var arrayType = arrayItemType.MakeArrayType();
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, arrayType);
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, arrayType);
           var result = method!.Invoke(instance, []);
           
           result.ShouldNotBeNull().ShouldBeOfType(arrayType);
@@ -52,14 +52,14 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayOfZeroLiteralLength_ReturnsCorrect()
+     public void InitArrayOfZeroLiteralLength_ReturnsCorrect()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
           itemType.SetType(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           var result = method!.Invoke(instance, []);
           
           result.ShouldNotBeNull().ShouldBeOfType(typeof(int[]));
@@ -68,20 +68,20 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayOfNegativeLength_ThrowsRuntimeException()
+     public void InitArrayOfNegativeLength_ThrowsRuntimeException()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
           itemType.SetType(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, []))
                .InnerException.ShouldBeOfType<OverflowException>();
      }
 
      [Fact]
-     public async Task InitArrayWithParametrizedLength_ReturnsCorrect()
+     public void InitArrayWithParametrizedLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr(int length) []int { return [length]int; }
@@ -93,7 +93,7 @@ public class InitArrayEmissionTests
 
           var arrayInit = new InitArrayNode(itemType, new MemberNode("length"));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([parameter], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int[]));
 
           var length = Random.Shared.Next(0, 100);
           var result = method!.Invoke(instance, [length]);
@@ -104,7 +104,7 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayWithUnaryOperatorLength_ReturnsCorrect()
+     public void InitArrayWithUnaryOperatorLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr(int length) []int { return [length++]int; }
@@ -116,7 +116,7 @@ public class InitArrayEmissionTests
 
           var arrayInit = new InitArrayNode(itemType, new PostfixIncrementNode(new MemberNode("length")));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([parameter], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int[]));
 
           const int length = 1;
           var result = method!.Invoke(instance, [length]);
@@ -127,7 +127,7 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayWithBinaryOperatorLength_ReturnsCorrect()
+     public void InitArrayWithBinaryOperatorLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr() []int { return [4 - 3]int; }
@@ -137,7 +137,7 @@ public class InitArrayEmissionTests
 
           var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, typeof(int)), new LiteralNode(3, typeof(int))));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
           var result = method!.Invoke(instance, []);
           
@@ -147,7 +147,7 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayWithCastOperatorLength_ReturnsCorrect()
+     public void InitArrayWithCastOperatorLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr() []int { return [int(4.0)]int; }
@@ -160,7 +160,7 @@ public class InitArrayEmissionTests
           
           var arrayInit = new InitArrayNode(itemType, cast);
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
           var result = method!.Invoke(instance, []);
           
@@ -170,7 +170,7 @@ public class InitArrayEmissionTests
      }
 
      [Fact]
-     public async Task InitArrayWithFuncCallLength_ReturnsCorrect()
+     public void InitArrayWithFuncCallLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr() []int { return [getLength()]int; }
@@ -182,7 +182,7 @@ public class InitArrayEmissionTests
           call.SetInfo(typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!);
           var arrayInit = new InitArrayNode(itemType, call);
           var body = new BodyNode([new ReturnNode(arrayInit)]);
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
           var result = method!.Invoke(instance, []);
           
@@ -194,7 +194,7 @@ public class InitArrayEmissionTests
      public static int GetLength() => 15;
 
      [Fact]
-     public async Task InitArrayWithArrayGetterLength_ReturnsCorrect()
+     public void InitArrayWithArrayGetterLength_ReturnsCorrect()
      {
           /*
            * fn mk_arr() []int {
@@ -229,7 +229,7 @@ public class InitArrayEmissionTests
                new ReturnNode(returnArrayInit)
           ]);
           
-          var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(int[]));
+          var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
           var result = method!.Invoke(instance, []);
           
