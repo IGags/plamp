@@ -22,15 +22,15 @@ public class DebugILGenerator : ILGenerator
         _inner = inner;
     }
     
-    public override void BeginCatchBlock(Type? exceptionType) => throw new NotImplementedException();
+    public override void BeginCatchBlock(Type? exceptionType) => _inner.BeginCatchBlock(exceptionType);
 
-    public override void BeginExceptFilterBlock() => throw new NotImplementedException();
+    public override void BeginExceptFilterBlock() => _inner.BeginExceptFilterBlock();
 
-    public override Label BeginExceptionBlock() => throw new NotImplementedException();
+    public override Label BeginExceptionBlock() => _inner.BeginExceptionBlock();
 
-    public override void BeginFaultBlock() => throw new NotImplementedException();
+    public override void BeginFaultBlock() => _inner.BeginFaultBlock();
 
-    public override void BeginFinallyBlock() => throw new NotImplementedException();
+    public override void BeginFinallyBlock() => _inner.BeginFinallyBlock();
 
     public override void BeginScope()
     {
@@ -214,7 +214,7 @@ public class DebugILGenerator : ILGenerator
         _inner.EmitCalli(opcode, unmanagedCallConv, returnType, parameterTypes);
     }
 
-    public override void EndExceptionBlock() => throw new NotImplementedException();
+    public override void EndExceptionBlock() => _inner.EndExceptionBlock();
 
     public override void EndScope()
     {
@@ -228,7 +228,7 @@ public class DebugILGenerator : ILGenerator
         _unwrittenLabels.Add($"lab_{_labels.IndexOf(loc)}:");
     }
 
-    public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
+    public override void UsingNamespace(string usingNamespace) => _inner.UsingNamespace(usingNamespace);
 
     public override int ILOffset => _inner.ILOffset;
 

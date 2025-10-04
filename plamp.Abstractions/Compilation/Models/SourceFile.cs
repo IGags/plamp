@@ -7,6 +7,7 @@ namespace plamp.Abstractions.Compilation.Models;
 /// </summary>
 /// <param name="FileName">Имя файла</param>
 /// <param name="SourceCode">Содержимое файла</param>
+//TODO: Бессмысленно находится в текущей сборке так как образ загрузки файла должен быть определён конкретной реализацией компилятора
 public record struct SourceFile(string FileName, string SourceCode)
 {
     private int? _stringHashCode;

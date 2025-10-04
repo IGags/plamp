@@ -11,7 +11,7 @@ namespace plamp.CodeEmission.Tests;
 public class ConditionTests
 {
     [Fact]
-    public async Task EmitIfCondition()
+    public void EmitIfCondition()
     {
         var arg = new TestParameter(typeof(int), "arg");
 
@@ -54,7 +54,7 @@ public class ConditionTests
         ]);
 
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+            EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(string));
         
         var res = methodInfo!.Invoke(instance, [5])!;
         Assert.Equal(lesser10, res);
@@ -63,11 +63,10 @@ public class ConditionTests
     }
 
     [Fact]
-    public async Task EmitIfElseCondition()
+    public void EmitIfElseCondition()
     {
         var arg = new TestParameter(typeof(int), "arg");
         
-        //TODO: phi-funcs need to be added in my cmp :^)
         var tempVarName = "temp";
         var tempVarName2 = "temp2";
         var tempVarName3 = "temp3";
@@ -130,7 +129,7 @@ public class ConditionTests
         ]);
 
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+            EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(string));
         var res = methodInfo!.Invoke(instance, [0])!;
         Assert.Equal(trueBranchVal, res);
         var res2 = methodInfo.Invoke(instance, [1])!;
@@ -138,7 +137,7 @@ public class ConditionTests
     }
 
     [Fact]
-    public async Task EmitIfElifCondition()
+    public void EmitIfElifCondition()
     {
         var arg = new TestParameter(typeof(int), "arg");
         
@@ -216,7 +215,7 @@ public class ConditionTests
         ]);
 
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+            EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(string));
         
         var res = methodInfo!.Invoke(instance, [8])!;
         Assert.Equal(ifClause, res);
@@ -227,7 +226,7 @@ public class ConditionTests
     }
 
     [Fact]
-    public async Task EmitIfManyElifElseClause()
+    public void EmitIfManyElifElseClause()
     {
         var arg = new TestParameter(typeof(int), "arg");
         
@@ -325,7 +324,7 @@ public class ConditionTests
         ]);
 
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+            EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(string));
         
         var res = methodInfo!.Invoke(instance, [8])!;
         Assert.Equal(ifClause, res);
@@ -338,7 +337,7 @@ public class ConditionTests
     }
 
     [Fact]
-    public async Task EmitReturnInBothClause()
+    public void EmitReturnInBothClause()
     {
         var arg = new TestParameter(typeof(int), "arg");
 
@@ -364,7 +363,7 @@ public class ConditionTests
                 ]))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(string));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(string));
         var res1 = method!.Invoke(instance, [-1]);
         Assert.Equal(subRes, res1);
         

@@ -3,7 +3,6 @@ using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 
@@ -68,7 +67,7 @@ public class ConstantEmissionTests
     //Bool
     [InlineData(true)]
     [InlineData(false)]
-    public async Task EmitConstantValid(object? constantValue, Type? constantType = null)
+    public void EmitConstantValid(object? constantValue, Type? constantType = null)
     {
         constantType ??= constantValue!.GetType();
         var tempVarName = "temp";
@@ -83,7 +82,7 @@ public class ConstantEmissionTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
-        var (instance, createdMethod) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], ast, constantType);
+        var (instance, createdMethod) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, constantType);
         var result = createdMethod!.Invoke(instance, []);
 
         if (constantValue == null)
@@ -107,11 +106,10 @@ public class ConstantEmissionTests
     [InlineData(null, typeof(ArgumentException), typeof(ushort))]
     [InlineData(null, typeof(ArgumentException), typeof(uint))]
     [InlineData(null, typeof(ArgumentException), typeof(ulong))]
-    public async Task EmitConstantInvalid(object? constantValue, Type exceptionType, Type? constantType = null)
+    public void EmitConstantInvalid(object? constantValue, Type exceptionType, Type? constantType = null)
     {
         constantType ??= constantValue?.GetType();
         const string methodName = "Test";
-        var emitter = new DefaultIlCodeEmitter();
         var (_, _, methodBuilder, _) 
             = EmissionSetupHelper.CreateMethodBuilder(methodName, constantType!, []);
         var tempVarName = "temp";
@@ -126,6 +124,6 @@ public class ConstantEmissionTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var context = new CompilerEmissionContext(ast, methodBuilder, [], null);
-        await Assert.ThrowsAsync(exceptionType, async () => await emitter.EmitMethodBodyAsync(context, CancellationToken.None));
+        Assert.Throws(exceptionType, () => IlCodeEmitter.EmitMethodBody(context));
     }
 }

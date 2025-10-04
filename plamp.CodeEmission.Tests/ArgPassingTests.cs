@@ -15,7 +15,7 @@ public class ArgPassingTests
 {
     [Theory]
     [MemberData(nameof(PassAndReturnArgDataProvider))]
-    public async Task PassAndReturnArg(object? value)
+    public void PassAndReturnArg(object? value)
     {
         var argType = value == null ? typeof(object) : value.GetType();
         var arg = new TestParameter(argType, "a");
@@ -24,7 +24,7 @@ public class ArgPassingTests
             new ReturnNode(new MemberNode("a"))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, argType);
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, argType);
         var res = method!.Invoke(instance, [value])!;
         Assert.Equal(value, res);
         if(value != null)
@@ -47,7 +47,7 @@ public class ArgPassingTests
     /// Прочитать аргументы и сложить их
     /// </summary>
     [Fact]
-    public async Task PassMultipleArgs()
+    public void PassMultipleArgs()
     {
         const int first = -1, second = 999;
         var argType = typeof(int);
@@ -76,7 +76,7 @@ public class ArgPassingTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var returnType = typeof(int);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([p1, p2], body, returnType);
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([p1, p2], body, returnType);
         var res = method!.Invoke(instance, [first, second])!;
         Assert.Equal(998, res);
         Assert.Equal(returnType, res.GetType());

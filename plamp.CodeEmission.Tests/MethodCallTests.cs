@@ -7,7 +7,6 @@ using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Abstractions.CompilerEmission;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 using Shouldly;
@@ -31,7 +30,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitActionCall()
+    public void EmitActionCall()
     {
         var method = typeof(CallbackClass).GetMethod(nameof(CallbackClass.TriggerCallback))!;
         var callbackArg = new TestParameter(typeof(CallbackClass), "callbackInstance");
@@ -45,7 +44,7 @@ public class MethodCallTests
             new ReturnNode(null)
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([callbackArg], body, typeof(void));
+            EmissionSetupHelper.CreateInstanceWithMethod([callbackArg], body, typeof(void));
         
         var callbackInstance = new CallbackClass();
         methodInfo!.Invoke(instance, [callbackInstance]);
@@ -64,7 +63,7 @@ public class MethodCallTests
     }
 
     [Fact]
-    public async Task EmitStaticActionCall()
+    public void EmitStaticActionCall()
     {
         var method = typeof(StaticCallbackClass).GetMethod(nameof(StaticCallbackClass.TriggerCallback))!;
         /*
@@ -77,7 +76,7 @@ public class MethodCallTests
             new ReturnNode(null)
         ]);
 
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(void));
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(void));
         StaticCallbackClass.Reset();
         methodInfo!.Invoke(instance, []);
         Assert.True(StaticCallbackClass.CallbackResult);
@@ -102,7 +101,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitActionCallWithArgs()
+    public void EmitActionCallWithArgs()
     {
         var instanceArg = new TestParameter(typeof(CallbackClassWithArg), "callbackInstance");
         var callback1Arg = new TestParameter(typeof(string), "callbackArg1");
@@ -127,7 +126,7 @@ public class MethodCallTests
             new ReturnNode(null)
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [instanceArg, callback1Arg, callback2Arg, callback3Arg], body, typeof(void));
 
         var callbackInstance = new CallbackClassWithArg();
@@ -167,7 +166,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitStaticActionCallWithArgs()
+    public void EmitStaticActionCallWithArgs()
     {
         var callback1Arg = new TestParameter(typeof(string), "callbackArg1");
         var callback2Arg = new TestParameter(typeof(int), "callbackArg2");
@@ -191,7 +190,7 @@ public class MethodCallTests
             new ReturnNode(null)
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [callback1Arg, callback2Arg, callback3Arg], 
                 body,
                 typeof(void));
@@ -215,7 +214,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitCallFunc()
+    public void EmitCallFunc()
     {
         var callbackArg = new TestParameter(typeof(CallbackFuncClass), "callbackInstance");
         var info = typeof(CallbackFuncClass).GetMethod(nameof(CallbackFuncClass.TriggerCallback))!;
@@ -234,7 +233,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([callbackArg], body, returnType);
+            EmissionSetupHelper.CreateInstanceWithMethod([callbackArg], body, returnType);
         
         var expectedValue = new object();
         var callbackInstance = new CallbackFuncClass
@@ -254,7 +253,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitCallStaticFunc()
+    public void EmitCallStaticFunc()
     {
         var info = typeof(StaticCallbackFuncClass).GetMethod(nameof(StaticCallbackFuncClass.TriggerCallback))!;
         /*
@@ -270,7 +269,7 @@ public class MethodCallTests
             new AssignNode(new MemberNode(tempVarName), EmissionSetupHelper.CreateCallNode(null, info, [])),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var (instance, methodInfo) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, retType);
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, retType);
         StaticCallbackFuncArgClass.Reset();
         var expectedValue = new object();
         StaticCallbackFuncClass.ReturnValue = expectedValue;
@@ -299,7 +298,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitCallFuncWithArgs()
+    public void EmitCallFuncWithArgs()
     {
         var instanceArg = new TestParameter(typeof(CallbackFuncArgClass), "callbackInstance");
         var callback1Arg = new TestParameter(typeof(string), "callbackArg1");
@@ -331,7 +330,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [instanceArg, callback1Arg, callback2Arg, callback3Arg], body, retType);
 
         var callbackInstance = new CallbackFuncArgClass();
@@ -376,7 +375,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitCallStaticFuncWithArgs()
+    public void EmitCallStaticFuncWithArgs()
     {
         var retType = typeof(KeyValuePair<char, char>);
         var callback1Arg = new TestParameter(typeof(string), "callbackArg1");
@@ -407,7 +406,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [callback1Arg, callback2Arg, callback3Arg], 
                 body,
                 retType);
@@ -439,7 +438,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task EmitStructActionCall()
+    public void EmitStructActionCall()
     {
         var retType = typeof(CallbackStruct);
         var method = typeof(CallbackStruct).GetMethod(nameof(CallbackStruct.TriggerCallback))!;
@@ -456,7 +455,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(callbackArg.Name))
         ]);
         var (instance, methodInfo) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([callbackArg], body, retType);
+            EmissionSetupHelper.CreateInstanceWithMethod([callbackArg], body, retType);
         
         var callbackInstance = new CallbackStruct();
         var res = (CallbackStruct)methodInfo!.Invoke(instance, [callbackInstance])!;
@@ -465,7 +464,7 @@ public class MethodCallTests
     
     //fib :^)
     [Fact]
-    public async Task EmitRecursiveCall()
+    public void EmitRecursiveCall()
     {
         const string methodName = "Fibonacci";
         var retType = typeof(int);
@@ -547,8 +546,7 @@ public class MethodCallTests
         ]);
         
         var context = new CompilerEmissionContext(body, methodBuilder, [arg], null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+        IlCodeEmitter.EmitMethodBody(context);
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
         
@@ -569,7 +567,7 @@ public class MethodCallTests
     }
 
     [Fact]
-    public async Task EmitCallOtherDynamicInSameType()
+    public void EmitCallOtherDynamicInSameType()
     {
         const string methodName = "Greet";
         var returnType = typeof(string);
@@ -636,9 +634,8 @@ public class MethodCallTests
         var otherContext = new CompilerEmissionContext(otherBody, otherDebugBuilder, [otherArg], null);
         var context = new CompilerEmissionContext(body, greetBuilder, [], null);
 
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(otherContext, CancellationToken.None);
-        await emitter.EmitMethodBodyAsync(context, CancellationToken.None);
+        IlCodeEmitter.EmitMethodBody(otherContext);
+        IlCodeEmitter.EmitMethodBody(context);
         var type = typeBuilder.CreateType();
 
         var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
@@ -665,7 +662,7 @@ public class MethodCallTests
     [Theory]
     [InlineData(typeof(LateBoundClass))]
     [InlineData(typeof(LateBoundStruct))]
-    public async Task EmitLateBoundCall(Type instanceType)
+    public void EmitLateBoundCall(Type instanceType)
     {
         var instanceArg = new TestParameter(typeof(ILateBound), "instance");
 
@@ -684,7 +681,7 @@ public class MethodCallTests
         ]);
 
         var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([instanceArg], body, typeof(int));
+            EmissionSetupHelper.CreateInstanceWithMethod([instanceArg], body, typeof(int));
         var argTypeInstance = Activator.CreateInstance(instanceType)!;
         var res = method!.Invoke(instance, [argTypeInstance]);
         var resShould = mth.Invoke(argTypeInstance, []);
@@ -692,7 +689,7 @@ public class MethodCallTests
     }
 
     [Fact]
-    public async Task EmitCyclicCallBetween2DynamicTypes()
+    public void EmitCyclicCallBetween2DynamicTypes()
     {
         const string firstName = "M1";
         var argType = typeof(string);
@@ -778,9 +775,8 @@ public class MethodCallTests
 
         var context1 = new CompilerEmissionContext(body, methodBuilder, [arg], null);
         var context2 = new CompilerEmissionContext(body2, method2Dbg, [arg], null);
-        var emitter = new DefaultIlCodeEmitter();
-        await emitter.EmitMethodBodyAsync(context1, CancellationToken.None);
-        await emitter.EmitMethodBodyAsync(context2, CancellationToken.None);
+        IlCodeEmitter.EmitMethodBody(context2);
+        IlCodeEmitter.EmitMethodBody(context1);
 
         var type1 = typeBuilder.CreateType();
         var type2 = typ2.CreateType();
@@ -800,7 +796,7 @@ public class MethodCallTests
     }
 
     [Fact]
-    public async Task CallWithArrayElementGetter_ReturnsCorrect()
+    public void CallWithArrayElementGetter_ReturnsCorrect()
     {
         /*
          * fn call_getter([]int a, int ix) int { return callback(a[ix]); }
@@ -816,7 +812,7 @@ public class MethodCallTests
         
         var body = new BodyNode([new ReturnNode(callNode)]);
         var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync(
+            EmissionSetupHelper.CreateInstanceWithMethod(
                 [arrayParam, indexerParam], 
                 body, 
                 typeof(int));
@@ -841,7 +837,7 @@ public class MethodCallTests
     }
     
     [Fact]
-    public async Task NonVoidCallWithoutAssign_ReturnsSuccess()
+    public void NonVoidCallWithoutAssign_ReturnsSuccess()
     {
         var call = new CallNode(new MemberNode("a"), new FuncCallNameNode(nameof(NonVoidCallback.CallbackWithResult)), []);
         call.SetInfo(typeof(NonVoidCallback).GetMethod(nameof(NonVoidCallback.CallbackWithResult))!);
@@ -851,7 +847,7 @@ public class MethodCallTests
            new ReturnNode(null)
         ]);
         var arg = new TestParameter(typeof(NonVoidCallback), "a");
-        var (typeBuilder, methodBuilder) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], ast, typeof(void));
+        var (typeBuilder, methodBuilder) = EmissionSetupHelper.CreateInstanceWithMethod([arg], ast, typeof(void));
         var argInst = new NonVoidCallback();
         Should.NotThrow(() => methodBuilder!.Invoke(typeBuilder, [argInst]));
         argInst.Called.ShouldBe(true);

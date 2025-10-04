@@ -14,7 +14,7 @@ namespace plamp.CodeEmission.Tests;
 public class LoopEmissionTests
 {
     [Fact]
-    public async Task EmitWhileLoop()
+    public void EmitWhileLoop()
     {
 
         /*
@@ -43,7 +43,7 @@ public class LoopEmissionTests
             new ReturnNode(new MemberNode(nameof(iter)))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(int));
         for (var i = 0; i < 10; i++)
         {
             var rnd = Random.Shared.Next(10000);
@@ -56,7 +56,7 @@ public class LoopEmissionTests
     }
 
     [Fact]
-    public async Task EmitEternalLoop()
+    public void EmitEternalLoop()
     {
         /*
          * while(!cancellation.IsCancellationRequested)
@@ -79,7 +79,7 @@ public class LoopEmissionTests
                 ])),
             new ReturnNode(null)
         ]);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg], body, typeof(void));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([arg], body, typeof(void));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         method!.Invoke(instance, [cts.Token]);
     }

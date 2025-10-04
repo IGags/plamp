@@ -60,7 +60,7 @@ public class CtorEmissionTests
     
     [Theory]
     [MemberData(nameof(EmptyCtorDataProvider))]
-    public async Task EmitCallClassCtor(Type objectType)
+    public void EmitCallClassCtor(Type objectType)
     {
         var ctorInfo = objectType.GetConstructor([])!;
         /*
@@ -78,7 +78,7 @@ public class CtorEmissionTests
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, objectType);
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, objectType);
         var res = method!.Invoke(instance, []);
         Assert.IsType(objectType, res);
     }
@@ -91,7 +91,7 @@ public class CtorEmissionTests
 
     [Theory]
     [MemberData(nameof(CtorWithArgDataProvider))]
-    public async Task EmitCallClassArgCtor(Type objectType)
+    public void EmitCallClassArgCtor(Type objectType)
     {
         var arg1 = new TestParameter(typeof(int), "arg1");
         var arg2 = new TestParameter(typeof(string), "arg2");
@@ -121,7 +121,7 @@ public class CtorEmissionTests
         ]);
 
         var (instance, method) =
-            await EmissionSetupHelper.CreateInstanceWithMethodAsync([arg1, arg2, arg3], body, objectType);
+            EmissionSetupHelper.CreateInstanceWithMethod([arg1, arg2, arg3], body, objectType);
         
         var arg1Val = 321;
         var arg2Val = "hiiii";

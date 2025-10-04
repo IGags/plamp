@@ -25,7 +25,7 @@ public class MathEmissionTests
      */
     [Theory]
     [MemberData(nameof(SimpleMathDataProvider))]
-    public async Task EmitSimpleMath(NodeBase[] definitions, NodeBase operatorAst, object resultShould, Type resultTypeShould)
+    public void EmitSimpleMath(NodeBase[] definitions, NodeBase operatorAst, object resultShould, Type resultTypeShould)
     {
         //Почти паскаль - переменные в начале :^)
         //Пока не оптимизируем il. Модули оптимизации - отдельная тема. Напишем их позже
@@ -49,7 +49,7 @@ public class MathEmissionTests
         };
         instructionList.InsertRange(0, definitions);
         var retAst = new BodyNode(instructionList);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], retAst, resultTypeShould);
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], retAst, resultTypeShould);
         var res = method!.Invoke(instance, [])!;
         var resType = res.GetType();
         Assert.Equal(resultTypeShould, resType);
@@ -184,7 +184,7 @@ public class MathEmissionTests
     
     [Theory]
     [MemberData(nameof(EmitIncrementDecrementDataProvider))]
-    public async Task EmitIncrementDecrement_Success(object inner, TypeNode variableType, Func<NodeBase, NodeBase> createFromInner, object innerShould, object resultShould)
+    public void EmitIncrementDecrement_Success(object inner, TypeNode variableType, Func<NodeBase, NodeBase> createFromInner, object innerShould, object resultShould)
     {
         var objParam = new TestParameter(typeof(CallbackClass), "obj");
         var toType = new TypeNode(new TypeNameNode(nameof(Object)));
@@ -207,7 +207,7 @@ public class MathEmissionTests
             new ReturnNode(null)
         ]);
         
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([objParam], body, typeof(void));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([objParam], body, typeof(void));
         var callbackClass = new CallbackClass();
         method!.Invoke(instance, [callbackClass]);
         callbackClass.InnerVar.ShouldBe(innerShould);
@@ -267,7 +267,7 @@ public class MathEmissionTests
     
     [Theory]
     [MemberData(nameof(MaxValueOverflowDataProvider))]
-    public async Task MaxValueOverflow_Success(object value, object one, Type actualType, object should)
+    public void MaxValueOverflow_Success(object value, object one, Type actualType, object should)
     {
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
         variableType.SetType(actualType);
@@ -282,7 +282,7 @@ public class MathEmissionTests
             new ReturnNode(castToObj)
         ]);
         
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(object));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(object));
         var res = method!.Invoke(instance, []);
         res.ShouldBe(should);
     }
@@ -302,7 +302,7 @@ public class MathEmissionTests
 
     [Theory]
     [MemberData(nameof(MaxValueUnderflowDataProvider))]
-    public async Task MinValueUnderflow_Success(object value, object one, Type actualType, object should)
+    public void MinValueUnderflow_Success(object value, object one, Type actualType, object should)
     {
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
         variableType.SetType(actualType);
@@ -317,7 +317,7 @@ public class MathEmissionTests
             new ReturnNode(castToObj)
         ]);
         
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], body, typeof(object));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(object));
         var res = method!.Invoke(instance, []);
         res.ShouldBe(should);
     }
@@ -336,13 +336,13 @@ public class MathEmissionTests
     }
 
     [Fact]
-    public async Task ZeroDivision_ThrowsRuntimeException()
+    public void ZeroDivision_ThrowsRuntimeException()
     {
         var ast = new BodyNode(
         [
             new ReturnNode(new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int))))
         ]);
-        var (instance, method) = await EmissionSetupHelper.CreateInstanceWithMethodAsync([], ast, typeof(int));
+        var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(int));
         Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();
     }
     

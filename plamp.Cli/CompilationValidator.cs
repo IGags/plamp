@@ -2,7 +2,6 @@
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
-using plamp.Abstractions.CompilerEmission;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
@@ -14,13 +13,12 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
     protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
         var builder = context.Methods.Single(x => x.Name == node.FuncName.Value);
-        var emitter = new DefaultIlCodeEmitter();
         var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
             context.FuncParams[node.FuncName.Value], context.SymbolTable);
-        emitter.EmitMethodBodyAsync(emissionContext).Wait();
+        IlCodeEmitter.EmitMethodBody(emissionContext);
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
     }
