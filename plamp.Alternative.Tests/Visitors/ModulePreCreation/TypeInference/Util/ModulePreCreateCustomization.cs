@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using AutoFixture;
 using AutoFixture.Kernel;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -15,14 +13,14 @@ public class ModulePreCreateCustomization : ISpecimenBuilder
     {
         if (request is not Type type || type != typeof(PreCreationContext)) return new NoSpecimen();
         var symbolTableMock = new Mock<ISymbolTable>();
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         symbolTableMock.Setup(x =>
-            x.AddSymbol(It.IsAny<NodeBase>(), It.IsAny<FilePosition>(), It.IsAny<FilePosition>()));
+            x.AddSymbol(It.IsAny<NodeBase>(), It.IsAny<FilePosition>()));
         symbolTableMock.Setup(x =>
-                x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>(), It.IsAny<string>()))
-            .Returns((Func<NodeBase, PlampExceptionRecord, string, PlampException>)((_, rec, fn) => new PlampException(rec, new(), new(), fn)));
+                x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+            .Returns((Func<NodeBase, PlampExceptionRecord, PlampException>)((_, rec) => new PlampException(rec, new())));
         
-        return new PreCreationContext(context.Create<string>(), symbolTableMock.Object);
+        return new PreCreationContext(symbolTableMock.Object);
     }
 }

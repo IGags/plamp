@@ -23,7 +23,7 @@ public class VoidFunctionImplicitReturnTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new ImplicitReturnInVoidFuncWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
         expression.ShouldBeOfType<FuncNode>()
@@ -44,7 +44,7 @@ public class VoidFunctionImplicitReturnTests
         type.SetType(typeof(void));
         expression = new FuncNode(type, fn.FuncName, fn.ParameterList, fn.Body);
         var visitor = new ImplicitReturnInVoidFuncWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
         expression.ShouldBeOfType<FuncNode>()
@@ -61,7 +61,7 @@ public class VoidFunctionImplicitReturnTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new ImplicitReturnInVoidFuncWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
         expression.ShouldBeOfType<FuncNode>()
@@ -78,7 +78,7 @@ public class VoidFunctionImplicitReturnTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new ImplicitReturnInVoidFuncWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
         expression.ShouldBeOfType<FuncNode>()

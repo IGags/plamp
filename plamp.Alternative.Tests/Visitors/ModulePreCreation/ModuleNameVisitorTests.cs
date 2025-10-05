@@ -9,7 +9,6 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 
 public class ModuleNameVisitorTests
 {
-    private const string FileName = "program.plp";
     
     [Fact]
     public void ModuleExistsInTree_ReturnsNoException()
@@ -17,10 +16,10 @@ public class ModuleNameVisitorTests
         var symbols = new SymbolTable();
         var moduleName = "aaa";
         var module = new ModuleDefinitionNode(moduleName);
-        symbols.AddSymbol(module, new FilePosition(1, 0), new FilePosition(1, 2));
+        symbols.AddSymbol(module, new FilePosition(0, 3, ""));
         var tree = new RootNode([], module, []);
-        symbols.AddSymbol(tree, new FilePosition(-1, -1), new FilePosition(-1, -1));
-        var context = new PreCreationContext(FileName, symbols);
+        symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
+        var context = new PreCreationContext(symbols);
         var visitor = new ModuleNameValidator();
         var resultContext = visitor.Validate(tree, context);
         Assert.Empty(context.Exceptions);
@@ -32,9 +31,9 @@ public class ModuleNameVisitorTests
     {
         var symbols = new SymbolTable();
         var tree = new RootNode([], null, []);
-        symbols.AddSymbol(tree, new FilePosition(-1, -1), new FilePosition(-1, -1));
+        symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
         var visitor = new ModuleNameValidator();
-        var context = new PreCreationContext(FileName, symbols);
+        var context = new PreCreationContext(symbols);
         var resultContext = visitor.Validate(tree, context);
         Assert.Single(context.Exceptions);
         Assert.Null(resultContext.ModuleName);

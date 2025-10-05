@@ -22,7 +22,7 @@ public class MethodAlwaysReturnsValueTests
     {
         var defNode = CreateMethod(returnType, methodName, [], body);
         var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext("aaa", new MockSymbolTable());
+        var context = new PreCreationContext(new MockSymbolTable());
         
         var res = validator.Validate(defNode, context);
         
@@ -146,7 +146,7 @@ public class MethodAlwaysReturnsValueTests
             ]);
         
         var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext("aaa", new MockSymbolTable());
+        var context = new PreCreationContext(new MockSymbolTable());
         
         var res = validator.Validate(node, context);
         Assert.Equal(2, res.Exceptions.Count);
@@ -172,22 +172,17 @@ public class MethodAlwaysReturnsValueTests
 
     private class MockSymbolTable : ISymbolTable
     {
-        public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord, string fileName)
+        public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord)
         {
-            return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName) : throw new ArgumentException();
+            return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1, "aaa")) : throw new ArgumentException();
         }
 
-        public PlampException SetExceptionToNodeRange(List<NodeBase> nodes, PlampExceptionRecord exceptionRecord, string fileName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool TryGetSymbol(NodeBase symbol, out KeyValuePair<FilePosition, FilePosition> pair)
+        public bool TryGetSymbol(NodeBase symbol, out FilePosition position)
         {
             throw new NotImplementedException();
         }
 
-        public void AddSymbol(NodeBase symbol, FilePosition start, FilePosition end)
+        public void AddSymbol(NodeBase symbol, FilePosition position)
         {
             throw new NotImplementedException();
         }

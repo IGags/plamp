@@ -33,9 +33,41 @@ public class TokenSequence : IEnumerable<TokenBase>
         }
     }
     
-    public FilePosition CurrentStart => Current().Start;
+    public FilePosition CurrentPosition => Current().Position;
+    
+    public FilePosition MakeRangeFromPrevNonWhitespace(TokenBase to)
+    {
+        if (Current().Position.FileName != to.Position.FileName) throw new InvalidOperationException("File of target position is differ");
+        if (to is WhiteSpace) throw new InvalidOperationException("Cannot make range to whitespace");
+        if (_position == 0) throw new InvalidOperationException("Cannot make range from first token");
+        
+        var prev = default(FilePosition);
+        var i = _position - 1;
+        for (; i >= 0; i--)
+        {
+            if (_tokenList[i] is WhiteSpace) continue;
+            prev = _tokenList[i].Position;
+            break;
+        }
 
-    public FilePosition CurrentEnd => Current().End;
+        if (prev == default) throw new InvalidOperationException("Token not found in sequence");
+
+        if (prev.CompareTo(to.Position) == 0)
+        {
+            if (_tokenList[i] != to) throw new InvalidOperationException("Token not found in sequence");
+            return prev;
+        }
+        var characterLen = 0;
+        if (prev.CompareTo(to.Position) != 1) throw new InvalidOperationException("Cannot make range to token that after current");
+        
+        for (; i >= 0; i--)
+        {
+            var token = _tokenList[i];
+            characterLen += token.Position.CharacterLength;
+            if (token == to) return token.Position with { CharacterLength = characterLen };
+        }
+        throw new InvalidOperationException("Token not found in sequence");
+    }
 
     public TokenSequence Fork() => new(_tokenList) { _position = _position };
 

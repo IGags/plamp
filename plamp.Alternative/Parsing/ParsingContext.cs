@@ -6,7 +6,6 @@ namespace plamp.Alternative.Parsing;
 
 public record ParsingContext(
     TokenSequence Sequence,
-    string FileName,
     List<PlampException> Exceptions,
     SymbolTable SymbolTable)
 {

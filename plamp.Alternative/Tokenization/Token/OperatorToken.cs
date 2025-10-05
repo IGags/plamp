@@ -3,13 +3,7 @@ using plamp.Alternative.Tokenization.Enums;
 
 namespace plamp.Alternative.Tokenization.Token;
 
-public class OperatorToken : TokenBase
+public class OperatorToken(string stringRepresentation, FilePosition position, OperatorEnum @operator) : TokenBase(position, stringRepresentation)
 {
-    public OperatorEnum Operator { get; }
-    
-    public OperatorToken(string stringRepresentation, FilePosition start, FilePosition end, OperatorEnum @operator) 
-        : base(start, end, stringRepresentation)
-    {
-        Operator = @operator;
-    }
+    public OperatorEnum Operator { get; } = @operator;
 }

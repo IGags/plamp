@@ -58,7 +58,7 @@ public abstract class BaseValidator<TOuterContext, TInnerContext>
     /// <param name="context">Контекст обхода.</param>
     protected void SetExceptionToSymbol(NodeBase node, PlampExceptionRecord record, TInnerContext context)
     {
-        var exception = context.SymbolTable.SetExceptionToNode(node, record, context.FileName);
+        var exception = context.SymbolTable.SetExceptionToNode(node, record);
         context.Exceptions.Add(exception);
     }
 }

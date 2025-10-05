@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Compilation.Models;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
@@ -14,11 +16,14 @@ namespace plamp.Alternative.Tests.Tokenization;
 
 public class TokenizerTests
 {
+    private const int Utf16ByteCharacterByteCount = 2;
+    
     [Theory, AutoData]
-    public void TestEmptyString(string fileName)
+    public async Task TestEmptyString(string fileName)
     {
-        var src = new SourceFile(fileName, "");
-        var result = Tokenizer.Tokenize(src);
+        using var stream = new MemoryStream([]);
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, fileName);
         Assert.Single(result.Sequence);
         Assert.Equal(typeof(EndOfFile), result.Sequence.First().GetType());
     }
@@ -27,7 +32,6 @@ public class TokenizerTests
     {
         yield return [";", typeof(EndOfStatement)];
         yield return [" ", typeof(WhiteSpace), new Predicate<TokenBase>(t => ((WhiteSpace)t).Kind == WhiteSpaceKind.WhiteSpace)];
-        yield return ["\r", typeof(WhiteSpace), new Predicate<TokenBase>(t => ((WhiteSpace)t).Kind == WhiteSpaceKind.WhiteSpace)];
         yield return ["abc", typeof(Word)];
         yield return ["a1", typeof(Word)];
         yield return ["A", typeof(Word)];
@@ -160,62 +164,63 @@ public class TokenizerTests
     
     [Theory]
     [MemberData(nameof(SingleToken_Correct_DataProvider))]
-    public void SingleToken_Correct<T>(string code, Type tokenType, Predicate<TokenBase>? condition = null)
+    public async Task SingleToken_Correct<T>(string code, Type tokenType, Predicate<TokenBase>? condition = null)
     {
         var fileName = new Fixture().Create<string>();
-        var src = new SourceFile(fileName, code);
-        var result = Tokenizer.Tokenize(src);
-        Assert.Equal(2, result.Sequence.Count());
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, fileName);
+        Assert.Equal(3, result.Sequence.Count());
         Assert.IsType(tokenType, result.Sequence.First());
         Assert.Empty(result.Exceptions);
         if (condition != null)
         {
             Assert.True(condition(result.Sequence.First()));
         }
-        Assert.Equal(0, result.Sequence.First().Start.Column);
-        Assert.Equal(code.Length - 1, result.Sequence.First().End.Column);
+        Assert.Equal(0, result.Sequence.First().Position.ByteOffset);
+        Assert.Equal(code.Length, result.Sequence.First().Position.CharacterLength);
     }
 
     private const string FileName = "example.plp";
     
     public static IEnumerable<object[]> Tokenization_ReturnsError_DataProvider()
     {
-        yield return ["\"", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0), FileName)}];
-        yield return ["\"\n", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 0), FileName)}];
-        yield return ["\"\r\n", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 1), FileName)}];
-        yield return ["\"\\x\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2), FileName)}];
-        yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), FileName)}];
-        yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 0), new FilePosition(0, 3), FileName)}];
-        yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 0), new FilePosition(0, 3), FileName)}];
+        yield return ["\"", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
+        yield return ["\"\n", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
+        yield return ["\"\r", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
+        yield return ["\"\\x\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
+        yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName))}];
+        yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
+        yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
-            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 1), new FilePosition(0, 2), FileName),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 0), new FilePosition(0, 2), FileName)
+            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))
         }];
         yield return ["@\"", new List<PlampException>
         {
-            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), FileName),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 1), FileName)
+            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, 1, FileName))
         }];
         yield return ["@\"\\x", new List<PlampException>
         {
-            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 0), new FilePosition(0, 0), FileName),
-            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(0, 2), new FilePosition(0, 3), FileName),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1), new FilePosition(0, 3), FileName)
+            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName)),
+            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount * 2, 2, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, 3, FileName))
         }];
     }
     
     [Theory]
     [MemberData(nameof(Tokenization_ReturnsError_DataProvider))]
-    public void Tokenization_ReturnsError(string code, List<PlampException> expectedExceptions)
+    public async Task Tokenization_ReturnsError(string code, List<PlampException> expectedExceptions)
     {
-        var src = new SourceFile(FileName, code);
-        var result = Tokenizer.Tokenize(src);
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
         Assert.Equal(expectedExceptions.Count, result.Exceptions.Count);
         foreach (var exception in expectedExceptions.Zip(result.Exceptions))
         {
-            Assert.Equal(exception.First.StartPosition, exception.Second.StartPosition);
-            Assert.Equal(exception.First.EndPosition, exception.Second.EndPosition);
+            Assert.Equal(exception.First.FilePosition, exception.Second.FilePosition);
             Assert.Equal(exception.First.Message, exception.Second.Message);
             Assert.Equal(exception.First.Code, exception.Second.Code);
             Assert.Equal(exception.First.Level, exception.Second.Level);

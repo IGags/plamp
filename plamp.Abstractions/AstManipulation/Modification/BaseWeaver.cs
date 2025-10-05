@@ -70,13 +70,13 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     protected virtual void Replace(NodeBase from, NodeBase to, TInnerContext context)
     {
         if(from.GetType() == typeof(RootNode)) throw new ArgumentException("Cannot replace root node, check visitor code");
-        if (!context.SymbolTable.TryGetSymbol(from, out var pair))
+        if (!context.SymbolTable.TryGetSymbol(from, out var position))
         {
             throw new ArgumentException("Symbol does not exists in table, please check parser and tree construction logic");
         }
         
         //Immediate symbol addition may create a memory leak, possible need create another variation of symbol table with unused nodes cleanup 
-        context.SymbolTable.AddSymbol(to, pair.Key, pair.Value);
+        context.SymbolTable.AddSymbol(to, position);
         ReplacementDict.Add(from, to);
     }
 
@@ -88,7 +88,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     /// <param name="context">Контекст обхода.</param>
     protected void SetExceptionToSymbol(NodeBase node, PlampExceptionRecord record, TInnerContext context)
     {
-        var exception = context.SymbolTable.SetExceptionToNode(node, record, context.FileName);
+        var exception = context.SymbolTable.SetExceptionToNode(node, record);
         context.Exceptions.Add(exception);
     }
 

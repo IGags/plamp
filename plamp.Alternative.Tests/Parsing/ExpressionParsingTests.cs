@@ -16,6 +16,8 @@ namespace plamp.Alternative.Tests.Parsing;
 
 public class ExpressionParsingTests
 {
+    private const int Utf16CharacterByteCount = 2;
+    
     public static IEnumerable<object[]> ParseSimpleNud_DataProvider()
     {
         yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, typeof(int)))];
@@ -50,10 +52,7 @@ public class ExpressionParsingTests
         [
             "(true", new List<PlampException>
             {
-                new(
-                    PlampExceptionInfo.ExpectedCloseParen(),
-                    new FilePosition(0, 5), new FilePosition(0, 5),
-                    "any.plp")
+                new(PlampExceptionInfo.ExpectedCloseParen(), new FilePosition(0, 5, "any.plp"))
             },
             true
         ];
@@ -74,7 +73,7 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.EndPosition, x.Level, x.StartPosition }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
         }
     }
 
@@ -103,10 +102,7 @@ public class ExpressionParsingTests
         [
             "a[1", new List<PlampException>
             {
-                new(
-                    PlampExceptionInfo.IndexerIsNotClosed(),
-                    new FilePosition(0, 3), new FilePosition(0, 3),
-                    "any.plp")
+                new(PlampExceptionInfo.IndexerIsNotClosed(), new FilePosition(Utf16CharacterByteCount, 2, ""))
             },
             true
         ];
@@ -126,7 +122,7 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.EndPosition, x.Level, x.StartPosition }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
         }
     }
 

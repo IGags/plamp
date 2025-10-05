@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AutoFixture.Xunit2;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -17,9 +16,9 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 public class FuncSignatureInferenceVisitorTests
 {
     [Theory, AutoData]
-    public void EmptyRoot_NoExceptionNoSignatures([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void EmptyRoot_NoExceptionNoSignatures([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var root = new RootNode([], null, []);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(root, context);
@@ -28,9 +27,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void VoidDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         var ast = new RootNode(
@@ -42,7 +41,7 @@ public class FuncSignatureInferenceVisitorTests
                     new BodyNode([]))
             ]);
 
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
         
@@ -56,9 +55,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void IntDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void IntDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         var ast = new RootNode(
@@ -70,7 +69,7 @@ public class FuncSignatureInferenceVisitorTests
                     new FuncNameNode(funcName), [], 
                     new BodyNode([]))
             ]);
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
         
@@ -84,9 +83,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionOneArg_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void VoidDefinitionOneArg_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         var ast = new RootNode(
@@ -102,7 +101,7 @@ public class FuncSignatureInferenceVisitorTests
                     new BodyNode([]))
             ]);
         
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
         
@@ -119,9 +118,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionManyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void VoidDefinitionManyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         var ast = new RootNode(
@@ -138,7 +137,7 @@ public class FuncSignatureInferenceVisitorTests
                     new BodyNode([]))
             ]);
         
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
 
@@ -160,9 +159,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void ManyDefinitionsDifferentNames_ReturnManySignatures([Frozen]Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void ManyDefinitionsDifferentNames_ReturnManySignatures([Frozen]Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         const string funcName2 = "fn2";
@@ -175,7 +174,7 @@ public class FuncSignatureInferenceVisitorTests
                 new FuncNode(null, new FuncNameNode(funcName2), [], new BodyNode([]))
             ]);
         
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
 
@@ -200,9 +199,9 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void ManyDefinitionsSameNames_ReturnEmptySignatures([Frozen] Mock<ISymbolTable> symbolTableMock, string fileName)
+    public void ManyDefinitionsSameNames_ReturnEmptySignatures([Frozen] Mock<ISymbolTable> symbolTableMock)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         const string funcName = "fn1";
         
@@ -214,7 +213,7 @@ public class FuncSignatureInferenceVisitorTests
                 new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([]))
             ]);
         
-        var context = new PreCreationContext(fileName, symbolTableMock.Object);
+        var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(

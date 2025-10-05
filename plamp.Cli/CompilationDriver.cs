@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Compilation.Models;
 using plamp.Alternative;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.Tokenization;
@@ -17,17 +17,17 @@ using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 namespace plamp.Cli;
 
-public class CompilationDriver
+public static class CompilationDriver
 {
-    public static CompilationRes CompileModule(string fileName, string programText)
+    public static async Task<CompilationRes> CompileModuleAsync(string fileName, string programText)
     {
-        var source = new SourceFile(fileName, programText);
-        var tokenizationResult = Tokenizer.Tokenize(source);
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(programText));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var tokenizationResult = await Tokenizer.TokenizeAsync(reader, fileName);
         var symbolTable = new SymbolTable();
-        var parsingContext = new ParsingContext(tokenizationResult.Sequence, fileName, tokenizationResult.Exceptions,
-            symbolTable);
+        var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, symbolTable);
         var ast = Parser.ParseFile(parsingContext);
-        var context = new PreCreationContext(fileName, symbolTable);
+        var context = new PreCreationContext(symbolTable);
         context.Exceptions.AddRange(parsingContext.Exceptions);
         var moduleNameVisitor = new ModuleNameValidator();
         context = moduleNameVisitor.Validate(ast, context);

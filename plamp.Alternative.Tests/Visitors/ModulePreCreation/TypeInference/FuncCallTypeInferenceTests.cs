@@ -23,7 +23,9 @@ public class FuncCallTypeInferenceTests
 {
     //Inference call not all required args
     [Theory, AutoData]
-    public void CallVoid_ReturnsCorrect([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CallVoid_ReturnsCorrect(
+        [Frozen]Mock<ISymbolTable> symbolTable,
+        TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -37,11 +39,12 @@ public class FuncCallTypeInferenceTests
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor, funcDict);
     }
 
     [Theory, AutoData]
-    public void CallRetType_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
+    public void CallRetType_ReturnsCorrect(
+        [Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -56,11 +59,11 @@ public class FuncCallTypeInferenceTests
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor, funcDict);
     }
 
     [Theory, AutoData]
-    public void CallWithArgs_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CallWithArgs_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -85,11 +88,11 @@ public class FuncCallTypeInferenceTests
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor, funcDict);
     }
 
     [Theory, AutoData]
-    public void AssignCallVoid_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void AssignCallVoid_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -104,8 +107,8 @@ public class FuncCallTypeInferenceTests
             ["a"] = def
         };
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         foreach (var kvp in funcDict)
         {
             context.Functions.Add(kvp.Key, kvp.Value);
@@ -118,7 +121,7 @@ public class FuncCallTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CallNotFullArgs_ReturnException([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
+    public void CallNotFullArgs_ReturnException([Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -145,8 +148,8 @@ public class FuncCallTypeInferenceTests
             ["a"] = def
         };
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         foreach (var kvp in funcDict)
         {
             context.Functions.Add(kvp.Key, kvp.Value);
@@ -168,7 +171,7 @@ public class FuncCallTypeInferenceTests
         var result = Parser.TryParseStatement(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
 
         var retType = new TypeNode(new TypeNameNode("void"));
         retType.SetType(typeof(void));
@@ -196,7 +199,7 @@ public class FuncCallTypeInferenceTests
         var result = Parser.TryParseStatement(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
 
         var retType = new TypeNode(new TypeNameNode("void"));
         retType.SetType(typeof(void));
@@ -215,24 +218,23 @@ public class FuncCallTypeInferenceTests
         weaveResult.Exceptions.ShouldBeEmpty();
     }
     
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable, string fileName)
+    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>(), fileName))
-            .Returns<NodeBase, PlampExceptionRecord, string>((_, b, c) => new PlampException(b, default, default, c));
+        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+            .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
     }
     
     private void SetupMocksAndAssertCorrect(
         NodeBase ast, 
         Mock<ISymbolTable> symbolTable, 
-        string fileName, 
         TypeInferenceWeaver visitor, 
         Dictionary<string, FuncNode> funcs)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        var context = new PreCreationContext(symbolTable.Object);
         foreach (var kvp in funcs)
         {
             context.Functions.Add(kvp.Key, kvp.Value);

@@ -46,10 +46,9 @@ fn binary_search([]int array, int num) int {
 fn aaa(string str) { print(str); }
 """;
     
-    public static void Main()
+    public static async Task Main()
     {
-        var rows = File.Split('\n');
-        var res = CompilationDriver.CompileModule("aaa.plp", File);
+        var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File);
         if (res.Exceptions.Count > 0)
         {
             PrintRes(res.Exceptions);
@@ -62,9 +61,10 @@ fn aaa(string str) { print(str); }
         {
             foreach (var ex in exList)
             {
-                var row = rows[ex.StartPosition.Row];
-                var str = $"@@ {ex.StartPosition.Row}, {ex.StartPosition.Column} @@ {ex.Message}" + '\n' + row + '\n';
-                str += new string(' ', ex.StartPosition.Column) + $"^\n@@ {ex.EndPosition.Row}, {ex.EndPosition.Column} @@ {ex.FileName}\n===================================";
+                var start = (int)ex.FilePosition.ByteOffset / 2;
+                
+                var row = File[start..ex.FilePosition.CharacterLength];
+                var str = $"{ex.Message}" + '\n' + row + new string('\n', 3);
                 Console.WriteLine(str);
             }
         }

@@ -77,7 +77,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         resContext.Exceptions.ShouldBeEmpty();
         expression.ShouldBeEquivalentTo(astShould);
@@ -92,7 +92,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);
@@ -107,7 +107,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);

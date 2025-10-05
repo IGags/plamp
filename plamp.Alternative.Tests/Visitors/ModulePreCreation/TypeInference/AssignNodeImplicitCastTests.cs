@@ -23,7 +23,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseStatement(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<AssignNode>()
             .Right.ShouldBeOfType<CastNode>()
@@ -47,7 +47,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<BodyNode>()
             .ShouldSatisfyAllConditions(
@@ -70,7 +70,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseStatement(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }
@@ -89,7 +89,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }

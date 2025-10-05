@@ -19,6 +19,7 @@ using plamp.Alternative.Tokenization.Token;
 
 namespace plamp.Alternative.Parsing;
 
+//TODO: Символы в файле поедут, нужно сделать правильные методы в TokenSequence.
 public static class Parser
 {
     public static RootNode ParseFile(ParsingContext context)
@@ -44,14 +45,14 @@ public static class Parser
             var record = PlampExceptionInfo.DuplicateModuleDefinition();
             foreach (var module in modules)
             {
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(module, record, context.FileName));
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(module, record));
             }
 
             modules = null;
         }
         var moduleDef = modules?.FirstOrDefault();
         var node = new RootNode(imports, moduleDef, functions);
-        context.SymbolTable.AddSymbol(node, default, default);
+        context.SymbolTable.AddSymbol(node, default);
         return node;
     }
 
@@ -97,16 +98,14 @@ public static class Parser
         
         if (context.Sequence.Current() is OpenCurlyBracket)
         {
-            var importStart = context.Sequence.CurrentStart;
             if(!GetImportItems(context, out var list)) return false;
-            var importEnd = context.Sequence.CurrentStart;
             importNode = new ImportNode(moduleName, list);
-            context.SymbolTable.AddSymbol(importNode, importStart, importEnd);
+            context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
             return true;
         }
         
         importNode = new ImportNode(moduleName, null);
-        context.SymbolTable.AddSymbol(importNode, importKeyword.Start, importKeyword.End);
+        context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
         ConsumeEndOfStatement(context);
         return true;
     }
@@ -117,7 +116,7 @@ public static class Parser
         {
             var record = PlampExceptionInfo.ExpectedModuleName();
             var current = context.Sequence.Current();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return null;
         }
         var name = modName.GetStringRepresentation();
@@ -134,8 +133,7 @@ public static class Parser
             else
             {
                 var record = PlampExceptionInfo.ExpectedSubmoduleName();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentStart, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 break;
             }
         }
@@ -149,8 +147,6 @@ public static class Parser
     {
         importItem = null;
         if (context.Sequence.Current() is not Word word) return false;
-        var importStart = context.Sequence.CurrentStart;
-        var importEnd = context.Sequence.CurrentEnd;
         var itemName = word.GetStringRepresentation();
         context.Sequence.MoveNextNonWhiteSpace();
         if (context.Sequence.Current() is KeywordToken { Keyword: Keywords.As })
@@ -159,20 +155,20 @@ public static class Parser
             if (context.Sequence.Current() is not Word alias)
             {
                 var record = PlampExceptionInfo.AliasExpected();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
-            importEnd = context.Sequence.CurrentEnd;
-            context.Sequence.MoveNextNonWhiteSpace();
+            
             importItem = new ImportItemNode(itemName, alias.GetStringRepresentation());
+            context.Sequence.MoveNextNonWhiteSpace();
+            context.SymbolTable.AddSymbol(importItem, context.Sequence.MakeRangeFromPrevNonWhitespace(word));
         }
         else
         {
             importItem = new ImportItemNode(itemName, itemName);
+            context.SymbolTable.AddSymbol(importItem, word.Position);
         }
         
-        context.SymbolTable.AddSymbol(importItem, importStart, importEnd);
         return true;
     }
 
@@ -213,8 +209,7 @@ public static class Parser
         }
 
         var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd,
-            context.FileName));
+        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
 
         return true;
     }
@@ -229,15 +224,14 @@ public static class Parser
     {
         module = null;
         if(context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Module }) return false;
-        var defStart = context.Sequence.CurrentStart;
+        var defStart = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         var moduleName = GetModuleNameOrDefault(context);
         if (moduleName == null) return false;
         module = new ModuleDefinitionNode(moduleName);
         
-        var defEnd = context.Sequence.CurrentEnd;
+        context.SymbolTable.AddSymbol(module, context.Sequence.MakeRangeFromPrevNonWhitespace(defStart));
         ConsumeEndOfStatement(context);
-        context.SymbolTable.AddSymbol(module, defStart, defEnd);
         return true;
     }
 
@@ -264,7 +258,7 @@ public static class Parser
         {
             var current = context.Sequence.Current();
             var record = PlampExceptionInfo.ExpectedFuncName();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
 
@@ -277,14 +271,14 @@ public static class Parser
         {
             var current = context.Sequence.Current();
             var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
         
         var funcNameNode = new FuncNameNode(name);
-        context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
+        context.SymbolTable.AddSymbol(funcNameNode, funcName.Position);
         func = new FuncNode(type, funcNameNode, list, body);
-        context.SymbolTable.AddSymbol(func, fnToken.Start, fnToken.End);
+        context.SymbolTable.AddSymbol(func, fnToken.Position);
         return true;
     }
 
@@ -297,7 +291,7 @@ public static class Parser
         {
             var current = context.Sequence.Current();
             var record = PlampExceptionInfo.ExpectedOpenParen();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
         context.Sequence.MoveNextNonWhiteSpace();
@@ -313,8 +307,7 @@ public static class Parser
         if (!TryParseArg(context, out var arg))
         {
             var record = PlampExceptionInfo.ExpectedArgDefinition();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
         parameterList = [arg];
@@ -331,8 +324,7 @@ public static class Parser
             else
             {
                 var record = PlampExceptionInfo.ExpectedArgDefinition();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
         }
@@ -340,8 +332,7 @@ public static class Parser
         if (context.Sequence.Current() is not CloseParen)
         {
             var record = PlampExceptionInfo.ExpectedCloseParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
         }
         else
         {
@@ -356,7 +347,7 @@ public static class Parser
         [NotNullWhen(true)]out ParameterNode? arg)
     {
         arg = null;
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         
         var typFork = context.Fork();
         if(!TryParseType(typFork, out var type)) return false;
@@ -365,18 +356,16 @@ public static class Parser
         if (context.Sequence.Current() is not Word argName)
         {
             var record = PlampExceptionInfo.ExpectedArgName();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             arg = null;
             return false;
         }
 
-        var end = context.Sequence.CurrentEnd;
         var argNameNode = new ParameterNameNode(argName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(argNameNode, argName.Start, argName.End);
+        context.SymbolTable.AddSymbol(argNameNode, context.Sequence.CurrentPosition);
         arg = new ParameterNode(type, argNameNode);
-        context.SymbolTable.AddSymbol(arg, start, end);
         context.Sequence.MoveNextNonWhiteSpace();
+        context.SymbolTable.AddSymbol(arg, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
 
@@ -395,7 +384,7 @@ public static class Parser
         if (!TryParseConditionPredicate(context, out var predicate)) return false;
         if (!TryParseBody(context, out var body)) return false;
         loop = new WhileNode(predicate, body);
-        context.SymbolTable.AddSymbol(loop, loopToken.Start, loopToken.End);
+        context.SymbolTable.AddSymbol(loop, loopToken.Position);
         return true;
     }
 
@@ -418,14 +407,14 @@ public static class Parser
         if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Else })
         {
             condition = new ConditionNode(expression, body, null);
-            context.SymbolTable.AddSymbol(condition, conditionToken.Start, conditionToken.End);
+            context.SymbolTable.AddSymbol(condition, conditionToken.Position);
             return true;
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseBody(context, out var elseBody)) return false;
         condition = new ConditionNode(expression, body, elseBody);
-        context.SymbolTable.AddSymbol(condition, conditionToken.Start, conditionToken.End);
+        context.SymbolTable.AddSymbol(condition, conditionToken.Position);
         return true;
     }
 
@@ -437,7 +426,7 @@ public static class Parser
         if (context.Sequence.Current() is not OpenParen)
         {
             var record = PlampExceptionInfo.ExpectedOpenParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
 
@@ -446,14 +435,14 @@ public static class Parser
         {
             var record = PlampExceptionInfo.ExpectedExpression();
             var current = context.Sequence.Current();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
 
         if (context.Sequence.Current() is not CloseParen)
         {
             var record = PlampExceptionInfo.ExpectedCloseParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
         }
         else
         {
@@ -473,15 +462,14 @@ public static class Parser
     {
         body = null;
         
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
             var expressions = new List<NodeBase>();
             if (TryParseStatement(context, out var expression)) expressions.Add(expression);
-            var end = context.Sequence.CurrentStart;
             body = new BodyNode(expressions);
-            context.SymbolTable.AddSymbol(body, start, end);
+            context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -495,10 +483,8 @@ public static class Parser
         body = null;
         if (context.Sequence.Current() is not OpenCurlyBracket open) return false;
 
-        var start = open.Start;
         context.Sequence.MoveNextNonWhiteSpace();
         var expressions = new List<NodeBase>();
-        FilePosition end;
         while (context.Sequence.Current() is not EndOfFile and not CloseCurlyBracket)
         {
             if (!TryParseStatement(context, out var expression)) continue;
@@ -507,18 +493,15 @@ public static class Parser
         if (context.Sequence.Current() is EndOfFile)
         {
             var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
-            end = context.Sequence.CurrentStart;
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             body = new BodyNode(expressions);
-            context.SymbolTable.AddSymbol(body, start, end);
+            context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
             return true;
         }
         
-        end = context.Sequence.CurrentEnd;
-        context.Sequence.MoveNextNonWhiteSpace();
         body = new BodyNode(expressions);
-        context.SymbolTable.AddSymbol(body, start, end);
+        context.Sequence.MoveNextNonWhiteSpace();
+        context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         return true;
     }
 
@@ -541,14 +524,14 @@ public static class Parser
             case KeywordToken {Keyword: Keywords.Break}:
                 expression = new BreakNode();
                 var current = context.Sequence.Current();
-                context.SymbolTable.AddSymbol(expression, current.Start, current.End);
+                context.SymbolTable.AddSymbol(expression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
                 return true;
             case KeywordToken {Keyword: Keywords.Continue}:
                 expression = new ContinueNode();
                 current = context.Sequence.Current();
-                context.SymbolTable.AddSymbol(expression, current.Start, current.End);
+                context.SymbolTable.AddSymbol(expression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
                 return true;
@@ -593,8 +576,7 @@ public static class Parser
             if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Assign })
             {
                 var record = PlampExceptionInfo.ExpectedAssignment();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
 
@@ -604,13 +586,12 @@ public static class Parser
             if (TryParsePrecedence(context, out var right))
             {
                 assignment = new AssignNode(definition, right);
-                context.SymbolTable.AddSymbol(assignment, assign.Start, assign.End);
+                context.SymbolTable.AddSymbol(assignment, assign.Position);
                 return true;
             }
 
             var exceptionRecord = PlampExceptionInfo.ExpectedAssignmentSource();
-            context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentPosition));
             return false;
         }
 
@@ -631,8 +612,7 @@ public static class Parser
             if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Assign })
             {
                 var record = PlampExceptionInfo.ExpectedAssignment();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
 
@@ -642,36 +622,35 @@ public static class Parser
             if (!TryParsePrecedence(context, out var right))
             {
                 var exceptionRecord = PlampExceptionInfo.ExpectedAssignmentSource();
-                context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(exceptionRecord, context.Sequence.CurrentPosition));
                 return false;
             }
         
             definition = new MemberNode(member.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(definition, member.Start, member.End);
+            context.SymbolTable.AddSymbol(definition, member.Position);
             
             if (indexers != null)
             {
-                NodeBase inner = definition;
+                var inner = definition;
                 for (var i = 0; i < indexers.Count; i++)
                 {
                     if (i + 1 == indexers.Count)
                     {
                         assignment = new ElemSetterNode(inner, indexers[i], right);
-                        context.SymbolTable.AddSymbol(assignment, assign.Start, assign.End);
+                        context.SymbolTable.AddSymbol(assignment, assign.Position);
                     }
                     else
                     {
                         inner = new ElemGetterNode(inner, indexers[i]);
-                        if (!context.SymbolTable.TryGetSymbol(indexers[i], out var pair)) throw new Exception();
-                        context.SymbolTable.AddSymbol(inner, pair.Key, pair.Value);
+                        if (!context.SymbolTable.TryGetSymbol(indexers[i], out var pos)) throw new Exception();
+                        context.SymbolTable.AddSymbol(inner, pos);
                     }
                 }
             }
             else
             {
                 assignment = new AssignNode(definition, right);
-                context.SymbolTable.AddSymbol(assignment, assign.Start, assign.End);
+                context.SymbolTable.AddSymbol(assignment, assign.Position);
             }
 
             return assignment != null;
@@ -708,19 +687,15 @@ public static class Parser
         if (context.Sequence.Current() is not OpenSquareBracket indexerStart) return false;
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParsePrecedence(context, out var member)) return false;
-        var indexerEnd = context.Sequence.CurrentStart;
-        if (context.Sequence.Current() is not CloseSquareBracket bracket)
+        if (context.Sequence.Current() is not CloseSquareBracket)
         {
             var record = PlampExceptionInfo.IndexerIsNotClosed();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart)));
         }
-        else
-        {
-            indexerEnd = bracket.End;
-        }
-        context.Sequence.MoveNextNonWhiteSpace();
+        
         indexer = new ArrayIndexerNode(member);
-        context.SymbolTable.AddSymbol(indexer, indexerStart.Start, indexerEnd);
+        context.Sequence.MoveNextNonWhiteSpace();
+        context.SymbolTable.AddSymbol(indexer, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart));
         return true;
     }
     
@@ -736,7 +711,7 @@ public static class Parser
         if (!TryParsePrecedence(lengthFork, out var dimension))
         {
             var record = PlampExceptionInfo.ArrayInitializationMustHasLength();
-            context.Exceptions.Add(new PlampException(record, start.Start, lengthFork.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, lengthFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
             return false;
         }
         context.Merge(lengthFork);
@@ -744,15 +719,15 @@ public static class Parser
         if (context.Sequence.Current() is not CloseSquareBracket)
         {
             var record = PlampExceptionInfo.ArrayDefinitionIsNotClosed();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         } 
 
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseType(context, out var type)) return false;
         arrayDefinition = new InitArrayNode(type, dimension);
-        if(!context.SymbolTable.TryGetSymbol(type, out var pair)) throw new InvalidOperationException("Parser code is incorrect");
-        context.SymbolTable.AddSymbol(arrayDefinition, start.Start, pair.Value);
+        if(!context.SymbolTable.TryGetSymbol(type, out _)) throw new InvalidOperationException("Parser code is incorrect");
+        context.SymbolTable.AddSymbol(arrayDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
     
@@ -766,18 +741,18 @@ public static class Parser
         {
             if (context.Sequence.Current() is not OpenSquareBracket open) return true;
             context.Sequence.MoveNextNonWhiteSpace();
-            if (context.Sequence.Current() is not CloseSquareBracket close)
+            if (context.Sequence.Current() is not CloseSquareBracket)
             {
                 var currentToken = context.Sequence.Current();
                 var record = PlampExceptionInfo.ArrayDefinitionIsNotClosed();
-                context.Exceptions.Add(new PlampException(record, currentToken.Start, currentToken.End, context.FileName));
+                context.Exceptions.Add(new PlampException(record, currentToken.Position));
                 return false;
             }
 
             var definition = new ArrayTypeSpecificationNode();
             definitions.Add(definition);
-            context.SymbolTable.AddSymbol(definition, open.Start, close.End);
             context.Sequence.MoveNextNonWhiteSpace();
+            context.SymbolTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         }
     }
 
@@ -804,7 +779,7 @@ public static class Parser
         ParsingContext context,
         [NotNullWhen(true)]out NodeBase? node)
     {
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         node = null;
         var parenFork = context.Fork();
         if (parenFork.Sequence.Current() is OpenParen
@@ -814,8 +789,7 @@ public static class Parser
             if (parenFork.Sequence.Current() is not CloseParen)
             {
                 var record = PlampExceptionInfo.ExpectedCloseParen();
-                parenFork.Exceptions.Add(new PlampException(record, parenFork.Sequence.CurrentStart,
-                    parenFork.Sequence.CurrentEnd, context.FileName));
+                parenFork.Exceptions.Add(new PlampException(record, parenFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
             }
             else
             {
@@ -866,7 +840,7 @@ public static class Parser
         {
             node = new MemberNode(member.GetStringRepresentation());
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(node, start, context.Sequence.CurrentEnd);
+            context.SymbolTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -874,7 +848,7 @@ public static class Parser
         {
             node = new LiteralNode(literal.ActualValue, literal.ActualType);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(node, start, context.Sequence.CurrentEnd);
+            context.SymbolTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
         
@@ -907,7 +881,7 @@ public static class Parser
                 default: throw new InvalidOperationException();
             }
             context.Merge(prefixFork);
-            context.SymbolTable.AddSymbol(node, op.Start, op.End);
+            context.SymbolTable.AddSymbol(node, op.Position);
             return true;
         }
 
@@ -943,9 +917,9 @@ public static class Parser
                     
                     var args = new List<NodeBase> { inner };
                     args.AddRange(call.Args);
-                    if (!context.SymbolTable.TryGetSymbol(call, out var pair)) throw new Exception();
+                    if (!context.SymbolTable.TryGetSymbol(call, out var pos)) throw new Exception();
                     output = new CallNode(call.From, call.Name, args);
-                    context.SymbolTable.AddSymbol(output, pair.Key, pair.Value);
+                    context.SymbolTable.AddSymbol(output, pos);
                     return true;
             }
         }
@@ -957,8 +931,8 @@ public static class Parser
             foreach (var indexer in list)
             {
                 inner = new ElemGetterNode(inner, indexer);
-                if (!context.SymbolTable.TryGetSymbol(indexer, out var pair)) throw new Exception();
-                context.SymbolTable.AddSymbol(inner, pair.Key, pair.Value);
+                if (!context.SymbolTable.TryGetSymbol(indexer, out var pos)) throw new Exception();
+                context.SymbolTable.AddSymbol(inner, pos);
             }
 
             output = inner;
@@ -1032,7 +1006,7 @@ public static class Parser
                 throw new Exception();
         }
         context.Merge(opFork);
-        context.SymbolTable.AddSymbol(output, token.Start, token.End);
+        context.SymbolTable.AddSymbol(output, token.Position);
         return true;
     }
 
@@ -1046,37 +1020,33 @@ public static class Parser
     {
         call = null;
         if (context.Sequence.Current() is not Word funcName) return false;
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         
         if (context.Sequence.Current() is not OpenParen)
         {
             var record = PlampExceptionInfo.ExpectedOpenParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
 
         var argExpressions = new List<NodeBase>();
-        FilePosition end;
         if (context.Sequence.Current() is CloseParen)
         {
-            end = context.Sequence.CurrentEnd;
             var funcNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(funcNameNode, funcName.Start, funcName.End);
+            context.SymbolTable.AddSymbol(funcNameNode, funcName.Position);
             call = new CallNode(null, funcNameNode, argExpressions);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(call, start, end);
+            context.SymbolTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
         if (!TryParsePrecedence(context, out var arg))
         {
             var record = PlampExceptionInfo.ExpectedExpression();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
         argExpressions.Add(arg);
@@ -1091,8 +1061,7 @@ public static class Parser
             else
             {
                 var record = PlampExceptionInfo.ExpectedExpression();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                    context.Sequence.CurrentEnd, context.FileName));
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 call = null;
                 return false;
             }
@@ -1101,20 +1070,17 @@ public static class Parser
         if (context.Sequence.Current() is not CloseParen)
         {
             var record = PlampExceptionInfo.ExpectedCloseParen();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
-            end = context.Sequence.CurrentStart;
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
         }
         else
         {
-            end = context.Sequence.CurrentEnd;
             context.Sequence.MoveNextNonWhiteSpace();
         }
 
         var funcCallNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(funcCallNameNode, funcName.Start, funcName.End);
+        context.SymbolTable.AddSymbol(funcCallNameNode, funcName.Position);
         call = new CallNode(null, funcCallNameNode, argExpressions);
-        context.SymbolTable.AddSymbol(call, start, end);
+        context.SymbolTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
 
@@ -1134,7 +1100,7 @@ public static class Parser
         {
             ConsumeEndOfStatement(context);
             node = new ReturnNode(null);
-            context.SymbolTable.AddSymbol(node, returnToken.Start, returnToken.End);
+            context.SymbolTable.AddSymbol(node, returnToken.Position);
             return true;
         }
 
@@ -1142,12 +1108,12 @@ public static class Parser
         {
             var record = PlampExceptionInfo.ExpectedExpression();
             var current = context.Sequence.Current();
-            context.Exceptions.Add(new PlampException(record, current.Start, current.End, context.FileName));
+            context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
         ConsumeEndOfStatement(context);
         node = new ReturnNode(expr);
-        context.SymbolTable.AddSymbol(node, returnToken.Start, returnToken.End);
+        context.SymbolTable.AddSymbol(node, returnToken.Position);
         return true;
     }
     
@@ -1182,7 +1148,7 @@ public static class Parser
         
         context.Sequence.MoveNextNonWhiteSpace();
         var record = PlampExceptionInfo.ExpectedExpression();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
         return false;
     }
 
@@ -1192,21 +1158,19 @@ public static class Parser
     {
         variableDefinition = null;
         if (!TryParseType(context, out var type)) return false;
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         if (context.Sequence.Current() is not Word variableName)
         {
             var record = PlampExceptionInfo.ExpectedVarName();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart,
-                context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
 
-        var end = context.Sequence.CurrentEnd;
         var name = new VariableNameNode(variableName.GetStringRepresentation());
-        context.Sequence.MoveNextNonWhiteSpace();
         
         variableDefinition = new VariableDefinitionNode(type, name);
-        context.SymbolTable.AddSymbol(variableDefinition, start, end);
+        context.Sequence.MoveNextNonWhiteSpace();
+        context.SymbolTable.AddSymbol(variableDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
 
@@ -1215,22 +1179,22 @@ public static class Parser
         [NotNullWhen(true)]out TypeNode? type)
     {
         type = null;
-        var start = context.Sequence.CurrentStart;
+        var start = context.Sequence.Current();
         if (!TryParseArrayDefinitionSequence(context, out var definitions)) return false;
         
         if (context.Sequence.Current() is not Word typeName)
         {
             var record = PlampExceptionInfo.ExpectedTypeName();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
         
-        context.Sequence.MoveNextNonWhiteSpace();
         
         var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
         type = new TypeNode(typeNameNode){ArrayDefinitions = definitions};
-        context.SymbolTable.AddSymbol(type, start, typeName.End);
-        context.SymbolTable.AddSymbol(typeNameNode, typeName.Start, typeName.End);
+        context.Sequence.MoveNextNonWhiteSpace();
+        context.SymbolTable.AddSymbol(type, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.SymbolTable.AddSymbol(typeNameNode, typeName.Position);
         return true;
     }
 
@@ -1243,7 +1207,7 @@ public static class Parser
         var token = context.Sequence.Current();
         var record =
             PlampExceptionInfo.UnexpectedToken(token.GetStringRepresentation());
-        context.Exceptions.Add(new PlampException(record, token.Start, token.End, context.FileName));
+        context.Exceptions.Add(new PlampException(record, token.Position));
     }
 
     private static void ConsumeEndOfStatement(ParsingContext context)
@@ -1254,7 +1218,7 @@ public static class Parser
             return;
         }
         var record = PlampExceptionInfo.ExpectedEndOfStatement();
-        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentStart, context.Sequence.CurrentEnd, context.FileName));
+        context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
     }
 
     #endregion

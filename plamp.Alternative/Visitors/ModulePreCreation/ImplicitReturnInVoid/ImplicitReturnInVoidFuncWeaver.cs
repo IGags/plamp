@@ -23,7 +23,7 @@ public class ImplicitReturnInVoidFuncWeaver : BaseWeaver<PreCreationContext, Pre
         var returnNode = new ReturnNode(null);
         
         //TODO: special place for virtual nodes
-        context.SymbolTable.AddSymbol(returnNode, new FilePosition(-1, -1), new FilePosition(-1, -1));
+        context.SymbolTable.AddSymbol(returnNode, new FilePosition(-1, -1, ""));
         var expressions = new List<NodeBase>(node.Body.ExpressionList) { returnNode };
         var body = new BodyNode(expressions);
         Replace(node.Body, body, context);

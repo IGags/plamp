@@ -7,16 +7,9 @@ namespace plamp.Abstractions.AstManipulation;
 /// <summary>
 /// Базовый тип контекста, который гарантирует, что посетитель получит некоторые необходимые поля.
 /// </summary>
-/// <param name="fileName">Имя исходного файла, для которого работает посетитель</param>
 /// <param name="symbolTable">Таблица символов, в которой находятся узлы текущего AST.</param>
-public abstract class BaseVisitorContext(string fileName, ISymbolTable symbolTable)
+public abstract class BaseVisitorContext(ISymbolTable symbolTable)
 {
-    /// <summary>
-    /// Имя исходного файла, для которого работает посетитель
-    /// </summary>
-    //TODO: ответственность таблицы символов. Перенести туда.
-    public string FileName { get; init; } = fileName;
-
     /// <summary>
     /// Имя кодового модуля, для которого происходит обход.
     /// </summary>
@@ -39,7 +32,7 @@ public abstract class BaseVisitorContext(string fileName, ISymbolTable symbolTab
     /// </summary>
     public List<PlampException> Exceptions { get; init; } = [];
 
-    protected BaseVisitorContext(BaseVisitorContext other) : this(other.FileName, other.SymbolTable)
+    protected BaseVisitorContext(BaseVisitorContext other) : this(other.SymbolTable)
     {
         ModuleName = other.ModuleName;
         Exceptions = other.Exceptions;

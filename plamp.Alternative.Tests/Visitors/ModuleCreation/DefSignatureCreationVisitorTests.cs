@@ -25,7 +25,6 @@ public class DefSignatureCreationVisitorTests
         Type returnTypeObject)
     {
         var symbolTable = new Fixture().Freeze<Mock<ISymbolTable>>();
-        var fileName = new Fixture().Create<string>();
         var visitor = new Fixture().Create<DefSignatureCreationValidator>();
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode(returnTypeObject.Name));
@@ -36,7 +35,7 @@ public class DefSignatureCreationVisitorTests
             [], 
             new BodyNode([]));
 
-        var context = CreateContext(fileName, symbolTable);
+        var context = CreateContext(symbolTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -49,7 +48,9 @@ public class DefSignatureCreationVisitorTests
     }
 
     [Theory, AutoData]
-    public void VisitWithArgs_ReturnsNoException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, DefSignatureCreationValidator visitor)
+    public void VisitWithArgs_ReturnsNoException(
+        [Frozen]Mock<ISymbolTable> symbolTable,
+        DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
@@ -65,7 +66,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
 
-        var context = CreateContext(fileName, symbolTable);
+        var context = CreateContext(symbolTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -78,8 +79,9 @@ public class DefSignatureCreationVisitorTests
     }
 
     [Theory, AutoData]
-    public void VisitWithUnknownReturnType_ReturnWithoutMethodSignature([Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName, DefSignatureCreationValidator visitor)
+    public void VisitWithUnknownReturnType_ReturnWithoutMethodSignature(
+        [Frozen] Mock<ISymbolTable> symbolTable,
+        DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
@@ -94,7 +96,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
         
-        var context = CreateContext(fileName, symbolTable);
+        var context = CreateContext(symbolTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -103,8 +105,9 @@ public class DefSignatureCreationVisitorTests
     }
 
     [Theory, AutoData]
-    public void VisitWithUnknownArgType_ReturnWithoutMethodSignature([Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName, DefSignatureCreationValidator visitor)
+    public void VisitWithUnknownArgType_ReturnWithoutMethodSignature(
+        [Frozen] Mock<ISymbolTable> symbolTable,
+        DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
@@ -119,7 +122,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
         
-        var context = CreateContext(fileName, symbolTable);
+        var context = CreateContext(symbolTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -127,9 +130,9 @@ public class DefSignatureCreationVisitorTests
             x => x.Methods.ShouldBeEmpty());
     }
 
-    private CreationContext CreateContext(string fileName, Mock<ISymbolTable> symbolTable)
+    private CreationContext CreateContext(Mock<ISymbolTable> symbolTable)
     {
-        var preCreationContext = new PreCreationContext(fileName, symbolTable.Object);
+        var preCreationContext = new PreCreationContext(symbolTable.Object);
         var asmName = new AssemblyName(Guid.NewGuid().ToString());
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(asmName.Name!);

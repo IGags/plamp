@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
@@ -21,15 +20,15 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class ReturnTypeInferenceTests
 {
     [Theory, AutoData]
-    public void UnresolvedFuncReturnType_ReturnsUnexpectedType([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void UnresolvedFuncReturnType_ReturnsUnexpectedType([Frozen] Mock<ISymbolTable> symbolTable,TypeInferenceWeaver visitor)
     {
         var ast = new FuncNode(
             new TypeNode(new TypeNameNode("abc")),
             new FuncNameNode("aaa"),
             [],
             new BodyNode([new ReturnNode(null)])); 
-        SetupExceptionMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -37,29 +36,30 @@ public class ReturnTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void ReturnSameTypeAsFunc_ReturnNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void ReturnSameTypeAsFunc_ReturnNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
         returnType.SetType(typeof(int));
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1, typeof(int)))]));
-        SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
     }
     
     [Theory, AutoData]
-    public void VoidFuncReturnNull_ReturnNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void VoidFuncReturnNull_ReturnNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("void"));
         returnType.SetType(typeof(void));
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
-        SetupMockAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void ReturnDifferentTypeFromFunc_ReturnException([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
+    public void ReturnDifferentTypeFromFunc_ReturnException(
+        [Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
@@ -67,8 +67,8 @@ public class ReturnTypeInferenceTests
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1d, typeof(double)))]));
-        SetupExceptionMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -76,8 +76,8 @@ public class ReturnTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void FuncVoidNodeReturnValue_ReturnException([Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName,
+    public void FuncVoidNodeReturnValue_ReturnException(
+        [Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("void"));
@@ -85,8 +85,8 @@ public class ReturnTypeInferenceTests
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(new LiteralNode(1, typeof(int)))]));
-        SetupExceptionMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -94,8 +94,8 @@ public class ReturnTypeInferenceTests
     }
     
     [Theory, AutoData]
-    public void FuncHasReturnTypeNodeReturnNull_ReturnException([Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName,
+    public void FuncHasReturnTypeNodeReturnNull_ReturnException(
+        [Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
@@ -103,8 +103,8 @@ public class ReturnTypeInferenceTests
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
-        SetupExceptionMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -120,7 +120,7 @@ public class ReturnTypeInferenceTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression
             .ShouldBeOfType<FuncNode>()
@@ -132,19 +132,19 @@ public class ReturnTypeInferenceTests
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
-    private void SetupExceptionMock(Mock<ISymbolTable> symbolTable, string fileName)
+    private void SetupExceptionMock(Mock<ISymbolTable> symbolTable)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>(), fileName))
-            .Returns<NodeBase, PlampExceptionRecord, string>((_, b, c) => new PlampException(b, default, default, c));
+        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+            .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
     }
     
-    private void SetupMockAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    private void SetupMockAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty(); 
     }

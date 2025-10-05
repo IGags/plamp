@@ -243,7 +243,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         if(fromType == toType) return;
         var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
-        context.SymbolTable.AddSymbol(toTypeNode, default, default);
+        context.SymbolTable.AddSymbol(toTypeNode, default);
         toTypeNode.SetType(toType);
         var expanded = new CastNode(toTypeNode, from);
         expanded.SetFromType(fromType);
@@ -509,7 +509,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (predicateType != null && predicateType != typeof(bool))
         {
             var record = PlampExceptionInfo.PredicateMustBeBooleanType();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
         }
 
         VisitNodeBase(node.Body, context, node);
@@ -527,7 +527,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (predicateType != null && predicateType != typeof(bool))
         {
             var record = PlampExceptionInfo.PredicateMustBeBooleanType();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
         }
 
         VisitNodeBase(node.IfClause, context, node);
@@ -546,7 +546,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (rightType is not null && rightType == typeof(void))
         {
             var record = PlampExceptionInfo.CannotAssignNone();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record, context.FileName));
+            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
         }
 
         if (node.Left is VariableDefinitionNode)
@@ -600,14 +600,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (rightType != null)
         {
             var typeName = new TypeNameNode(rightType.Name);
-            context.SymbolTable.AddSymbol(typeName, symbol.Key, symbol.Value);
+            context.SymbolTable.AddSymbol(typeName, symbol);
             typeNode = new TypeNode(typeName);
             typeNode.SetType(rightType);
-            context.SymbolTable.AddSymbol(typeNode, symbol.Key, symbol.Value);
+            context.SymbolTable.AddSymbol(typeNode, symbol);
         }
 
         var variableName = new VariableNameNode(leftMember.MemberName);
-        context.SymbolTable.AddSymbol(variableName, symbol.Key, symbol.Value);
+        context.SymbolTable.AddSymbol(variableName, symbol);
         var variableNode = new VariableDefinitionNode(typeNode, variableName);
         Replace(leftMember, variableNode, context);
         context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(variableNode, context.InstructionInScopePosition);
@@ -620,8 +620,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var type = TypeResolveHelper.ResolveType(
             variableDefinition.Type,
             context.Exceptions,
-            context.SymbolTable,
-            context.FileName);
+            context.SymbolTable);
 
         if (type is null) return null;
         
@@ -675,7 +674,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         if(node.Symbol != null) return VisitResult.Continue;
-        var type = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable, context.FileName);
+        var type = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable);
         if(type != null) node.SetType(type);
         return VisitResult.SkipChildren;
     }

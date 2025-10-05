@@ -19,7 +19,6 @@ public class CreationContext : BaseVisitorContext
         Methods = [];
         SymbolTable = other.SymbolTable;
         Exceptions = other.Exceptions;
-        FileName = other.FileName;
         ModuleName = other.ModuleName;
         Functions = other.Functions;
     }

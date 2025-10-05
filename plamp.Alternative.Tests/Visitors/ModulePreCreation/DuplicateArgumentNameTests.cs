@@ -19,7 +19,7 @@ public class DuplicateArgumentNameTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new DuplicateArgumentNameValidator();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.Validate(expression!, preCreation);
         weaveResult.Exceptions.ShouldSatisfyAllConditions(
             x => x.ForEach(y => y.Code.ShouldBe(PlampExceptionInfo.DuplicateParameterName().Code)),

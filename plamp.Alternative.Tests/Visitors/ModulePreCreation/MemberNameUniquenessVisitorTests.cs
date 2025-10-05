@@ -10,7 +10,7 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 
 public class MemberNameUniquenessVisitorTests
 {
-    private const string FileName = "program.plp";
+    private const int Utf16CharacterByteCount = 2;
     
     [Fact]
     public void SingleMember_DoesNotReturnExceptions()
@@ -20,11 +20,11 @@ public class MemberNameUniquenessVisitorTests
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
         var root = new RootNode([], null, [func1]);
-        table.AddSymbol(func1Name, new FilePosition(0, 1), new FilePosition(0, 2));
-        table.AddSymbol(funcBody, new FilePosition(1, 0), new FilePosition(1, 1));
-        table.AddSymbol(func1, new FilePosition(0, 0), new FilePosition(0, 0));
-        table.AddSymbol(root, new FilePosition(-1, -1), new FilePosition(-1, -1));
-        var context = new PreCreationContext(FileName, table);
+        table.AddSymbol(func1Name, new FilePosition(0, 2, ""));
+        table.AddSymbol(funcBody, new FilePosition(2 * Utf16CharacterByteCount, 2, ""));
+        table.AddSymbol(func1, new FilePosition(0, 0, ""));
+        table.AddSymbol(root, new FilePosition(-1, 0, ""));
+        var context = new PreCreationContext(table);
         var visitor = new MemberNameUniquenessValidator();
         var resultContext = visitor.Validate(root, context);
         Assert.Empty(resultContext.Exceptions);
@@ -44,17 +44,17 @@ public class MemberNameUniquenessVisitorTests
         
         var root = new RootNode([], null, [func1, func2]);
         
-        table.AddSymbol(func1Name, new FilePosition(0, 1), new FilePosition(0, 2));
-        table.AddSymbol(funcBody, new FilePosition(1, 0), new FilePosition(1, 1));
-        table.AddSymbol(func1, new FilePosition(0, 0), new FilePosition(0, 0));
+        table.AddSymbol(func1Name, new FilePosition(Utf16CharacterByteCount * 3, 3, ""));
+        table.AddSymbol(funcBody, new FilePosition(Utf16CharacterByteCount * 9, 2, ""));
+        table.AddSymbol(func1, new FilePosition(0, 2, ""));
         
-        table.AddSymbol(func2Name, new FilePosition(2, 1), new FilePosition(2, 2));
-        table.AddSymbol(func2Body, new FilePosition(3, 0), new FilePosition(3, 1));
-        table.AddSymbol(func2, new FilePosition(2, 0), new FilePosition(2, 0));
+        table.AddSymbol(func2Name, new FilePosition(Utf16CharacterByteCount * 14, 3, ""));
+        table.AddSymbol(func2Body, new FilePosition(Utf16CharacterByteCount * 20, 2, ""));
+        table.AddSymbol(func2, new FilePosition(Utf16CharacterByteCount * 11, 2, ""));
         
-        table.AddSymbol(root, new FilePosition(-1, -1), new FilePosition(-1, -1));
+        table.AddSymbol(root, new FilePosition(-1, 0, ""));
         
-        var context = new PreCreationContext(FileName, table);
+        var context = new PreCreationContext(table);
         var visitor = new MemberNameUniquenessValidator();
         var resultContext = visitor.Validate(root, context);
         Assert.Empty(resultContext.Exceptions);
@@ -74,17 +74,17 @@ public class MemberNameUniquenessVisitorTests
         
         var root = new RootNode([], null, [func1, func2]);
         
-        table.AddSymbol(func1Name, new FilePosition(0, 1), new FilePosition(0, 2));
-        table.AddSymbol(funcBody, new FilePosition(1, 0), new FilePosition(1, 1));
-        table.AddSymbol(func1, new FilePosition(0, 0), new FilePosition(0, 0));
+        table.AddSymbol(func1Name, new FilePosition(Utf16CharacterByteCount * 3, 3, ""));
+        table.AddSymbol(funcBody, new FilePosition(Utf16CharacterByteCount * 9, 2, ""));
+        table.AddSymbol(func1, new FilePosition(0, 2, ""));
         
-        table.AddSymbol(func2Name, new FilePosition(2, 1), new FilePosition(2, 2));
-        table.AddSymbol(func2Body, new FilePosition(3, 0), new FilePosition(3, 1));
-        table.AddSymbol(func2, new FilePosition(2, 0), new FilePosition(2, 0));
+        table.AddSymbol(func2Name, new FilePosition(Utf16CharacterByteCount * 14, 3, ""));
+        table.AddSymbol(func2Body, new FilePosition(Utf16CharacterByteCount * 20, 2, ""));
+        table.AddSymbol(func2, new FilePosition(Utf16CharacterByteCount * 11, 2, ""));
         
-        table.AddSymbol(root, new FilePosition(-1, -1), new FilePosition(-1, -1));
+        table.AddSymbol(root, new FilePosition(-1, 0, ""));
         
-        var context = new PreCreationContext(FileName, table);
+        var context = new PreCreationContext(table);
         var visitor = new MemberNameUniquenessValidator();
         var resultContext = visitor.Validate(root, context);
         Assert.Equal(2, resultContext.Exceptions.Count);

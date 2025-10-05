@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AutoFixture.Xunit2;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -18,46 +17,46 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class VariableTypeInferenceTests
 {
     [Theory, AutoData]
-    public void VariableDefinitionInference_ReturnNoExceptions([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void VariableDefinitionInference_ReturnNoExceptions([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void NotExistVariableInference_ReturnsVariableNotExistException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void NotExistVariableInference_ReturnsVariableNotExistException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new MemberNode("b");
         var ast = new BodyNode([
             new AssignNode(new MemberNode("a"), exceptionMember)
         ]);
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         
-        symbolTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>(), fileName), Times.Once);
+        symbolTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>()), Times.Once);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code));
     }
 
     [Theory, AutoData]
-    public void CreateAndUseVariableDefinition_ReturnNoException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CreateAndUseVariableDefinition_ReturnNoException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
             new AssignNode(new MemberNode("b"), new MemberNode("a"))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new AssignNode(new MemberNode("a"), new LiteralNode("123", typeof(string)));
         var ast = new BodyNode([
@@ -65,18 +64,18 @@ public class VariableTypeInferenceTests
             exceptionMember
         ]);
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         
-        symbolTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>(), fileName), Times.Once);
+        symbolTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>()), Times.Once);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code));
     }
 
     [Theory, AutoData]
-    public void CreateVariableBeforeAndGetFromChildScope_ReturnsNoException([Frozen]Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CreateVariableBeforeAndGetFromChildScope_ReturnsNoException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -87,12 +86,12 @@ public class VariableTypeInferenceTests
             ])
         ]);
         
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
     public void CreateVariableAfterGetFromChildScope_ReturnsDuplicateDefinitionException([Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName, TypeInferenceWeaver visitor)
+        TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -103,8 +102,8 @@ public class VariableTypeInferenceTests
             new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
         ]);
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldSatisfyAllConditions(
@@ -115,7 +114,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableInOtherScopeStack_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void CreateVariableInOtherScopeStack_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -128,21 +127,21 @@ public class VariableTypeInferenceTests
                 new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
             ])
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void DefineVariableExplicitly_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void DefineVariableExplicitly_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void DefineVariableExplicitlyAndAssign_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void DefineVariableExplicitlyAndAssign_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -150,13 +149,13 @@ public class VariableTypeInferenceTests
                 new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
                 new LiteralNode(1, typeof(int)))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
 
     [Theory, AutoData]
     public void DefineVariableExplicitlyTwice_ReturnsDuplicateDefinitionException(
-        [Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+        [Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -164,8 +163,8 @@ public class VariableTypeInferenceTests
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))
         ]);
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldSatisfyAllConditions(
@@ -176,25 +175,25 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void DefineVariableAndAssignToOther_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void DefineVariableAndAssignToOther_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
             new AssignNode(new MemberNode("b"), new MemberNode("a"))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void AssignUndefined_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void AssignUndefined_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new AssignNode(new MemberNode("a"), new MemberNode("b"))
         ]);
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -202,14 +201,14 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignThemself_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void AssignThemself_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new AssignNode(new MemberNode("a"), new MemberNode("a"))
         ]);
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(symbolTable);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -217,7 +216,8 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignEmptyDefinition_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName,
+    public void AssignEmptyDefinition_ReturnsNoException(
+        [Frozen] Mock<ISymbolTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -225,34 +225,34 @@ public class VariableTypeInferenceTests
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
             new AssignNode(new MemberNode("b"), new MemberNode("a"))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
-    public void AssignThemselfAfterDefinition_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    public void AssignThemselfAfterDefinition_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
             new AssignNode(new MemberNode("a"), new MemberNode("a"))
         ]);
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
-    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        var context = new PreCreationContext(symbolTable.Object);
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty();
     }
 
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable, string fileName)
+    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>(), fileName))
-            .Returns<NodeBase, PlampExceptionRecord, string>((_, b, c) => new PlampException(b, default, default, c));
+        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+            .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
     }
 }
