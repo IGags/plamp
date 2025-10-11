@@ -232,6 +232,16 @@ public static class PlampExceptionInfo
             Message = "The body is expected in curly brackets."
         };
     }
+
+    public static PlampExceptionRecord ExpectedAssignmentTarget()
+    {
+        return new()
+        {
+            Code = "PRS1135",
+            Level = ExceptionLevel.Error,
+            Message = "Expected assignment target"
+        };
+    }
     
     #endregion
 

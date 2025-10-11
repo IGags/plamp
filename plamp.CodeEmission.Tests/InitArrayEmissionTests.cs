@@ -214,11 +214,11 @@ public class InitArrayEmissionTests
 
           var setItem = new ElemSetterNode(
                new MemberNode("a"), 
-               new ArrayIndexerNode(new LiteralNode(0, typeof(int))),
+               new IndexerNode(new LiteralNode(0, typeof(int))),
                new LiteralNode(5, typeof(int)));
           setItem.SetItemType(typeof(int));
           
-          var getter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(0, typeof(int))));
+          var getter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(0, typeof(int))));
           getter.SetItemType(typeof(int));
           var returnArrayInit = new InitArrayNode(itemType, getter);
           

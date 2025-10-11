@@ -262,7 +262,7 @@ public class CastEmissionTests
         
         var elemGetter = new ElemGetterNode(
             new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+            new IndexerNode(new LiteralNode(1, typeof(int))));
         elemGetter.SetItemType(typeof(double));
         
         var castNode = new CastNode(castToType, elemGetter);

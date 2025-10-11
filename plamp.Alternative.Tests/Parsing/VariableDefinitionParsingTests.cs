@@ -20,7 +20,7 @@ public class VariableDefinitionParsingTests
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
-        var parsed = Parser.TryParseVariableDefinition(context, out var type);
+        var parsed = Parser.TryParseVariableDefinitionSequence(context, out var type);
         context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         type.ShouldBeEquivalentTo(ast);
@@ -37,7 +37,7 @@ public class VariableDefinitionParsingTests
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
-        var parsed = Parser.TryParseVariableDefinition(context, out var type);
+        var parsed = Parser.TryParseVariableDefinitionSequence(context, out var type);
         context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
         type.ShouldBeEquivalentTo(ast);
@@ -51,7 +51,7 @@ public class VariableDefinitionParsingTests
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
-        var parsed = Parser.TryParseVariableDefinition(context, out _);
+        var parsed = Parser.TryParseVariableDefinitionSequence(context, out _);
         parsed.ShouldBe(false);
         context.Exceptions.Select(x => x.Code).ToList().ShouldBeEquivalentTo(exceptionCodes);
     }

@@ -33,7 +33,7 @@ public class ArrayElementNodeManipulationTests
     {
         var arrayName = "a";
         var arrayGetter = new ElemGetterNode(new MemberNode(arrayName),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+            new IndexerNode(new LiteralNode(1, typeof(int))));
 
         var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
         var ast = new BodyNode(
@@ -58,7 +58,7 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arrayGetter = new ElemGetterNode(new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+            new IndexerNode(new LiteralNode(1, typeof(int))));
 
         var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
         var ast = new BodyNode(
@@ -83,7 +83,7 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arrayGetter = new ElemGetterNode(new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+            new IndexerNode(new LiteralNode(1, typeof(int))));
         var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
         var ast = new BodyNode(
         [
@@ -107,7 +107,7 @@ public class ArrayElementNodeManipulationTests
             new MemberNode("b"),
             new ElemGetterNode(
                 new MemberNode("a"),
-                new ArrayIndexerNode(new LiteralNode('a', typeof(char)))));
+                new IndexerNode(new LiteralNode('a', typeof(char)))));
         var ast = new BodyNode(
         [
             array,
@@ -128,7 +128,7 @@ public class ArrayElementNodeManipulationTests
         var arrayInit = MakeArrayInitNode(arrayName);
         var setter = new ElemSetterNode(
             new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))),
+            new IndexerNode(new LiteralNode(1, typeof(int))),
             new LiteralNode(1, typeof(int)));
 
         var ast = new BodyNode(
@@ -152,7 +152,7 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arrayGetter = new ElemSetterNode(new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))),
+            new IndexerNode(new LiteralNode(1, typeof(int))),
             new LiteralNode(1, typeof(int)));
 
         var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
@@ -178,7 +178,7 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arraySetter = new ElemSetterNode(new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))),
+            new IndexerNode(new LiteralNode(1, typeof(int))),
             new LiteralNode(1, typeof(int)));
         var ast = new BodyNode(
         [
@@ -201,7 +201,7 @@ public class ArrayElementNodeManipulationTests
         
         var setter = new ElemSetterNode(
                 new MemberNode("a"),
-                new ArrayIndexerNode(new LiteralNode('a', typeof(char))),
+                new IndexerNode(new LiteralNode('a', typeof(char))),
                 new LiteralNode('a', typeof(char)));
         var ast = new BodyNode(
         [
@@ -224,7 +224,7 @@ public class ArrayElementNodeManipulationTests
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         var arrayGetter = new ElemGetterNode(new MemberNode(arrName),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(byte))));
+            new IndexerNode(new LiteralNode(1, typeof(byte))));
 
         var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
         var ast = new BodyNode(
@@ -243,7 +243,7 @@ public class ArrayElementNodeManipulationTests
             .ExpressionList.ShouldSatisfyAllConditions(
                 x => x.Count.ShouldBe(2), 
                 x => x[1].ShouldBeOfType<AssignNode>()
-                    .Right.ShouldBeOfType<ElemGetterNode>()
+                    .Sources.ShouldBeOfType<ElemGetterNode>()
                     .ArrayIndexer.IndexMember.ShouldBeOfType<CastNode>()
                     .FromType.ShouldBe(typeof(byte)));
     }
@@ -255,7 +255,7 @@ public class ArrayElementNodeManipulationTests
         var array = MakeArrayInitNode(arrName);
         var arraySetter = new ElemSetterNode(
             new MemberNode(arrName),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(byte))),
+            new IndexerNode(new LiteralNode(1, typeof(byte))),
             new LiteralNode(1, typeof(int)));
 
         var ast = new BodyNode(

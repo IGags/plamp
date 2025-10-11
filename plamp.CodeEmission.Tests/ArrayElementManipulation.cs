@@ -37,11 +37,11 @@ public class ArrayElementManipulation
             new InitArrayNode(arrayItemType, new LiteralNode(3, typeof(int))));
 
         var literal1 = new LiteralNode(1, typeof(int));
-        var setter1 = new ElemSetterNode(new MemberNode("a"), new ArrayIndexerNode(literal1), literal1);
+        var setter1 = new ElemSetterNode(new MemberNode("a"), new IndexerNode(literal1), literal1);
         setter1.SetItemType(typeof(int));
         
         var literal2 = new LiteralNode(2, typeof(int));
-        var setter2 = new ElemSetterNode(new MemberNode("a"), new ArrayIndexerNode(literal2), literal2);
+        var setter2 = new ElemSetterNode(new MemberNode("a"), new IndexerNode(literal2), literal2);
         setter2.SetItemType(typeof(int));
         
         return 
@@ -63,7 +63,7 @@ public class ArrayElementManipulation
         /*
          * return a[ix];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(index, typeof(int))));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(index, typeof(int))));
         elemGetter.SetItemType(typeof(int));
 
         var bodyItems = MakeArrayInitAst();
@@ -81,7 +81,7 @@ public class ArrayElementManipulation
         /*
          * return a[-1];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(-1, typeof(int))));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(-1, typeof(int))));
         elemGetter.SetItemType(typeof(int));
 
         var bodyItems = MakeArrayInitAst();
@@ -99,7 +99,7 @@ public class ArrayElementManipulation
         /*
          * return a[4];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(4, typeof(int))));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(4, typeof(int))));
         elemGetter.SetItemType(typeof(int));
 
         var bodyItems = MakeArrayInitAst();
@@ -126,7 +126,7 @@ public class ArrayElementManipulation
         
         var elemGetter = new ElemGetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new PostfixIncrementNode(new MemberNode("i"))));
+            new IndexerNode(new PostfixIncrementNode(new MemberNode("i"))));
         elemGetter.SetItemType(typeof(int));
         
         var bodyItems = MakeArrayInitAst();
@@ -146,7 +146,7 @@ public class ArrayElementManipulation
          */
         var elemGetter = new ElemGetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new AddNode(new LiteralNode(1, typeof(int)), new LiteralNode(1, typeof(int)))));
+            new IndexerNode(new AddNode(new LiteralNode(1, typeof(int)), new LiteralNode(1, typeof(int)))));
         elemGetter.SetItemType(typeof(int));
         
         var bodyItems = MakeArrayInitAst();
@@ -170,7 +170,7 @@ public class ArrayElementManipulation
         var cast = new CastNode(castTargetType, new LiteralNode(1.0, typeof(double)));
         cast.SetFromType(typeof(double));
         
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(cast));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(cast));
         elemGetter.SetItemType(typeof(int));
         
         var bodyItems = MakeArrayInitAst();
@@ -191,7 +191,7 @@ public class ArrayElementManipulation
         var call = new CallNode(null, new FuncCallNameNode(nameof(GetZero)), []);
         call.SetInfo(typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!);
         
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(call));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(call));
         elemGetter.SetItemType(typeof(int));
         
         var bodyItems = MakeArrayInitAst();
@@ -209,10 +209,10 @@ public class ArrayElementManipulation
         /*
          * return a[a[1]];
          */
-        var elemGetterInner = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+        var elemGetterInner = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(1, typeof(int))));
         elemGetterInner.SetItemType(typeof(int));
         
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(elemGetterInner));
+        var elemGetter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(elemGetterInner));
         elemGetter.SetItemType(typeof(int));
         
         var bodyItems = MakeArrayInitAst();
@@ -240,7 +240,7 @@ public class ArrayElementManipulation
          */
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new MemberNode("ix")),
+            new IndexerNode(new MemberNode("ix")),
             new UnaryMinusNode(new MemberNode("ix")));
         setter.SetItemType(typeof(int));
 
@@ -263,7 +263,7 @@ public class ArrayElementManipulation
          */
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new LiteralNode(-1, typeof(int))),
+            new IndexerNode(new LiteralNode(-1, typeof(int))),
             new LiteralNode(-1, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -285,7 +285,7 @@ public class ArrayElementManipulation
          */
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new LiteralNode(4, typeof(int))),
+            new IndexerNode(new LiteralNode(4, typeof(int))),
             new LiteralNode(0, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -307,7 +307,7 @@ public class ArrayElementManipulation
          */
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new UnaryMinusNode(new LiteralNode(-1, typeof(int)))),
+            new IndexerNode(new UnaryMinusNode(new LiteralNode(-1, typeof(int)))),
             new LiteralNode(42, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -328,7 +328,7 @@ public class ArrayElementManipulation
          */
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(new SubNode(new LiteralNode(100, typeof(int)), new LiteralNode(99, typeof(int)))),
+            new IndexerNode(new SubNode(new LiteralNode(100, typeof(int)), new LiteralNode(99, typeof(int)))),
             new LiteralNode(98, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -354,7 +354,7 @@ public class ArrayElementManipulation
         
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(cast),
+            new IndexerNode(cast),
             new LiteralNode(11, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -378,7 +378,7 @@ public class ArrayElementManipulation
         
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(callNode),
+            new IndexerNode(callNode),
             new LiteralNode(-99, typeof(int)));
         setter.SetItemType(typeof(int));
 
@@ -397,12 +397,12 @@ public class ArrayElementManipulation
         /*
          * a[a[1]] := -1;
          */
-        var getterNode = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
+        var getterNode = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(1, typeof(int))));
         getterNode.SetItemType(typeof(int));
         
         var setter = new ElemSetterNode(
             new MemberNode("a"), 
-            new ArrayIndexerNode(getterNode),
+            new IndexerNode(getterNode),
             new LiteralNode(-1, typeof(int)));
         setter.SetItemType(typeof(int));
 

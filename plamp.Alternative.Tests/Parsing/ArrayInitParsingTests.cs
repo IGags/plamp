@@ -121,7 +121,7 @@ public class ArrayInitParsingTests
         const string code = "[t[1]]int";
         var ast = new InitArrayNode(
             new TypeNode(new TypeNameNode("int")), 
-            new ElemGetterNode(new MemberNode("t"), new ArrayIndexerNode(new LiteralNode(1, typeof(int)))));
+            new ElemGetterNode(new MemberNode("t"), new IndexerNode(new LiteralNode(1, typeof(int)))));
         
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();

@@ -438,7 +438,7 @@ public static class IlCodeEmitter
     {
         FieldInfo? emitFld = null;
         //Подготовка цели присвоения.
-        switch (assignNode.Left)
+        switch (assignNode.Targets)
         {
             case MemberAccessNode accessNode:
                 if (accessNode.Member is not MemberNode { Symbol: FieldInfo info })
@@ -456,25 +456,25 @@ public static class IlCodeEmitter
         }
 
         //Генерация кода источника присвоения.
-        EmitSingleLineExpression(assignNode.Right, context);
+        EmitSingleLineExpression(assignNode.Sources, context);
 
         //Генерация цели присвоения
         if (emitFld is not null)
         {
             context.Generator.Emit(OpCodes.Stfld, emitFld);
         }
-        else if (assignNode.Left is VariableDefinitionNode {Name: { } varName})
+        else if (assignNode.Targets is VariableDefinitionNode {Name: { } varName})
         {
             EmitSetLocalVarOrArg(varName.Value, context);
         }
-        else if(assignNode.Left is MemberNode memberNode)
+        else if(assignNode.Targets is MemberNode memberNode)
         {
             EmitSetLocalVarOrArg(memberNode.MemberName, context);
         }
         else
         {
             throw new Exception(
-                $"Cannot emit assign to target of type {assignNode.Left.GetType().Name}. If you see this exception write to a compiler developer.");
+                $"Cannot emit assign to target of type {assignNode.Targets.GetType().Name}. If you see this exception write to a compiler developer.");
         }
     }
 

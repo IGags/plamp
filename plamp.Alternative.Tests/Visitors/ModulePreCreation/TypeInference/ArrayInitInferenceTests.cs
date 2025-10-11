@@ -34,7 +34,7 @@ public class ArrayInitInferenceTests
         _ = visitor.WeaveDiffs(assign, context);
         
         context.Exceptions.ShouldBeEmpty();
-        assign.Right.ShouldBeOfType<InitArrayNode>()
+        assign.Sources.ShouldBeOfType<InitArrayNode>()
             .ArrayItemType.Symbol.ShouldNotBeNull().ShouldBe(typeof(int));
     }
 
@@ -76,7 +76,7 @@ public class ArrayInitInferenceTests
         _ = visitor.WeaveDiffs(assign, context);
         
         context.Exceptions.ShouldBeEmpty();
-        assign.Right.ShouldBeOfType<InitArrayNode>()
+        assign.Sources.ShouldBeOfType<InitArrayNode>()
             .LengthDefinition.ShouldBeOfType<CastNode>()
             .FromType.ShouldBe(typeof(byte));
     }
@@ -117,10 +117,10 @@ public class ArrayInitInferenceTests
         context.Exceptions.ShouldBeEmpty();
         var assign = body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
         
-        assign.Left.ShouldBeOfType<VariableDefinitionNode>()
+        assign.Targets.ShouldBeOfType<VariableDefinitionNode>()
             .Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int[][]));
         
-        var call = assign.Right.ShouldBeOfType<CallNode>();
+        var call = assign.Sources.ShouldBeOfType<CallNode>();
         call.From.ShouldBeNull();
         call.Name.Value.ShouldBe("__FROM_C#__ARRAY::Empty<T>");
         call.Args.ShouldBeEmpty();

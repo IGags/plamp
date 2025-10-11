@@ -26,7 +26,7 @@ public class AssignNodeImplicitCastTests
         var preCreation = new PreCreationContext(context.SymbolTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<AssignNode>()
-            .Right.ShouldBeOfType<CastNode>()
+            .Sources.ShouldBeOfType<CastNode>()
             .ShouldSatisfyAllConditions(
                 x => x.FromType.ShouldBe(typeof(int)),
                 x => x.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double)));
@@ -54,7 +54,7 @@ public class AssignNodeImplicitCastTests
                 x => x.ExpressionList.Count.ShouldBe(2),
                 x => x.ExpressionList[1]
                     .ShouldBeOfType<AssignNode>()
-                    .Right.ShouldBeOfType<CastNode>()
+                    .Sources.ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
                         y => y.FromType.ShouldBe(typeof(int)),
                         y => y.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double))));

@@ -37,7 +37,7 @@ public class AssignmentParsingTests
             "a[1] := 14",
             new ElemSetterNode(
                 new MemberNode("a"),
-                new ArrayIndexerNode(new LiteralNode(1, typeof(int))),
+                new IndexerNode(new LiteralNode(1, typeof(int))),
                 new LiteralNode(14, typeof(int)))
         ];
         yield return
@@ -45,7 +45,7 @@ public class AssignmentParsingTests
             "a[b] := 5",
             new ElemSetterNode(
                 new MemberNode("a"),
-                new ArrayIndexerNode(new MemberNode("b")),
+                new IndexerNode(new MemberNode("b")),
                 new LiteralNode(5, typeof(int)))
         ];
         yield return
@@ -54,8 +54,8 @@ public class AssignmentParsingTests
             new ElemSetterNode(
                 new ElemGetterNode(
                     new MemberNode("a"), 
-                    new ArrayIndexerNode(new MemberNode("b"))),
-                new ArrayIndexerNode(new MemberNode("c")),
+                    new IndexerNode(new MemberNode("b"))),
+                new IndexerNode(new MemberNode("c")),
                 new MemberNode("d"))
         ];
     }

@@ -804,7 +804,7 @@ public class MethodCallTests
         var arrayParam = new TestParameter(typeof(int[]), "a");
         var indexerParam = new TestParameter(typeof(int), "ix");
 
-        var getter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new MemberNode("ix")));
+        var getter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new MemberNode("ix")));
         getter.SetItemType(typeof(int));
 
         var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter]);

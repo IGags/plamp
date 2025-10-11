@@ -135,7 +135,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     protected override VisitResult PostVisitBinary(BaseBinaryNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        if (node is BaseAssignNode) return VisitResult.Continue;
         var rightType = context.InnerExpressionTypeStack.Pop();
         var leftType = context.InnerExpressionTypeStack.Pop();
 
@@ -549,14 +548,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
         }
 
-        if (node.Left is VariableDefinitionNode)
+        if (node.Targets is VariableDefinitionNode)
         {
             ValidateAssignmentToDefinition(node, leftType, context, rightType);
             return VisitResult.SkipChildren;
         }
         
         //Then left is member or parser error
-        if (node.Left is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
+        if (node.Targets is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
         
         if (context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
         {
@@ -576,7 +575,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         Type? rightType)
     {
         if (leftType == null || rightType == null || leftType == rightType) return;
-        if (TryExpandNodeType(assign.Right, leftType, rightType, context)) return;
+        if (TryExpandNodeType(assign.Sources, leftType, rightType, context)) return;
         var record = PlampExceptionInfo.CannotAssign();
         SetExceptionToSymbol(assign, record, context);
     }
@@ -688,7 +687,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitMember(MemberNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         ParameterNode? arg = null;
-        var assignmentSource = parent is not AssignNode assign || assign.Left != node;
+        var assignmentSource = parent is not AssignNode assign || assign.Targets != node;
         if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var withPosition) 
             && !context.Arguments.TryGetValue(node.MemberName, out arg)
             && assignmentSource)

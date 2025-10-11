@@ -6,15 +6,20 @@ namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 /// Узел AST, обозначающий индексатор в массиве. Служит для обозначения [] и того, что между
 /// </summary>
 /// <param name="indexMember">Выражение внутри индексатора</param>
-public class ArrayIndexerNode(NodeBase indexMember) : NodeBase
+public class IndexerNode(NodeBase from, NodeBase indexMember) : NodeBase
 {
     /// <summary>
     /// Выражение внутри индексатора
     /// </summary>
     public NodeBase IndexMember { get; private set; } = indexMember;
 
+    /// <summary>
+    /// Индексируемое выражение
+    /// </summary>
+    public NodeBase From { get; private set; } = from;
+
     /// <inheritdoc cref="NodeBase"/>
-    public override IEnumerable<NodeBase> Visit() => [IndexMember];
+    public override IEnumerable<NodeBase> Visit() => [IndexMember, From];
 
     /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
@@ -22,6 +27,11 @@ public class ArrayIndexerNode(NodeBase indexMember) : NodeBase
         if (IndexMember == child)
         {
             IndexMember = newChild;
+        }
+
+        if (From == child)
+        {
+            From = newChild;
         }
     }
 }

@@ -81,7 +81,7 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
-        yield return ["a[1]", new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))))];
+        yield return ["a[1]", new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(1, typeof(int))))];
     }
     
     [Theory]
