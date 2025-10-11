@@ -327,8 +327,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     #endregion
     
     #region Arrays
-    
-    protected override VisitResult PostVisitInitArray(InitArrayNode node, TypeInferenceInnerContext context, NodeBase? parent)
+
+    protected override VisitResult PostVisitInitArray(InitArrayNode node, TypeInferenceInnerContext context,
+        NodeBase? parent)
     {
         var lengthType = context.InnerExpressionTypeStack.Pop();
         if (lengthType == null)
@@ -337,8 +338,8 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.Continue;
         }
-        
-        if(!TryExpandNodeType(node.LengthDefinition, typeof(int), lengthType, context))
+
+        if (!TryExpandNodeType(node.LengthDefinition, typeof(int), lengthType, context))
         {
             SetExceptionToSymbol(node.LengthDefinition, PlampExceptionInfo.ArrayLengthMustBeInteger(), context);
         }
@@ -353,69 +354,33 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.Continue;
     }
 
-    protected override VisitResult PostVisitElemGetter(ElemGetterNode node, TypeInferenceInnerContext context, NodeBase? parent) 
-        => PostVisitElementPropertyGeneral(node, node.ArrayIndexer.IndexMember, null, null, context, node.SetItemType);
-    
-    protected override VisitResult PostVisitElemSetter(ElemSetterNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PostVisitArrayIndexer(IndexerNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        var valueType = context.InnerExpressionTypeStack.Pop();
-        return PostVisitElementPropertyGeneral(node, node.ArrayIndexer.IndexMember, valueType, node.Value, context, node.SetItemType);
-    }
+        var indexationTargetType = context.InnerExpressionTypeStack.Pop();
+        var indexerExpression = context.InnerExpressionTypeStack.Pop();
 
-    private VisitResult PostVisitElementPropertyGeneral(
-        NodeBase elementIndexerNode, 
-        NodeBase indexerMember,
-        Type? setValueType,
-        NodeBase? setValue,
-        TypeInferenceInnerContext context,
-        Action<Type> innerTypeSetter)
-    {
-        var indexerType = context.InnerExpressionTypeStack.Pop();
-        var arrayType = context.InnerExpressionTypeStack.Pop();
+        if (indexationTargetType == null || indexerExpression == null) return VisitResult.Continue;
 
-        if (arrayType == null)
+        if (!TryExpandNodeType(node.IndexMember, typeof(int), indexerExpression, context))
         {
+            SetExceptionToSymbol(node.IndexMember, PlampExceptionInfo.IndexerValueMustBeInteger(), context);
+        }
+
+        if (!indexationTargetType.IsArray)
+        {
+            SetExceptionToSymbol(node.From, PlampExceptionInfo.IndexerIsNotApplicable(), context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.Continue;
         }
 
-        if (!arrayType.IsArray)
-        {
-            context.InnerExpressionTypeStack.Push(null);
-            var record = PlampExceptionInfo.IndexerIsNotApplicable();
-            SetExceptionToSymbol(elementIndexerNode, record, context);
-            return VisitResult.Continue;
-        }
-
-        var typeDimensionsCount = arrayType.GetArrayRank();
-        var returnType = arrayType.GetElementType();
-        context.InnerExpressionTypeStack.Push(returnType);
-        if (typeDimensionsCount != 1) throw new Exception("Parser code error. Language cannot handle multidimensional array");
-
-        var itemType = arrayType.GetElementType()!;
-        innerTypeSetter(itemType);
-        if (setValueType != null && setValue != null && !TryExpandNodeType(setValue, itemType, setValueType, context))
-        {
-            var record = PlampExceptionInfo.CannotAssign();
-            SetExceptionToSymbol(elementIndexerNode, record, context);
-        }
+        if (indexationTargetType.GetArrayRank() != 1) throw new Exception("Only flat array types are supported");
         
-        if (indexerType == null)
-        {
-            var record = PlampExceptionInfo.EmptyIndexer();
-            SetExceptionToSymbol(elementIndexerNode, record, context);
-            return VisitResult.Continue;
-        }
-        
-        if (!TryExpandNodeType(indexerMember, typeof(int), indexerType, context))
-        {
-            var record = PlampExceptionInfo.IndexerValueMustBeInteger();
-            SetExceptionToSymbol(indexerMember, record, context);
-        }
-        
+        var elementType = indexationTargetType.GetElementType()!;
+        node.SetItemType(elementType);
+        context.InnerExpressionTypeStack.Push(elementType);
         return VisitResult.Continue;
     }
-    
+
     #endregion
 
     #region Func call
@@ -537,47 +502,78 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     #endregion
 
     #region Assignment
+
+    protected override VisitResult PreVisitAssign(AssignNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    {
+        context.SaveInferenceStackSize();
+        return VisitResult.Continue;
+    }
+
+    private record AssignmentPair(Type? SourceType, Type? TargetType, NodeBase SourceNode, NodeBase TargetNode);
     
     protected override VisitResult PostVisitAssign(AssignNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        var rightType = context.InnerExpressionTypeStack.Pop();
-        var leftType = context.InnerExpressionTypeStack.Pop();
-        if (rightType is not null && rightType == typeof(void))
+        var assignTypeCount = context.InnerExpressionTypeStack.Count - context.RestoreInferenceStackSize();
+        if (assignTypeCount == 0) return VisitResult.Continue;
+
+        var types = new List<Type?>(assignTypeCount);
+        for (var i = 0; i < assignTypeCount; i++)
         {
-            var record = PlampExceptionInfo.CannotAssignNone();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
+            types.Add(context.InnerExpressionTypeStack.Pop());
+        }
+        if(node.Sources.Count + node.Targets.Count != types.Count
+           || types.Count % 2 != 0) return VisitResult.Continue;
+
+        var assignmentPairs = new List<AssignmentPair>();
+        for (var i = 0; i < types.Count / 2; i++)
+        {
+            var sourceIndex = types.Count - (i + 1);
+            var pair = new AssignmentPair(types[sourceIndex], types[i], node.Sources[i], node.Targets[i]);
+            assignmentPairs.Add(pair);
         }
 
-        if (node.Targets is VariableDefinitionNode)
+        foreach (var assignment in assignmentPairs)
         {
-            ValidateAssignmentToDefinition(node, leftType, context, rightType);
-            return VisitResult.SkipChildren;
-        }
-        
-        //Then left is member or parser error
-        if (node.Targets is not MemberNode leftMember) throw new Exception("Parser exception, invalid ast");
-        
-        if (context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
-        {
-            ValidateAssignmentToDefinition(node, leftType, context, rightType);
-            ValidateExistingDefinition(leftMember, context, withPosition);
-            return VisitResult.SkipChildren;
-        }
+            if (assignment.SourceType is not null && assignment.SourceType == typeof(void))
+            {
+                var record = PlampExceptionInfo.CannotAssignNone();
+                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
+            }
 
-        CreateVariableDefinitionFromMember(leftMember, context, rightType);
+            switch (assignment.TargetNode)
+            {
+                case VariableDefinitionNode:
+                case IndexerNode:
+                    ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
+                    continue;
+                case MemberNode leftMember:
+                    if (!context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
+                    {
+                        CreateVariableDefinitionFromMember(leftMember, context, assignment.SourceType);
+                        continue;
+                    }
+                    
+                    ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
+                    ValidateExistingDefinition(leftMember, context, withPosition);
+                    continue;
+                default: throw new Exception("Parser exception, invalid ast");
+            }
+        }
+        
         return VisitResult.Continue;
     }
     
     private void ValidateAssignmentToDefinition(
-        AssignNode assign, 
+        NodeBase assignNode,
+        NodeBase assignmentSource, 
         Type? leftType, 
         TypeInferenceInnerContext context,
         Type? rightType)
     {
         if (leftType == null || rightType == null || leftType == rightType) return;
-        if (TryExpandNodeType(assign.Sources, leftType, rightType, context)) return;
+        if (TryExpandNodeType(assignmentSource, leftType, rightType, context)) return;
         var record = PlampExceptionInfo.CannotAssign();
-        SetExceptionToSymbol(assign, record, context);
+        SetExceptionToSymbol(assignNode, record, context);
     }
 
     private void ValidateExistingDefinition(MemberNode left,
@@ -631,12 +627,12 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             call.SetInfo(infoConstructed);
             
             // []int a; => []int a := Array.Empty<int>()
-            return new AssignNode(variableDefinition, call);
+            return new AssignNode([variableDefinition], [call]);
         }
         
         if (type is { IsValueType: false, IsPrimitive: false })
         {
-            return new AssignNode(variableDefinition, new LiteralNode(null, type));
+            return new AssignNode([variableDefinition], [new LiteralNode(null, type)]);
         }
         
         if (type is { IsPrimitive: true })
@@ -655,14 +651,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                 || type == typeof(double)) value = 0;
             if (type == typeof(bool)) value = false;
             //for simple types such as integer or float
-            return new AssignNode(variableDefinition, new LiteralNode(value, type));
+            return new AssignNode([variableDefinition], [new LiteralNode(value, type)]);
         }
 
         //for structures
         var ctor = type.GetConstructor(BindingFlags.Public, [])!;
         var ctorNode = new ConstructorCallNode(variableDefinition.Type, []);
         ctorNode.SetConstructorInfo(ctor);
-        var assign = new AssignNode(variableDefinition, ctorNode);
+        var assign = new AssignNode([variableDefinition], [ctorNode]);
         return assign;
     }
     
@@ -687,7 +683,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitMember(MemberNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         ParameterNode? arg = null;
-        var assignmentSource = parent is not AssignNode assign || assign.Targets != node;
+        var assignmentSource = parent is not AssignNode assign || !assign.Targets.Contains(node);
         if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var withPosition) 
             && !context.Arguments.TryGetValue(node.MemberName, out arg)
             && assignmentSource)

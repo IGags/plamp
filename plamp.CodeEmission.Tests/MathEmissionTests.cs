@@ -44,7 +44,7 @@ public class MathEmissionTests
             new VariableDefinitionNode(
                 EmissionSetupHelper.CreateTypeNode(resultTypeShould),
                 new VariableNameNode("a")),
-            new AssignNode(new MemberNode("a"), operatorAst),
+            new AssignNode([new MemberNode("a")], [operatorAst]),
             new ReturnNode(new MemberNode("a"))
         };
         instructionList.InsertRange(0, definitions);
@@ -89,24 +89,24 @@ public class MathEmissionTests
         {
             firstDefInt,
             secondDefInt,
-            new AssignNode(firstName, firstLiteral),
-            new AssignNode(secondName, secondLiteral)
+            new AssignNode([firstName], [firstLiteral]),
+            new AssignNode([secondName], [secondLiteral])
         };
         
         var doubleDefs = new NodeBase[]
         {
             firstDefDouble,
             secondDefDouble,
-            new AssignNode(firstName, firstDouble),
-            new AssignNode(secondName, secondDouble)
+            new AssignNode([firstName], [firstDouble]),
+            new AssignNode([secondName], [secondDouble])
         };
         
         var floatDefs = new NodeBase[]
         {
             firstDefFloat,
             secondDefFloat,
-            new AssignNode(firstName, firstFloat),
-            new AssignNode(secondName, secondFloat)
+            new AssignNode([firstName], [firstFloat]),
+            new AssignNode([secondName], [secondFloat])
         };
         
         var trueName = new MemberNode("tempConst1");
@@ -115,8 +115,8 @@ public class MathEmissionTests
         {
             trueDefBool,
             falseDefBool,
-            new AssignNode(trueName, trueLiteral),
-            new AssignNode(falseName, falseLiteral)
+            new AssignNode([trueName], [trueLiteral]),
+            new AssignNode([falseName], [falseLiteral])
         };
         
         yield return [intDefs, new AddNode(firstName, secondName), -1, typeof(int)];
@@ -201,8 +201,8 @@ public class MathEmissionTests
         
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(inner, variableType.Symbol!)),
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("b")), createFromInner(new MemberNode("a"))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.Symbol!)]),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("b"))], [createFromInner(new MemberNode("a"))]),
             call,
             new ReturnNode(null)
         ]);
@@ -277,8 +277,8 @@ public class MathEmissionTests
         castToObj.SetFromType(actualType);
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
-            new AssignNode(new MemberNode("a"), new AddNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, actualType)]),
+            new AssignNode([new MemberNode("a")], [new AddNode(new MemberNode("a"), new LiteralNode(one, actualType))]),
             new ReturnNode(castToObj)
         ]);
         
@@ -312,8 +312,8 @@ public class MathEmissionTests
         castToObj.SetFromType(actualType);
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
-            new AssignNode(new MemberNode("a"), new SubNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, actualType)]),
+            new AssignNode([new MemberNode("a")], [new SubNode(new MemberNode("a"), new LiteralNode(one, actualType))]),
             new ReturnNode(castToObj)
         ]);
         

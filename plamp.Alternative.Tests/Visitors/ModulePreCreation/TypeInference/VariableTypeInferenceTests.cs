@@ -21,7 +21,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -31,7 +31,7 @@ public class VariableTypeInferenceTests
     {
         var exceptionMember = new MemberNode("b");
         var ast = new BodyNode([
-            new AssignNode(new MemberNode("a"), exceptionMember)
+            new AssignNode([new MemberNode("a")], [exceptionMember])
         ]);
         
         SetupExceptionGenerationMock(symbolTable);
@@ -49,8 +49,8 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
-            new AssignNode(new MemberNode("b"), new MemberNode("a"))
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))]),
+            new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -58,9 +58,9 @@ public class VariableTypeInferenceTests
     [Theory, AutoData]
     public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
     {
-        var exceptionMember = new AssignNode(new MemberNode("a"), new LiteralNode("123", typeof(string)));
+        var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", typeof(string))]);
         var ast = new BodyNode([
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))]),
             exceptionMember
         ]);
         
@@ -79,10 +79,10 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))]),
             new BodyNode(
             [
-                new AssignNode(new MemberNode("a"), new LiteralNode(2, typeof(int)))
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, typeof(int))])
             ])
         ]);
         
@@ -97,9 +97,9 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode(new MemberNode("a"), new LiteralNode(2, typeof(int)))
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, typeof(int))])
             ]),
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))])
         ]);
         
         SetupExceptionGenerationMock(symbolTable);
@@ -120,11 +120,11 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode(new MemberNode("a"), new LiteralNode(2, typeof(int)))
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, typeof(int))])
             ]),
             new BodyNode(
             [
-                new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))
+                new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))])
             ])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
@@ -146,8 +146,8 @@ public class VariableTypeInferenceTests
         var ast = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
-                new LiteralNode(1, typeof(int)))
+                [new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))],
+                [new LiteralNode(1, typeof(int))])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -179,8 +179,8 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new LiteralNode(1, typeof(int))),
-            new AssignNode(new MemberNode("b"), new MemberNode("a"))
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, typeof(int))]),
+            new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -190,7 +190,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new MemberNode("b"))
+            new AssignNode([new MemberNode("a")], [new MemberNode("b")])
         ]);
         SetupExceptionGenerationMock(symbolTable);
         var context = new PreCreationContext(symbolTable.Object);
@@ -205,7 +205,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("a"), new MemberNode("a"))
+            new AssignNode([new MemberNode("a")], [new MemberNode("a")])
         ]);
         SetupExceptionGenerationMock(symbolTable);
         var context = new PreCreationContext(symbolTable.Object);
@@ -223,7 +223,7 @@ public class VariableTypeInferenceTests
         var ast = new BodyNode(
         [
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
-            new AssignNode(new MemberNode("b"), new MemberNode("a"))
+            new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -234,7 +234,7 @@ public class VariableTypeInferenceTests
         var ast = new BodyNode(
         [
             new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
-            new AssignNode(new MemberNode("a"), new MemberNode("a"))
+            new AssignNode([new MemberNode("a")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }

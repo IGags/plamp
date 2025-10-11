@@ -78,7 +78,7 @@ public class ConstantEmissionTests
          */
         var ast = new BodyNode([
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, constantType)]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
@@ -120,7 +120,7 @@ public class ConstantEmissionTests
          */
         var ast = new BodyNode([
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType!), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(constantValue!, constantType!)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, constantType!)]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var context = new CompilerEmissionContext(ast, methodBuilder, [], null);

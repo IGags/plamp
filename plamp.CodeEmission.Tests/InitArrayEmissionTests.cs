@@ -210,15 +210,16 @@ public class InitArrayEmissionTests
           arrayType.SetType(typeof(int[]));
           
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, typeof(int)));
-          var assign = new AssignNode(new VariableDefinitionNode(arrayType, new VariableNameNode("a")), arrayInit);
+          var assign = new AssignNode([new VariableDefinitionNode(arrayType, new VariableNameNode("a"))], [arrayInit]);
 
-          var setItem = new ElemSetterNode(
-               new MemberNode("a"), 
-               new IndexerNode(new LiteralNode(0, typeof(int))),
-               new LiteralNode(5, typeof(int)));
-          setItem.SetItemType(typeof(int));
+          var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(0, typeof(int)));
+          indexer.SetItemType(typeof(int));
+          var setItem = new AssignNode(
+               [indexer],
+               [new LiteralNode(5, typeof(int))]
+          );
           
-          var getter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(0, typeof(int))));
+          var getter = new IndexerNode(new MemberNode("a"), new LiteralNode(0, typeof(int)));
           getter.SetItemType(typeof(int));
           var returnArrayInit = new InitArrayNode(itemType, getter);
           

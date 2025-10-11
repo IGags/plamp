@@ -4,9 +4,6 @@ using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
-using plamp.Abstractions.Ast.Node.Definitions;
-using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -17,46 +14,37 @@ public class AssignmentParsingTests
 {
     public static IEnumerable<object[]> ParseAssignment_Correct_DataProvider()
     {
-        yield return 
-        [
-            "int a := 5",
-            new AssignNode(
-                new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
-                new LiteralNode(5, typeof(int))
-            )
-        ];
         yield return
         [
             "a := 14.3",
             new AssignNode(
-                new MemberNode("a"),
-                new LiteralNode(14.3, typeof(double)))
+                [new MemberNode("a")],
+                [new LiteralNode(14.3, typeof(double))]
+            )
         ];
         yield return
         [
             "a[1] := 14",
-            new ElemSetterNode(
-                new MemberNode("a"),
-                new IndexerNode(new LiteralNode(1, typeof(int))),
-                new LiteralNode(14, typeof(int)))
+            new AssignNode(
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
+                [new LiteralNode(14, typeof(int))]
+            )
         ];
         yield return
         [
             "a[b] := 5",
-            new ElemSetterNode(
-                new MemberNode("a"),
-                new IndexerNode(new MemberNode("b")),
-                new LiteralNode(5, typeof(int)))
+            new AssignNode(
+                [new IndexerNode(new MemberNode("a"), new MemberNode("b"))],
+                [new LiteralNode(5, typeof(int))]
+            )
         ];
         yield return
         [
             "a[b][c] := d",
-            new ElemSetterNode(
-                new ElemGetterNode(
-                    new MemberNode("a"), 
-                    new IndexerNode(new MemberNode("b"))),
-                new IndexerNode(new MemberNode("c")),
-                new MemberNode("d"))
+            new AssignNode(
+                [new IndexerNode(new IndexerNode(new MemberNode("a"), new MemberNode("b")), new MemberNode("c"))],
+                [new MemberNode("d")]
+            )
         ];
     }
     

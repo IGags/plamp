@@ -37,7 +37,7 @@ public class CastEmissionTests
         var methodBody = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
-            new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
+            new AssignNode([new MemberNode(castResName)], [EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))]),
             new ReturnNode(new MemberNode(castResName))
         ]);
 
@@ -87,7 +87,7 @@ public class CastEmissionTests
         var methodBody = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
-            new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
+            new AssignNode([new MemberNode(castResName)], [EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))]),
             new ReturnNode(new MemberNode(castResName))
         ]);
         var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to);
@@ -260,9 +260,7 @@ public class CastEmissionTests
         var castToType = new TypeNode(new TypeNameNode("int"));
         castToType.SetType(typeof(int));
         
-        var elemGetter = new ElemGetterNode(
-            new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))));
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
         elemGetter.SetItemType(typeof(double));
         
         var castNode = new CastNode(castToType, elemGetter);
@@ -271,9 +269,9 @@ public class CastEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(variableType, new VariableNameNode("a")), 
-                new InitArrayNode(arrayItemType, new LiteralNode(5, typeof(int)))
-                ),
+                [new VariableDefinitionNode(variableType, new VariableNameNode("a"))], 
+                [new InitArrayNode(arrayItemType, new LiteralNode(5, typeof(int)))]
+            ),
             new ReturnNode(castNode)
         ]);
         

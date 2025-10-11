@@ -229,7 +229,7 @@ public class MethodCallTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(returnType), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), EmissionSetupHelper.CreateCallNode(new MemberNode(callbackArg.Name), info, [])),
+            new AssignNode([new MemberNode(tempVarName)], [EmissionSetupHelper.CreateCallNode(new MemberNode(callbackArg.Name), info, [])]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, methodInfo) =
@@ -266,7 +266,7 @@ public class MethodCallTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(retType), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), EmissionSetupHelper.CreateCallNode(null, info, [])),
+            new AssignNode([new MemberNode(tempVarName)], [EmissionSetupHelper.CreateCallNode(null, info, [])]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, retType);
@@ -317,15 +317,18 @@ public class MethodCallTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(retType), new VariableNameNode(tempVarName)),
             new AssignNode(
-                new MemberNode(tempVarName),
-                EmissionSetupHelper.CreateCallNode(
-                    new MemberNode(instanceArg.Name), 
-                    info, 
-                    [
-                        new MemberNode(callback1Arg.Name),
-                        new MemberNode(callback2Arg.Name),
-                        new MemberNode(callback3Arg.Name)
-                    ])
+                [new MemberNode(tempVarName)],
+                [
+                    EmissionSetupHelper.CreateCallNode(
+                        new MemberNode(instanceArg.Name), 
+                        info, 
+                        [
+                            new MemberNode(callback1Arg.Name),
+                            new MemberNode(callback2Arg.Name),
+                            new MemberNode(callback3Arg.Name)
+                        ]
+                    )
+                ]
             ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
@@ -393,15 +396,18 @@ public class MethodCallTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(retType), new VariableNameNode(tempVarName)),
             new AssignNode(
-                new MemberNode(tempVarName),
-                EmissionSetupHelper.CreateCallNode(
-                    null, 
-                    info, 
-                    [
-                        new MemberNode(callback1Arg.Name),
-                        new MemberNode(callback2Arg.Name),
-                        new MemberNode(callback3Arg.Name)
-                    ])
+                [new MemberNode(tempVarName)],
+                [
+                    EmissionSetupHelper.CreateCallNode(
+                        null, 
+                        info, 
+                        [
+                            new MemberNode(callback1Arg.Name),
+                            new MemberNode(callback2Arg.Name),
+                            new MemberNode(callback3Arg.Name)
+                        ]
+                    )
+                ]
             ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
@@ -504,16 +510,16 @@ public class MethodCallTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(zero))),
-            new AssignNode(new MemberNode(nameof(zero)), new LiteralNode(0, typeof(int))),
+            new AssignNode([new MemberNode(nameof(zero))], [new LiteralNode(0, typeof(int))]),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(one))),
-            new AssignNode(new MemberNode(nameof(one)), new LiteralNode(1, typeof(int))),
+            new AssignNode([new MemberNode(nameof(one))], [new LiteralNode(1, typeof(int))]),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(two))),
-            new AssignNode(new MemberNode(nameof(two)), new LiteralNode(2, typeof(int))),
+            new AssignNode([new MemberNode(nameof(two))], [new LiteralNode(2, typeof(int))]),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(eq0))),
-            new AssignNode(new MemberNode(nameof(eq0)), new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(zero)))),
+            new AssignNode([new MemberNode(nameof(eq0))], [new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(zero)))]),
             
             new ConditionNode(
                     new MemberNode(nameof(eq0)), 
@@ -523,7 +529,7 @@ public class MethodCallTests
                     ]), null),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(eq1))),
-            new AssignNode(new MemberNode(nameof(eq1)), new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))),
+            new AssignNode([new MemberNode(nameof(eq1))], [new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))]),
             
             new ConditionNode(
                     new MemberNode(nameof(eq1)), 
@@ -533,15 +539,15 @@ public class MethodCallTests
                     ]), null),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(nm1))),
-            new AssignNode(new MemberNode(nameof(nm1)), new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))),
-            new AssignNode(new MemberNode(nameof(nm1)), EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm1))])),
+            new AssignNode([new MemberNode(nameof(nm1))], [new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))]),
+            new AssignNode([new MemberNode(nameof(nm1))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm1))])]),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(nm2))),
-            new AssignNode(new MemberNode(nameof(nm2)), new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(two)))),
-            new AssignNode(new MemberNode(nameof(nm2)), EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm2))])),
+            new AssignNode([new MemberNode(nameof(nm2))], [new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(two)))]),
+            new AssignNode([new MemberNode(nameof(nm2))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), methodBuilder.GetInner(), [new MemberNode(nameof(nm2))])]),
             
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(sum))),
-            new AssignNode(new MemberNode(nameof(sum)), new AddNode(new MemberNode(nameof(nm1)), new MemberNode (nameof(nm2)))),
+            new AssignNode([new MemberNode(nameof(sum))], [new AddNode(new MemberNode(nameof(nm1)), new MemberNode (nameof(nm2)))]),
             new ReturnNode(new MemberNode(nameof(sum)))
         ]);
         
@@ -608,11 +614,11 @@ public class MethodCallTests
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)),
                 new VariableNameNode(nameof(temp2))),
 
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode("Hi", typeof(string))),
-            new AssignNode(new MemberNode(nameof(temp2)), new LiteralNode("Bye", typeof(string))),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode("Hi", typeof(string))]),
+            new AssignNode([new MemberNode(nameof(temp2))], [new LiteralNode("Bye", typeof(string))]),
 
-            new AssignNode(new MemberNode(otherArg.Name),
-                EmissionSetupHelper.CreateCallNode(new MemberNode(otherArg.Name), mth, [new MemberNode(nameof(temp1)), new MemberNode(nameof(temp2))])),
+            new AssignNode([new MemberNode(otherArg.Name)],
+                [EmissionSetupHelper.CreateCallNode(new MemberNode(otherArg.Name), mth, [new MemberNode(nameof(temp1)), new MemberNode(nameof(temp2))])]),
             new ReturnNode(new MemberNode(otherArg.Name))
         ]);
 
@@ -626,8 +632,8 @@ public class MethodCallTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(nameof(temp1))),
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode(literal, literal.GetType())),
-            new AssignNode(new MemberNode(nameof(temp1)), EmissionSetupHelper.CreateCallNode(new ThisNode(), otherBuilder, [new MemberNode(nameof(temp1))])),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(literal, literal.GetType())]),
+            new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), otherBuilder, [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
@@ -676,7 +682,7 @@ public class MethodCallTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(temp1))),
-            new AssignNode(new MemberNode(nameof(temp1)), EmissionSetupHelper.CreateCallNode(new MemberNode(instanceArg.Name), mth, [])),
+            new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(new MemberNode(instanceArg.Name), mth, [])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
@@ -733,20 +739,20 @@ public class MethodCallTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(nameof(temp1))),
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(nameof(temp2))),
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode(secondName, secondName.GetType())),
-            new AssignNode(new MemberNode(nameof(temp2)), EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, secondName.GetType())]),
+            new AssignNode([new MemberNode(nameof(temp2))], [EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])]),
             
             new ConditionNode(
                 new MemberNode(nameof(temp2)),
                 new BodyNode(
                     [
                         new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(nameof(temp3))),
-                        new AssignNode(new MemberNode(nameof(temp3)), new LiteralNode(m1Literal, m1Literal.GetType())),
+                        new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m1Literal, m1Literal.GetType())]),
                         new ReturnNode(new MemberNode(nameof(temp3)))
                     ]),
                 null),
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode(firstName, firstName.GetType())),
-            new AssignNode(new MemberNode(nameof(temp1)), EmissionSetupHelper.CreateCallNode(null, method2Builder, [new MemberNode(nameof(temp1))])),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, firstName.GetType())]),
+            new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(null, method2Builder, [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
         
@@ -756,20 +762,20 @@ public class MethodCallTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(nameof(temp1))),
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(nameof(temp2))),
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode(firstName, firstName.GetType())),
-            new AssignNode(new MemberNode(nameof(temp2)), EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, firstName.GetType())]),
+            new AssignNode([new MemberNode(nameof(temp2))], [EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])]),
             
             new ConditionNode(
                 new MemberNode(nameof(temp2)),
                 new BodyNode(
                 [
                     new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(nameof(temp3))),
-                    new AssignNode(new MemberNode(nameof(temp3)), new LiteralNode(m2Literal, m2Literal.GetType())),
+                    new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m2Literal, m2Literal.GetType())]),
                     new ReturnNode(new MemberNode(nameof(temp3)))
                 ]),
                 null),
-            new AssignNode(new MemberNode(nameof(temp1)), new LiteralNode(secondName, secondName.GetType())),
-            new AssignNode(new MemberNode(nameof(temp1)), EmissionSetupHelper.CreateCallNode(null, methodBuilder.GetInner(), [new MemberNode(nameof(temp1))])),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, secondName.GetType())]),
+            new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(null, methodBuilder.GetInner(), [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
@@ -804,7 +810,7 @@ public class MethodCallTests
         var arrayParam = new TestParameter(typeof(int[]), "a");
         var indexerParam = new TestParameter(typeof(int), "ix");
 
-        var getter = new ElemGetterNode(new MemberNode("a"), new IndexerNode(new MemberNode("ix")));
+        var getter = new IndexerNode(new MemberNode("a"), new MemberNode("ix"));
         getter.SetItemType(typeof(int));
 
         var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter]);

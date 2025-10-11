@@ -34,12 +34,12 @@ public class FlowControlTests
         bool iter, t;
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter))), new LiteralNode(0, typeof(int))),
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(t))), new LiteralNode(0, typeof(int))),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter)))], [new LiteralNode(0, typeof(int))]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(t)))], [new LiteralNode(0, typeof(int))]),
             new WhileNode(new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
                 new BodyNode(
                 [
-                    new AssignNode(new MemberNode(nameof(iter)), new AddNode(new MemberNode(nameof(iter)), new LiteralNode(1, typeof(int)))),
+                    new AssignNode([new MemberNode(nameof(iter))], [new AddNode(new MemberNode(nameof(iter)), new LiteralNode(1, typeof(int)))]),
                     new ConditionNode(
                         new EqualNode(
                             new ModuloNode(
@@ -50,7 +50,7 @@ public class FlowControlTests
                         [
                             new ContinueNode()
                         ]), null),
-                    new AssignNode(new MemberNode(nameof(t)), new AddNode(new MemberNode(nameof(t)), new LiteralNode(1, typeof(int))))
+                    new AssignNode([new MemberNode(nameof(t))], [new AddNode(new MemberNode(nameof(t)), new LiteralNode(1, typeof(int)))])
                 ])),
             new ReturnNode(new MemberNode(nameof(t)))
         ]);
@@ -79,21 +79,21 @@ public class FlowControlTests
         const int iterationCount = 10;
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i))), new LiteralNode(0, typeof(int))),
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(k))), new LiteralNode(0, typeof(int))),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i)))], [new LiteralNode(0, typeof(int))]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(k)))], [new LiteralNode(0, typeof(int))]),
             new WhileNode(new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, iterationCount.GetType())),
                 new BodyNode(
                 [
-                    new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(j))), new LiteralNode(0, typeof(int))),
+                    new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(j)))], [new LiteralNode(0, typeof(int))]),
                     new WhileNode(
                         new LessNode(new MemberNode(nameof(j)), new LiteralNode(iterationCount, iterationCount.GetType())),
                         new BodyNode(
                         [
-                            new AssignNode(new MemberNode(nameof(j)), new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int)))),
+                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int)))]),
                             new ContinueNode(),
-                            new AssignNode(new MemberNode(nameof(k)), new AddNode(new MemberNode(nameof(k)), new LiteralNode(1, typeof(int))))
+                            new AssignNode([new MemberNode(nameof(k))], [new AddNode(new MemberNode(nameof(k)), new LiteralNode(1, typeof(int)))])
                         ])),
-                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int)))])
                 ])),
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
         ]);
@@ -123,7 +123,7 @@ public class FlowControlTests
         bool i;
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i))), new LiteralNode(0, typeof(int))),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i)))], [new LiteralNode(0, typeof(int))]),
             new WhileNode(new LiteralNode(true, typeof(bool)),
                 new BodyNode(
                 [
@@ -133,7 +133,7 @@ public class FlowControlTests
                         [
                             new BreakNode()
                         ]), null),
-                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int)))])
                 ])),
             new ReturnNode(new MemberNode(nameof(i)))
         ]);
@@ -160,8 +160,8 @@ public class FlowControlTests
         bool i, j;
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i))), new LiteralNode(0, typeof(int))),
-            new AssignNode(new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(j))), new LiteralNode(0, typeof(int))),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(i)))], [new LiteralNode(0, typeof(int))]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(j)))], [new LiteralNode(0, typeof(int))]),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, typeof(int))),
                 new BodyNode(
@@ -170,9 +170,9 @@ public class FlowControlTests
                         new BodyNode(
                         [
                             new BreakNode(),
-                            new AssignNode(new MemberNode(nameof(j)), new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int))))
+                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, typeof(int)))])
                         ])),
-                    new AssignNode(new MemberNode(nameof(i)), new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int))))
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, typeof(int)))])
                 ])),
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
         ]);

@@ -96,7 +96,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode(new MemberNode("b"), new CallNode(null, new FuncCallNameNode("a"), []))
+            new AssignNode([new MemberNode("b")], [new CallNode(null, new FuncCallNameNode("a"), [])])
         ]);
         
         var retType = new TypeNode(new TypeNameNode("void"));
@@ -168,8 +168,9 @@ public class FuncCallTypeInferenceTests
         const string code = "mock(1);";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
+        var result = Parser.TryParseStatement(context, out var expressions);
         result.ShouldBe(true);
+        var expression = expressions.ShouldHaveSingleItem();
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);
 
@@ -186,7 +187,7 @@ public class FuncCallTypeInferenceTests
             ], new BodyNode([]));
         
         preCreation.Functions.Add("mock", mockFuncDef);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -196,7 +197,8 @@ public class FuncCallTypeInferenceTests
         const string code = "mock(1i);";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
+        var result = Parser.TryParseStatement(context, out var expressions);
+        var expression = expressions.ShouldHaveSingleItem();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);
@@ -214,7 +216,7 @@ public class FuncCallTypeInferenceTests
             ], new BodyNode([]));
         
         preCreation.Functions.Add("mock", mockFuncDef);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
     

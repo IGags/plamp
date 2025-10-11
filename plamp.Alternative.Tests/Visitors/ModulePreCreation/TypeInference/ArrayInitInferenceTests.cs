@@ -23,10 +23,10 @@ public class ArrayInitInferenceTests
     public void InitArrayInferenceType_Correct()
     {
         var assign = new AssignNode(
-            new MemberNode("a"),
-            new InitArrayNode(
+            [new MemberNode("a")],
+            [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(3, typeof(int))));
+                new LiteralNode(3, typeof(int)))]);
 
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -34,7 +34,7 @@ public class ArrayInitInferenceTests
         _ = visitor.WeaveDiffs(assign, context);
         
         context.Exceptions.ShouldBeEmpty();
-        assign.Sources.ShouldBeOfType<InitArrayNode>()
+        assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>()
             .ArrayItemType.Symbol.ShouldNotBeNull().ShouldBe(typeof(int));
     }
 
@@ -42,10 +42,10 @@ public class ArrayInitInferenceTests
     public void InitArrayInvalidLength_ReturnsError()
     {
         var assign = new AssignNode(
-            new MemberNode("a"),
-            new InitArrayNode(
+            [new MemberNode("a")],
+            [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new MemberNode("biba")));
+                new MemberNode("biba"))]);
         
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -65,10 +65,10 @@ public class ArrayInitInferenceTests
     public void InitArrayImplicitCastLength_Correct()
     {
         var assign = new AssignNode(
-            new MemberNode("a"),
-            new InitArrayNode(
+            [new MemberNode("a")],
+            [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(1, typeof(byte))));
+                new LiteralNode(1, typeof(byte)))]);
         
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -76,7 +76,7 @@ public class ArrayInitInferenceTests
         _ = visitor.WeaveDiffs(assign, context);
         
         context.Exceptions.ShouldBeEmpty();
-        assign.Sources.ShouldBeOfType<InitArrayNode>()
+        assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>()
             .LengthDefinition.ShouldBeOfType<CastNode>()
             .FromType.ShouldBe(typeof(byte));
     }
@@ -85,10 +85,10 @@ public class ArrayInitInferenceTests
     public void InitArrayImplicitCastLength_Incorrect()
     {
         var assign = new AssignNode(
-            new MemberNode("a"),
-            new InitArrayNode(
+            [new MemberNode("a")],
+            [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(1, typeof(long))));
+                new LiteralNode(1, typeof(long)))]);
         
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -117,10 +117,10 @@ public class ArrayInitInferenceTests
         context.Exceptions.ShouldBeEmpty();
         var assign = body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
         
-        assign.Targets.ShouldBeOfType<VariableDefinitionNode>()
+        assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
             .Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int[][]));
         
-        var call = assign.Sources.ShouldBeOfType<CallNode>();
+        var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
         call.From.ShouldBeNull();
         call.Name.Value.ShouldBe("__FROM_C#__ARRAY::Empty<T>");
         call.Args.ShouldBeEmpty();

@@ -28,17 +28,21 @@ public class LoopEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter))),
-                new LiteralNode(0, typeof(int))),
+                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter)))],
+                [new LiteralNode(0, typeof(int))]
+            ),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
                 new BodyNode(
                 [
                     new AssignNode(
-                        new MemberNode(nameof(iter)),
-                        new AddNode(
-                            new MemberNode(nameof(iter)),
-                            new LiteralNode(1, typeof(int))))
+                        [new MemberNode(nameof(iter))],
+                        [
+                            new AddNode(
+                                new MemberNode(nameof(iter)),
+                                new LiteralNode(1, typeof(int)))
+                        ]
+                    )
                 ])),
             new ReturnNode(new MemberNode(nameof(iter)))
         ]);

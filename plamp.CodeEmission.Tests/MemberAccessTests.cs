@@ -75,8 +75,9 @@ public class MemberAccessTests
                 new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
-                new MemberNode(tempVarName),
-                memberNode),
+                [new MemberNode(tempVarName)],
+                [memberNode]
+            ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([objParam], body, returnType);
@@ -114,12 +115,14 @@ public class MemberAccessTests
         {
             case FieldInfo fld:
                 memberNode = new AssignNode(
-                    new MemberAccessNode(
-                        new MemberNode(objParam.Name),
-                        EmissionSetupHelper.CreateMemberNode(fld)
-                        ),
-                    new MemberNode(valParam.Name)
-                    );
+                    [
+                        new MemberAccessNode(
+                            new MemberNode(objParam.Name),
+                            EmissionSetupHelper.CreateMemberNode(fld)
+                            ),
+                    ],
+                    [new MemberNode(valParam.Name)]
+                );
                 break;
             case PropertyInfo prop:
                 memberNode = EmissionSetupHelper.CreateCallNode(
@@ -203,13 +206,15 @@ public class MemberAccessTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(resShould.GetType()), new VariableNameNode(tempVarName)),
             new AssignNode(
-                new MemberNode(tempVarName), 
-                EmissionSetupHelper.CreateCallNode(
-                    new MemberNode(objParam.Name),
-                    indexerGetter,
-                    [new MemberNode(valParam.Name)]
+                [new MemberNode(tempVarName)], 
+                [
+                    EmissionSetupHelper.CreateCallNode(
+                        new MemberNode(objParam.Name),
+                        indexerGetter,
+                        [new MemberNode(valParam.Name)]
                     )
-                ),
+                ]
+            ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 

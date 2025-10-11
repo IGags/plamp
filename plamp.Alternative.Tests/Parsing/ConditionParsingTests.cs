@@ -36,7 +36,7 @@ public class ConditionParsingTests
             new ConditionNode(
                 new MemberNode("a"),
                 new BodyNode([
-                    new AssignNode(new MemberNode("a"), new MemberNode("b"))
+                    new AssignNode([new MemberNode("a")], [new MemberNode("b")])
                 ]),
                 null)
         ];

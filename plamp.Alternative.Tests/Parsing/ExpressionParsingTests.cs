@@ -3,7 +3,6 @@ using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -81,7 +80,7 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
-        yield return ["a[1]", new ElemGetterNode(new MemberNode("a"), new IndexerNode(new LiteralNode(1, typeof(int))))];
+        yield return ["a[1]", new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))];
     }
     
     [Theory]
@@ -140,7 +139,6 @@ public class ExpressionParsingTests
         yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)))];
         yield return ["x || y", new OrNode(new MemberNode("x"), new MemberNode("y"))];
         yield return ["a && b", new AndNode(new MemberNode("a"), new MemberNode("b"))];
-        yield return ["x := 3", new AssignNode(new MemberNode("x"), new LiteralNode(3, typeof(int)))];
     }
     
     [Theory]

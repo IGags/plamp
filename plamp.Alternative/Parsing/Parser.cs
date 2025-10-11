@@ -594,6 +594,7 @@ public static class Parser
             return false;
         }
 
+        context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseAssignmentSourceSequence(context, out var sources))
         {
             return false;
@@ -625,7 +626,7 @@ public static class Parser
             
             var memberNode = new MemberNode(member.GetStringRepresentation());
             context.SymbolTable.AddSymbol(memberNode, member.Position);
-            
+            context.Sequence.MoveNextNonWhiteSpace();
             
             var indexerFork = context.Fork();
             if (context.Sequence.Current() is OpenSquareBracket 
@@ -638,8 +639,6 @@ public static class Parser
             {
                 members.Add(memberNode);
             }
-
-            context.Sequence.MoveNextNonWhiteSpace();
             moveNext = true;
         }
         while (context.Sequence.Current() is Comma);
@@ -657,7 +656,7 @@ public static class Parser
         {
             if (moveNext) context.Sequence.MoveNextNonWhiteSpace();
             var nudFork = context.Fork();
-            if (!TryParseNud(nudFork, out var source))
+            if (!TryParsePrecedence(nudFork, out var source))
             {
                 var record = PlampExceptionInfo.ExpectedAssignmentSource();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
@@ -666,7 +665,7 @@ public static class Parser
 
             assignmentSources ??= [];
             assignmentSources.Add(source);
-            context.Sequence.MoveNextNonWhiteSpace();
+            context.Merge(nudFork);
             moveNext = true;
         } while (context.Sequence.Current() is Comma);
 
@@ -1186,6 +1185,7 @@ public static class Parser
         {
             var variableDefinition = new VariableDefinitionNode(type, nameNode);
             context.SymbolTable.AddSymbol(variableDefinition, context.Sequence.CurrentPosition);
+            definitions.Add(variableDefinition);
         }
         
         return true;

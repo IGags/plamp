@@ -166,8 +166,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(initArray, context, parent, PreVisitInitArray, PostVisitInitArray);
             case ArrayTypeSpecificationNode arrayRank:
                 return VisitCore(arrayRank, context, parent, PreVisitArrayTypeSpecification, PostVisitArrayTypeSpecification);
-            case ArrayElemSetter elemGetter:
-                return VisitCore(elemGetter, context, parent, PreVisitArrayElemSetter, PostVisitArrayElemSetter);
             case IndexerNode arrayIndexerNode:
                 return VisitCore(arrayIndexerNode, context, parent, PreVisitArrayIndexer, PostVisitArrayIndexer);
             case AssignNode assignNode:
@@ -1152,22 +1150,6 @@ public abstract class BaseVisitor<TContext>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
     protected virtual VisitResult PostVisitArrayTypeSpecification(ArrayTypeSpecificationNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-
-    /// <summary>
-    /// Вызов перед посещением узла установки элемента массива
-    /// </summary>
-    /// <param name="node">Узел установки элемента массива</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitArrayElemSetter(ArrayElemSetter node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов после посещения узла установки элемента массива
-    /// </summary>
-    /// <param name="node">Узел установки элемента массива</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitArrayElemSetter(ArrayElemSetter node, TContext context, NodeBase? parent) => VisitResult.Continue;
 
     /// <summary>
     /// Вызов перед посещением узла индексации массива

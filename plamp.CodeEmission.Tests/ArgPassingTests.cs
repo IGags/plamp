@@ -67,12 +67,13 @@ public class ArgPassingTests
                 new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
-                new MemberNode(tempVarName), 
-                new AddNode(
-                    new MemberNode(p1.Name), 
-                    new MemberNode(p2.Name)
+                [new MemberNode(tempVarName)], 
+                [
+                    new AddNode(
+                        new MemberNode(p1.Name), 
+                        new MemberNode(p2.Name)
                     )
-                ),
+                ]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var returnType = typeof(int);

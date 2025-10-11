@@ -24,18 +24,19 @@ public class ArrayElementNodeManipulationTests
         var varType = new TypeNode(new TypeNameNode("int")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]};
         var arrayItemType = new TypeNode(new TypeNameNode("int"));
         return new AssignNode(
-            new VariableDefinitionNode(varType, new VariableNameNode(arrayVarName)),
-            new InitArrayNode(arrayItemType, new LiteralNode(3, typeof(int))));
+            [new VariableDefinitionNode(varType, new VariableNameNode(arrayVarName))],
+            [new InitArrayNode(arrayItemType, new LiteralNode(3, typeof(int)))]
+        );
     }
     
     [Fact]
     public void InferenceArrayTypeInArrayGetter_Correct()
     {
         var arrayName = "a";
-        var arrayGetter = new ElemGetterNode(new MemberNode(arrayName),
-            new IndexerNode(new LiteralNode(1, typeof(int))));
+        var arrayGetter = 
+            new IndexerNode(new MemberNode(arrayName), new LiteralNode(1, typeof(int)));
 
-        var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
+        var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
         [
             MakeArrayInitNode(arrayName),
@@ -57,10 +58,10 @@ public class ArrayElementNodeManipulationTests
         var varType = new TypeNode(new TypeNameNode("int"));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
-        var arrayGetter = new ElemGetterNode(new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))));
+        var arrayGetter = 
+            new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
 
-        var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
+        var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
         [
             def,
@@ -82,9 +83,9 @@ public class ArrayElementNodeManipulationTests
         varType.SetType(typeof(int[,]));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
-        var arrayGetter = new ElemGetterNode(new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))));
-        var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
+        var arrayGetter = 
+            new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
+        var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
         [
             def,
@@ -104,10 +105,9 @@ public class ArrayElementNodeManipulationTests
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         var assign = new AssignNode(
-            new MemberNode("b"),
-            new ElemGetterNode(
-                new MemberNode("a"),
-                new IndexerNode(new LiteralNode('a', typeof(char)))));
+            [new MemberNode("b")],
+            [new IndexerNode(new MemberNode("a"), new LiteralNode('a', typeof(char)))]
+        );
         var ast = new BodyNode(
         [
             array,
@@ -126,10 +126,10 @@ public class ArrayElementNodeManipulationTests
     {
         const string arrayName = "a";
         var arrayInit = MakeArrayInitNode(arrayName);
-        var setter = new ElemSetterNode(
-            new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))),
-            new LiteralNode(1, typeof(int)));
+        var setter = new AssignNode(
+            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
+            [new LiteralNode(1, typeof(int))]
+        );
 
         var ast = new BodyNode(
         [
@@ -142,24 +142,24 @@ public class ArrayElementNodeManipulationTests
         var context = fixture.Create<PreCreationContext>();
         _ = visitor.WeaveDiffs(ast, context);
         context.Exceptions.ShouldBeEmpty();
-        setter.ItemType.ShouldNotBeNull().ShouldBe(typeof(int));
+        setter.Targets.ShouldHaveSingleItem().ShouldBeOfType<IndexerNode>().ItemType.ShouldNotBeNull().ShouldBe(typeof(int));
     }
 
     [Fact]
-    public void InferenceArrayElemSetterToNotArrayTye_ReturnsError()
+    public void InferenceArrayElemSetterToNotArrayType_ReturnsError()
     {
         var varType = new TypeNode(new TypeNameNode("int"));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
-        var arrayGetter = new ElemSetterNode(new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))),
-            new LiteralNode(1, typeof(int)));
+        var assign = new AssignNode(
+            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
+            [new LiteralNode(1, typeof(int))]
+        );
 
-        var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
         var ast = new BodyNode(
         [
             def,
-            itemAssign
+            assign
         ]);
 
         var visitor = new TypeInferenceWeaver();
@@ -177,13 +177,14 @@ public class ArrayElementNodeManipulationTests
         varType.SetType(typeof(int[,]));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
-        var arraySetter = new ElemSetterNode(new MemberNode("a"),
-            new IndexerNode(new LiteralNode(1, typeof(int))),
-            new LiteralNode(1, typeof(int)));
+        var assign = new AssignNode(
+            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
+            [new LiteralNode(1, typeof(int))]
+        );
         var ast = new BodyNode(
         [
             def,
-            arraySetter
+            assign
         ]);
         
         var visitor = new TypeInferenceWeaver();
@@ -199,10 +200,10 @@ public class ArrayElementNodeManipulationTests
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         
-        var setter = new ElemSetterNode(
-                new MemberNode("a"),
-                new IndexerNode(new LiteralNode('a', typeof(char))),
-                new LiteralNode('a', typeof(char)));
+        var setter = new AssignNode(
+                [new IndexerNode(new MemberNode("a"), new LiteralNode('a', typeof(char)))],
+                [new LiteralNode('a', typeof(char))]
+        );
         var ast = new BodyNode(
         [
             array,
@@ -214,7 +215,7 @@ public class ArrayElementNodeManipulationTests
         var context = fixture.Create<PreCreationContext>();
         _ = visitor.WeaveDiffs(ast, context);
         var errorCodeShould = new List<string>()
-            { PlampExceptionInfo.CannotAssign().Code, PlampExceptionInfo.IndexerValueMustBeInteger().Code };
+            { PlampExceptionInfo.IndexerValueMustBeInteger().Code, PlampExceptionInfo.CannotAssign().Code };
         context.Exceptions.Select(x => x.Code).ToList().ShouldBeEquivalentTo(errorCodeShould);
     }
 
@@ -223,10 +224,9 @@ public class ArrayElementNodeManipulationTests
     {
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
-        var arrayGetter = new ElemGetterNode(new MemberNode(arrName),
-            new IndexerNode(new LiteralNode(1, typeof(byte))));
+        var arrayGetter = new IndexerNode(new MemberNode(arrName), new LiteralNode(1, typeof(byte)));
 
-        var itemAssign = new AssignNode(new MemberNode("b"), arrayGetter);
+        var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
         [
             array,
@@ -243,8 +243,8 @@ public class ArrayElementNodeManipulationTests
             .ExpressionList.ShouldSatisfyAllConditions(
                 x => x.Count.ShouldBe(2), 
                 x => x[1].ShouldBeOfType<AssignNode>()
-                    .Sources.ShouldBeOfType<ElemGetterNode>()
-                    .ArrayIndexer.IndexMember.ShouldBeOfType<CastNode>()
+                    .Sources.ShouldHaveSingleItem().ShouldBeOfType<IndexerNode>()
+                    .IndexMember.ShouldBeOfType<CastNode>()
                     .FromType.ShouldBe(typeof(byte)));
     }
 
@@ -253,10 +253,10 @@ public class ArrayElementNodeManipulationTests
     {
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
-        var arraySetter = new ElemSetterNode(
-            new MemberNode(arrName),
-            new IndexerNode(new LiteralNode(1, typeof(byte))),
-            new LiteralNode(1, typeof(int)));
+        var arraySetter = new AssignNode(
+            [new IndexerNode(new MemberNode(arrName), new LiteralNode(1, typeof(byte)))],
+            [new LiteralNode(1, typeof(int))]
+        );
 
         var ast = new BodyNode(
         [
@@ -273,8 +273,9 @@ public class ArrayElementNodeManipulationTests
         ast.ShouldBeOfType<BodyNode>()
             .ExpressionList.ShouldSatisfyAllConditions(
                 x => x.Count.ShouldBe(2), 
-                x => x[1].ShouldBeOfType<ElemSetterNode>()
-                    .ArrayIndexer.IndexMember.ShouldBeOfType<CastNode>()
-                    .FromType.ShouldBe(typeof(byte)));
+                x => x[1].ShouldBeOfType<AssignNode>()
+                    .Sources.ShouldHaveSingleItem()
+                    .ShouldBeOfType<LiteralNode>()
+                    .Value.ShouldBe(1));
     }
 }

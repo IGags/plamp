@@ -20,13 +20,14 @@ public class AssignNodeImplicitCastTests
         const string code = "double a := 1i";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
+        var result = Parser.TryParseStatement(context, out var expressions);
+        var expression = expressions.ShouldHaveSingleItem();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         expression.ShouldBeOfType<AssignNode>()
-            .Sources.ShouldBeOfType<CastNode>()
+            .Sources.ShouldHaveSingleItem().ShouldBeOfType<CastNode>()
             .ShouldSatisfyAllConditions(
                 x => x.FromType.ShouldBe(typeof(int)),
                 x => x.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double)));
@@ -54,7 +55,8 @@ public class AssignNodeImplicitCastTests
                 x => x.ExpressionList.Count.ShouldBe(2),
                 x => x.ExpressionList[1]
                     .ShouldBeOfType<AssignNode>()
-                    .Sources.ShouldBeOfType<CastNode>()
+                    .Sources.ShouldHaveSingleItem()
+                    .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
                         y => y.FromType.ShouldBe(typeof(int)),
                         y => y.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double))));
@@ -67,11 +69,12 @@ public class AssignNodeImplicitCastTests
         const string code = "int a := 1d";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
+        var result = Parser.TryParseStatement(context, out var expressions);
+        var expression = expressions.ShouldHaveSingleItem();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }
     

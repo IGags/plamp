@@ -16,7 +16,7 @@ public class VariableDefinitionParsingTests
     public void ParseVariableDefinition_Correct()
     {
         const string code = "int a";
-        var ast = new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"));
+        var ast = new List<VariableDefinitionNode>{new(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))};
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
@@ -30,9 +30,12 @@ public class VariableDefinitionParsingTests
     public void ParseArrayTypedVariableDefinition_Correct()
     {
         const string code = "[]int a";
-        var ast = new VariableDefinitionNode(
-            new TypeNode(new TypeNameNode("int")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, 
-            new VariableNameNode("a"));
+        var ast = new List<VariableDefinitionNode>
+        {
+            new(
+                new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [new ArrayTypeSpecificationNode()] },
+                new VariableNameNode("a"))
+        };
         
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));

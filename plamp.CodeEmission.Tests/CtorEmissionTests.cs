@@ -73,8 +73,9 @@ public class CtorEmissionTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new VariableNameNode(tempVarName)),
             new AssignNode(
-                new MemberNode(tempVarName), 
-                EmissionSetupHelper.CreateConstructorNode(EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)),
+                [new MemberNode(tempVarName)], 
+                [EmissionSetupHelper.CreateConstructorNode(EmissionSetupHelper.CreateTypeNode(objectType), [], ctorInfo)]
+            ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
@@ -108,15 +109,18 @@ public class CtorEmissionTests
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(objectType), new VariableNameNode(tempVarName)),
             new AssignNode(
-                new MemberNode(tempVarName), 
-                EmissionSetupHelper.CreateConstructorNode(
-                    EmissionSetupHelper.CreateTypeNode(objectType), 
-                    [
-                        new MemberNode(arg1.Name),
-                        new MemberNode(arg2.Name),
-                        new MemberNode(arg3.Name)
-                    ],
-                    ctorInfo)),
+                [new MemberNode(tempVarName)], 
+                [
+                    EmissionSetupHelper.CreateConstructorNode(
+                        EmissionSetupHelper.CreateTypeNode(objectType), 
+                        [
+                            new MemberNode(arg1.Name),
+                            new MemberNode(arg2.Name),
+                            new MemberNode(arg3.Name)
+                        ],
+                        ctorInfo)
+                ]
+            ),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
