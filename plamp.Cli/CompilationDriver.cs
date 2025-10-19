@@ -8,7 +8,6 @@ using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.DuplicateArgumentName;
-using plamp.Alternative.Visitors.ModulePreCreation.ImplicitReturnInVoid;
 using plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
 using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
@@ -46,9 +45,6 @@ public static class CompilationDriver
         
         var typeInferenceVisitor = new TypeInferenceWeaver();
         context = typeInferenceVisitor.WeaveDiffs(ast, context);
-
-        var implicitReturnConversionWeaver = new ImplicitReturnInVoidFuncWeaver();
-        context = implicitReturnConversionWeaver.WeaveDiffs(ast, context);
 
         if (context.Exceptions.Count != 0)
         {

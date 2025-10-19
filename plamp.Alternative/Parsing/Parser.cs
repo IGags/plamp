@@ -12,6 +12,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Tokenization.Enums;
@@ -49,6 +50,7 @@ public static class Parser
 
             modules = null;
         }
+
         var moduleDef = modules?.FirstOrDefault();
         var node = new RootNode(imports, moduleDef, functions);
         context.SymbolTable.AddSymbol(node, default);
@@ -56,23 +58,27 @@ public static class Parser
     }
 
     public static bool TryParseTopLevel(
-        ParsingContext context, 
+        ParsingContext context,
         [NotNullWhen(true)] out NodeBase? topLevel)
     {
         topLevel = null;
         switch (context.Sequence.Current())
         {
             case KeywordToken { Keyword: Keywords.Use }:
-                if(!TryParseUse(context, out var import)) return false;
+                if (!TryParseUse(context, out var import)) return false;
                 topLevel = import;
                 return true;
-            case KeywordToken {Keyword: Keywords.Module}:
-                if(!TryParseModuleDef(context, out var module)) return false;
+            case KeywordToken { Keyword: Keywords.Module }:
+                if (!TryParseModuleDef(context, out var module)) return false;
                 topLevel = module;
                 return true;
-            case KeywordToken {Keyword: Keywords.Fn}:
-                if(!TryParseFunc(context, out var fn)) return false;
+            case KeywordToken { Keyword: Keywords.Fn }:
+                if (!TryParseFunc(context, out var fn)) return false;
                 topLevel = fn;
+                return true;
+            case KeywordToken { Keyword: Keywords.Type }:
+                if (!TryParseTypedef(context, out var typ)) return false;
+                topLevel = typ;
                 return true;
             default:
                 AddUnexpectedTokenException(context);
@@ -81,28 +87,122 @@ public static class Parser
         }
     }
 
+    #region Typedef
+
+    public static bool TryParseTypedef(ParsingContext context, [NotNullWhen(true)] out TypedefNode? typedef)
+    {
+        typedef = null;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Type } typeKeyword) return false;
+        context.Sequence.MoveNextNonWhiteSpace();
+
+        if (context.Sequence.Current() is not Word typeName)
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Sequence.MoveNextNonWhiteSpace();
+
+        if (context.Sequence.Current() is not OpenCurlyBracket)
+        {
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Sequence.MoveNextNonWhiteSpace();
+        var fields = new List<FieldNode>();
+        while (context.Sequence.Current() is not EndOfFile or CloseCurlyBracket)
+        {
+            if (TryParseField(context, out var fieldNode))
+            {
+                fields.Add(fieldNode);
+                ConsumeEndOfStatement(context);
+            }
+        }
+
+        if (context.Sequence.Current() is EndOfFile)
+        {
+            var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+        }
+
+        var name = new TypedefNameNode(typeName.GetStringRepresentation());
+        context.SymbolTable.AddSymbol(name, typeName.Position);
+        typedef = new TypedefNode(name, fields);
+        context.SymbolTable.AddSymbol(typedef, typeKeyword.Position);
+        return true;
+    }
+
+    public static bool TryParseField(ParsingContext context, [NotNullWhen(true)] out FieldNode? fieldNode)
+    {
+        fieldNode = null;
+        if (context.Sequence.Current() is not Word start) return false;
+
+        var fieldNames = new List<FieldNameNode>();
+        var first = true;
+        do
+        {
+            var iterFork = context.Fork();
+            if (!first) iterFork.Sequence.MoveNextNonWhiteSpace();
+            if (iterFork.Sequence.Current() is not Word name) break;
+            context.Merge(iterFork);
+
+            var fieldName = new FieldNameNode(name.GetStringRepresentation());
+            context.SymbolTable.AddSymbol(fieldName, context.Sequence.CurrentPosition);
+            fieldNames.Add(fieldName);
+            context.Sequence.MoveNextNonWhiteSpace();
+            first = false;
+        } while (context.Sequence.Current() is Comma);
+
+        if (context.Sequence.Current() is not Colon)
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Sequence.MoveNextNonWhiteSpace();
+        var typFork = context.Fork();
+        if (!TryParseType(typFork, out var type))
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Merge(typFork);
+        fieldNode = new FieldNode(type, fieldNames);
+        context.SymbolTable.AddSymbol(fieldNode, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+
+        return true;
+    }
+
+    #endregion
+
     #region Use
 
     public static bool TryParseUse(
-        ParsingContext context, 
+        ParsingContext context,
         [NotNullWhen(true)] out ImportNode? importNode)
     {
         importNode = null;
         var importKeyword = context.Sequence.Current();
         if (importKeyword is not KeywordToken { Keyword: Keywords.Use }) return false;
         context.Sequence.MoveNextNonWhiteSpace();
-        
+
         var moduleName = GetModuleNameOrDefault(context);
         if (moduleName == null) return false;
-        
+
         if (context.Sequence.Current() is OpenCurlyBracket)
         {
-            if(!GetImportItems(context, out var list)) return false;
+            if (!GetImportItems(context, out var list)) return false;
             importNode = new ImportNode(moduleName, list);
             context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
             return true;
         }
-        
+
         importNode = new ImportNode(moduleName, null);
         context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
         ConsumeEndOfStatement(context);
@@ -118,9 +218,10 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, current.Position));
             return null;
         }
+
         var name = modName.GetStringRepresentation();
         context.Sequence.MoveNextNonWhiteSpace();
-        
+
         while (context.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Access })
         {
             context.Sequence.MoveNextNonWhiteSpace();
@@ -141,7 +242,7 @@ public static class Parser
     }
 
     private static bool TryParseImportItem(
-        ParsingContext context, 
+        ParsingContext context,
         [NotNullWhen(true)] out ImportItemNode? importItem)
     {
         importItem = null;
@@ -157,7 +258,7 @@ public static class Parser
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
-            
+
             importItem = new ImportItemNode(itemName, alias.GetStringRepresentation());
             context.Sequence.MoveNextNonWhiteSpace();
             context.SymbolTable.AddSymbol(importItem, context.Sequence.MakeRangeFromPrevNonWhitespace(word));
@@ -167,7 +268,7 @@ public static class Parser
             importItem = new ImportItemNode(itemName, itemName);
             context.SymbolTable.AddSymbol(importItem, word.Position);
         }
-        
+
         return true;
     }
 
@@ -184,14 +285,16 @@ public static class Parser
                 context.Sequence.MoveNextNonWhiteSpace();
                 return true;
             }
-            if(context.Sequence.Current() is EndOfFile) break;
-            
+
+            if (context.Sequence.Current() is EndOfFile) break;
+
             if ((!importedItem.HasValue || !importedItem.Value) && context.Sequence.Current() is Word)
             {
                 if (TryParseImportItem(context, out var item))
                 {
                     imports.Add(item);
                 }
+
                 importedItem = true;
                 continue;
             }
@@ -202,7 +305,7 @@ public static class Parser
                 context.Sequence.MoveNextNonWhiteSpace();
                 continue;
             }
-            
+
             AddUnexpectedTokenException(context);
             importedItem = null;
         }
@@ -222,13 +325,13 @@ public static class Parser
         [NotNullWhen(true)] out ModuleDefinitionNode? module)
     {
         module = null;
-        if(context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Module }) return false;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Module }) return false;
         var defStart = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         var moduleName = GetModuleNameOrDefault(context);
         if (moduleName == null) return false;
         module = new ModuleDefinitionNode(moduleName);
-        
+
         context.SymbolTable.AddSymbol(module, context.Sequence.MakeRangeFromPrevNonWhitespace(defStart));
         ConsumeEndOfStatement(context);
         return true;
@@ -247,7 +350,7 @@ public static class Parser
         var fnToken = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         string name;
-        
+
         if (context.Sequence.Current() is Word funcName)
         {
             name = funcName.GetStringRepresentation();
@@ -273,7 +376,7 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
-        
+
         var funcNameNode = new FuncNameNode(name);
         context.SymbolTable.AddSymbol(funcNameNode, funcName.Position);
         func = new FuncNode(type, funcNameNode, list, body);
@@ -283,7 +386,7 @@ public static class Parser
 
     public static bool TryParseArgSequence(
         ParsingContext context,
-        [NotNullWhen(true)]out List<ParameterNode>? parameterList)
+        [NotNullWhen(true)] out List<ParameterNode>? parameterList)
     {
         parameterList = null;
         if (context.Sequence.Current() is not OpenParen)
@@ -293,6 +396,7 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
+
         context.Sequence.MoveNextNonWhiteSpace();
 
         if (context.Sequence.Current() is CloseParen)
@@ -303,21 +407,22 @@ public static class Parser
         }
 
 
-        if (!TryParseArg(context, out var arg))
+        if (!TryParseArg(context, out var args))
         {
             var record = PlampExceptionInfo.ExpectedArgDefinition();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
-        parameterList = [arg];
+
+        parameterList = args;
 
         while (context.Sequence.Current() is Comma)
         {
             context.Sequence.MoveNextNonWhiteSpace();
             var fork = context.Fork();
-            if (TryParseArg(fork, out arg))
+            if (TryParseArg(fork, out args))
             {
-                parameterList.Add(arg);
+                parameterList.AddRange(args);
                 context.Merge(fork);
             }
             else
@@ -342,29 +447,54 @@ public static class Parser
     }
 
     public static bool TryParseArg(
-        ParsingContext context, 
-        [NotNullWhen(true)]out ParameterNode? arg)
+        ParsingContext context,
+        [NotNullWhen(true)] out List<ParameterNode>? args)
     {
-        arg = null;
-        var start = context.Sequence.Current();
-        
-        var typFork = context.Fork();
-        if(!TryParseType(typFork, out var type)) return false;
-        context.Merge(typFork);
-        
-        if (context.Sequence.Current() is not Word argName)
+        args = null;
+        if (context.Sequence.Current() is not Word start) return false;
+
+        var argNames = new List<ParameterNameNode>();
+        var first = true;
+        do
         {
-            var record = PlampExceptionInfo.ExpectedArgName();
+            var iterFork = context.Fork();
+            if (!first) iterFork.Sequence.MoveNextNonWhiteSpace();
+            if (iterFork.Sequence.Current() is not Word name) break;
+            context.Merge(iterFork);
+
+            var argNameNode = new ParameterNameNode(name.GetStringRepresentation());
+            context.SymbolTable.AddSymbol(argNameNode, context.Sequence.CurrentPosition);
+            argNames.Add(argNameNode);
+            context.Sequence.MoveNextNonWhiteSpace();
+            first = false;
+        } while (context.Sequence.Current() is Comma);
+
+        if (context.Sequence.Current() is not Colon)
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-            arg = null;
             return false;
         }
 
-        var argNameNode = new ParameterNameNode(argName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(argNameNode, context.Sequence.CurrentPosition);
-        arg = new ParameterNode(type, argNameNode);
         context.Sequence.MoveNextNonWhiteSpace();
-        context.SymbolTable.AddSymbol(arg, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        var typFork = context.Fork();
+        if (!TryParseType(typFork, out var type))
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Merge(typFork);
+
+        args = [];
+        foreach (var name in argNames)
+        {
+            var param = new ParameterNode(type, name);
+            context.SymbolTable.AddSymbol(param, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            args.Add(param);
+        }
+
         return true;
     }
 
@@ -373,11 +503,11 @@ public static class Parser
     #region Looping
 
     public static bool TryParseWhileLoop(
-        ParsingContext context, 
-        [NotNullWhen(true)]out WhileNode? loop)
+        ParsingContext context,
+        [NotNullWhen(true)] out WhileNode? loop)
     {
         loop = null;
-        if (context.Sequence.Current() is not KeywordToken{Keyword:Keywords.While}) return false;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.While }) return false;
         var loopToken = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseConditionPredicate(context, out var predicate)) return false;
@@ -392,11 +522,11 @@ public static class Parser
     #region Conditional
 
     public static bool TryParseCondition(
-        ParsingContext context, 
-        [NotNullWhen(true)]out ConditionNode? condition)
+        ParsingContext context,
+        [NotNullWhen(true)] out ConditionNode? condition)
     {
         condition = null;
-        if(context.Sequence.Current() is not KeywordToken{Keyword: Keywords.If}) return false;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.If }) return false;
         var conditionToken = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
 
@@ -418,8 +548,8 @@ public static class Parser
     }
 
     public static bool TryParseConditionPredicate(
-        ParsingContext context, 
-        [NotNullWhen(true)]out NodeBase? conditionPredicate)
+        ParsingContext context,
+        [NotNullWhen(true)] out NodeBase? conditionPredicate)
     {
         conditionPredicate = null;
         if (context.Sequence.Current() is not OpenParen)
@@ -456,17 +586,17 @@ public static class Parser
     #region Body and statements
 
     public static bool TryParseBody(
-        ParsingContext context, 
-        [NotNullWhen(true)]out BodyNode? body)
+        ParsingContext context,
+        [NotNullWhen(true)] out BodyNode? body)
     {
         body = null;
-        
+
         var start = context.Sequence.Current();
-        
+
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
             var expressions = new List<NodeBase>();
-            if (TryParseStatement(context, out var expression)) expressions.AddRange(expression);
+            if (TryParseStatement(context, out var expression)) expressions.Add(expression);
             body = new BodyNode(expressions);
             context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
@@ -487,8 +617,9 @@ public static class Parser
         while (context.Sequence.Current() is not EndOfFile and not CloseCurlyBracket)
         {
             if (!TryParseStatement(context, out var expression)) continue;
-            expressions.AddRange(expression);
+            expressions.Add(expression);
         }
+
         if (context.Sequence.Current() is EndOfFile)
         {
             var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
@@ -497,7 +628,7 @@ public static class Parser
             context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
             return true;
         }
-        
+
         body = new BodyNode(expressions);
         context.Sequence.MoveNextNonWhiteSpace();
         context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
@@ -505,40 +636,40 @@ public static class Parser
     }
 
     public static bool TryParseStatement(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<NodeBase>? expressions)
+        ParsingContext context,
+        [NotNullWhen(true)] out NodeBase? expression)
     {
-        expressions = null;
+        expression = null;
         switch (context.Sequence.Current())
         {
-            case KeywordToken {Keyword: Keywords.If}:
-                if(!TryParseCondition(context, out var condition)) return false;
-                expressions = [condition];
+            case KeywordToken { Keyword: Keywords.If }:
+                if (!TryParseCondition(context, out var condition)) return false;
+                expression = condition;
                 return true;
-            case KeywordToken {Keyword: Keywords.While}:
-                if(!TryParseWhileLoop(context, out var loop)) return false;
-                expressions = [loop];
+            case KeywordToken { Keyword: Keywords.While }:
+                if (!TryParseWhileLoop(context, out var loop)) return false;
+                expression = loop;
                 return true;
             //TODO: To separate method.
-            case KeywordToken {Keyword: Keywords.Break}:
+            case KeywordToken { Keyword: Keywords.Break }:
                 var breakExpression = new BreakNode();
                 var current = context.Sequence.Current();
                 context.SymbolTable.AddSymbol(breakExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
-                expressions = [breakExpression];
+                expression = breakExpression;
                 return true;
-            case KeywordToken {Keyword: Keywords.Continue}:
+            case KeywordToken { Keyword: Keywords.Continue }:
                 var continueExpression = new ContinueNode();
                 current = context.Sequence.Current();
                 context.SymbolTable.AddSymbol(continueExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
-                expressions = [continueExpression];
+                expression = continueExpression;
                 return true;
-            case KeywordToken {Keyword: Keywords.Return}:
-                if(!TryParseReturn(context, out var node)) return false;
-                expressions = [node];
+            case KeywordToken { Keyword: Keywords.Return }:
+                if (!TryParseReturn(context, out var node)) return false;
+                expression = node;
                 return true;
             case EndOfStatement:
                 ConsumeEndOfStatement(context);
@@ -547,11 +678,12 @@ public static class Parser
                 var precedenceFork = context.Fork();
                 if (TryParseExpression(precedenceFork, out var precedence))
                 {
-                    expressions = precedence;
+                    expression = precedence;
                     context.Merge(precedenceFork);
                     ConsumeEndOfStatement(context);
                     return true;
                 }
+
                 AddUnexpectedTokenException(context);
                 context.Sequence.MoveNextNonWhiteSpace();
                 break;
@@ -564,30 +696,23 @@ public static class Parser
 
     #region Assignment
 
-    //TODO: Split to separate methods
     public static bool TryParseAssignment(
-        ParsingContext context, 
+        ParsingContext context,
         [NotNullWhen(true)] out AssignNode? assignment)
     {
         assignment = null;
-        var targets = new List<NodeBase>();
-        var definitionFork = context.Fork();
         var memberFork = context.Fork();
-        if (TryParseVariableDefinitionSequence(definitionFork, out var definitions))
-        {
-            context.Merge(definitionFork);
-            targets.AddRange(definitions);
-        }
-        else if (TryParseAssignmentTargetSequence(memberFork, out targets))
+        if (TryParseAssignmentTargetSequence(memberFork, out var targets))
         {
             context.Merge(memberFork);
         }
         else
         {
+            context.Merge(memberFork);
             return false;
         }
 
-        if (context.Sequence.Current() is not OperatorToken {Operator:OperatorEnum.Assign } assign)
+        if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Assign } assign)
         {
             var record = PlampExceptionInfo.ExpectedAssignment();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
@@ -606,8 +731,8 @@ public static class Parser
     }
 
     private static bool TryParseAssignmentTargetSequence(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<NodeBase>? members)
+        ParsingContext context,
+        [NotNullWhen(true)] out List<NodeBase>? members)
     {
         var moveNext = false;
         members = null;
@@ -621,15 +746,15 @@ public static class Parser
             {
                 var record = PlampExceptionInfo.ExpectedAssignmentTarget();
                 context.Exceptions.Add(new PlampException(record, memberToken.Position));
-                return true;
+                return false;
             }
-            
+
             var memberNode = new MemberNode(member.GetStringRepresentation());
             context.SymbolTable.AddSymbol(memberNode, member.Position);
             context.Sequence.MoveNextNonWhiteSpace();
-            
+
             var indexerFork = context.Fork();
-            if (context.Sequence.Current() is OpenSquareBracket 
+            if (context.Sequence.Current() is OpenSquareBracket
                 && TryParseArrayIndexerSequence(indexerFork, memberNode, out var indexerSequence))
             {
                 context.Merge(indexerFork);
@@ -639,16 +764,16 @@ public static class Parser
             {
                 members.Add(memberNode);
             }
+
             moveNext = true;
-        }
-        while (context.Sequence.Current() is Comma);
+        } while (context.Sequence.Current() is Comma);
 
         return true;
     }
 
     private static bool TryParseAssignmentSourceSequence(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<NodeBase>? assignmentSources)
+        ParsingContext context,
+        [NotNullWhen(true)] out List<NodeBase>? assignmentSources)
     {
         assignmentSources = null;
         var moveNext = false;
@@ -679,7 +804,7 @@ public static class Parser
     private static bool TryParseArrayIndexerSequence(
         ParsingContext context,
         NodeBase from,
-        [NotNullWhen(true)]out IndexerNode? indexerSequence)
+        [NotNullWhen(true)] out IndexerNode? indexerSequence)
     {
         indexerSequence = null;
         if (context.Sequence.Current() is not OpenSquareBracket) return false;
@@ -691,7 +816,8 @@ public static class Parser
             if (context.Sequence.Current() is not CloseSquareBracket)
             {
                 var record = PlampExceptionInfo.IndexerIsNotClosed();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart)));
+                context.Exceptions.Add(new PlampException(record,
+                    context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart)));
             }
 
             from = indexerSequence = new IndexerNode(from, member);
@@ -702,42 +828,45 @@ public static class Parser
         if (indexerSequence == null) return false;
         return true;
     }
-    
+
     public static bool TryParseArrayInitialization(
-        ParsingContext context, 
-        [NotNullWhen(true)]out InitArrayNode? arrayDefinition)
+        ParsingContext context,
+        [NotNullWhen(true)] out InitArrayNode? arrayDefinition)
     {
         arrayDefinition = null;
         if (context.Sequence.Current() is not OpenSquareBracket start) return false;
         context.Sequence.MoveNextNonWhiteSpace();
-        
+
         var lengthFork = context.Fork();
         if (!TryParsePrecedence(lengthFork, out var dimension))
         {
             var record = PlampExceptionInfo.ArrayInitializationMustHasLength();
-            context.Exceptions.Add(new PlampException(record, lengthFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
+            context.Exceptions.Add(
+                new PlampException(record, lengthFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
             return false;
         }
+
         context.Merge(lengthFork);
-        
+
         if (context.Sequence.Current() is not CloseSquareBracket)
         {
             var record = PlampExceptionInfo.ArrayDefinitionIsNotClosed();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
-        } 
+        }
 
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseType(context, out var type)) return false;
         arrayDefinition = new InitArrayNode(type, dimension);
-        if(!context.SymbolTable.TryGetSymbol(type, out _)) throw new InvalidOperationException("Parser code is incorrect");
+        if (!context.SymbolTable.TryGetSymbol(type, out _))
+            throw new InvalidOperationException("Parser code is incorrect");
         context.SymbolTable.AddSymbol(arrayDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
-    
+
     public static bool TryParseArrayDefinitionSequence(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<ArrayTypeSpecificationNode>? definitions)
+        ParsingContext context,
+        [NotNullWhen(true)] out List<ArrayTypeSpecificationNode>? definitions)
     {
         definitions = [];
         if (context.Sequence.Current() is not OpenSquareBracket) return true;
@@ -774,14 +903,17 @@ public static class Parser
         {
             expression = withPostfix;
         }
-        
-        while (TryParseLed(rbp, expression, out expression, context)) { }
+
+        while (TryParseLed(rbp, expression, out expression, context))
+        {
+        }
+
         return true;
     }
 
     public static bool TryParseNud(
         ParsingContext context,
-        [NotNullWhen(true)]out NodeBase? node)
+        [NotNullWhen(true)] out NodeBase? node)
     {
         var start = context.Sequence.Current();
         node = null;
@@ -793,13 +925,14 @@ public static class Parser
             if (parenFork.Sequence.Current() is not CloseParen)
             {
                 var record = PlampExceptionInfo.ExpectedCloseParen();
-                parenFork.Exceptions.Add(new PlampException(record, parenFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
+                parenFork.Exceptions.Add(new PlampException(record,
+                    parenFork.Sequence.MakeRangeFromPrevNonWhitespace(start)));
             }
             else
             {
                 parenFork.Sequence.MoveNextNonWhiteSpace();
             }
-            
+
             context.Merge(parenFork);
             node = inner;
             return true;
@@ -839,7 +972,7 @@ public static class Parser
                     return true;
             }
         }
-        
+
         if (context.Sequence.Current() is Word member)
         {
             node = new MemberNode(member.GetStringRepresentation());
@@ -855,14 +988,18 @@ public static class Parser
             context.SymbolTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
-        
+
         var prefixFork = context.Fork();
-        if (prefixFork.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not or OperatorEnum.Sub or OperatorEnum.Add })
+        if (prefixFork.Sequence.Current() is OperatorToken
+            {
+                Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not or OperatorEnum.Sub
+                or OperatorEnum.Add
+            })
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
             if (!TryParseNud(prefixFork, out var innerNode)) return false;
-            
+
             switch (op.Operator)
             {
                 case OperatorEnum.Increment:
@@ -884,6 +1021,7 @@ public static class Parser
                     return true;
                 default: throw new InvalidOperationException();
             }
+
             context.Merge(prefixFork);
             context.SymbolTable.AddSymbol(node, op.Position);
             return true;
@@ -895,10 +1033,10 @@ public static class Parser
     private static bool TryParsePostfix(
         ParsingContext context,
         NodeBase inner,
-        [NotNullWhen(true)]out NodeBase? output)
+        [NotNullWhen(true)] out NodeBase? output)
     {
         output = null;
-        
+
         if (context.Sequence.Current() is OperatorToken operatorToken)
         {
             switch (operatorToken.Operator)
@@ -918,7 +1056,7 @@ public static class Parser
                     postfixFork.Sequence.MoveNextNonWhiteSpace();
                     if (!TryParseFuncCall(postfixFork, out var call)) return false;
                     context.Merge(postfixFork);
-                    
+
                     var args = new List<NodeBase> { inner };
                     args.AddRange(call.Args);
                     if (!context.SymbolTable.TryGetSymbol(call, out var pos)) throw new Exception();
@@ -927,7 +1065,7 @@ public static class Parser
                     return true;
             }
         }
-        
+
         var indexerFork = context.Fork();
         if (TryParseArrayIndexerSequence(indexerFork, inner, out var indexers))
         {
@@ -940,9 +1078,9 @@ public static class Parser
     }
 
     private static bool TryParseLed(
-        int rbp, 
-        NodeBase left, 
-        out NodeBase output, 
+        int rbp,
+        NodeBase left,
+        out NodeBase output,
         ParsingContext context)
     {
         output = left;
@@ -999,6 +1137,7 @@ public static class Parser
             default:
                 throw new Exception();
         }
+
         context.Merge(opFork);
         context.SymbolTable.AddSymbol(output, token.Position);
         return true;
@@ -1009,14 +1148,14 @@ public static class Parser
     #region Func call
 
     public static bool TryParseFuncCall(
-        ParsingContext context, 
-        [NotNullWhen(true)]out CallNode? call)
+        ParsingContext context,
+        [NotNullWhen(true)] out CallNode? call)
     {
         call = null;
         if (context.Sequence.Current() is not Word funcName) return false;
         var start = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
-        
+
         if (context.Sequence.Current() is not OpenParen)
         {
             var record = PlampExceptionInfo.ExpectedOpenParen();
@@ -1043,8 +1182,9 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
+
         argExpressions.Add(arg);
-        
+
         while (context.Sequence.Current() is Comma)
         {
             context.Sequence.MoveNextNonWhiteSpace();
@@ -1060,7 +1200,7 @@ public static class Parser
                 return false;
             }
         }
-        
+
         if (context.Sequence.Current() is not CloseParen)
         {
             var record = PlampExceptionInfo.ExpectedCloseParen();
@@ -1079,15 +1219,15 @@ public static class Parser
     }
 
     #endregion
-    
+
     #region Misc
 
     public static bool TryParseReturn(
-        ParsingContext context, 
-        [NotNullWhen(true)]out ReturnNode? node)
+        ParsingContext context,
+        [NotNullWhen(true)] out ReturnNode? node)
     {
         node = null;
-        if (context.Sequence.Current() is not KeywordToken{Keyword: Keywords.Return}) return false;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Return }) return false;
         var returnToken = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
         if (context.Sequence.Current() is EndOfStatement)
@@ -1105,42 +1245,42 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
+
         ConsumeEndOfStatement(context);
         node = new ReturnNode(expr);
         context.SymbolTable.AddSymbol(node, returnToken.Position);
         return true;
     }
-    
+
     public static bool TryParseExpression(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<NodeBase>? expressions)
+        ParsingContext context,
+        [NotNullWhen(true)] out NodeBase? expression)
     {
-        expressions = null;
+        expression = null;
+        var variableDefContext = context.Fork();
+        if (TryParseVariableDefinitionSequence(variableDefContext, out var definition))
+        {
+            context.Merge(variableDefContext);
+            expression = definition;
+            return true;
+        }
+
         var assignContext = context.Fork();
         if (TryParseAssignment(assignContext, out var assignment))
         {
             context.Merge(assignContext);
-            expressions = [assignment];
+            expression = assignment;
             return true;
         }
-        
-        var variableDefContext = context.Fork();
-        if (TryParseVariableDefinitionSequence(variableDefContext, out var definitions))
-        {
-            context.Merge(variableDefContext);
-            expressions = [];
-            expressions.AddRange(definitions);
-            return true;
-        }
-        
+
         var precedenceContext = context.Fork();
         if (TryParsePrecedence(precedenceContext, out var precedence))
         {
             context.Merge(precedenceContext);
-            expressions = [precedence];
+            expression = precedence;
             return true;
         }
-        
+
         context.Sequence.MoveNextNonWhiteSpace();
         var record = PlampExceptionInfo.ExpectedExpression();
         context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
@@ -1148,74 +1288,101 @@ public static class Parser
     }
 
     public static bool TryParseVariableDefinitionSequence(
-        ParsingContext context, 
-        [NotNullWhen(true)]out List<VariableDefinitionNode>? definitions)
+        ParsingContext context,
+        [NotNullWhen(true)] out VariableDefinitionNode? definition)
     {
-        definitions = null;
-        if (!TryParseType(context, out var type)) return false;
-        if (context.Sequence.Current() is not Word variableName)
+        definition = null;
+        if (context.Sequence.Current() is not Word start) return false;
+
+        var varNames = new List<VariableNameNode>();
+        var first = true;
+        do
         {
-            var record = PlampExceptionInfo.ExpectedVarName();
+            var iterFork = context.Fork();
+            if (!first) iterFork.Sequence.MoveNextNonWhiteSpace();
+            if (iterFork.Sequence.Current() is not Word name) break;
+            context.Merge(iterFork);
+
+            var varName = new VariableNameNode(name.GetStringRepresentation());
+            context.SymbolTable.AddSymbol(varName, context.Sequence.CurrentPosition);
+            varNames.Add(varName);
+            context.Sequence.MoveNextNonWhiteSpace();
+            first = false;
+        } while (context.Sequence.Current() is Comma);
+
+        if (context.Sequence.Current() is not Colon)
+        {
+            var record = PlampExceptionInfo.ExpectedTypeName();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
-        
-        var name = new VariableNameNode(variableName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(name, context.Sequence.CurrentPosition);
 
-        var names = new List<VariableNameNode>() { name };
         context.Sequence.MoveNextNonWhiteSpace();
-        
-        while (context.Sequence.Current() is Comma)
+        var typFork = context.Fork();
+        if (!TryParseType(typFork, out var type))
         {
-            if (context.Sequence.Current() is not Word)
-            {
-                var record = PlampExceptionInfo.ExpectedVarName();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-                break;
-            }
-            name = new VariableNameNode(variableName.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(name, context.Sequence.CurrentPosition);
-            names.Add(name);
-            context.Sequence.MoveNextNonWhiteSpace();
+            var record = PlampExceptionInfo.ExpectedTypeName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
         }
 
-        definitions = [];
-        foreach (var nameNode in names)
-        {
-            var variableDefinition = new VariableDefinitionNode(type, nameNode);
-            context.SymbolTable.AddSymbol(variableDefinition, context.Sequence.CurrentPosition);
-            definitions.Add(variableDefinition);
-        }
-        
+        context.Merge(typFork);
+        definition = new VariableDefinitionNode(type, varNames);
+        context.SymbolTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+
         return true;
     }
 
     public static bool TryParseType(
-        ParsingContext context, 
-        [NotNullWhen(true)]out TypeNode? type)
+        ParsingContext context,
+        [NotNullWhen(true)] out TypeNode? type)
     {
         type = null;
         var start = context.Sequence.Current();
         if (!TryParseArrayDefinitionSequence(context, out var definitions)) return false;
-        
+
         if (context.Sequence.Current() is not Word typeName)
         {
             var record = PlampExceptionInfo.ExpectedTypeName();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
-        
-        
+
+
         var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
-        type = new TypeNode(typeNameNode){ArrayDefinitions = definitions};
+        type = new TypeNode(typeNameNode) { ArrayDefinitions = definitions };
         context.Sequence.MoveNextNonWhiteSpace();
         context.SymbolTable.AddSymbol(type, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         context.SymbolTable.AddSymbol(typeNameNode, typeName.Position);
         return true;
     }
 
-    #endregion
+    public static bool TryParseTypeInit(
+        ParsingContext context,
+        [NotNullWhen(true)] out InitTypeNode? initTypeNode)
+    {
+        initTypeNode = null;
+        if (!TryParseType(context, out var type)) return false;
+
+        if (context.Sequence.Current() is not OpenCurlyBracket)
+        {
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+        }
+
+        context.Sequence.MoveNextNonWhiteSpace();
+        while (context.Sequence.Current() is not CloseCurlyBracket or EndOfFile)
+        {
+            if (context.Sequence.Current() is not Word fieldName)
+            {
+                //var record = PlampExceptionInfo.ExpectedName
+            }
+        }
+        
+        
+    }
+
+#endregion
     
     #region Util
 

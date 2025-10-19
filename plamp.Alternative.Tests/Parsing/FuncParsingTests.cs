@@ -29,7 +29,7 @@ public class FuncParsingTests
         ];
         yield return
         [
-            "fn b(int x, int y) { return; }",
+            "fn b(x, y: int) { return; }",
             new FuncNode(
                 null,
                 new FuncNameNode("b"),
@@ -44,7 +44,7 @@ public class FuncParsingTests
         yield return
         [
             """
-            fn call_any(any a) any {
+            fn call_any(a: any) any {
                 return a;
             }
             """,
@@ -88,7 +88,7 @@ public class FuncParsingTests
         yield return ["fn", new List<string>{PlampExceptionInfo.ExpectedFuncName().Code}, false, null];
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
         yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code }, false, null];
-        yield return ["fn a(int a,,int b)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
+        yield return ["fn a(a: int,,b: int)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
     }
 
     [Theory]

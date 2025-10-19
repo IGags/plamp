@@ -278,6 +278,7 @@ public static class Tokenizer
     {
         result = null;
         var filePosition = new FilePosition(byteOffset, 1, fileName);
+        char? next = position + 1 < row.Length ? row[position + 1] : null;
         switch (row[position])
         {
             case '{':
@@ -319,6 +320,10 @@ public static class Tokenizer
                 return true;
             case '\t':
                 result = new WhiteSpace("\t", filePosition, WhiteSpaceKind.WhiteSpace);
+                position++;
+                return true;
+            case ':' when next != '=':
+                result = new Colon(filePosition);
                 position++;
                 return true;
             default:

@@ -16,7 +16,6 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification;
-using BindingFlags = System.Reflection.BindingFlags;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
@@ -65,24 +64,29 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     #region Variable definition
 
-    protected override VisitResult PreVisitVariableDefinition(VariableDefinitionNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PreVisitVariableName(VariableNameNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        if (context.Arguments.ContainsKey(node.Name.Value))
+        var exception = false;
+        if (context.Arguments.ContainsKey(node.Value))
         {
             var record = PlampExceptionInfo.ArgumentAlreadyDefined();
             SetExceptionToSymbol(node, record, context);
+            exception = true;
         }
-
-        if (context.VariableDefinitions.TryGetValue(node.Name.Value, out var other))
+        
+        if (context.VariableDefinitions.TryGetValue(node.Value, out var other))
         {
             var record = PlampExceptionInfo.DuplicateVariableDefinition();
             SetExceptionToSymbol(node, record, context);
             SetExceptionToSymbol(other.Variable, record, context);
-            return VisitResult.SkipChildren;
+            exception = true;
         }
 
-        var position = context.InstructionInScopePosition;
-        context.AddVariableWithPosition(node, position);
+        if (!exception && parent is VariableDefinitionNode def)
+        {
+            var position = context.InstructionInScopePosition;
+            context.AddVariableWithPosition(node, def, position);
+        }
 
         return VisitResult.Continue;
     }
@@ -513,6 +517,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     protected override VisitResult PostVisitAssign(AssignNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
+        var childrenCount = node.Sources.Count + node.Targets.Count;
+        if (childrenCount == 0)
+        {
+            var record = PlampExceptionInfo.EmptyAssign();
+            SetExceptionToSymbol(node, record, context);
+            return VisitResult.Continue;
+        }
+        
         var assignTypeCount = context.InnerExpressionTypeStack.Count - context.RestoreInferenceStackSize();
         if (assignTypeCount == 0) return VisitResult.Continue;
 
@@ -521,8 +533,15 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         {
             types.Add(context.InnerExpressionTypeStack.Pop());
         }
-        if(node.Sources.Count + node.Targets.Count != types.Count
-           || types.Count % 2 != 0) return VisitResult.Continue;
+        
+        if(childrenCount != types.Count) throw new Exception("Incorrect visitor code.");
+
+        if (childrenCount % 2 != 0)
+        {
+            var record = PlampExceptionInfo.AssignSourceAndTargetCountMismatch();
+            SetExceptionToSymbol(node, record, context);
+            return VisitResult.Continue;
+        }
 
         var assignmentPairs = new List<AssignmentPair>();
         for (var i = 0; i < types.Count / 2; i++)
@@ -532,7 +551,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             assignmentPairs.Add(pair);
         }
 
-        foreach (var assignment in assignmentPairs)
+        foreach (var assignment in assignmentPairs) 
         {
             if (assignment.SourceType is not null && assignment.SourceType == typeof(void))
             {
@@ -609,7 +628,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     }
 
     //TODO: Может упасть с ошибкой таблицы символов. Нужно добавлять символы.
-    private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition, TypeInferenceInnerContext context)
+    private AssignNode? WeaveAssignmentDefault(
+        VariableDefinitionNode variableDefinition, 
+        TypeInferenceInnerContext context)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
         var type = TypeResolveHelper.ResolveType(
@@ -654,12 +675,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return new AssignNode([variableDefinition], [new LiteralNode(value, type)]);
         }
 
-        //for structures
-        var ctor = type.GetConstructor(BindingFlags.Public, [])!;
-        var ctorNode = new ConstructorCallNode(variableDefinition.Type, []);
-        ctorNode.SetConstructorInfo(ctor);
-        var assign = new AssignNode([variableDefinition], [ctorNode]);
-        return assign;
+        return null;
     }
     
     #endregion

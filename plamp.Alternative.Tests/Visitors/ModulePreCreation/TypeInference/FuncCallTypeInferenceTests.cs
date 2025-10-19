@@ -168,9 +168,9 @@ public class FuncCallTypeInferenceTests
         const string code = "mock(1);";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expressions);
+        var result = Parser.TryParseStatement(context, out var expression);
         result.ShouldBe(true);
-        var expression = expressions.ShouldHaveSingleItem();
+        expression.ShouldNotBeNull();
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);
 
@@ -197,8 +197,8 @@ public class FuncCallTypeInferenceTests
         const string code = "mock(1i);";
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expressions);
-        var expression = expressions.ShouldHaveSingleItem();
+        var result = Parser.TryParseStatement(context, out var expression);
+        expression.ShouldNotBeNull();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
         var preCreation = new PreCreationContext(context.SymbolTable);

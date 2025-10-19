@@ -8,8 +8,7 @@ public static class Program
 """
 module playground;
 fn array_init() {
-    arr := [100]int;
-    i := 0;
+    arr, i := [100]int, 0;
     while(i < arr.length()) arr[i++] := i * i;
     
     res := arr.binary_search(144);
@@ -19,31 +18,23 @@ fn array_init() {
         println(res);
     }
     else print("Element not found");
-    aaa("hui");
 }
-/*
-    pidor
-    gay
-    faggot
-*/
-fn binary_search([]int array, int num) int {
+
+fn binary_search(array: []int, target: int) int {
     if(array.length() = 0) return -1;
     
-    left   := 0;
-    right  := array.length() - 1;
+    left, right := 0, array.length() - 1;
     
     while(left <= right){
         center := (left + right) / 2;
         
-        if(array[center] = num)      return center;
-        else if(array[center] < num) left  := center + 1;
-        else                         right := center - 1;
+        if(array[center] = target)      return center;
+        else if(array[center] < target) left  := center + 1;
+        else                            right := center - 1;
     } 
     
     return -1;
 }
-
-fn aaa(string str) { print(str); }
 """;
     
     public static async Task Main()

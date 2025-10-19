@@ -18,7 +18,7 @@ public static class KeywordTranslator
             "return" => Keywords.Return,
             "break" => Keywords.Break,
             "continue" => Keywords.Continue,
-            "model" => Keywords.Model,
+            "type" => Keywords.Type,
             "module" => Keywords.Module,
             _ => Keywords.Unknown
         };

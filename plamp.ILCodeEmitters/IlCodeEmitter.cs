@@ -30,8 +30,11 @@ public static class IlCodeEmitter
     {
         var varStack = new LocalVarStack();
         var generator = context.MethodBuilder.GetILGenerator();
-        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, [], context.MethodBuilder);
+        var returnLabel = generator.DefineLabel();
+        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, [], context.MethodBuilder, returnLabel);
         EmitExpression(context.MethodBody, emissionContext);
+        generator.MarkLabel(returnLabel);
+        generator.Emit(OpCodes.Ret);
     }
 
     /// <summary>
@@ -105,6 +108,8 @@ public static class IlCodeEmitter
     
     /// <summary>
     /// Сгенерировать IL для инструкции возврата из функции
+    /// Инструкция возврата одна и находится в конце функции, а код,
+    /// который хочет вернуться должен положить значение на стек и переместиться в конец функции
     /// </summary>
     /// <param name="returnNode">Узел AST обозначающий возврат из функции</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
@@ -114,8 +119,7 @@ public static class IlCodeEmitter
         if(returnNode.ReturnValue is MemberNode) EmitGetMember(returnNode.ReturnValue, context, true);
         //ReturnValue может быть null и это легально, значит функция void
         else if(returnNode.ReturnValue != null) EmitSingleLineExpression(returnNode.ReturnValue, context);
-        context.Generator.Emit(OpCodes.Ret);
-        //TODO: return не должен происходить 1 к 1 как в коде функции. Все Return node должны просто грузить на стек своё значение и делать безусловный переход в конец метода. Это позволит не генерировать return в конце void методов на этапе валидации.
+        context.Generator.Emit(OpCodes.Br, context.FnReturnLabel);
     }
     
     #region Looping
@@ -433,15 +437,24 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">В цель присвоения нельзя присвоить значение.</exception>
     private static void EmitAssign(AssignNode assignNode, EmissionContext context)
     {
-        foreach (var (source, target) in assignNode.Sources.Zip(assignNode.Targets))
+        var fldList = new List<FieldInfo?>();
+        foreach (var (target, source) in assignNode.Targets.Zip(assignNode.Sources))
         {
-            EmitAssignPair(target, source, context);
+            PrepareAssignTarget(target, context, out var fld);
+            fldList.Add(fld);
+            //Генерация кода источника присвоения.
+            EmitSingleLineExpression(source, context);
+        }
+
+        foreach (var (target, fld) in assignNode.Targets.Reverse().Zip(fldList))
+        {
+            EmitAssignTarget(target, context, fld);
         }
     }
 
-    private static void EmitAssignPair(NodeBase target, NodeBase source, EmissionContext context)
+    private static void PrepareAssignTarget(NodeBase target, EmissionContext context, out FieldInfo? emitFld)
     {
-        FieldInfo? emitFld = null;
+        emitFld = null;
         //Подготовка цели присвоения.
         switch (target)
         {
@@ -463,18 +476,26 @@ public static class IlCodeEmitter
                 break;
             default: throw new Exception();
         }
+    }
 
-        //Генерация кода источника присвоения.
-        EmitSingleLineExpression(source, context);
-
+    private static void EmitAssignTarget(NodeBase target, EmissionContext context, FieldInfo? emitFld)
+    {
         //Генерация цели присвоения
         if (emitFld is not null)
         {
             context.Generator.Emit(OpCodes.Stfld, emitFld);
         }
-        else if (target is VariableDefinitionNode {Name: { } varName})
+        else if (target is VariableDefinitionNode {Names: { } varNames})
         {
-            EmitSetLocalVarOrArg(varName.Value, context);
+            //Делаем дублирование присваивания всем переменным если их больше одной.
+            for (var i = 0; i < varNames.Count - 1; i++)
+            {
+                context.Generator.Emit(OpCodes.Dup);
+            }
+            foreach (var varName in varNames)
+            {
+                EmitSetLocalVarOrArg(varName.Value, context);
+            }
         }
         else if(target is MemberNode memberNode)
         {
@@ -505,7 +526,6 @@ public static class IlCodeEmitter
             case BaseBinaryNode      binaryNode:          EmitBaseBinary(binaryNode, context);              break;
             case BaseUnaryNode       unaryNode:           EmitUnary(unaryNode, context);                    break;
             case CallNode            callNode:            EmitCall(callNode, context, false);               break;
-            case ConstructorCallNode constructorCallNode: EmitCallCtor(constructorCallNode, context);       break;
             case CastNode            castNode:            EmitTypeConversion(castNode, context);            break;
             case LiteralNode         literalNode:         EmitLiteral(literalNode, context);                break;
             case MemberAccessNode    memberAccessNode:    EmitGetField(memberAccessNode, context, true);    break;
@@ -803,27 +823,13 @@ public static class IlCodeEmitter
         EmissionContext context)
     {
         if(variableDefinitionNode.Type is not { } type) throw new Exception();
-        if(variableDefinitionNode.Name is not { } member) throw new Exception();
+        if(variableDefinitionNode.Names is not { } members) throw new Exception();
         if (type.Symbol == null) throw new ArgumentException("Cannot emit variable definition with null type");
-        var builder = context.Generator.DeclareLocal(type.Symbol);
-        context.LocalVarStack.Add(member.Value, builder);
-    }
-
-    /// <summary>
-    /// Генерация IL вызова конструктора объекта.
-    /// </summary>
-    /// <param name="constructorCallNode">Узел AST вызова конструктора.</param>
-    /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
-    /// <exception cref="Exception">Конструктор не имеет репрезентации в .net</exception>
-    private static void EmitCallCtor(ConstructorCallNode constructorCallNode, EmissionContext context)
-    {
-        if(constructorCallNode.Symbol == null) throw new Exception();
-        foreach (var arg in constructorCallNode.Args)
+        foreach (var member in members)
         {
-            EmitGetMember(arg, context, true);
+            var builder = context.Generator.DeclareLocal(type.Symbol);
+            context.LocalVarStack.Add(member.Value, builder);
         }
-        
-        context.Generator.Emit(OpCodes.Newobj, constructorCallNode.Symbol);
     }
     
     /// <summary>

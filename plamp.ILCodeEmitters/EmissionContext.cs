@@ -16,7 +16,8 @@ internal record EmissionContext(
     ParameterInfo[] Arguments,
     ILGenerator Generator,
     Dictionary<string, Label> Labels,
-    MethodInfo CurrentMethod)
+    MethodInfo CurrentMethod,
+    Label FnReturnLabel)
 {
     /// <summary>
     /// Стек циклов нужен в условиях, когда мы встречаем циклы в цикле.

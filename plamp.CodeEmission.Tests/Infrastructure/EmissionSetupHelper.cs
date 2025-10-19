@@ -64,13 +64,6 @@ public class EmissionSetupHelper
         return new ConcreteCastNode(toTyp, inner, from);
     }
 
-    public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor)
-    {
-        var ctorInfo = new ConstructorCallNode(type, args);
-        ctorInfo.SetConstructorInfo(ctor);
-        return ctorInfo;
-    }
-
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(
         ParameterInfo[] args,
         BodyNode body,

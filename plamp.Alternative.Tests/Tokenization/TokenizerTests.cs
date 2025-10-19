@@ -10,6 +10,7 @@ using plamp.Abstractions.Ast;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
+using Shouldly;
 using Xunit;
 
 namespace plamp.Alternative.Tests.Tokenization;
@@ -117,6 +118,7 @@ public class TokenizerTests
         yield return ["(", typeof(OpenParen)];
         yield return [")", typeof(CloseParen)];
         yield return [",", typeof(Comma)];
+        yield return [":", typeof(Colon)];
         yield return [":=", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Assign)];
         yield return ["++", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Increment)];
         yield return ["--", typeof(OperatorToken), new Predicate<TokenBase>(t => ((OperatorToken)t).Operator == OperatorEnum.Decrement)];
@@ -142,13 +144,13 @@ public class TokenizerTests
         yield return ["if", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.If)];
         yield return ["as", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.As)];
         yield return ["module", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Module)];
-        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Model)];
+        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
         yield return ["else", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Else)];
         yield return ["null", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Null)];
         yield return ["return", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Return)];
         yield return ["break", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Break)];
         yield return ["continue", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Continue)];
-        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Model)];
+        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
         yield return ["1", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];
         yield return ["0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 0)];
         yield return ["1i", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];
@@ -225,5 +227,17 @@ public class TokenizerTests
             Assert.Equal(exception.First.Code, exception.Second.Code);
             Assert.Equal(exception.First.Level, exception.Second.Level);
         }
+    }
+
+    [Theory]
+    [InlineData(": =")]
+    [InlineData(": :=")]
+    public async Task ParseColonVariations_Correct(string sequence)
+    {
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(sequence));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.Current().ShouldBeOfType<Colon>();
     }
 }

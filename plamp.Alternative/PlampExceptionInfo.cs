@@ -415,10 +415,10 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord EmptyIndexer() =>
+    public static PlampExceptionRecord EmptyAssign() =>
         new()
         {
-            Message = "The array indexer is empty",
+            Message = "Assign node is empty",
             Code = "SEM1318",
             Level = ExceptionLevel.Error
         };
@@ -436,6 +436,14 @@ public static class PlampExceptionInfo
         {
             Message = "The indexer value must be of integer type",
             Code = "SEM1320",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AssignSourceAndTargetCountMismatch() =>
+        new()
+        {
+            Message = "Assign target count does not match with the source count",
+            Code = "SEM1321",
             Level = ExceptionLevel.Error
         };
 

@@ -46,6 +46,48 @@ public class AssignmentParsingTests
                 [new MemberNode("d")]
             )
         ];
+        yield return
+        [
+            "a, b := 1, 2",
+            new AssignNode(
+                [new MemberNode("a"), new MemberNode("b")],
+                [new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int))])
+        ];
+        yield return
+        [
+            "a[1], b := c, d",
+            new AssignNode(
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int))), new MemberNode("b")],
+                [new MemberNode("c"), new MemberNode("d")])
+        ];
+        yield return
+        [
+            "x, y := \"def\", c",
+            new AssignNode(
+                [new MemberNode("x"), new MemberNode("y")],
+                [new LiteralNode("def", typeof(string)), new MemberNode("c")])
+        ];
+        yield return
+        [
+            "a1, a2, a3 := a3, a1, a2",
+            new AssignNode(
+                [new MemberNode("a1"), new MemberNode("a2"), new MemberNode("a3")],
+                [new MemberNode("a3"), new MemberNode("a1"), new MemberNode("a2")])
+        ];
+        yield return
+        [
+            "x, y := t",
+            new AssignNode(
+                [new MemberNode("x"), new MemberNode("y")],
+                [new MemberNode("t")])
+        ];
+        yield return
+        [
+            "a[1][x] := t, 3",
+            new AssignNode(
+                [new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int))), new MemberNode("x"))],
+                [new MemberNode("t"), new LiteralNode(3, typeof(int))])
+        ];
     }
     
     [Theory]
@@ -65,20 +107,24 @@ public class AssignmentParsingTests
     {
         yield return ["+", new List<string>()];
         yield return ["fn", new List<string>()];
-
-        yield return ["int a", new List<string>{PlampExceptionInfo.ExpectedAssignment().Code}];
-        yield return ["int a := ", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
-        yield return ["int a := use", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
+        
+        yield return ["b a", new List<string>{PlampExceptionInfo.ExpectedAssignment().Code}];
         
         yield return ["a", new List<string>{PlampExceptionInfo.ExpectedAssignment().Code}];
         yield return ["a := ", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
         yield return ["a := use", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
-
+        
         yield return ["a[", new List<string>{ PlampExceptionInfo.ExpectedAssignment().Code }];
         yield return ["a[1", new List<string>{ PlampExceptionInfo.IndexerIsNotClosed().Code, PlampExceptionInfo.ExpectedAssignment().Code }];
         yield return ["a[1]", new List<string>{ PlampExceptionInfo.ExpectedAssignment().Code }];
         yield return ["a[1] :=", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
         yield return ["a[1] := +", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
+
+        yield return ["1 := a", new List<string>(0)];
+        yield return ["a, := c", new List<string>{PlampExceptionInfo.ExpectedAssignmentTarget().Code}];
+        yield return ["c := a,", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
+        yield return ["a, ,c := d", new List<string>{PlampExceptionInfo.ExpectedAssignmentTarget().Code}];
+        yield return ["a := b, ,d", new List<string>{PlampExceptionInfo.ExpectedAssignmentSource().Code}];
     }
     
     [Theory]

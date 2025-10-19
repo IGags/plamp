@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.AstManipulation;
@@ -23,8 +24,14 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     public Dictionary<string, VariableWithPosition> VariableDefinitions { get; } = [];
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
 
-    public void AddVariableWithPosition(VariableDefinitionNode variable, ScopeLocation position) 
-        => VariableDefinitions[variable.Name.Value] = new VariableWithPosition(variable, position);
+    public void AddVariableWithPosition(
+        VariableNameNode name, 
+        VariableDefinitionNode variable, 
+        ScopeLocation position)
+    {
+        if (!variable.Names.Contains(name)) throw new ArgumentException();
+        VariableDefinitions[name.Value] = new VariableWithPosition(variable, position);
+    }
 
     public void EnterBody()
     {

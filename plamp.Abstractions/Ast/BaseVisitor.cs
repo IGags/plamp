@@ -134,8 +134,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(callNode, context, parent, PreVisitCall, PostVisitCall);
             case CastNode castNode:
                 return VisitCore(castNode, context, parent, PreVisitCast, PostVisitCast);
-            case ConstructorCallNode constructorNode:
-                return VisitCore(constructorNode, context, parent, PreVisitConstructor, PostVisitConstructor);
             case EmptyNode emptyNode:
                 return VisitCore(emptyNode, context, parent, PreVisitEmpty, PostVisitEmpty);
             case MemberNode memberNode:
@@ -766,22 +764,6 @@ public abstract class BaseVisitor<TContext>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
     protected virtual VisitResult PostVisitCast(CastNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов перед посещением узла создания объекта
-    /// </summary>
-    /// <param name="node">Узел создания объекта</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitConstructor(ConstructorCallNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов после посещения узла создания объекта
-    /// </summary>
-    /// <param name="node">Узел создания объекта</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitConstructor(ConstructorCallNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов перед посещением пустого узла 

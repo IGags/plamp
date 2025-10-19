@@ -18,16 +18,16 @@ public class BodySingleLineExpressionParsingTests
 {
     public static IEnumerable<object[]> ParseBodySingleLineExpression_Correct_DataProvider()
     {
-        yield return ["a++", new List<NodeBase>{new PostfixIncrementNode(new MemberNode("a"))}];
-        yield return ["a()", new List<NodeBase>{new CallNode(null, new FuncCallNameNode("a"), [])}];
-        yield return ["a := 41", new List<NodeBase>{new AssignNode([new MemberNode("a")], [new LiteralNode(41, typeof(int))])}];
-        yield return ["!a", new List<NodeBase>{new NotNode(new MemberNode("a"))}];
-        yield return ["int a", new List<NodeBase>{new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))}];
+        yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
+        yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [])];
+        yield return ["a := 41", new AssignNode([new MemberNode("a")], [new LiteralNode(41, typeof(int))])];
+        yield return ["!a", new NotNode(new MemberNode("a"))];
+        yield return ["a:int", new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))];
     }
     
     [Theory]
     [MemberData(nameof(ParseBodySingleLineExpression_Correct_DataProvider))]
-    public void ParseBodySingleLineExpression_Correct(string code, List<NodeBase>? ast)
+    public void ParseBodySingleLineExpression_Correct(string code, NodeBase? ast)
     {
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
