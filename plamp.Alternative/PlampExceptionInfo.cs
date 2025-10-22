@@ -242,6 +242,36 @@ public static class PlampExceptionInfo
             Message = "Expected assignment target"
         };
     }
+
+    public static PlampExceptionRecord ExpectedFieldName()
+    {
+        return new()
+        {
+            Code = "PRS1136",
+            Level = ExceptionLevel.Error,
+            Message = "Expected field name"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedColon()
+    {
+        return new()
+        {
+            Code = "PRS1137",
+            Level = ExceptionLevel.Error,
+            Message = "Expected colon"
+        };
+    }
+    
+    public static PlampExceptionRecord ExpectedFieldValue()
+    {
+        return new()
+        {
+            Code = "PRS1137",
+            Level = ExceptionLevel.Error,
+            Message = "Expected field value"
+        };
+    }
     
     #endregion
 

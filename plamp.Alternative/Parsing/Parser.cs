@@ -946,6 +946,14 @@ public static class Parser
             return true;
         }
 
+        var initTypeFork = context.Fork();
+        if (TryParseTypeInit(initTypeFork, out var typeInitNode))
+        {
+            context.Merge(initTypeFork);
+            node = typeInitNode;
+            return true;
+        }
+
         var initArrayFork = context.Fork();
         if (TryParseArrayInitialization(initArrayFork, out var arrayDefinition))
         {
@@ -1362,6 +1370,7 @@ public static class Parser
         [NotNullWhen(true)] out InitTypeNode? initTypeNode)
     {
         initTypeNode = null;
+        var start = context.Sequence.Current();
         if (!TryParseType(context, out var type)) return false;
 
         if (context.Sequence.Current() is not OpenCurlyBracket)
@@ -1371,15 +1380,57 @@ public static class Parser
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
+        var fields = new List<InitFieldNode>();
         while (context.Sequence.Current() is not CloseCurlyBracket or EndOfFile)
         {
             if (context.Sequence.Current() is not Word fieldName)
             {
-                //var record = PlampExceptionInfo.ExpectedName
+                var record = PlampExceptionInfo.ExpectedFieldName();
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+                return false;
             }
+
+            var nameNode = new FieldNameNode(fieldName.GetStringRepresentation());
+            context.SymbolTable.AddSymbol(nameNode, fieldName.Position);
+
+            context.Sequence.MoveNextNonWhiteSpace();
+            if (context.Sequence.Current() is not Colon)
+            {
+                var record = PlampExceptionInfo.ExpectedColon();
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+                return false;
+            }
+
+            context.Sequence.MoveNextNonWhiteSpace();
+            var fieldValueFork = context.Fork();
+            if (!TryParsePrecedence(fieldValueFork, out var fieldValue))
+            {
+                var record = PlampExceptionInfo.ExpectedFieldValue();
+                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+                return false;
+            }
+            
+            context.Merge(fieldValueFork);
+            var field = new InitFieldNode(nameNode, fieldValue);
+            var pos = context.Sequence.MakeRangeFromPrevNonWhitespace(fieldName);
+            context.SymbolTable.AddSymbol(field, pos);
+            fields.Add(field);
+        }
+
+        if (context.Sequence.Current() is not CloseCurlyBracket)
+        {
+            var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+        }
+        else
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
         }
         
-        
+        initTypeNode = new InitTypeNode(type, fields);
+        var initPos = context.Sequence.MakeRangeFromPrevNonWhitespace(start);
+        context.SymbolTable.AddSymbol(initTypeNode, initPos);
+        return true;
     }
 
 #endregion
