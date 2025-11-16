@@ -7,17 +7,14 @@ namespace plamp.Alternative.Parsing;
 public record ParsingContext(
     TokenSequence Sequence,
     List<PlampException> Exceptions,
-    SymbolTable SymbolTable)
+    ITranslationTable TranslationTable)
 {
-    public ParsingContext Fork() => this with
-    {
-        Sequence = Sequence.Fork(),
-        Exceptions = []
-    };
+    public ParsingContext Fork() => new(Sequence.Fork(), [], TranslationTable.Fork());
 
     public void Merge(ParsingContext other)
     {
         Sequence.Position = other.Sequence.Position;
         Exceptions.AddRange(other.Exceptions);
+        TranslationTable.Merge(other.TranslationTable);
     }
 }

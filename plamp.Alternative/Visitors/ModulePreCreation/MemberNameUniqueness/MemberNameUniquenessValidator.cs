@@ -2,6 +2,7 @@
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.MemberNameUniqueness;
@@ -14,18 +15,35 @@ public class MemberNameUniquenessValidator : BaseValidator<PreCreationContext, M
         MemberNameUniquenessValidatorInnerContext innerContext) =>
         outerContext;
 
-    protected override VisitResult PreVisitFuncName(FuncNameNode node, MemberNameUniquenessValidatorInnerContext context, NodeBase? parent)
+    protected override VisitResult PreVisitFuncName(
+        FuncNameNode node, 
+        MemberNameUniquenessValidatorInnerContext context, 
+        NodeBase? parent)
     {
         if (parent is not FuncNode func) return VisitResult.SkipChildren;
-        
-        if (!context.Members.TryGetValue(node.Value, out var members))
+        AddMemberToContext(node.Value, func, context);
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult PreVisitTypedefName(
+        TypedefNameNode node,
+        MemberNameUniquenessValidatorInnerContext context,
+        NodeBase? parent)
+    {
+        if (parent is not TypedefNode typedef) return VisitResult.SkipChildren;
+        AddMemberToContext(node.Value, typedef, context);
+        return VisitResult.SkipChildren;
+    }
+
+    private static void AddMemberToContext(string memberName, NodeBase member,
+        MemberNameUniquenessValidatorInnerContext context)
+    {
+        if (!context.Members.TryGetValue(memberName, out var members))
         {
             members = [];
-            context.Members.Add(node.Value, members);
+            context.Members.Add(memberName, members);
         }
-        members.Add(func);
-
-        return VisitResult.SkipChildren;
+        members.Add(member);
     }
 
 

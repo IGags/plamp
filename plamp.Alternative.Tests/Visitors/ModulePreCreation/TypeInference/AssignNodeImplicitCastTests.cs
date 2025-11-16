@@ -28,7 +28,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<BodyNode>()
             .ShouldSatisfyAllConditions(
@@ -39,7 +39,7 @@ public class AssignNodeImplicitCastTests
                     .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
                         y => y.FromType.ShouldBe(typeof(int)),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double))));
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(typeof(double))));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -58,7 +58,7 @@ public class AssignNodeImplicitCastTests
         expressions.ShouldNotBeNull().ExpressionList.Count.ShouldBe(2);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
         var weaveResult = visitor.WeaveDiffs(expressions, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }

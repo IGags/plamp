@@ -14,7 +14,7 @@ public class LoopTypeInferenceTests
 {
     [Theory, AutoData]
     public void WhileLoopWithCorrectCondition_ReturnNoException(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
@@ -25,7 +25,7 @@ public class LoopTypeInferenceTests
 
     [Theory, AutoData]
     public void WhileLoopWithIncorrectConditionType_ReturnsException(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
@@ -40,7 +40,7 @@ public class LoopTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.PredicateMustBeBooleanType().Code));
     }
     
-    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -49,7 +49,7 @@ public class LoopTypeInferenceTests
         result.Exceptions.ShouldBeEmpty();
     }
     
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable)
+    private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)
     {
         var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);

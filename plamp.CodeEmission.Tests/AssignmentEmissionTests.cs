@@ -32,7 +32,7 @@ public class AssignmentEmissionTests
     public static IEnumerable<object[]> EmitAssign_Correct_DataProvider()
     {
         var intType = new TypeNode(new TypeNameNode("int"));
-        intType.SetType(typeof(int));
+        intType.SetTypeRef(typeof(int));
         
         /*
          * a := 1;
@@ -53,7 +53,7 @@ public class AssignmentEmissionTests
         ];
         
         var stringType = new TypeNode(new TypeNameNode("string"));
-        stringType.SetType(typeof(string));
+        stringType.SetTypeRef(typeof(string));
         /*
          * a, b := "Hello", "World";
          * callback(a);
@@ -107,7 +107,7 @@ public class AssignmentEmissionTests
          * callback(arr[2]);
          */
         var arrType = new TypeNode(new TypeNameNode("[]string")) { ArrayDefinitions = [new ArrayTypeSpecificationNode()] };
-        arrType.SetType(typeof(string[]));
+        arrType.SetTypeRef(typeof(string[]));
 
         var ixGetter1 = new IndexerNode(new MemberNode("arr"), new LiteralNode(0, typeof(int)));
         ixGetter1.SetItemType(typeof(string));
@@ -157,7 +157,7 @@ public class AssignmentEmissionTests
 
         arrType = new TypeNode(new TypeNameNode("[]int"))
             { ArrayDefinitions = [new ArrayTypeSpecificationNode()] };
-        arrType.SetType(typeof(int[]));
+        arrType.SetTypeRef(typeof(int[]));
         var info = typeof(Array).GetMethod(nameof(Array.Empty))!;
         info = info.MakeGenericMethod(typeof(int));
         /*

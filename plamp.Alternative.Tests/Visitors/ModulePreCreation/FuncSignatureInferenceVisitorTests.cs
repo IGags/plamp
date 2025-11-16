@@ -16,10 +16,10 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
 public class FuncSignatureInferenceVisitorTests
 {
     [Theory, AutoData]
-    public void EmptyRoot_NoExceptionNoSignatures([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void EmptyRoot_NoExceptionNoSignatures([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var context = new PreCreationContext(symbolTableMock.Object);
-        var root = new RootNode([], null, []);
+        var root = new RootNode([], null, [], []);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(root, context);
         Assert.Empty(result.Functions);
@@ -27,7 +27,7 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void VoidDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -39,7 +39,8 @@ public class FuncSignatureInferenceVisitorTests
                 new FuncNode(
                     null, new FuncNameNode(funcName), [], 
                     new BodyNode([]))
-            ]);
+            ],
+            []);
 
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
@@ -51,11 +52,11 @@ public class FuncSignatureInferenceVisitorTests
                 x => x.Value.ShouldSatisfyAllConditions(
                     y => y.ShouldBe(ast.Functions[0]),
                     y => y.ReturnType.ShouldNotBeNull()
-                        .Symbol.ShouldBe(typeof(void))));
+                        .TypedefRef.ShouldBe(typeof(void))));
     }
 
     [Theory, AutoData]
-    public void IntDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void IntDefinitionEmptyArgs_SingleSignature([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -68,7 +69,8 @@ public class FuncSignatureInferenceVisitorTests
                     new TypeNode(new TypeNameNode("int")), 
                     new FuncNameNode(funcName), [], 
                     new BodyNode([]))
-            ]);
+            ],
+            []);
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
         var result = visitor.WeaveDiffs(ast, context);
@@ -79,11 +81,11 @@ public class FuncSignatureInferenceVisitorTests
                 x => x.Value.ShouldSatisfyAllConditions(
                     y => y.ShouldBe(ast.Functions[0]),
                     y => y.ReturnType.ShouldNotBeNull()
-                        .Symbol.ShouldBe(typeof(int))));
+                        .TypedefRef.ShouldBe(typeof(int))));
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionOneArg_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void VoidDefinitionOneArg_SingleSignature([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -99,7 +101,8 @@ public class FuncSignatureInferenceVisitorTests
                         new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("one"))
                     ], 
                     new BodyNode([]))
-            ]);
+            ],
+            []);
         
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
@@ -112,13 +115,13 @@ public class FuncSignatureInferenceVisitorTests
                     y => y.Key.ShouldBe(funcName),
                     y => y.Value.ShouldSatisfyAllConditions(
                         z => z.ShouldBe(ast.Functions[0]),
-                        z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
+                        z => z.ReturnType.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldHaveSingleItem()
-                            .Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int)))));
+                            .Type.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(int)))));
     }
 
     [Theory, AutoData]
-    public void VoidDefinitionManyArgs_SingleSignature([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void VoidDefinitionManyArgs_SingleSignature([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -135,7 +138,8 @@ public class FuncSignatureInferenceVisitorTests
                         new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("two")), 
                     ], 
                     new BodyNode([]))
-            ]);
+            ],
+            []);
         
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
@@ -148,10 +152,10 @@ public class FuncSignatureInferenceVisitorTests
                     y => y.Key.ShouldBe(funcName),
                     y => y.Value.ShouldSatisfyAllConditions(
                         z => z.ShouldBe(ast.Functions[0]),
-                        z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
+                        z => z.ReturnType.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldSatisfyAllConditions(
-                            w => w[0].Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int)),
-                            w => w[1].Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(string))
+                            w => w[0].Type.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(int)),
+                            w => w[1].Type.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(string))
                         )
                     )
                 )
@@ -159,7 +163,7 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void ManyDefinitionsDifferentNames_ReturnManySignatures([Frozen]Mock<ISymbolTable> symbolTableMock)
+    public void ManyDefinitionsDifferentNames_ReturnManySignatures([Frozen]Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -172,7 +176,8 @@ public class FuncSignatureInferenceVisitorTests
             [
                 new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([])),
                 new FuncNode(null, new FuncNameNode(funcName2), [], new BodyNode([]))
-            ]);
+            ],
+            []);
         
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();
@@ -185,13 +190,13 @@ public class FuncSignatureInferenceVisitorTests
                     y => y.ShouldContainKey(funcName),
                     y => y[funcName].ShouldSatisfyAllConditions(
                         z => z.ShouldBe(ast.Functions[0]),
-                        z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
+                        z => z.ReturnType.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldBeEmpty()
                     ),
                     y => y.ShouldContainKey(funcName2),
                     y => y[funcName2].ShouldSatisfyAllConditions(
                         z => z.ShouldBe(ast.Functions[1]),
-                        z => z.ReturnType.ShouldNotBeNull().Symbol.ShouldBe(typeof(void)),
+                        z => z.ReturnType.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(void)),
                         z => z.ParameterList.ShouldBeEmpty()
                     )
                 )
@@ -199,7 +204,7 @@ public class FuncSignatureInferenceVisitorTests
     }
 
     [Theory, AutoData]
-    public void ManyDefinitionsSameNames_ReturnEmptySignatures([Frozen] Mock<ISymbolTable> symbolTableMock)
+    public void ManyDefinitionsSameNames_ReturnEmptySignatures([Frozen] Mock<ITranslationTable> symbolTableMock)
     {
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -211,7 +216,8 @@ public class FuncSignatureInferenceVisitorTests
             [
                 new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([])),
                 new FuncNode(null, new FuncNameNode(funcName), [], new BodyNode([]))
-            ]);
+            ],
+            []);
         
         var context = new PreCreationContext(symbolTableMock.Object);
         var visitor = new SignatureTypeInferenceWeaver();

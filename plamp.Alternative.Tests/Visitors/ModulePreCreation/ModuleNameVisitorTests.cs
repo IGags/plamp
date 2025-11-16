@@ -13,11 +13,11 @@ public class ModuleNameVisitorTests
     [Fact]
     public void ModuleExistsInTree_ReturnsNoException()
     {
-        var symbols = new SymbolTable();
+        var symbols = new TranslationTable();
         var moduleName = "aaa";
         var module = new ModuleDefinitionNode(moduleName);
         symbols.AddSymbol(module, new FilePosition(0, 3, ""));
-        var tree = new RootNode([], module, []);
+        var tree = new RootNode([], module, [], []);
         symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
         var context = new PreCreationContext(symbols);
         var visitor = new ModuleNameValidator();
@@ -29,8 +29,8 @@ public class ModuleNameVisitorTests
     [Fact]
     public void ModuleDoesNotExistsInTree_ReturnsException()
     {
-        var symbols = new SymbolTable();
-        var tree = new RootNode([], null, []);
+        var symbols = new TranslationTable();
+        var tree = new RootNode([], null, [], []);
         symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
         var visitor = new ModuleNameValidator();
         var context = new PreCreationContext(symbols);

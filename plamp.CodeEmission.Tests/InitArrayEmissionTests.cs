@@ -38,7 +38,7 @@ public class InitArrayEmissionTests
            * return [4]type;
            */
           var itemType = new TypeNode(new TypeNameNode(arrayItemType.Name));
-          itemType.SetType(arrayItemType);
+          itemType.SetTypeRef(arrayItemType);
 
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -55,7 +55,7 @@ public class InitArrayEmissionTests
      public void InitArrayOfZeroLiteralLength_ReturnsCorrect()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -71,7 +71,7 @@ public class InitArrayEmissionTests
      public void InitArrayOfNegativeLength_ThrowsRuntimeException()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, typeof(int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -89,7 +89,7 @@ public class InitArrayEmissionTests
           var parameter = new TestParameter(typeof(int), "length");
           
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new MemberNode("length"));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -112,7 +112,7 @@ public class InitArrayEmissionTests
           var parameter = new TestParameter(typeof(int), "length");
           
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new PostfixIncrementNode(new MemberNode("length")));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -133,7 +133,7 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [4 - 3]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, typeof(int)), new LiteralNode(3, typeof(int))));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -153,7 +153,7 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [int(4.0)]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var cast = new CastNode(itemType, new LiteralNode(4.0, typeof(double)));
           cast.SetFromType(typeof(double));
@@ -176,7 +176,7 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [getLength()]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var call = new CallNode(null, new FuncCallNameNode(nameof(GetLength)), []);
           call.SetInfo(typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!);
@@ -204,10 +204,10 @@ public class InitArrayEmissionTests
            * }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          itemType.SetTypeRef(typeof(int));
 
           var arrayType = new TypeNode(new TypeNameNode("[]int"));
-          arrayType.SetType(typeof(int[]));
+          arrayType.SetTypeRef(typeof(int[]));
           
           var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, typeof(int)));
           var assign = new AssignNode([new VariableDefinitionNode(arrayType, new VariableNameNode("a"))], [arrayInit]);

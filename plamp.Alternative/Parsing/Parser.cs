@@ -33,11 +33,13 @@ public static class Parser
         var imports = new List<ImportNode>();
         var modules = new List<ModuleDefinitionNode>();
         var functions = new List<FuncNode>();
+        var types = new List<TypedefNode>();
         foreach (var statement in topLevelList)
         {
             if (statement is ImportNode import) imports.Add(import);
             if (statement is ModuleDefinitionNode def) modules.Add(def);
             if (statement is FuncNode defNode) functions.Add(defNode);
+            if (statement is TypedefNode typedef) types.Add(typedef);
         }
 
         if (modules.Count > 1)
@@ -45,15 +47,15 @@ public static class Parser
             var record = PlampExceptionInfo.DuplicateModuleDefinition();
             foreach (var module in modules)
             {
-                context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(module, record));
+                context.Exceptions.Add(context.TranslationTable.SetExceptionToNode(module, record));
             }
 
             modules = null;
         }
 
         var moduleDef = modules?.FirstOrDefault();
-        var node = new RootNode(imports, moduleDef, functions);
-        context.SymbolTable.AddSymbol(node, default);
+        var node = new RootNode(imports, moduleDef, functions, types);
+        context.TranslationTable.AddSymbol(node, default);
         return node;
     }
 
@@ -113,25 +115,36 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
         var fields = new List<FieldNode>();
-        while (context.Sequence.Current() is not EndOfFile or CloseCurlyBracket)
+
+        var first = true;
+        
+        do
         {
+            if (!first) context.Sequence.MoveNextNonWhiteSpace();
             if (TryParseField(context, out var fieldNode))
             {
                 fields.Add(fieldNode);
-                ConsumeEndOfStatement(context);
             }
-        }
+            else
+            {
+                return false;
+            }
+            
+            first = false;
+        } while (context.Sequence.Current() is Comma);
 
-        if (context.Sequence.Current() is EndOfFile)
+        if (context.Sequence.Current() is not CloseCurlyBracket)
         {
             var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
         }
 
+        context.Sequence.MoveNextNonWhiteSpace();
         var name = new TypedefNameNode(typeName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(name, typeName.Position);
+        context.TranslationTable.AddSymbol(name, typeName.Position);
         typedef = new TypedefNode(name, fields);
-        context.SymbolTable.AddSymbol(typedef, typeKeyword.Position);
+        context.TranslationTable.AddSymbol(typedef, typeKeyword.Position);
         return true;
     }
 
@@ -150,7 +163,7 @@ public static class Parser
             context.Merge(iterFork);
 
             var fieldName = new FieldNameNode(name.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(fieldName, context.Sequence.CurrentPosition);
+            context.TranslationTable.AddSymbol(fieldName, context.Sequence.CurrentPosition);
             fieldNames.Add(fieldName);
             context.Sequence.MoveNextNonWhiteSpace();
             first = false;
@@ -174,7 +187,7 @@ public static class Parser
 
         context.Merge(typFork);
         fieldNode = new FieldNode(type, fieldNames);
-        context.SymbolTable.AddSymbol(fieldNode, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.TranslationTable.AddSymbol(fieldNode, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
 
         return true;
     }
@@ -199,12 +212,12 @@ public static class Parser
         {
             if (!GetImportItems(context, out var list)) return false;
             importNode = new ImportNode(moduleName, list);
-            context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
+            context.TranslationTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
             return true;
         }
 
         importNode = new ImportNode(moduleName, null);
-        context.SymbolTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
+        context.TranslationTable.AddSymbol(importNode, context.Sequence.MakeRangeFromPrevNonWhitespace(importKeyword));
         ConsumeEndOfStatement(context);
         return true;
     }
@@ -261,12 +274,12 @@ public static class Parser
 
             importItem = new ImportItemNode(itemName, alias.GetStringRepresentation());
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(importItem, context.Sequence.MakeRangeFromPrevNonWhitespace(word));
+            context.TranslationTable.AddSymbol(importItem, context.Sequence.MakeRangeFromPrevNonWhitespace(word));
         }
         else
         {
             importItem = new ImportItemNode(itemName, itemName);
-            context.SymbolTable.AddSymbol(importItem, word.Position);
+            context.TranslationTable.AddSymbol(importItem, word.Position);
         }
 
         return true;
@@ -332,7 +345,7 @@ public static class Parser
         if (moduleName == null) return false;
         module = new ModuleDefinitionNode(moduleName);
 
-        context.SymbolTable.AddSymbol(module, context.Sequence.MakeRangeFromPrevNonWhitespace(defStart));
+        context.TranslationTable.AddSymbol(module, context.Sequence.MakeRangeFromPrevNonWhitespace(defStart));
         ConsumeEndOfStatement(context);
         return true;
     }
@@ -378,9 +391,9 @@ public static class Parser
         }
 
         var funcNameNode = new FuncNameNode(name);
-        context.SymbolTable.AddSymbol(funcNameNode, funcName.Position);
+        context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
         func = new FuncNode(type, funcNameNode, list, body);
-        context.SymbolTable.AddSymbol(func, fnToken.Position);
+        context.TranslationTable.AddSymbol(func, fnToken.Position);
         return true;
     }
 
@@ -463,7 +476,7 @@ public static class Parser
             context.Merge(iterFork);
 
             var argNameNode = new ParameterNameNode(name.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(argNameNode, context.Sequence.CurrentPosition);
+            context.TranslationTable.AddSymbol(argNameNode, context.Sequence.CurrentPosition);
             argNames.Add(argNameNode);
             context.Sequence.MoveNextNonWhiteSpace();
             first = false;
@@ -491,7 +504,7 @@ public static class Parser
         foreach (var name in argNames)
         {
             var param = new ParameterNode(type, name);
-            context.SymbolTable.AddSymbol(param, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            context.TranslationTable.AddSymbol(param, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             args.Add(param);
         }
 
@@ -513,7 +526,7 @@ public static class Parser
         if (!TryParseConditionPredicate(context, out var predicate)) return false;
         if (!TryParseBody(context, out var body)) return false;
         loop = new WhileNode(predicate, body);
-        context.SymbolTable.AddSymbol(loop, loopToken.Position);
+        context.TranslationTable.AddSymbol(loop, loopToken.Position);
         return true;
     }
 
@@ -536,14 +549,14 @@ public static class Parser
         if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Else })
         {
             condition = new ConditionNode(expression, body, null);
-            context.SymbolTable.AddSymbol(condition, conditionToken.Position);
+            context.TranslationTable.AddSymbol(condition, conditionToken.Position);
             return true;
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseBody(context, out var elseBody)) return false;
         condition = new ConditionNode(expression, body, elseBody);
-        context.SymbolTable.AddSymbol(condition, conditionToken.Position);
+        context.TranslationTable.AddSymbol(condition, conditionToken.Position);
         return true;
     }
 
@@ -598,7 +611,7 @@ public static class Parser
             var expressions = new List<NodeBase>();
             if (TryParseStatement(context, out var expression)) expressions.Add(expression);
             body = new BodyNode(expressions);
-            context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -625,13 +638,13 @@ public static class Parser
             var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             body = new BodyNode(expressions);
-            context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
+            context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
             return true;
         }
 
         body = new BodyNode(expressions);
         context.Sequence.MoveNextNonWhiteSpace();
-        context.SymbolTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
+        context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         return true;
     }
 
@@ -654,7 +667,7 @@ public static class Parser
             case KeywordToken { Keyword: Keywords.Break }:
                 var breakExpression = new BreakNode();
                 var current = context.Sequence.Current();
-                context.SymbolTable.AddSymbol(breakExpression, current.Position);
+                context.TranslationTable.AddSymbol(breakExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
                 expression = breakExpression;
@@ -662,7 +675,7 @@ public static class Parser
             case KeywordToken { Keyword: Keywords.Continue }:
                 var continueExpression = new ContinueNode();
                 current = context.Sequence.Current();
-                context.SymbolTable.AddSymbol(continueExpression, current.Position);
+                context.TranslationTable.AddSymbol(continueExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
                 expression = continueExpression;
@@ -726,7 +739,7 @@ public static class Parser
         }
 
         assignment = new AssignNode(targets, sources);
-        context.SymbolTable.AddSymbol(assignment, assign.Position);
+        context.TranslationTable.AddSymbol(assignment, assign.Position);
         return true;
     }
 
@@ -750,7 +763,7 @@ public static class Parser
             }
 
             var memberNode = new MemberNode(member.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(memberNode, member.Position);
+            context.TranslationTable.AddSymbol(memberNode, member.Position);
             context.Sequence.MoveNextNonWhiteSpace();
 
             var indexerFork = context.Fork();
@@ -822,7 +835,7 @@ public static class Parser
 
             from = indexerSequence = new IndexerNode(from, member);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(from, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart));
+            context.TranslationTable.AddSymbol(from, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart));
         }
 
         if (indexerSequence == null) return false;
@@ -858,9 +871,9 @@ public static class Parser
         context.Sequence.MoveNextNonWhiteSpace();
         if (!TryParseType(context, out var type)) return false;
         arrayDefinition = new InitArrayNode(type, dimension);
-        if (!context.SymbolTable.TryGetSymbol(type, out _))
+        if (!context.TranslationTable.TryGetSymbol(type, out _))
             throw new InvalidOperationException("Parser code is incorrect");
-        context.SymbolTable.AddSymbol(arrayDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.TranslationTable.AddSymbol(arrayDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
 
@@ -885,7 +898,7 @@ public static class Parser
             var definition = new ArrayTypeSpecificationNode();
             definitions.Add(definition);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
+            context.TranslationTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         }
     }
 
@@ -985,7 +998,7 @@ public static class Parser
         {
             node = new MemberNode(member.GetStringRepresentation());
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -993,7 +1006,7 @@ public static class Parser
         {
             node = new LiteralNode(literal.ActualValue, literal.ActualType);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -1031,7 +1044,7 @@ public static class Parser
             }
 
             context.Merge(prefixFork);
-            context.SymbolTable.AddSymbol(node, op.Position);
+            context.TranslationTable.AddSymbol(node, op.Position);
             return true;
         }
 
@@ -1067,9 +1080,9 @@ public static class Parser
 
                     var args = new List<NodeBase> { inner };
                     args.AddRange(call.Args);
-                    if (!context.SymbolTable.TryGetSymbol(call, out var pos)) throw new Exception();
+                    if (!context.TranslationTable.TryGetSymbol(call, out var pos)) throw new Exception();
                     output = new CallNode(call.From, call.Name, args);
-                    context.SymbolTable.AddSymbol(output, pos);
+                    context.TranslationTable.AddSymbol(output, pos);
                     return true;
             }
         }
@@ -1147,7 +1160,7 @@ public static class Parser
         }
 
         context.Merge(opFork);
-        context.SymbolTable.AddSymbol(output, token.Position);
+        context.TranslationTable.AddSymbol(output, token.Position);
         return true;
     }
 
@@ -1177,10 +1190,10 @@ public static class Parser
         if (context.Sequence.Current() is CloseParen)
         {
             var funcNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(funcNameNode, funcName.Position);
+            context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
             call = new CallNode(null, funcNameNode, argExpressions);
             context.Sequence.MoveNextNonWhiteSpace();
-            context.SymbolTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+            context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
         }
 
@@ -1220,9 +1233,9 @@ public static class Parser
         }
 
         var funcCallNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
-        context.SymbolTable.AddSymbol(funcCallNameNode, funcName.Position);
+        context.TranslationTable.AddSymbol(funcCallNameNode, funcName.Position);
         call = new CallNode(null, funcCallNameNode, argExpressions);
-        context.SymbolTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
 
@@ -1242,7 +1255,7 @@ public static class Parser
         {
             ConsumeEndOfStatement(context);
             node = new ReturnNode(null);
-            context.SymbolTable.AddSymbol(node, returnToken.Position);
+            context.TranslationTable.AddSymbol(node, returnToken.Position);
             return true;
         }
 
@@ -1256,7 +1269,7 @@ public static class Parser
 
         ConsumeEndOfStatement(context);
         node = new ReturnNode(expr);
-        context.SymbolTable.AddSymbol(node, returnToken.Position);
+        context.TranslationTable.AddSymbol(node, returnToken.Position);
         return true;
     }
 
@@ -1312,7 +1325,7 @@ public static class Parser
             context.Merge(iterFork);
 
             var varName = new VariableNameNode(name.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(varName, context.Sequence.CurrentPosition);
+            context.TranslationTable.AddSymbol(varName, context.Sequence.CurrentPosition);
             varNames.Add(varName);
             context.Sequence.MoveNextNonWhiteSpace();
             first = false;
@@ -1336,7 +1349,7 @@ public static class Parser
 
         context.Merge(typFork);
         definition = new VariableDefinitionNode(type, varNames);
-        context.SymbolTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.TranslationTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
 
         return true;
     }
@@ -1360,8 +1373,8 @@ public static class Parser
         var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
         type = new TypeNode(typeNameNode) { ArrayDefinitions = definitions };
         context.Sequence.MoveNextNonWhiteSpace();
-        context.SymbolTable.AddSymbol(type, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
-        context.SymbolTable.AddSymbol(typeNameNode, typeName.Position);
+        context.TranslationTable.AddSymbol(type, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        context.TranslationTable.AddSymbol(typeNameNode, typeName.Position);
         return true;
     }
 
@@ -1381,55 +1394,78 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
         var fields = new List<InitFieldNode>();
-        while (context.Sequence.Current() is not CloseCurlyBracket or EndOfFile)
+        do
         {
+            var fldFork = context.Fork();
+            if (!TryParseFieldInit(fldFork, out var init)) break;
+            context.Merge(fldFork);
+            fields.AddRange(init);
+        } while (context.Sequence.Current() is Comma);
+
+        if (context.Sequence.Current() is not CloseCurlyBracket)
+        {
+            var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+
+        context.Sequence.MoveNextNonWhiteSpace();
+        initTypeNode = new InitTypeNode(type, fields);
+        var initPos = context.Sequence.MakeRangeFromPrevNonWhitespace(start);
+        context.TranslationTable.AddSymbol(initTypeNode, initPos);
+        return true;
+    }
+
+    private static bool TryParseFieldInit(
+        ParsingContext context, 
+        [NotNullWhen(true)]out List<InitFieldNode>? initList)
+    {
+        initList = null;
+        if (context.Sequence.Current() is not Word) return false;
+        
+        var fldNameList = new List<FieldNameNode>();
+        var first = true;
+        do
+        {
+            if(!first) context.Sequence.MoveNextNonWhiteSpace(); 
             if (context.Sequence.Current() is not Word fieldName)
             {
                 var record = PlampExceptionInfo.ExpectedFieldName();
                 context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
                 return false;
             }
-
-            var nameNode = new FieldNameNode(fieldName.GetStringRepresentation());
-            context.SymbolTable.AddSymbol(nameNode, fieldName.Position);
-
-            context.Sequence.MoveNextNonWhiteSpace();
-            if (context.Sequence.Current() is not Colon)
-            {
-                var record = PlampExceptionInfo.ExpectedColon();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-                return false;
-            }
-
-            context.Sequence.MoveNextNonWhiteSpace();
-            var fieldValueFork = context.Fork();
-            if (!TryParsePrecedence(fieldValueFork, out var fieldValue))
-            {
-                var record = PlampExceptionInfo.ExpectedFieldValue();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-                return false;
-            }
             
-            context.Merge(fieldValueFork);
-            var field = new InitFieldNode(nameNode, fieldValue);
-            var pos = context.Sequence.MakeRangeFromPrevNonWhitespace(fieldName);
-            context.SymbolTable.AddSymbol(field, pos);
-            fields.Add(field);
-        }
-
-        if (context.Sequence.Current() is not CloseCurlyBracket)
-        {
-            var record = PlampExceptionInfo.ExpectedClosingCurlyBracket();
-            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-        }
-        else
-        {
+            var nameNode = new FieldNameNode(fieldName.GetStringRepresentation());
+            context.TranslationTable.AddSymbol(nameNode, fieldName.Position);
             context.Sequence.MoveNextNonWhiteSpace();
+            fldNameList.Add(nameNode);
+            first = false;
+        } while (context.Sequence.Current() is Comma);
+        
+        if (context.Sequence.Current() is not Colon colonSep)
+        {
+            var record = PlampExceptionInfo.ExpectedColon();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
         }
         
-        initTypeNode = new InitTypeNode(type, fields);
-        var initPos = context.Sequence.MakeRangeFromPrevNonWhitespace(start);
-        context.SymbolTable.AddSymbol(initTypeNode, initPos);
+        context.Sequence.MoveNextNonWhiteSpace();
+        var fieldValueFork = context.Fork();
+        if (!TryParsePrecedence(fieldValueFork, out var fieldValue))
+        {
+            var record = PlampExceptionInfo.ExpectedFieldValue();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+        initList = [];
+        context.Merge(fieldValueFork);
+        foreach (var fldName in fldNameList)
+        {
+            var field = new InitFieldNode(fldName, fieldValue);
+            context.TranslationTable.AddSymbol(field, colonSep.Position);
+            initList.Add(field);
+        }
+
         return true;
     }
 

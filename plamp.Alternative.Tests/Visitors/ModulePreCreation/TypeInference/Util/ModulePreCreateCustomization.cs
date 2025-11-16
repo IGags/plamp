@@ -12,7 +12,7 @@ public class ModulePreCreateCustomization : ISpecimenBuilder
     public object Create(object request, ISpecimenContext context)
     {
         if (request is not Type type || type != typeof(PreCreationContext)) return new NoSpecimen();
-        var symbolTableMock = new Mock<ISymbolTable>();
+        var symbolTableMock = new Mock<ITranslationTable>();
         var filePosition = new FilePosition();
         symbolTableMock.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
         symbolTableMock.Setup(x =>

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.AstManipulation;
 
@@ -14,7 +16,7 @@ public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationCo
     private readonly Stack<int> _typeInferenceSizeSnapshotStack = [];
     
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
-    public Stack<Type?> InnerExpressionTypeStack { get; private set; } = [];
+    public Stack<CompileTimeType?> InnerExpressionTypeStack { get; private set; } = [];
 
     
     public FuncNode? CurrentFunc { get; set; }

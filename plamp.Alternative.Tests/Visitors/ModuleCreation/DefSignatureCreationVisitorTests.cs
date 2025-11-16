@@ -24,11 +24,11 @@ public class DefSignatureCreationVisitorTests
     public void VisitNoArgs_ReturnNoException(
         Type returnTypeObject)
     {
-        var symbolTable = new Fixture().Freeze<Mock<ISymbolTable>>();
+        var symbolTable = new Fixture().Freeze<Mock<ITranslationTable>>();
         var visitor = new Fixture().Create<DefSignatureCreationValidator>();
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode(returnTypeObject.Name));
-        returnType.SetType(returnTypeObject);
+        returnType.SetTypeRef(returnTypeObject);
         var ast = new FuncNode(
             returnType,
             new FuncNameNode(funcName),
@@ -49,15 +49,15 @@ public class DefSignatureCreationVisitorTests
 
     [Theory, AutoData]
     public void VisitWithArgs_ReturnsNoException(
-        [Frozen]Mock<ISymbolTable> symbolTable,
+        [Frozen]Mock<ITranslationTable> symbolTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetType(typeof(void));
+        returnType.SetTypeRef(typeof(void));
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetType(typeof(int));
+        argType.SetTypeRef(typeof(int));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -80,14 +80,14 @@ public class DefSignatureCreationVisitorTests
 
     [Theory, AutoData]
     public void VisitWithUnknownReturnType_ReturnWithoutMethodSignature(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetType(typeof(int));
+        argType.SetTypeRef(typeof(int));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -106,12 +106,12 @@ public class DefSignatureCreationVisitorTests
 
     [Theory, AutoData]
     public void VisitWithUnknownArgType_ReturnWithoutMethodSignature(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetType(typeof(void));
+        returnType.SetTypeRef(typeof(void));
         
         var argType = new TypeNode(new TypeNameNode("int"));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
@@ -130,7 +130,7 @@ public class DefSignatureCreationVisitorTests
             x => x.Methods.ShouldBeEmpty());
     }
 
-    private CreationContext CreateContext(Mock<ISymbolTable> symbolTable)
+    private CreationContext CreateContext(Mock<ITranslationTable> symbolTable)
     {
         var preCreationContext = new PreCreationContext(symbolTable.Object);
         var asmName = new AssemblyName(Guid.NewGuid().ToString());

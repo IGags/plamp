@@ -25,7 +25,7 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class VariableTypeInferenceTests
 {
     [Theory, AutoData]
-    public void VariableDefinitionInference_ReturnNoExceptions([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void VariableDefinitionInference_ReturnNoExceptions([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -35,7 +35,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void NotExistVariableInference_ReturnsVariableNotExistException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void NotExistVariableInference_ReturnsVariableNotExistException([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new MemberNode("b");
         var ast = new BodyNode([
@@ -53,7 +53,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateAndUseVariableDefinition_ReturnNoException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void CreateAndUseVariableDefinition_ReturnNoException([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -64,7 +64,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", typeof(string))]);
         var ast = new BodyNode([
@@ -83,7 +83,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableBeforeAndGetFromChildScope_ReturnsNoException([Frozen]Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void CreateVariableBeforeAndGetFromChildScope_ReturnsNoException([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -98,7 +98,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableAfterGetFromChildScope_ReturnsDuplicateDefinitionException([Frozen] Mock<ISymbolTable> symbolTable,
+    public void CreateVariableAfterGetFromChildScope_ReturnsDuplicateDefinitionException([Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -122,7 +122,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableInOtherScopeStack_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void CreateVariableInOtherScopeStack_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -139,7 +139,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void DefineVariableExplicitly_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void DefineVariableExplicitly_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -149,7 +149,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void DefineVariableExplicitlyAndAssign_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void DefineVariableExplicitlyAndAssign_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -163,7 +163,7 @@ public class VariableTypeInferenceTests
 
     [Theory, AutoData]
     public void DefineVariableExplicitlyTwice_ReturnsDuplicateDefinitionException(
-        [Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+        [Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -183,7 +183,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void DefineVariableAndAssignToOther_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void DefineVariableAndAssignToOther_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -194,7 +194,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignUndefined_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void AssignUndefined_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -209,7 +209,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignThemself_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void AssignThemself_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -225,7 +225,7 @@ public class VariableTypeInferenceTests
 
     [Theory, AutoData]
     public void AssignEmptyDefinition_ReturnsNoException(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -237,7 +237,7 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignThemselfAfterDefinition_ReturnsNoException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void AssignThemselfAfterDefinition_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -247,7 +247,7 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
-    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -256,7 +256,7 @@ public class VariableTypeInferenceTests
         result.Exceptions.ShouldBeEmpty();
     }
 
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable)
+    private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)
     {
         var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -380,7 +380,7 @@ public class VariableTypeInferenceTests
     public static IEnumerable<object[]> InitDefault_Correct_DataProvider()
     {
         var defType1 = new TypeNode(new TypeNameNode("int"));
-        defType1.SetType(typeof(int));
+        defType1.SetTypeRef(typeof(int));
         yield return
         [
             """
@@ -401,7 +401,7 @@ public class VariableTypeInferenceTests
         ];
 
         var defType2 = new TypeNode(new TypeNameNode("string")){ArrayDefinitions = [new ArrayTypeSpecificationNode()]};
-        defType2.SetType(typeof(string[]));
+        defType2.SetTypeRef(typeof(string[]));
         var callSymbol = typeof(Array).GetMethod(nameof(Array.Empty));
         var infoConstructed = callSymbol!.MakeGenericMethod(typeof(string));
         var callNode = new CallNode(null, new FuncCallNameNode("__FROM_C#__ARRAY::Empty<T>"), []);

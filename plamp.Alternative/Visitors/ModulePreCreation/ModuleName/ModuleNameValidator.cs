@@ -16,7 +16,7 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
         if (node.ModuleName == null)
         {
             var record = PlampExceptionInfo.ModuleMustHaveName();
-            context.Exceptions.Add(context.SymbolTable.SetExceptionToNode(node, record));
+            context.Exceptions.Add(context.TranslationTable.SetExceptionToNode(node, record));
             return VisitResult.Break;
         }
         

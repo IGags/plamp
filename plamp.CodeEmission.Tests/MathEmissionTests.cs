@@ -188,20 +188,20 @@ public class MathEmissionTests
     {
         var objParam = new TestParameter(typeof(CallbackClass), "obj");
         var toType = new TypeNode(new TypeNameNode(nameof(Object)));
-        toType.SetType(typeof(object));
+        toType.SetTypeRef(typeof(object));
 
         var firstArg = new CastNode(toType, new MemberNode("a"));
-        firstArg.SetFromType(variableType.Symbol!);
+        firstArg.SetFromType(variableType.TypedefRef!);
         
         var secondArg = new CastNode(toType, new MemberNode("b"));
-        secondArg.SetFromType(variableType.Symbol!);
+        secondArg.SetFromType(variableType.TypedefRef!);
         
         var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg]);
         call.SetInfo(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!);
         
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.Symbol!)]),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.TypedefRef!)]),
             new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("b"))], [createFromInner(new MemberNode("a"))]),
             call,
             new ReturnNode(null)
@@ -217,22 +217,22 @@ public class MathEmissionTests
     public static IEnumerable<object[]> EmitIncrementDecrementDataProvider()
     {
         var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)));
-        intTypeNode.SetType(typeof(int));
+        intTypeNode.SetTypeRef(typeof(int));
         
         var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)));
-        floatTypeNode.SetType(typeof(float));
+        floatTypeNode.SetTypeRef(typeof(float));
         
         var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)));
-        uintTypeNode.SetType(typeof(uint));
+        uintTypeNode.SetTypeRef(typeof(uint));
         
         var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)));
-        doubleTypeNode.SetType(typeof(double));
+        doubleTypeNode.SetTypeRef(typeof(double));
         
         var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)));
-        longTypeNode.SetType(typeof(long));
+        longTypeNode.SetTypeRef(typeof(long));
         
         var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)));
-        ulongTypeNode.SetType(typeof(ulong));
+        ulongTypeNode.SetTypeRef(typeof(ulong));
         
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2, 2];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0, 0];
@@ -270,9 +270,9 @@ public class MathEmissionTests
     public void MaxValueOverflow_Success(object value, object one, Type actualType, object should)
     {
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetType(actualType);
+        variableType.SetTypeRef(actualType);
         var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetType(typeof(object));
+        toType.SetTypeRef(typeof(object));
         var castToObj = new CastNode(toType, new MemberNode("a"));
         castToObj.SetFromType(actualType);
         var body = new BodyNode(
@@ -305,9 +305,9 @@ public class MathEmissionTests
     public void MinValueUnderflow_Success(object value, object one, Type actualType, object should)
     {
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetType(actualType);
+        variableType.SetTypeRef(actualType);
         var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetType(typeof(object));
+        toType.SetTypeRef(typeof(object));
         var castToObj = new CastNode(toType, new MemberNode("a"));
         castToObj.SetFromType(actualType);
         var body = new BodyNode(

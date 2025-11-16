@@ -15,11 +15,11 @@ public class MemberNameUniquenessVisitorTests
     [Fact]
     public void SingleMember_DoesNotReturnExceptions()
     {
-        var table = new SymbolTable();
+        var table = new TranslationTable();
         var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
-        var root = new RootNode([], null, [func1]);
+        var root = new RootNode([], null, [func1], []);
         table.AddSymbol(func1Name, new FilePosition(0, 2, ""));
         table.AddSymbol(funcBody, new FilePosition(2 * Utf16CharacterByteCount, 2, ""));
         table.AddSymbol(func1, new FilePosition(0, 0, ""));
@@ -33,7 +33,7 @@ public class MemberNameUniquenessVisitorTests
     [Fact]
     public void MultipleMembersWithDifferNames_DoesNotReturnExceptions()
     {
-        var table = new SymbolTable();
+        var table = new TranslationTable();
         var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
@@ -42,7 +42,7 @@ public class MemberNameUniquenessVisitorTests
         var func2Body = new BodyNode([]);
         var func2 = new FuncNode(null, func2Name, [], func2Body);
         
-        var root = new RootNode([], null, [func1, func2]);
+        var root = new RootNode([], null, [func1, func2], []);
         
         table.AddSymbol(func1Name, new FilePosition(Utf16CharacterByteCount * 3, 3, ""));
         table.AddSymbol(funcBody, new FilePosition(Utf16CharacterByteCount * 9, 2, ""));
@@ -63,7 +63,7 @@ public class MemberNameUniquenessVisitorTests
     [Fact]
     public void MultipleMembersWithSameName_ReturnExceptionsToAllMembers()
     {
-        var table = new SymbolTable();
+        var table = new TranslationTable();
         var func1Name = new FuncNameNode("fn1");
         var funcBody = new BodyNode([]);
         var func1 = new FuncNode(null, func1Name, [], funcBody);
@@ -72,7 +72,7 @@ public class MemberNameUniquenessVisitorTests
         var func2Body = new BodyNode([]);
         var func2 = new FuncNode(null, func2Name, [], func2Body);
         
-        var root = new RootNode([], null, [func1, func2]);
+        var root = new RootNode([], null, [func1, func2], []);
         
         table.AddSymbol(func1Name, new FilePosition(Utf16CharacterByteCount * 3, 3, ""));
         table.AddSymbol(funcBody, new FilePosition(Utf16CharacterByteCount * 9, 2, ""));

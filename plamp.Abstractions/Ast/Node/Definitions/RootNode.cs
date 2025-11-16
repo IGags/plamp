@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
 namespace plamp.Abstractions.Ast.Node.Definitions;
 
@@ -10,8 +11,13 @@ namespace plamp.Abstractions.Ast.Node.Definitions;
 /// <param name="imports">Список импортов других модулей</param>
 /// <param name="moduleName">Имя текущего модуля</param>
 /// <param name="functions">Список объявлений функций текущего модуля</param>
-public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<FuncNode> functions) : NodeBase
+public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<FuncNode> functions, List<TypedefNode> types) : NodeBase
 {
+    /// <summary>
+    /// Список объявленных типов.
+    /// </summary>
+    public IReadOnlyList<TypedefNode> Types => types;
+    
     /// <summary>
     /// Список импортов других модулей
     /// </summary>
@@ -36,6 +42,11 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         }
 
         if(ModuleName != null) yield return ModuleName;
+
+        foreach (var type in types)
+        {
+            yield return type;
+        }
         
         foreach (var func in functions)
         {
@@ -62,6 +73,12 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
                  && (ix = functions.IndexOf(oldDef)) != -1)
         {
             functions[ix] = defChild;
+        }
+        else if (newChild is TypedefNode typedefOld
+                 && child is TypedefNode typedefNew
+                 && (ix = types.IndexOf(typedefNew)) != -1)
+        {
+            types[ix] = typedefOld;
         }
     }
 }

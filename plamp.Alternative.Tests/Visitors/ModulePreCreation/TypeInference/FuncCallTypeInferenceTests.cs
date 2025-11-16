@@ -24,7 +24,7 @@ public class FuncCallTypeInferenceTests
     //Inference call not all required args
     [Theory, AutoData]
     public void CallVoid_ReturnsCorrect(
-        [Frozen]Mock<ISymbolTable> symbolTable,
+        [Frozen]Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -33,7 +33,7 @@ public class FuncCallTypeInferenceTests
         ]);
         
         var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetType(typeof(void));
+        retType.SetTypeRef(typeof(void));
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
@@ -44,7 +44,7 @@ public class FuncCallTypeInferenceTests
 
     [Theory, AutoData]
     public void CallRetType_ReturnsCorrect(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -53,7 +53,7 @@ public class FuncCallTypeInferenceTests
         ]);
 
         var retType = new TypeNode(new TypeNameNode("int"));
-        retType.SetType(typeof(int));
+        retType.SetTypeRef(typeof(int));
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
@@ -63,7 +63,7 @@ public class FuncCallTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CallWithArgs_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void CallWithArgs_ReturnsCorrect([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -72,9 +72,9 @@ public class FuncCallTypeInferenceTests
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));
         var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.SetType(typeof(void));
-        firstArgType.SetType(typeof(int));
-        secondArgType.SetType(typeof(string));
+        retType.SetTypeRef(typeof(void));
+        firstArgType.SetTypeRef(typeof(int));
+        secondArgType.SetTypeRef(typeof(string));
         
         var def = new FuncNode(
             retType, 
@@ -92,7 +92,7 @@ public class FuncCallTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void AssignCallVoid_ReturnsException([Frozen] Mock<ISymbolTable> symbolTable, TypeInferenceWeaver visitor)
+    public void AssignCallVoid_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
         [
@@ -100,7 +100,7 @@ public class FuncCallTypeInferenceTests
         ]);
         
         var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetType(typeof(void));
+        retType.SetTypeRef(typeof(void));
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
@@ -121,7 +121,7 @@ public class FuncCallTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CallNotFullArgs_ReturnException([Frozen] Mock<ISymbolTable> symbolTable,
+    public void CallNotFullArgs_ReturnException([Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -131,9 +131,9 @@ public class FuncCallTypeInferenceTests
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));
         var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.SetType(typeof(void));
-        firstArgType.SetType(typeof(int));
-        secondArgType.SetType(typeof(string));
+        retType.SetTypeRef(typeof(void));
+        firstArgType.SetTypeRef(typeof(int));
+        secondArgType.SetTypeRef(typeof(string));
         
         var def = new FuncNode(
             retType, 
@@ -172,12 +172,12 @@ public class FuncCallTypeInferenceTests
         result.ShouldBe(true);
         expression.ShouldNotBeNull();
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
 
         var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetType(typeof(void));
+        retType.SetTypeRef(typeof(void));
         var argType = new TypeNode(new TypeNameNode("any"));
-        argType.SetType(typeof(object));
+        argType.SetTypeRef(typeof(object));
         
         var mockFuncDef = new FuncNode(
             retType,
@@ -201,12 +201,12 @@ public class FuncCallTypeInferenceTests
         expression.ShouldNotBeNull();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
 
         var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetType(typeof(void));
+        retType.SetTypeRef(typeof(void));
         var argType = new TypeNode(new TypeNameNode("long"));
-        argType.SetType(typeof(long));
+        argType.SetTypeRef(typeof(long));
         
         var mockFuncDef = new FuncNode(
             retType,
@@ -220,7 +220,7 @@ public class FuncCallTypeInferenceTests
         weaveResult.Exceptions.ShouldBeEmpty();
     }
     
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable)
+    private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)
     {
         var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
@@ -230,7 +230,7 @@ public class FuncCallTypeInferenceTests
     
     private void SetupMocksAndAssertCorrect(
         NodeBase ast, 
-        Mock<ISymbolTable> symbolTable, 
+        Mock<ITranslationTable> symbolTable, 
         TypeInferenceWeaver visitor, 
         Dictionary<string, FuncNode> funcs)
     {

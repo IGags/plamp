@@ -7,7 +7,11 @@ public static class Program
     private const string File = 
 """
 module playground;
+
+type Point { X, Y: int, Z: int }
+
 fn array_init() {
+    pt := Point{X, Y, Z: 11};
     arr, i := [100]int, 0;
     while(i < arr.length()) arr[i++] := i * i;
     
@@ -39,8 +43,8 @@ fn binary_search(array: []int, target: int) int {
     
     public static async Task Main()
     {
-        var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File);
-        if (res.Exceptions.Count > 0)
+        var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File, true);
+        if (res.Exceptions.Count > 0 || res.Compiled == null)
         {
             PrintRes(res.Exceptions);
             return;
@@ -53,9 +57,12 @@ fn binary_search(array: []int, target: int) int {
             foreach (var ex in exList)
             {
                 var start = (int)ex.FilePosition.ByteOffset / 2;
+                var rowStart = File.LastIndexOf('\n', start);
+                var rowEnd = File.IndexOf('\n', start + 1);
+                rowStart = rowStart == -1 ? 0 : rowStart;
                 
-                var row = File[start..ex.FilePosition.CharacterLength];
-                var str = $"{ex.Message}" + '\n' + row + new string('\n', 3);
+                var row = File[rowStart..rowEnd];
+                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ', start - rowStart - 1) + '^' + '\n';
                 Console.WriteLine(str);
             }
         }

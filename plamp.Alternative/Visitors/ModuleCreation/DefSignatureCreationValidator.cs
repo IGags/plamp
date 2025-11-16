@@ -10,9 +10,9 @@ public class DefSignatureCreationValidator : BaseValidator<CreationContext, Crea
 {
     protected override VisitResult PreVisitFunction(FuncNode node, CreationContext context, NodeBase? parent)
     {
-        var signature = node.ParameterList.Select(x => x.Type.Symbol).ToArray();
+        var signature = node.ParameterList.Select(x => x.Type.TypedefRef).ToArray();
         if (signature.Any(x => x == null)) return VisitResult.SkipChildren;
-        var retType = node.ReturnType?.Symbol;
+        var retType = node.ReturnType?.TypedefRef;
         if(retType == null) return VisitResult.SkipChildren;
         var methodBuilder = context.ModuleBuilder.DefineGlobalMethod(
             node.FuncName.Value,

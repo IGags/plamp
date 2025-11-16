@@ -17,7 +17,7 @@ namespace plamp.Alternative.Tests.Visitors.ModuleCreation;
 public class MethodCallInferenceValidatorTests
 {
     [Theory, AutoData]
-    public void InferenceIntrinsic_ReturnsCorrect([Frozen] Mock<ISymbolTable> symbolTable, MethodCallInferenceValidator visitor)
+    public void InferenceIntrinsic_ReturnsCorrect([Frozen] Mock<ITranslationTable> symbolTable, MethodCallInferenceValidator visitor)
     {
         var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", typeof(string))]);
         call.SetInfo(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!);
@@ -31,7 +31,7 @@ public class MethodCallInferenceValidatorTests
     
     [Theory, AutoData]
     public void InferenceFunction_ReturnsCorrect(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         MethodCallInferenceValidator visitor)
     {
         var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
@@ -48,7 +48,7 @@ public class MethodCallInferenceValidatorTests
 
     [Theory, AutoData]
     public void InferenceFunctionNotExist_ReturnsNull(
-        [Frozen] Mock<ISymbolTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> symbolTable,
         MethodCallInferenceValidator visitor)
     {
         var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
@@ -62,7 +62,7 @@ public class MethodCallInferenceValidatorTests
 
     [Theory, AutoData]
     public void InferenceFunctionModuleHasIntrinsicOverride_ReturnsCorrect(
-        [Frozen] Mock<ISymbolTable> symbolTable, 
+        [Frozen] Mock<ITranslationTable> symbolTable, 
         MethodCallInferenceValidator visitor)
     {
         var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", typeof(string))]);
@@ -80,7 +80,7 @@ public class MethodCallInferenceValidatorTests
         call.Symbol.ShouldBe(method);
     }
     
-    private CreationContext CreateContext(Mock<ISymbolTable> symbolTable)
+    private CreationContext CreateContext(Mock<ITranslationTable> symbolTable)
     {
         var preCreationContext = new PreCreationContext(symbolTable.Object);
         var asmName = new AssemblyName(Guid.NewGuid().ToString());

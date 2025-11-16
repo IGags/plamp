@@ -20,7 +20,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
     private static CastNode CreateCast(object inner, Type typeFrom, Type typeTo)
     {
         var castType = new TypeNode(new TypeNameNode(typeTo.Name));
-        castType.SetType(typeTo);
+        castType.SetTypeRef(typeTo);
         var cast = new CastNode(castType, new LiteralNode(inner, typeFrom));
         cast.SetFromType(typeFrom);
         return cast;
@@ -77,7 +77,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         resContext.Exceptions.ShouldBeEmpty();
         expression.ShouldBeEquivalentTo(astShould);
@@ -92,7 +92,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);
@@ -107,7 +107,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable);
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);

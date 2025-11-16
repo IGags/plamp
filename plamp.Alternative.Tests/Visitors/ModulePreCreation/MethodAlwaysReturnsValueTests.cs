@@ -22,7 +22,7 @@ public class MethodAlwaysReturnsValueTests
     {
         var defNode = CreateMethod(returnType, methodName, [], body);
         var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext(new MockSymbolTable());
+        var context = new PreCreationContext(new MockTranslationTable());
         
         var res = validator.Validate(defNode, context);
         
@@ -143,10 +143,11 @@ public class MethodAlwaysReturnsValueTests
             [
                 CreateMethod(typeof(int), "1", [], new BodyNode([])),
                 CreateMethod(typeof(int), "1", [], new BodyNode([]))
-            ]);
+            ],
+            []);
         
         var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext(new MockSymbolTable());
+        var context = new PreCreationContext(new MockTranslationTable());
         
         var res = validator.Validate(node, context);
         Assert.Equal(2, res.Exceptions.Count);
@@ -166,11 +167,11 @@ public class MethodAlwaysReturnsValueTests
     private static TypeNode CreateTypeNode(Type fromType)
     {
         var type = new TypeNode(new TypeNameNode(""));
-        type.SetType(fromType);
+        type.SetTypeRef(fromType);
         return type;
     }
 
-    private class MockSymbolTable : ISymbolTable
+    private class MockTranslationTable : ITranslationTable
     {
         public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord)
         {

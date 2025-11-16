@@ -19,15 +19,15 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     public List<ArrayTypeSpecificationNode> ArrayDefinitions { get; init; } = [];
 
     /// <summary>
-    /// Представление типа внутри .net, на этапе компиляции IL обязано присутствовать.
+    /// Ссылка на информацию об объявлении типа.
     /// </summary>
-    public System.Type? Symbol { get; protected set; }
+    public CompileTimeType? TypedefRef { get; protected set; }
 
     /// <summary>
-    /// Установка типа из .net
+    /// Установка ссылки на объявление внутри таблицы символов
     /// </summary>
-    /// <param name="type">Тип внутри .net</param>
-    public void SetType(System.Type type) => Symbol = type;
+    /// <param name="type">Ссылка на объявление типа</param>
+    public void SetTypeRef(CompileTimeType type) => TypedefRef = type;
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

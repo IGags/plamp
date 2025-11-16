@@ -13,21 +13,30 @@ using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.SignatureInference;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Cli.Diagnostics;
 
 namespace plamp.Cli;
 
 public static class CompilationDriver
 {
-    public static async Task<CompilationRes> CompileModuleAsync(string fileName, string programText)
+    public static async Task<CompilationRes> CompileModuleAsync(string fileName, string programText, bool printAst)
     {
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(programText));
         using var reader = new StreamReader(stream, Encoding.Unicode);
         var tokenizationResult = await Tokenizer.TokenizeAsync(reader, fileName);
-        var symbolTable = new SymbolTable();
+        var symbolTable = new TranslationTable();
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, symbolTable);
         var ast = Parser.ParseFile(parsingContext);
         var context = new PreCreationContext(symbolTable);
         context.Exceptions.AddRange(parsingContext.Exceptions);
+
+        if (printAst)
+        {
+            var printVisitor = new PrintAstVisitor();
+            printVisitor.Validate(ast, context);
+            return new CompilationRes(context.Exceptions, null);
+        }
+        
         var moduleNameVisitor = new ModuleNameValidator();
         context = moduleNameVisitor.Validate(ast, context);
         

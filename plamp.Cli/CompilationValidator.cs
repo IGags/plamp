@@ -17,7 +17,7 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
-            context.FuncParams[node.FuncName.Value], context.SymbolTable);
+            context.FuncParams[node.FuncName.Value], context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
@@ -37,7 +37,7 @@ public class InnerCompilationContext : CreationContext
         FuncParams = other.Functions.ToDictionary(
             x => x.Key, 
             x => x.Value.ParameterList
-                .Select(y => new ParamImpl(y.Type.Symbol!, y.Name.Value))
+                .Select(y => new ParamImpl(y.Type.TypedefRef!.ClrType!, y.Name.Value))
                 .Cast<ParameterInfo>().ToArray());
     }
 }

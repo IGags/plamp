@@ -17,7 +17,7 @@ public class CreationContext : BaseVisitorContext
         AssemblyBuilder = assemblyBuilder;
         ModuleBuilder = moduleBuilder;
         Methods = [];
-        SymbolTable = other.SymbolTable;
+        TranslationTable = other.TranslationTable;
         Exceptions = other.Exceptions;
         ModuleName = other.ModuleName;
         Functions = other.Functions;

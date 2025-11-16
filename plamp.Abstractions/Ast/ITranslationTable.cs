@@ -4,9 +4,11 @@ namespace plamp.Abstractions.Ast;
 
 /// <summary>
 /// Отвечает за связь узлов AST и позиционирования исходном тексте программы.
+/// Имя выбрано, чтобы разделить функционал с таблицей символов, которая несёт все объявления в рамках модуля.
+/// Работает в рамках одной текущей, компилируемой единицы трансляции (модуля).
+/// Аналогия взята из языков C или C++ для понятности.
 /// </summary>
-//TODO: Ассоциировать узел AST с файлом при вставке, а не при генерации ошибки
-public interface ISymbolTable
+public interface ITranslationTable
 {
     /// <summary>
     /// Создаёт объект ошибки с перезаписанной позицией в исходном файле на основании узла AST. Если узла AST нет - поднимает исключение 
@@ -25,11 +27,24 @@ public interface ISymbolTable
     bool TryGetSymbol(NodeBase symbol, out FilePosition position);
 
     /// <summary>
-    /// Добавление узла AST в таблицу символов.
+    /// Добавление узла AST в таблицу трансляции.
     /// </summary>
     /// <param name="symbol">Узел ast.</param>
     /// <param name="position">Начальная позиция в файле</param>
     /// <exception cref="T:System.ArgumentException">Ошибка, если стартовая узла позиция больше конечной.</exception>
     /// <exception cref="T:System.ArgumentException">Узел уже присутствует в таблице.</exception>
     void AddSymbol(NodeBase symbol, FilePosition position);
+
+    /// <summary>
+    /// Создаёт копию текущей таблицы трансляции, которою видит все правки родительской, но при этом правки данной таблицы трансляции не видны в родительской.
+    /// </summary>
+    /// <returns>Копия текущей таблицы трансляции со всей информацией о символах</returns>
+    ITranslationTable Fork();
+
+    /// <summary>
+    /// Сливает правки из дочерней таблицы трансляции в текущую.
+    /// Конкретная реализация может выбрасывать ошибки, если типы сливаемых таблиц отличаются или если сливаются не родительская и дочерняя таблицы. 
+    /// </summary>
+    /// <param name="child">Дочерняя таблица</param>
+    void Merge(ITranslationTable child);
 }

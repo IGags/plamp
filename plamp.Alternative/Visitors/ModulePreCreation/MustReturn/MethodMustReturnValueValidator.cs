@@ -10,7 +10,7 @@ public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, 
 {
     protected override VisitResult PreVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
+        if (node.ReturnType is { } typeNode && typeNode.TypedefRef == typeof(void)) return VisitResult.SkipChildren;
         
         //Root body lexical scope
         context.LexicalScopeAlwaysReturns = false;
@@ -19,7 +19,7 @@ public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, 
 
     protected override VisitResult PostVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType is { } typeNode && typeNode.Symbol == typeof(void)) return VisitResult.SkipChildren;
+        if (node.ReturnType is { } typeNode && typeNode.TypedefRef == typeof(void)) return VisitResult.SkipChildren;
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         SetExceptionToSymbol(node, PlampExceptionInfo.FuncMustReturnValue(), context);
         return VisitResult.Continue;

@@ -80,7 +80,7 @@ public class ArrayElementNodeManipulationTests
     public void InferenceArrayElementGetterFromMultidimArray_ThrowsException()
     {
         var varType = new TypeNode(new TypeNameNode("int"));
-        varType.SetType(typeof(int[,]));
+        varType.SetTypeRef(typeof(int[,]));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arrayGetter = 
@@ -174,7 +174,7 @@ public class ArrayElementNodeManipulationTests
     public void InferenceArraySetterToMultidimArray_ThrowsException()
     {
         var varType = new TypeNode(new TypeNameNode("int"));
-        varType.SetType(typeof(int[,]));
+        varType.SetTypeRef(typeof(int[,]));
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var assign = new AssignNode(

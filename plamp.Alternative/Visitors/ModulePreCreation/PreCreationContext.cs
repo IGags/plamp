@@ -7,5 +7,5 @@ public class PreCreationContext : BaseVisitorContext
 {
     public PreCreationContext(BaseVisitorContext other) : base(other) { }
 
-    public PreCreationContext(ISymbolTable symbolTable) : base(symbolTable) { }
+    public PreCreationContext(ITranslationTable translationTable) : base(translationTable) { }
 }

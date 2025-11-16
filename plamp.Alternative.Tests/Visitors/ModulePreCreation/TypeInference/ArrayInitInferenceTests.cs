@@ -35,7 +35,7 @@ public class ArrayInitInferenceTests
         
         context.Exceptions.ShouldBeEmpty();
         assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>()
-            .ArrayItemType.Symbol.ShouldNotBeNull().ShouldBe(typeof(int));
+            .ArrayItemType.TypedefRef.ShouldNotBeNull().ShouldBe(typeof(int));
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class ArrayInitInferenceTests
         var assign = body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
         
         assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
-            .Type.ShouldNotBeNull().Symbol.ShouldBe(typeof(int[][]));
+            .Type.ShouldNotBeNull().TypedefRef.ShouldBe(typeof(int[][]));
         
         var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
         call.From.ShouldBeNull();

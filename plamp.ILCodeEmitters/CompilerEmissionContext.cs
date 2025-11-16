@@ -12,9 +12,8 @@ namespace plamp.ILCodeEmitters;
 /// <param name="MethodBuilder">Объект <see cref="T:System.Reflection.Emit.MethodBuilder"/></param>
 /// <param name="Parameters">Список входных параметров для функции</param>
 /// <param name="SymbolTable">Таблица сиволов(задел на будущее для дебага и прочей мешуры)</param>
-//TODO: Следует перенести этот объект в ILCodeEmitters так как в общей библиотеке он не нужен вообще. А хранение его здесь сужает возможности по его модификации.
 public record CompilerEmissionContext(
     BodyNode MethodBody,
     MethodBuilder MethodBuilder,
     ParameterInfo[] Parameters, 
-    ISymbolTable? SymbolTable);
+    ITranslationTable? SymbolTable);

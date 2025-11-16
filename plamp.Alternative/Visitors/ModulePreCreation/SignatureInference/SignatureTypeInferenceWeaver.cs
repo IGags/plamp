@@ -17,14 +17,14 @@ public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, Signa
         if (node.ReturnType != null) return VisitResult.Continue;
         if (context.Functions.Remove(node.FuncName.Value)) return VisitResult.SkipChildren;
         var type = new TypeNode(new TypeNameNode("void"));
-        type.SetType(typeof(void));
+        type.SetTypeRef(typeof(void));
 
-        if (!context.SymbolTable.TryGetSymbol(node.FuncName, out var nameSymbol))
+        if (!context.TranslationTable.TryGetSymbol(node.FuncName, out var nameSymbol))
         {
             throw new ArgumentException("Symbol is not found, parser error");
         }
         
-        context.SymbolTable.AddSymbol(type, nameSymbol);
+        context.TranslationTable.AddSymbol(type, nameSymbol);
         var newDef = new FuncNode(type, node.FuncName, node.ParameterList, node.Body);
         context.Functions.Add(newDef.FuncName.Value, newDef);
         Replace(node, newDef, context);
@@ -41,9 +41,9 @@ public class SignatureTypeInferenceWeaver : BaseWeaver<PreCreationContext, Signa
 
     protected override VisitResult PreVisitType(TypeNode node, SignatureInferenceInnerContext context, NodeBase? parent)
     {
-        if(parent is not FuncNode and not ParameterNode || node.Symbol != null) return VisitResult.SkipChildren;
-        var actualType = TypeResolveHelper.ResolveType(node, context.Exceptions, context.SymbolTable);
-        if (actualType != null) node.SetType(actualType);
+        if(parent is not FuncNode and not ParameterNode || node.TypedefRef != null) return VisitResult.SkipChildren;
+        var actualType = TypeResolveHelper.ResolveType(node, context.Exceptions, context.TranslationTable);
+        if (actualType != null) node.SetTypeRef(actualType);
         return VisitResult.SkipChildren;
     }
 

@@ -27,10 +27,10 @@ public class ArrayElementManipulation
          * a[2] := 2;
          */
         var arrayItemType = new TypeNode(new TypeNameNode("int"));
-        arrayItemType.SetType(typeof(int));
+        arrayItemType.SetTypeRef(typeof(int));
 
         var arrayType = new TypeNode(new TypeNameNode("[]int"));
-        arrayType.SetType(typeof(int[]));
+        arrayType.SetTypeRef(typeof(int[]));
         
         var assign = new AssignNode(
             [new VariableDefinitionNode(arrayType, new VariableNameNode("a"))],
@@ -121,7 +121,7 @@ public class ArrayElementManipulation
          * return a[i++];
          */
         var variableType = new TypeNode(new TypeNameNode("int"));
-        variableType.SetType(typeof(int));
+        variableType.SetTypeRef(typeof(int));
 
         var definition = new VariableDefinitionNode(variableType, new VariableNameNode("i"));
         var assign = new AssignNode([definition], [new LiteralNode(0, typeof(int))]);
@@ -163,7 +163,7 @@ public class ArrayElementManipulation
          * return a[int(1.0)]
          */
         var castTargetType = new TypeNode(new TypeNameNode("int"));
-        castTargetType.SetType(typeof(int));
+        castTargetType.SetTypeRef(typeof(int));
 
         var cast = new CastNode(castTargetType, new LiteralNode(1.0, typeof(double)));
         cast.SetFromType(typeof(double));
@@ -353,7 +353,7 @@ public class ArrayElementManipulation
          * a[int(2.0)] := 11;
          */
         var toType = new TypeNode(new TypeNameNode("int"));
-        toType.SetType(typeof(int));
+        toType.SetTypeRef(typeof(int));
         var cast = new CastNode(toType, new LiteralNode(2.0, typeof(double)));
         cast.SetFromType(typeof(double));
 

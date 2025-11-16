@@ -824,10 +824,10 @@ public static class IlCodeEmitter
     {
         if(variableDefinitionNode.Type is not { } type) throw new Exception();
         if(variableDefinitionNode.Names is not { } members) throw new Exception();
-        if (type.Symbol == null) throw new ArgumentException("Cannot emit variable definition with null type");
+        if (type.TypedefRef?.ClrType == null) throw new ArgumentException("Cannot emit variable definition with null type");
         foreach (var member in members)
         {
-            var builder = context.Generator.DeclareLocal(type.Symbol);
+            var builder = context.Generator.DeclareLocal(type.TypedefRef.ClrType);
             context.LocalVarStack.Add(member.Value, builder);
         }
     }
@@ -874,7 +874,7 @@ public static class IlCodeEmitter
     /// </summary>
     /// <param name="node">Узел AST</param>
     /// <returns>Тип в случае успеха иначе null</returns>
-    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.Symbol;
+    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypedefRef?.ClrType;
 
     /// <summary>
     /// Выбор и генерация инструкции вызова метода по метаинформации о нём
@@ -962,9 +962,9 @@ public static class IlCodeEmitter
 
     private static void EmitArrayInitialization(InitArrayNode initArrayNode, EmissionContext context)
     {
-        if (initArrayNode.ArrayItemType.Symbol == null) throw new Exception();
+        if (initArrayNode.ArrayItemType.TypedefRef?.ClrType == null) throw new Exception();
         EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
-        context.Generator.Emit(OpCodes.Newarr, initArrayNode.ArrayItemType.Symbol);
+        context.Generator.Emit(OpCodes.Newarr, initArrayNode.ArrayItemType.TypedefRef.ClrType);
     }
     
     private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context)

@@ -133,7 +133,7 @@ public class CastEmissionTests
          * return (float)43;
          */
         var to = new TypeNode(new TypeNameNode("float"));
-        to.SetType(typeof(float));
+        to.SetTypeRef(typeof(float));
         const int literal = 43;
         var cast = new CastNode(to, new LiteralNode(literal, typeof(int)));
         cast.SetFromType(typeof(int));
@@ -158,7 +158,7 @@ public class CastEmissionTests
          * return (double)Example();
          */
         var to = new TypeNode(new TypeNameNode("double"));
-        to.SetType(typeof(double));
+        to.SetTypeRef(typeof(double));
         var call = new CallNode(null, new FuncCallNameNode("Example"), []);
         call.SetInfo(typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!);
         var cast = new CastNode(to, call);
@@ -182,7 +182,7 @@ public class CastEmissionTests
          * return (short)(32768 - 1);
          */
         var to = new TypeNode(new TypeNameNode("short"));
-        to.SetType(typeof(short));
+        to.SetTypeRef(typeof(short));
         var cast = new CastNode(to, new SubNode(new LiteralNode(32768, typeof(int)), new LiteralNode(1, typeof(int))));
         cast.SetFromType(typeof(int));
         
@@ -204,7 +204,7 @@ public class CastEmissionTests
          * return (int)-1.5;
          */
         var to = new TypeNode(new TypeNameNode("int"));
-        to.SetType(typeof(int));
+        to.SetTypeRef(typeof(int));
         var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, typeof(float))));
         cast.SetFromType(typeof(float));
         
@@ -226,11 +226,11 @@ public class CastEmissionTests
          * return (int)1.5;
          */
         var innerType = new TypeNode(new TypeNameNode("double"));
-        innerType.SetType(typeof(double));
+        innerType.SetTypeRef(typeof(double));
         var innerCast = new CastNode(innerType, new LiteralNode(1.5f, typeof(float)));
         innerCast.SetFromType(typeof(float));
         var to = new TypeNode(new TypeNameNode("int"));
-        to.SetType(typeof(int));
+        to.SetTypeRef(typeof(int));
         var cast = new CastNode(to, innerCast);
         cast.SetFromType(typeof(double));
         
@@ -253,12 +253,12 @@ public class CastEmissionTests
          * return int(a[1]);
          */
         var variableType = new TypeNode(new TypeNameNode("double[]"));
-        variableType.SetType(typeof(double[]));
+        variableType.SetTypeRef(typeof(double[]));
         var arrayItemType = new TypeNode(new TypeNameNode("double"));
-        arrayItemType.SetType(typeof(double));
+        arrayItemType.SetTypeRef(typeof(double));
 
         var castToType = new TypeNode(new TypeNameNode("int"));
-        castToType.SetType(typeof(int));
+        castToType.SetTypeRef(typeof(int));
         
         var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
         elemGetter.SetItemType(typeof(double));

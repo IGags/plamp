@@ -89,9 +89,9 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteType : TypeNode
     {
-        public ConcreteType(TypeNameNode name, Type symbol) : base(name)
+        public ConcreteType(TypeNameNode name, Type typedefRef) : base(name)
         {
-            Symbol = symbol;
+            TypedefRef = typedefRef;
         }
     }
     
