@@ -7,6 +7,7 @@ using plamp.Alternative.Parsing;
 using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -28,7 +29,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<BodyNode>()
             .ShouldSatisfyAllConditions(
@@ -38,8 +39,8 @@ public class AssignNodeImplicitCastTests
                     .Sources.ShouldHaveSingleItem()
                     .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
-                        y => y.FromType.ShouldBe(typeof(int)),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(typeof(double))));
+                        y => y.FromType.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt()),
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeDouble())));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -58,7 +59,7 @@ public class AssignNodeImplicitCastTests
         expressions.ShouldNotBeNull().ExpressionList.Count.ShouldBe(2);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
         var weaveResult = visitor.WeaveDiffs(expressions, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }

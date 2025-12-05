@@ -11,8 +11,7 @@ public class MethodCallInferenceValidator : BaseValidator<CreationContext, Creat
     {
         var info = node.Symbol;
         var fromContext = context.Methods.FirstOrDefault(x => x.Name == node.Name.Value);
-        if (fromContext != null) info = fromContext;
-        if(info != null) node.SetInfo(info);
+        if(info != null && fromContext != null) info.GetDefinitionInfo().SetClrMethod(fromContext);
         return VisitResult.Continue;
     }
 

@@ -21,13 +21,13 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     /// <summary>
     /// Ссылка на информацию об объявлении типа.
     /// </summary>
-    public CompileTimeType? TypedefRef { get; protected set; }
+    public ICompileTimeType? TypedefRef { get; protected set; }
 
     /// <summary>
     /// Установка ссылки на объявление внутри таблицы символов
     /// </summary>
     /// <param name="type">Ссылка на объявление типа</param>
-    public void SetTypeRef(CompileTimeType type) => TypedefRef = type;
+    public void SetTypeRef(ICompileTimeType type) => TypedefRef = type;
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

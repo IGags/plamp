@@ -12,15 +12,21 @@ public class CreationContext : BaseVisitorContext
 
     public List<MethodBuilder> Methods { get; }
 
-    public CreationContext(AssemblyBuilder assemblyBuilder, ModuleBuilder moduleBuilder, BaseVisitorContext other) : base(other)
+    public SymbolTable SymbolTable { get; init; }
+
+    public CreationContext(
+        AssemblyBuilder assemblyBuilder, 
+        ModuleBuilder moduleBuilder, 
+        SymbolTable symbolTable, 
+        BaseVisitorContext other) : base(other)
     {
         AssemblyBuilder = assemblyBuilder;
         ModuleBuilder = moduleBuilder;
         Methods = [];
         TranslationTable = other.TranslationTable;
         Exceptions = other.Exceptions;
-        ModuleName = other.ModuleName;
-        Functions = other.Functions;
+        Dependencies = other.Dependencies;
+        SymbolTable = symbolTable;
     }
 
     public CreationContext(CreationContext other) : base(other)
@@ -28,5 +34,6 @@ public class CreationContext : BaseVisitorContext
         AssemblyBuilder = other.AssemblyBuilder;
         ModuleBuilder = other.ModuleBuilder;
         Methods = other.Methods;
+        SymbolTable = other.SymbolTable;
     }
 }

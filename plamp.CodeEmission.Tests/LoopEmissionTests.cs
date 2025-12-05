@@ -7,6 +7,8 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.CodeEmission.Tests.Infrastructure;
+using plamp.Intrinsics;
+
 // ReSharper disable EntityNameCapturedOnly.Local
 
 namespace plamp.CodeEmission.Tests;
@@ -28,8 +30,8 @@ public class LoopEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter)))],
-                [new LiteralNode(0, typeof(int))]
+                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(nameof(iter)))],
+                [new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt())]
             ),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
@@ -40,7 +42,7 @@ public class LoopEmissionTests
                         [
                             new AddNode(
                                 new MemberNode(nameof(iter)),
-                                new LiteralNode(1, typeof(int)))
+                                new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))
                         ]
                     )
                 ])),
@@ -72,12 +74,13 @@ public class LoopEmissionTests
                 nameof(CancellationToken.IsCancellationRequested),
                 BindingFlags.Instance | BindingFlags.Public)!
             .GetGetMethod()!;
+        var funcRef = EmissionSetupHelper.MakeFuncRef(getter);
         
         var body = new BodyNode(
         [
             new WhileNode(
                 new NotNode(
-                    EmissionSetupHelper.CreateCallNode(new MemberNode(arg.Name), getter, [])),
+                    EmissionSetupHelper.CreateCallNode(new MemberNode(arg.Name), funcRef, [])),
                 new BodyNode(
                 [
                 ])),

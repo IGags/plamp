@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Reflection;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 
 namespace plamp.Abstractions.Ast.Node;
@@ -30,13 +29,13 @@ public class CallNode(NodeBase? from, FuncCallNameNode name, List<NodeBase> args
     /// <summary>
     /// Представление функции внутри .net, добавляется либо во время вывода типов, либо перед самой эмиссией кода функции в IL. Обязан быть во время эмиссии.
     /// </summary>
-    public MethodInfo? Symbol { get; protected set; }
+    public ICompileTimeFunction? Symbol { get; protected set; }
 
     /// <summary>
     /// Установка представления функции внутри .net
     /// </summary>
     /// <param name="symbol">Представление функции из .net</param>
-    public void SetInfo(MethodInfo symbol) => Symbol = symbol;
+    public void SetInfo(ICompileTimeFunction symbol) => Symbol = symbol;
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

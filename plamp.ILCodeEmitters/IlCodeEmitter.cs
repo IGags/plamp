@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -503,7 +504,10 @@ public static class IlCodeEmitter
         }
         else if (target is IndexerNode indexerNode)
         {
-            EmitSetArrayElemOpcode(indexerNode.ItemType, context);
+            var itemType = indexerNode.ItemType?.GetDefinitionInfo().ClrType;
+            if (itemType == null)
+                throw new Exception("Array item type is not set. If you see this exception write to a compiler developer.");
+            EmitSetArrayElemOpcode(itemType, context);
         }
         else
         {
@@ -726,7 +730,7 @@ public static class IlCodeEmitter
         }
         
         var toType = GetTypeFromNode(node.ToType)!;
-        var fromType = node.FromType;
+        var fromType = node.FromType?.GetDefinitionInfo().ClrType;
 
         if (fromType == null) throw new ArgumentException("From type cannot be null semantics exception");
         if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
@@ -790,25 +794,29 @@ public static class IlCodeEmitter
     /// <exception cref="InvalidOperationException">Неизвестный тип константы.</exception>
     private static void EmitLiteral(LiteralNode literalNode, EmissionContext context)
     {
-        if (literalNode.Type == typeof(string))
+        const string errorText = "Unknown literal type. Please report to compiler developer.";
+        var literalType = literalNode.Type.GetDefinitionInfo().ClrType;
+        if (literalType == null) throw new Exception(errorText);
+        
+        if (literalType == typeof(string))
         {
             if (literalNode.Value == null) context.Generator.Emit(OpCodes.Ldnull);
             else context.Generator.Emit(OpCodes.Ldstr, (string)literalNode.Value);
             return;
         }
         if(literalNode.Value == null) throw new ArgumentException("Cannot emit load null to value type");
-        if (literalNode.Type == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
-        else if (literalNode.Type == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, BitConverter.ToInt32(BitConverter.GetBytes((uint)literalNode.Value)));
-        else if (literalNode.Type == typeof(long)) context.Generator.Emit(OpCodes.Ldc_I8, (long)literalNode.Value);
-        else if (literalNode.Type == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, BitConverter.ToInt64(BitConverter.GetBytes((ulong)literalNode.Value)));
-        else if (literalNode.Type == typeof(short)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(short)literalNode.Value);
-        else if (literalNode.Type == typeof(ushort)) context.Generator.Emit(OpCodes.Ldc_I4, (ushort)literalNode.Value);
-        else if (literalNode.Type == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(byte)literalNode.Value);
-        else if (literalNode.Type == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, (float)literalNode.Value);
-        else if (literalNode.Type == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, (double)literalNode.Value);
-        else if (literalNode.Type == typeof(bool)) context.Generator.Emit((bool)literalNode.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
-        else if (literalNode.Type == typeof(char)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToUInt32(literalNode.Value));
-        else throw new InvalidOperationException("Unknown literal type. Please report to compiler developer.");
+        if (literalType == typeof(int)) context.Generator.Emit(OpCodes.Ldc_I4, (int)literalNode.Value);
+        else if (literalType == typeof(uint)) context.Generator.Emit(OpCodes.Ldc_I4, BitConverter.ToInt32(BitConverter.GetBytes((uint)literalNode.Value)));
+        else if (literalType == typeof(long)) context.Generator.Emit(OpCodes.Ldc_I8, (long)literalNode.Value);
+        else if (literalType == typeof(ulong)) context.Generator.Emit(OpCodes.Ldc_I8, BitConverter.ToInt64(BitConverter.GetBytes((ulong)literalNode.Value)));
+        else if (literalType == typeof(short)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(short)literalNode.Value);
+        else if (literalType == typeof(ushort)) context.Generator.Emit(OpCodes.Ldc_I4, (ushort)literalNode.Value);
+        else if (literalType == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4, (int)(byte)literalNode.Value);
+        else if (literalType == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, (float)literalNode.Value);
+        else if (literalType == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, (double)literalNode.Value);
+        else if (literalType == typeof(bool)) context.Generator.Emit((bool)literalNode.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
+        else if (literalType == typeof(char)) context.Generator.Emit(OpCodes.Ldc_I4, Convert.ToUInt32(literalNode.Value));
+        else throw new InvalidOperationException(errorText);
     }
 
     /// <summary>
@@ -822,12 +830,12 @@ public static class IlCodeEmitter
         VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
-        if(variableDefinitionNode.Type is not { } type) throw new Exception();
+        if(variableDefinitionNode.Type?.TypedefRef?.GetDefinitionInfo().ClrType is not { } type) throw new Exception();
         if(variableDefinitionNode.Names is not { } members) throw new Exception();
-        if (type.TypedefRef?.ClrType == null) throw new ArgumentException("Cannot emit variable definition with null type");
+        if (type == null) throw new ArgumentException("Cannot emit variable definition with null type");
         foreach (var member in members)
         {
-            var builder = context.Generator.DeclareLocal(type.TypedefRef.ClrType);
+            var builder = context.Generator.DeclareLocal(type);
             context.LocalVarStack.Add(member.Value, builder);
         }
     }
@@ -860,9 +868,9 @@ public static class IlCodeEmitter
             if(arg is MemberNode) EmitGetMember(arg, context, true);
             else EmitSingleLineExpression(arg, context);
         }
-        EmitMethodCall(callNode.Symbol, context);
+        var returnType = EmitMethodCall(callNode.Symbol, context);
         
-        if (callNode.Symbol.ReturnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
+        if (returnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
     }
 
     #endregion
@@ -874,17 +882,21 @@ public static class IlCodeEmitter
     /// </summary>
     /// <param name="node">Узел AST</param>
     /// <returns>Тип в случае успеха иначе null</returns>
-    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypedefRef?.ClrType;
+    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypedefRef?.GetDefinitionInfo().ClrType;
 
     /// <summary>
     /// Выбор и генерация инструкции вызова метода по метаинформации о нём
     /// </summary>
-    /// <param name="methodInfo">Метоинформация о методе</param>
+    /// <param name="fnRef">Метоинформация о методе</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
-    private static void EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
+    /// <returns>Тип, который должен возвращать метод.</returns>
+    private static Type EmitMethodCall(ICompileTimeFunction fnRef, EmissionContext context)
     {
+        var methodInfo = fnRef.GetDefinitionInfo().ClrMethod;
+        if (methodInfo == null) throw new Exception();
         var opcode = methodInfo.IsStatic ? OpCodes.Call : OpCodes.Callvirt;
         context.Generator.Emit(opcode, methodInfo);
+        return methodInfo.ReturnType;
     }
 
     /// <summary>
@@ -962,14 +974,15 @@ public static class IlCodeEmitter
 
     private static void EmitArrayInitialization(InitArrayNode initArrayNode, EmissionContext context)
     {
-        if (initArrayNode.ArrayItemType.TypedefRef?.ClrType == null) throw new Exception();
+        var type = initArrayNode.ArrayItemType.TypedefRef?.GetDefinitionInfo().ClrType;
+        if (type == null) throw new Exception();
         EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
-        context.Generator.Emit(OpCodes.Newarr, initArrayNode.ArrayItemType.TypedefRef.ClrType);
+        context.Generator.Emit(OpCodes.Newarr, type);
     }
     
     private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context)
     {
-        if (indexerNode.ItemType is not {} fromType) throw new Exception();
+        if (indexerNode.ItemType?.GetDefinitionInfo().ClrType is not {} fromType) throw new Exception();
         EmitSingleLineExpression(indexerNode.From, context);
         EmitSingleLineExpression(indexerNode.IndexMember, context);
         

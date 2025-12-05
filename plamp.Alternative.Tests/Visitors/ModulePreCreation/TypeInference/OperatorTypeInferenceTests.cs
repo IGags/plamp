@@ -6,6 +6,7 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -14,106 +15,106 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class OperatorTypeInferenceTests
 {
     [Theory, AutoData]
-    public void UnaryLogicalWithMatchInner_ReturnsNoException([Frozen]Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void UnaryLogicalWithMatchInner_ReturnsNoException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new NotNode(new LiteralNode(true, typeof(bool)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new NotNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void UnaryLogicalWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void UnaryLogicalWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new NotNode(new LiteralNode(1, typeof(int)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new NotNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void UnaryArithmeticWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void UnaryArithmeticWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new PrefixIncrementNode(new LiteralNode(1, typeof(int)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new PrefixIncrementNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void UnaryArithmeticWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void UnaryArithmeticWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new PrefixIncrementNode(new LiteralNode(true, typeof(bool)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new PrefixIncrementNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryLogicalGateWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryLogicalGateWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new AndNode(new LiteralNode(true, typeof(bool)), new LiteralNode(false, typeof(bool)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new AndNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryLogicalWithMismatchFirst_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryLogicalWithMismatchFirst_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(1.4, typeof(float)), new LiteralNode(true, typeof(bool)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.GetSymbolTable.MakeFloat()), new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryLogicalWithMismatchSecond_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryLogicalWithMismatchSecond_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(true, typeof(bool)), new LiteralNode(1.4, typeof(float)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new OrNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new LiteralNode(1.4, RuntimeSymbols.GetSymbolTable.MakeFloat()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryLogicalWithMismatchBoth_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryLogicalWithMismatchBoth_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(1.4, typeof(float)), new LiteralNode(1.4, typeof(float)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.GetSymbolTable.MakeFloat()), new LiteralNode(1.4, RuntimeSymbols.GetSymbolTable.MakeFloat()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryComparisionDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryComparisionDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new LessNode(new LiteralNode(1, typeof(int)), new LiteralNode(1.4, typeof(float)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new LessNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(1.4, RuntimeSymbols.GetSymbolTable.MakeFloat()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryComparisionSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryComparisionSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new GreaterNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new GreaterNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryArithmeticalDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryArithmeticalDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new AddNode(new LiteralNode(2, typeof(int)), new LiteralNode(true, typeof(bool)));
-        SetupMockAndAssertError(ast, symbolTable, visitor);
+        var ast = new AddNode(new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()));
+        SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
-    public void BinaryArithmeticalSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    public void BinaryArithmeticalSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int)));
-        SetupMockAndAssertCorrect(ast, symbolTable, visitor);
+        var ast = new DivNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    private void SetupMockAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    private void SetupMockAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var filePosition = new FilePosition();
-        symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(symbolTable.Object);
+        translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
+        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty(); 
     }
     
-    private void SetupMockAndAssertError(NodeBase ast, Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
+    private void SetupMockAndAssertError(NodeBase ast, Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var filePosition = new FilePosition();
-        symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+        translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
+        translationTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
             .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
         
-        var context = new PreCreationContext(symbolTable.Object);
+        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyOperator().Code);
     }

@@ -3,20 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
-using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Abstractions.AstManipulation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
-public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationContext(other)
+public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationContext(other)
 {
     private int _monotonicScopeCounter;
     private int _currentDepth;
     private readonly Stack<int> _typeInferenceSizeSnapshotStack = [];
     
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
-    public Stack<CompileTimeType?> InnerExpressionTypeStack { get; private set; } = [];
+    public Stack<ICompileTimeType?> InnerExpressionTypeStack { get; private set; } = [];
 
     
     public FuncNode? CurrentFunc { get; set; }

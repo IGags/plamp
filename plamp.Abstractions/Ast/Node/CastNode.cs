@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace plamp.Abstractions.Ast.Node;
 
@@ -24,13 +23,13 @@ public class CastNode(NodeBase toType, NodeBase inner) : NodeBase
     /// <summary>
     /// Тип внутри .net, из которого происходит преобразование. Нужен во время эмиссии в IL.
     /// </summary>
-    public Type? FromType { get; protected set; }
+    public ICompileTimeType? FromType { get; protected set; }
 
     /// <summary>
     /// Установить тип .net, из которого происходит преобразование.
     /// </summary>
     /// <param name="type"></param>
-    public void SetFromType(Type type) => FromType = type; 
+    public void SetFromType(ICompileTimeType type) => FromType = type; 
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

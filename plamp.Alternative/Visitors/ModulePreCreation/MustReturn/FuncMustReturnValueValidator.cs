@@ -3,14 +3,16 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
+using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 
-public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, MustReturnValueInnerContext>
+public class FuncMustReturnValueValidator : BaseValidator<PreCreationContext, MustReturnValueInnerContext>
 {
     protected override VisitResult PreVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType is { } typeNode && typeNode.TypedefRef == typeof(void)) return VisitResult.SkipChildren;
+        if (node.ReturnType?.TypedefRef is { } type 
+            && RuntimeSymbols.GetSymbolTable.IsVoid(type)) return VisitResult.SkipChildren;
         
         //Root body lexical scope
         context.LexicalScopeAlwaysReturns = false;
@@ -19,7 +21,7 @@ public class MethodMustReturnValueValidator : BaseValidator<PreCreationContext, 
 
     protected override VisitResult PostVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType is { } typeNode && typeNode.TypedefRef == typeof(void)) return VisitResult.SkipChildren;
+        if (node.ReturnType?.TypedefRef is { } retType && RuntimeSymbols.GetSymbolTable.IsVoid(retType)) return VisitResult.SkipChildren;
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         SetExceptionToSymbol(node, PlampExceptionInfo.FuncMustReturnValue(), context);
         return VisitResult.Continue;

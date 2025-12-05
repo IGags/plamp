@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 
 namespace plamp.Abstractions;
 
 /// <summary>
-/// Таблица символов для конкретного модуля. Используется для определения информации об объявлении типа в том или ином модуле.
+/// Таблица символов для конкретного модуля. Используется для определения информации об объявлении типа в том или ином модуле.<br/>
+/// Не потокобезопасна.
 /// </summary>
 public interface ISymbolTable
 {
@@ -14,37 +16,41 @@ public interface ISymbolTable
     public string ModuleName { get; }
 
     /// <summary>
-    /// Попытаться получить объявление типа по ссылке.
+    /// Попытаться получить ссылку на тип по его имени
     /// </summary>
-    /// <param name="typedefReference">Объект-ссылка на объявление типа</param>
-    /// <param name="typeInfo">Возвращаемая информация об объявлении типа. Null - если тип не найден.</param>
-    /// <returns>True, если тип найден, иначе false.</returns>
-    public bool TryGetTypeDefinition(
-        CompileTimeType typedefReference, 
-        [NotNullWhen(true)]out TypeDefinitionInfo? typeInfo);
+    /// <param name="typeName">Строковое представление имени типа</param>
+    /// <param name="arraySpecs">Число объявлений массивов поверх этого типа</param>
+    /// <param name="type">Возвращаемая переменная со ссылкой на тип</param>
+    /// <returns>Признак того, был ли найден тип или нет</returns>
+    public bool TryGetTypeByName(
+        string typeName,
+        List<ArrayTypeSpecificationNode> arraySpecs,
+        [NotNullWhen(true)] out ICompileTimeType? type);
 
     /// <summary>
-    /// Попытаться получить объявление функции по ссылке.
+    /// Попытка получить функцию по имени и сигнатуре.
     /// </summary>
-    /// <param name="functionDefReference">Объект-ссылка на объявление функции</param>
-    /// <param name="functionInfo">Возвращаемая информация об объявлении функции. Null - если функция не найдена.</param>
-    /// <returns>True, если функция найдена, иначе false.</returns>
-    public bool TryGetFunctionDefinition(
-        CompileTimeFunction functionDefReference, 
-        [NotNullWhen(true)]out FunctionDefinitionInfo? functionInfo);
+    /// <param name="fnName">Имя функции</param>
+    /// <param name="signature">Описание типов аргументов</param>
+    /// <param name="function">Объект-указатель на информацию об объявлении функции.</param>
+    /// <returns>Признак того, была ли получена функция.</returns>
+    public bool TryGetFunction(
+        string fnName,
+        IReadOnlyList<ICompileTimeType> signature,
+        [NotNullWhen(true)] out ICompileTimeFunction? function);
 
     /// <summary>
-    /// Попытаться получить объявление поля по ссылке.
+    /// Получить функции, которые подходят по сигнатуре.
     /// </summary>
-    /// <param name="fieldDefReference">Объект-ссылка на объявление поля типа</param>
-    /// <param name="fieldInfo">Возвращаемая информация об объявлении поля. Null - если поле типа не найдено.</param>
-    /// <returns>True, если поле типа найдено, иначе false.</returns>
-    public bool TryGetFieldDefinition(
-        CompileTimeField fieldDefReference,
-        [NotNullWhen(true)] out FieldDefinitionInfo? fieldInfo);
+    /// <param name="fnName">Имя функции</param>
+    /// <param name="signature">Сигнатура функции.</param>
+    /// <returns>Список объявлений функции, которые подходят с точностью до неявной конверсии типа.</returns>
+    public ICompileTimeFunction[] GetMatchingFunctions(
+        string fnName,
+        IReadOnlyList<ICompileTimeType> signature);
     
     /// <summary>
     /// Получить список имён модулей, от которых зависит текущий
     /// </summary>
-    public IReadOnlyList<string> GetDependencies();
+    public IReadOnlyList<ISymbolTable> GetDependencies();
 }

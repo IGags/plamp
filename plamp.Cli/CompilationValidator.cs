@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
@@ -13,11 +14,18 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
     protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
         var builder = context.Methods.Single(x => x.Name == node.FuncName.Value);
+        if (!context.SymbolTable.TryGetFunction(node.FuncName.Value,
+                node.ParameterList.Select(x => x.Type.TypedefRef!).ToList(), out var function))
+        {
+            throw new Exception();
+        }
+        
+        
         var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
-            context.FuncParams[node.FuncName.Value], context.TranslationTable);
+            context.FuncParams[function], context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
@@ -30,14 +38,14 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
 
 public class InnerCompilationContext : CreationContext
 {
-    public Dictionary<string, ParameterInfo[]> FuncParams { get; }
+    public Dictionary<ICompileTimeFunction, ParameterInfo[]> FuncParams { get; }
 
     public InnerCompilationContext(CreationContext other) : base(other)
     {
-        FuncParams = other.Functions.ToDictionary(
-            x => x.Key, 
-            x => x.Value.ParameterList
-                .Select(y => new ParamImpl(y.Type.TypedefRef!.ClrType!, y.Name.Value))
+        FuncParams = other.SymbolTable.ListFunctions().ToDictionary(
+            x => x, 
+            x => x.GetDefinitionInfo().ArgumentList
+                .Select(y => new ParamImpl(y.GetDefinitionInfo().ClrType!, y.TypeName))
                 .Cast<ParameterInfo>().ToArray());
     }
 }

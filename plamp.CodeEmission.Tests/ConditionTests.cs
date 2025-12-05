@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.CodeEmission.Tests.Infrastructure;
+using plamp.Intrinsics;
 
 namespace plamp.CodeEmission.Tests;
 
@@ -37,19 +38,19 @@ public class ConditionTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName4)),
-            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(10, typeof(int))]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName4)),
+            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(10, RuntimeSymbols.GetSymbolTable.MakeInt())]),
             new AssignNode([new MemberNode(tempVarName)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))]),
             new ConditionNode(
                 new MemberNode(tempVarName),
                 new BodyNode([
-                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName2)),
-                    new AssignNode([new MemberNode(tempVarName2)], [new LiteralNode(lesser10, typeof(string))]),
+                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName2)),
+                    new AssignNode([new MemberNode(tempVarName2)], [new LiteralNode(lesser10, RuntimeSymbols.GetSymbolTable.MakeString())]),
                     new ReturnNode(new MemberNode(tempVarName2))
                 ]), null),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName3)),
-            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(greater10, typeof(string))]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName3)),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(greater10, RuntimeSymbols.GetSymbolTable.MakeString())]),
             new ReturnNode(new MemberNode(tempVarName3))
         ]);
 
@@ -100,29 +101,29 @@ public class ConditionTests
         const string falseBranchVal = "Nechet";
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName2)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName3)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName4)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName5)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName2)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName3)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName4)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName5)),
             
-            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(2, typeof(int))]),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt())]),
             new AssignNode([new MemberNode(tempVarName2)], [new ModuloNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
-            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(0, typeof(int))]),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt())]),
             new AssignNode([new MemberNode(tempVarName4)], [new EqualNode(new MemberNode(tempVarName2), new MemberNode(tempVarName3))]),
             
             new ConditionNode(
                     new MemberNode(tempVarName4),
                     new BodyNode(
                         [
-                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName6)),
-                            new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(trueBranchVal, typeof(string))]),
+                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName6)),
+                            new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(trueBranchVal, RuntimeSymbols.GetSymbolTable.MakeString())]),
                             new AssignNode([new MemberNode(tempVarName5)], [new MemberNode(tempVarName6)])
                         ]),
                 new BodyNode(
                     [
-                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
-                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(falseBranchVal, typeof(string))]),
+                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName7)),
+                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(falseBranchVal, RuntimeSymbols.GetSymbolTable.MakeString())]),
                         new AssignNode([new MemberNode(tempVarName5)], [new MemberNode(tempVarName7)])
                     ])),
             new ReturnNode(new MemberNode(tempVarName5))
@@ -180,22 +181,22 @@ public class ConditionTests
         
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, typeof(int))]),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName2)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName2)),
             new AssignNode([new MemberNode(tempVarName2)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName4)),
-            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(100, typeof(int))]),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName5)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName4)),
+            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(100, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName5)),
             new AssignNode([new MemberNode(tempVarName5)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))]),
             
             new ConditionNode(
                     new MemberNode(tempVarName2),
                     new BodyNode(
                         [
-                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName3)),
-                            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(ifClause, typeof(string))]),
+                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName3)),
+                            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(ifClause, RuntimeSymbols.GetSymbolTable.MakeString())]),
                             new ReturnNode(new MemberNode(tempVarName3))
                         ]),
                     new BodyNode(
@@ -204,13 +205,13 @@ public class ConditionTests
                                 new MemberNode(tempVarName5),
                                 new BodyNode(
                                 [
-                                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName6)),
-                                    new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(elifClause, typeof(string))]),
+                                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName6)),
+                                    new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(elifClause, RuntimeSymbols.GetSymbolTable.MakeString())]),
                                     new ReturnNode(new MemberNode(tempVarName6))
                                 ]), null)
                         ])),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
-            new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, typeof(string))]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName7)),
+            new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, RuntimeSymbols.GetSymbolTable.MakeString())]),
             new ReturnNode(new MemberNode(tempVarName7))
         ]);
 
@@ -274,27 +275,27 @@ public class ConditionTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, typeof(int))]),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName2)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName2)),
             new AssignNode([new MemberNode(tempVarName2)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName3)),
-            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(100, typeof(int))]),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName4)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName3)),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(100, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName4)),
             new AssignNode([new MemberNode(tempVarName4)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName3))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName5)),
-            new AssignNode([new MemberNode(tempVarName5)], [new LiteralNode(1900, typeof(int))]),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName6)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeInt()), new VariableNameNode(tempVarName5)),
+            new AssignNode([new MemberNode(tempVarName5)], [new LiteralNode(1900, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeLogical()), new VariableNameNode(tempVarName6)),
             new AssignNode([new MemberNode(tempVarName6)], [new EqualNode(new MemberNode(arg.Name), new MemberNode(tempVarName5))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.GetSymbolTable.MakeString()), new VariableNameNode(tempVarName7)),
             new ConditionNode(
                 new MemberNode(tempVarName2),
                 new BodyNode(
                 [
-                    new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(ifClause, typeof(string))])
+                    new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(ifClause, RuntimeSymbols.GetSymbolTable.MakeString())])
                 ]),
                 new BodyNode(
                     [
@@ -302,7 +303,7 @@ public class ConditionTests
                             new MemberNode(tempVarName4),
                             new BodyNode(
                             [
-                                new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(elifClause, typeof(string))])
+                                new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(elifClause, RuntimeSymbols.GetSymbolTable.MakeString())])
                             ]),
                             new BodyNode(
                             [
@@ -310,11 +311,11 @@ public class ConditionTests
                                     new MemberNode(tempVarName6),
                                     new BodyNode(
                                     [
-                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(helloClause, typeof(string))])
+                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(helloClause, RuntimeSymbols.GetSymbolTable.MakeString())])
                                     ]),
                                     new BodyNode(
                                     [
-                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, typeof(string))])
+                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, RuntimeSymbols.GetSymbolTable.MakeString())])
                                     ]))
                             ]))
                     ]
@@ -352,14 +353,14 @@ public class ConditionTests
         var body = new BodyNode(
         [
             new ConditionNode(
-                new LessNode(new MemberNode(arg.Name), new LiteralNode(0, typeof(int))),
+                new LessNode(new MemberNode(arg.Name), new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt())),
                 new BodyNode(
                 [
-                    new ReturnNode(new LiteralNode(subRes, subRes.GetType()))
+                    new ReturnNode(new LiteralNode(subRes, RuntimeSymbols.GetSymbolTable.MakeString()))
                 ]),
                 new BodyNode(
                 [
-                    new ReturnNode(new LiteralNode(nontRes, nontRes.GetType()))
+                    new ReturnNode(new LiteralNode(nontRes, RuntimeSymbols.GetSymbolTable.MakeString()))
                 ]))
         ]);
 

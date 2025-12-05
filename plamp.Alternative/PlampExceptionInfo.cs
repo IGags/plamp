@@ -1,4 +1,7 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System.Collections.Generic;
+using System.Linq;
+using plamp.Abstractions;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Alternative;
 
@@ -307,15 +310,7 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord UnknownFunction()
-    {
-        return new PlampExceptionRecord()
-        {
-            Code = "SEM1303",
-            Level = ExceptionLevel.Error,
-            Message = "Cannot find function within module with this signature"
-        };
-    }
+    //SEM1303 - свободен
 
     public static PlampExceptionRecord PredicateMustBeBooleanType()
     {
@@ -474,6 +469,67 @@ public static class PlampExceptionInfo
         {
             Message = "Assign target count does not match with the source count",
             Code = "SEM1321",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotDefineCoreType() =>
+        new()
+        {
+            Message = "Cannot define type with same name as the core type into runtime",
+            Code = "SEM1322",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DuplicateTypeDefinition(string typeName) =>
+        new()
+        {
+            Message = $"Type {typeName} already declared within a module",
+            Code = "SEM1323",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DuplicateFieldDefinition(string fieldName) =>
+        new()
+        {
+            Message = $"Field {fieldName} already declared within a type",
+            Code = "SEM1324",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord TypeIsNotFound(string typeName) =>
+        new()
+        {
+            Message = $"Type {typeName} is not found.",
+            Code = "SEM1325",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AmbigulousTypeName(string typeName, IEnumerable<string> modules) =>
+        new()
+        {
+            Message = $"The type {typeName} is defined in {string.Join(", ", modules)} modules",
+            Code = "SEM1326",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FunctionIsNotFound(
+        string functionName, 
+        IEnumerable<ICompileTimeType> signature) =>
+        new()
+        {
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x.TypeName))}) not found.",
+            Code = "SEM1327",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AmbigulousFunctionReference(
+        string functionName,
+        IEnumerable<ICompileTimeType> signature,
+        IEnumerable<string> modules) =>
+        new()
+        {
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x.TypeName))}) defined in {string.Join(", ", modules)} modules",
+            Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 

@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
@@ -11,6 +13,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -18,16 +21,21 @@ namespace plamp.Alternative.Tests.Visitors.ModuleCreation;
 
 public class DefSignatureCreationVisitorTests
 {
-    [Theory]
-    [InlineData(typeof(void))]
-    [InlineData(typeof(int))]
-    public void VisitNoArgs_ReturnNoException(
-        Type returnTypeObject)
+    public static IEnumerable<object[]> VisitNoArgs_ReturnNoException_DataProvider()
     {
-        var symbolTable = new Fixture().Freeze<Mock<ITranslationTable>>();
+        yield return [RuntimeSymbols.GetSymbolTable.MakeInt()];
+        yield return [RuntimeSymbols.GetSymbolTable.MakeVoid()];
+    }
+
+    [Theory]
+    [MemberData(nameof(VisitNoArgs_ReturnNoException_DataProvider))]
+    public void VisitNoArgs_ReturnNoException(
+        ICompileTimeType returnTypeObject)
+    {
+        var translationTable = new Fixture().Freeze<Mock<ITranslationTable>>();
         var visitor = new Fixture().Create<DefSignatureCreationValidator>();
         const string funcName = "TestFunc";
-        var returnType = new TypeNode(new TypeNameNode(returnTypeObject.Name));
+        var returnType = new TypeNode(new TypeNameNode(returnTypeObject.GetDefinitionInfo().TypeName));
         returnType.SetTypeRef(returnTypeObject);
         var ast = new FuncNode(
             returnType,
@@ -35,7 +43,7 @@ public class DefSignatureCreationVisitorTests
             [], 
             new BodyNode([]));
 
-        var context = CreateContext(symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -44,20 +52,20 @@ public class DefSignatureCreationVisitorTests
             x => x.Methods[0]
                 .ShouldSatisfyAllConditions(
                     y => y.Name.ShouldBe(funcName),
-                    y => y.ReturnType.ShouldBe(returnTypeObject)));
+                    y => y.ReturnType.ShouldBe(returnTypeObject.GetDefinitionInfo().ClrType!)));
     }
 
     [Theory, AutoData]
     public void VisitWithArgs_ReturnsNoException(
-        [Frozen]Mock<ITranslationTable> symbolTable,
+        [Frozen]Mock<ITranslationTable> translationTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(typeof(void));
+        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(typeof(int));
+        argType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -66,7 +74,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
 
-        var context = CreateContext(symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -80,14 +88,14 @@ public class DefSignatureCreationVisitorTests
 
     [Theory, AutoData]
     public void VisitWithUnknownReturnType_ReturnWithoutMethodSignature(
-        [Frozen] Mock<ITranslationTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> translationTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(typeof(int));
+        argType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -96,7 +104,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
         
-        var context = CreateContext(symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -106,12 +114,12 @@ public class DefSignatureCreationVisitorTests
 
     [Theory, AutoData]
     public void VisitWithUnknownArgType_ReturnWithoutMethodSignature(
-        [Frozen] Mock<ITranslationTable> symbolTable,
+        [Frozen] Mock<ITranslationTable> translationTable,
         DefSignatureCreationValidator visitor)
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(typeof(void));
+        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
         
         var argType = new TypeNode(new TypeNameNode("int"));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
@@ -122,7 +130,7 @@ public class DefSignatureCreationVisitorTests
             [arg],
             new BodyNode([]));
         
-        var context = CreateContext(symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.ShouldSatisfyAllConditions(
@@ -130,13 +138,13 @@ public class DefSignatureCreationVisitorTests
             x => x.Methods.ShouldBeEmpty());
     }
 
-    private CreationContext CreateContext(Mock<ITranslationTable> symbolTable)
+    private CreationContext CreateContext(Mock<ITranslationTable> translationTable)
     {
-        var preCreationContext = new PreCreationContext(symbolTable.Object);
+        var preCreationContext = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
         var asmName = new AssemblyName(Guid.NewGuid().ToString());
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(asmName.Name!);
-        var context = new CreationContext(asm, module, preCreationContext);
+        var context = new CreationContext(asm, module, preCreationContext.SymbolTable, preCreationContext);
         return context;
     }
 }

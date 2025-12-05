@@ -77,8 +77,8 @@ public class ConstantEmissionTests
          * return var1
          */
         var ast = new BodyNode([
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType), new VariableNameNode(tempVarName)),
-            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, constantType)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(constantType)), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, EmissionSetupHelper.MakeTypeRef(constantType))]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
 
@@ -110,7 +110,7 @@ public class ConstantEmissionTests
     {
         constantType ??= constantValue?.GetType();
         const string methodName = "Test";
-        var (_, _, methodBuilder, _) 
+        var (_, methodBuilder, _) 
             = EmissionSetupHelper.CreateMethodBuilder(methodName, constantType!, []);
         var tempVarName = "temp";
         /*
@@ -119,8 +119,8 @@ public class ConstantEmissionTests
          * return var1
          */
         var ast = new BodyNode([
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(constantType!), new VariableNameNode(tempVarName)),
-            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, constantType!)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(constantType!)), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, EmissionSetupHelper.MakeTypeRef(constantType!))]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
         var context = new CompilerEmissionContext(ast, methodBuilder, [], null);

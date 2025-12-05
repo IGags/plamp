@@ -9,6 +9,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -23,7 +24,7 @@ public class ArrayInitParsingTests
     public void ParseArrayInit_Correct(int length)
     {
         var code = $"[{length}]int";
-        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(length, typeof(int)));
+        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(length, RuntimeSymbols.GetSymbolTable.MakeInt()));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
@@ -35,7 +36,7 @@ public class ArrayInitParsingTests
     public void ParseJaggedArrayInit_Correct()
     {
         const string code = "[3][]long";
-        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("long")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, new LiteralNode(3, typeof(int)));
+        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("long")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, new LiteralNode(3, RuntimeSymbols.GetSymbolTable.MakeInt()));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
@@ -121,7 +122,7 @@ public class ArrayInitParsingTests
         const string code = "[t[1]]int";
         var ast = new InitArrayNode(
             new TypeNode(new TypeNameNode("int")), 
-            new IndexerNode(new MemberNode("t"), new LiteralNode(1, typeof(int))));
+            new IndexerNode(new MemberNode("t"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())));
         
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();

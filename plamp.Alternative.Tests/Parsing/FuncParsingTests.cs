@@ -8,6 +8,7 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -24,7 +25,7 @@ public class FuncParsingTests
                 new TypeNode(new TypeNameNode("any")), 
                 new FuncNameNode("a"), [],
                 new BodyNode([
-                    new ReturnNode(new LiteralNode(1, typeof(int)))
+                    new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))
                 ]))
         ];
         yield return

@@ -1,10 +1,9 @@
-using plamp.Abstractions.AstManipulation;
+using System.Collections.Generic;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypedefInference;
 
-public class TypedefInferenceVisitorContext : PreCreationContext
+public class TypedefInferenceVisitorContext(PreCreationContext other) : PreCreationContext(other)
 {
-    public TypedefInferenceVisitorContext(BaseVisitorContext other) : base(other)
-    {
-    }
+    public Dictionary<string, List<FilePosition>> Duplicates { get; } = [];
 }

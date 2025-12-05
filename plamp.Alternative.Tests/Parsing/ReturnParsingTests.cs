@@ -7,6 +7,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -45,7 +46,7 @@ public class ReturnParsingTests
         yield return
         [
             "return 1", new List<string> { PlampExceptionInfo.ExpectedEndOfStatement().Code },
-            new ReturnNode(new LiteralNode(1, typeof(int))), true
+            new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())), true
         ];
     } 
     

@@ -1,78 +1,60 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Intrinsics;
 
 namespace plamp.Alternative;
 
 internal static class TypeResolveHelper
 {
-    public static Type? ResolveType(TypeNode type, List<PlampException> exceptions, ITranslationTable translations)
+    public static PlampExceptionRecord? FindTypeByName(
+        string name, 
+        List<ArrayTypeSpecificationNode> arrayDefs,
+        IEnumerable<ISymbolTable> symbolTables, 
+        out ICompileTimeType? typeRef)
     {
-        var typ = type.TypeName.Name switch
+        typeRef = null;
+        var types = new List<ICompileTimeType>();
+        foreach (var symbolTable in symbolTables)
         {
-            "int" => typeof(int),
-            "uint" => typeof(uint),
-            "long" => typeof(long),
-            "ulong" => typeof(ulong),
-            "char" => typeof(char),
-            "byte" => typeof(byte),
-            "float" => typeof(float),
-            "double" => typeof(double),
-            "bool" => typeof(bool),
-            "string" => typeof(string),
-            "any" => typeof(object),
-            _ => null
-        };
-        
-        if (typ == null)
-        {
-            var record = PlampExceptionInfo.TypesIsNotSupported();
-            exceptions.Add(translations.SetExceptionToNode(type, record));
-            return null;
+            symbolTable.TryGetTypeByName(name, arrayDefs, out var type);
+            if(type != null) types.Add(type);
         }
 
-        typ = MakeArrayFromType(typ, type.ArrayDefinitions);
-        return typ;
-    }
-    
-    public static MethodInfo? TryGetIntrinsic(string intrinsicName, Type[] argTypes)
-    {
-        return intrinsicName switch
+        if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
+        if (types.Count > 1)
         {
-            "println" => TryGetPrintln(argTypes),
-            "print"   => TryGetPrint(argTypes),
-            "readln"  => TryGetReadln(argTypes),
-            "read"    => TryGetRead(argTypes),
-            "length"  => TryGetLength(argTypes),
-            "int" => typeof(int).GetMethod(nameof(int.Parse), [typeof(string)]),
-            _ => null
-        };
+            return PlampExceptionInfo.AmbigulousTypeName(name, types.Select(x => x.DeclaringTable.ModuleName));
+        }
+
+        typeRef = types[0];
+        return null;
     }
 
-    private static MethodInfo? TryGetPrint(Type[] argTypes) 
-        => typeof(PrintIntrinsics).GetMethod(nameof(PrintIntrinsics.Print), argTypes);
-
-    private static MethodInfo? TryGetPrintln(Type[] argTypes) 
-        => typeof(PrintIntrinsics).GetMethod(nameof(PrintIntrinsics.Println), argTypes);
-
-    private static MethodInfo? TryGetRead(Type[] argTypes) 
-        => typeof(ReadIntrinsics).GetMethod(nameof(ReadIntrinsics.Read), argTypes);
-
-    private static MethodInfo? TryGetReadln(Type[] argTypes) 
-        => typeof(ReadIntrinsics).GetMethod(nameof(ReadIntrinsics.Readln), argTypes);
-
-    private static MethodInfo? TryGetLength(Type[] argTypes)
+    public static PlampExceptionRecord? FindFuncBySignature(
+        string name, 
+        IReadOnlyList<ICompileTimeType> argTypes,
+        IEnumerable<ISymbolTable> symbolTables, 
+        out ICompileTimeFunction? funcRef)
     {
-        if (argTypes.Length != 1 || !argTypes[0].IsAssignableTo(typeof(Array))) return null;
-        return argTypes[0] == typeof(string) 
-            ? typeof(LengthIntrinsics).GetMethod(nameof(LengthIntrinsics.Length), [typeof(string)])
-            : typeof(LengthIntrinsics).GetMethod(nameof(LengthIntrinsics.Length), [typeof(Array)]);
-    }
+        funcRef = null;
+        var funcs = new List<ICompileTimeFunction>();
+        foreach (var symbolTable in symbolTables)
+        {
+            funcs.AddRange(symbolTable.GetMatchingFunctions(name, argTypes));
+        }
 
-    private static Type MakeArrayFromType(Type originalType, List<ArrayTypeSpecificationNode> arrayDefs) 
-        => arrayDefs.Aggregate(originalType, (current, _) => current.MakeArrayType());
+        if (funcs.Count == 0)
+        {
+            return PlampExceptionInfo.FunctionIsNotFound(name, argTypes);
+        }
+        if (funcs.Count > 1)
+        {
+            return PlampExceptionInfo.AmbigulousFunctionReference(name, argTypes, funcs.Select(x => x.DeclaringTable.ModuleName));
+        }
+
+        funcRef = funcs[0];
+        return null;
+    }
 }

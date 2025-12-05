@@ -57,8 +57,8 @@ public class MemberAccessTests
                     EmissionSetupHelper.CreateMemberNode(field));
                 break;
             case PropertyInfo property:
-                var getter = property.GetGetMethod();
-                memberNode = EmissionSetupHelper.CreateCallNode(new MemberNode(objParam.Name), getter!, []);
+                var getter = EmissionSetupHelper.MakeFuncRef(property.GetGetMethod()!);
+                memberNode = EmissionSetupHelper.CreateCallNode(new MemberNode(objParam.Name), getter, []);
                 break;
             default: throw new ArgumentException(nameof(member));
         }
@@ -71,7 +71,7 @@ public class MemberAccessTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(
-                EmissionSetupHelper.CreateTypeNode(objParam.ParameterType),
+                EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(objParam.ParameterType)),
                 new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
@@ -126,7 +126,7 @@ public class MemberAccessTests
                 break;
             case PropertyInfo prop:
                 memberNode = EmissionSetupHelper.CreateCallNode(
-                    new MemberNode(objParam.Name), prop.GetSetMethod()!, [new MemberNode(valParam.Name)]);
+                    new MemberNode(objParam.Name), EmissionSetupHelper.MakeFuncRef(prop.GetSetMethod()!), [new MemberNode(valParam.Name)]);
                 break;
             default: throw new ArgumentException(nameof(member));
         }
@@ -204,13 +204,13 @@ public class MemberAccessTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(resShould.GetType()), new VariableNameNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(resShould.GetType())), new VariableNameNode(tempVarName)),
             new AssignNode(
                 [new MemberNode(tempVarName)], 
                 [
                     EmissionSetupHelper.CreateCallNode(
                         new MemberNode(objParam.Name),
-                        indexerGetter,
+                        EmissionSetupHelper.MakeFuncRef(indexerGetter),
                         [new MemberNode(valParam.Name)]
                     )
                 ]
@@ -259,7 +259,7 @@ public class MemberAccessTests
         [
             EmissionSetupHelper.CreateCallNode(
                 new MemberNode(objParam.Name),
-                indexerSetter,
+                EmissionSetupHelper.MakeFuncRef(indexerSetter),
                 [
                     new MemberNode(indexerParam.Name),
                     new MemberNode(valueParam.Name),

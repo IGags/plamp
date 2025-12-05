@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
@@ -12,6 +11,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference.Util;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -25,7 +25,7 @@ public class ArrayElementNodeManipulationTests
         var arrayItemType = new TypeNode(new TypeNameNode("int"));
         return new AssignNode(
             [new VariableDefinitionNode(varType, new VariableNameNode(arrayVarName))],
-            [new InitArrayNode(arrayItemType, new LiteralNode(3, typeof(int)))]
+            [new InitArrayNode(arrayItemType, new LiteralNode(3, RuntimeSymbols.GetSymbolTable.MakeInt()))]
         );
     }
     
@@ -34,7 +34,7 @@ public class ArrayElementNodeManipulationTests
     {
         var arrayName = "a";
         var arrayGetter = 
-            new IndexerNode(new MemberNode(arrayName), new LiteralNode(1, typeof(int)));
+            new IndexerNode(new MemberNode(arrayName), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()));
 
         var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
@@ -49,7 +49,7 @@ public class ArrayElementNodeManipulationTests
         
         _ = visitor.WeaveDiffs(ast, context);
         context.Exceptions.ShouldBeEmpty();
-        arrayGetter.ItemType.ShouldNotBeNull().ShouldBe(typeof(int));
+        arrayGetter.ItemType.ShouldNotBeNull().ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt());
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var arrayGetter = 
-            new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
+            new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()));
 
         var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
@@ -77,36 +77,13 @@ public class ArrayElementNodeManipulationTests
     }
 
     [Fact]
-    public void InferenceArrayElementGetterFromMultidimArray_ThrowsException()
-    {
-        var varType = new TypeNode(new TypeNameNode("int"));
-        varType.SetTypeRef(typeof(int[,]));
-        var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
-        
-        var arrayGetter = 
-            new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)));
-        var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
-        var ast = new BodyNode(
-        [
-            def,
-            itemAssign
-        ]);
-        
-        var visitor = new TypeInferenceWeaver();
-        var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
-        var context = fixture.Create<PreCreationContext>();
-
-        Should.Throw<Exception>(() => visitor.WeaveDiffs(ast, context));
-    }
-
-    [Fact]
     public void InferenceArrayElementGetterCannotImplicitCast_ReturnsError()
     {
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         var assign = new AssignNode(
             [new MemberNode("b")],
-            [new IndexerNode(new MemberNode("a"), new LiteralNode('a', typeof(char)))]
+            [new IndexerNode(new MemberNode("a"), new LiteralNode('a', RuntimeSymbols.GetSymbolTable.MakeChar()))]
         );
         var ast = new BodyNode(
         [
@@ -127,8 +104,8 @@ public class ArrayElementNodeManipulationTests
         const string arrayName = "a";
         var arrayInit = MakeArrayInitNode(arrayName);
         var setter = new AssignNode(
-            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
-            [new LiteralNode(1, typeof(int))]
+            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))],
+            [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]
         );
 
         var ast = new BodyNode(
@@ -142,7 +119,7 @@ public class ArrayElementNodeManipulationTests
         var context = fixture.Create<PreCreationContext>();
         _ = visitor.WeaveDiffs(ast, context);
         context.Exceptions.ShouldBeEmpty();
-        setter.Targets.ShouldHaveSingleItem().ShouldBeOfType<IndexerNode>().ItemType.ShouldNotBeNull().ShouldBe(typeof(int));
+        setter.Targets.ShouldHaveSingleItem().ShouldBeOfType<IndexerNode>().ItemType.ShouldNotBeNull().ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt());
     }
 
     [Fact]
@@ -152,8 +129,8 @@ public class ArrayElementNodeManipulationTests
         var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
         
         var assign = new AssignNode(
-            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
-            [new LiteralNode(1, typeof(int))]
+            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))],
+            [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]
         );
 
         var ast = new BodyNode(
@@ -169,30 +146,6 @@ public class ArrayElementNodeManipulationTests
         _ = visitor.WeaveDiffs(ast, context);
         context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.IndexerIsNotApplicable().Code);
     }
-
-    [Fact]
-    public void InferenceArraySetterToMultidimArray_ThrowsException()
-    {
-        var varType = new TypeNode(new TypeNameNode("int"));
-        varType.SetTypeRef(typeof(int[,]));
-        var def = new VariableDefinitionNode(varType, new VariableNameNode("a"));
-        
-        var assign = new AssignNode(
-            [new IndexerNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))],
-            [new LiteralNode(1, typeof(int))]
-        );
-        var ast = new BodyNode(
-        [
-            def,
-            assign
-        ]);
-        
-        var visitor = new TypeInferenceWeaver();
-        var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
-        var context = fixture.Create<PreCreationContext>();
-
-        Should.Throw<Exception>(() => visitor.WeaveDiffs(ast, context));
-    }
     
     [Fact]
     public void InferenceArrayElementSetterCannotImplicitCast_ReturnsError()
@@ -201,8 +154,8 @@ public class ArrayElementNodeManipulationTests
         var array = MakeArrayInitNode(arrName);
         
         var setter = new AssignNode(
-                [new IndexerNode(new MemberNode("a"), new LiteralNode('a', typeof(char)))],
-                [new LiteralNode('a', typeof(char))]
+                [new IndexerNode(new MemberNode("a"), new LiteralNode('a', RuntimeSymbols.GetSymbolTable.MakeChar()))],
+                [new LiteralNode('a', RuntimeSymbols.GetSymbolTable.MakeChar())]
         );
         var ast = new BodyNode(
         [
@@ -224,7 +177,7 @@ public class ArrayElementNodeManipulationTests
     {
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
-        var arrayGetter = new IndexerNode(new MemberNode(arrName), new LiteralNode(1, typeof(byte)));
+        var arrayGetter = new IndexerNode(new MemberNode(arrName), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeByte()));
 
         var itemAssign = new AssignNode([new MemberNode("b")], [arrayGetter]);
         var ast = new BodyNode(
@@ -245,7 +198,7 @@ public class ArrayElementNodeManipulationTests
                 x => x[1].ShouldBeOfType<AssignNode>()
                     .Sources.ShouldHaveSingleItem().ShouldBeOfType<IndexerNode>()
                     .IndexMember.ShouldBeOfType<CastNode>()
-                    .FromType.ShouldBe(typeof(byte)));
+                    .FromType.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeByte()));
     }
 
     [Fact]
@@ -254,8 +207,8 @@ public class ArrayElementNodeManipulationTests
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         var arraySetter = new AssignNode(
-            [new IndexerNode(new MemberNode(arrName), new LiteralNode(1, typeof(byte)))],
-            [new LiteralNode(1, typeof(int))]
+            [new IndexerNode(new MemberNode(arrName), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeByte()))],
+            [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]
         );
 
         var ast = new BodyNode(

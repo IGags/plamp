@@ -17,6 +17,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
+using plamp.Intrinsics;
 
 namespace plamp.Alternative.Parsing;
 
@@ -980,15 +981,15 @@ public static class Parser
             switch (keywordToken.Keyword)
             {
                 case Keywords.Null:
-                    node = new LiteralNode(null, typeof(object));
+                    node = new LiteralNode(null, RuntimeSymbols.GetSymbolTable.MakeAny());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.True:
-                    node = new LiteralNode(true, typeof(bool));
+                    node = new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.False:
-                    node = new LiteralNode(false, typeof(bool));
+                    node = new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
             }
@@ -1004,7 +1005,8 @@ public static class Parser
 
         if (context.Sequence.Current() is Literal literal)
         {
-            node = new LiteralNode(literal.ActualValue, literal.ActualType);
+            if (!RuntimeSymbols.GetSymbolTable.TryGetFromClrType(literal.ActualType, out var typeRef)) return false;
+            node = new LiteralNode(literal.ActualValue, typeRef);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
@@ -1390,6 +1392,7 @@ public static class Parser
         {
             var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
         }
 
         context.Sequence.MoveNextNonWhiteSpace();

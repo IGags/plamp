@@ -1,35 +1,62 @@
-using System.Collections.Generic;
+using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
+using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypedefInference;
 
-public class TypedefInferenceWeaver : BaseWeaver<TypedefInferenceVisitorContext, TypedefInferenceVisitorContext>
+public class TypedefInferenceWeaver : BaseWeaver<PreCreationContext, TypedefInferenceVisitorContext>
 {
-    protected override TypedefInferenceVisitorContext CreateInnerContext(
-        TypedefInferenceVisitorContext context) 
-        => context;
+    protected override TypedefInferenceVisitorContext CreateInnerContext(PreCreationContext context) => new(context);
 
-    protected override TypedefInferenceVisitorContext MapInnerToOuter(
+    protected override PreCreationContext MapInnerToOuter(
         TypedefInferenceVisitorContext innerContext,
-        TypedefInferenceVisitorContext outerContext)
+        PreCreationContext outerContext)
         => innerContext;
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
     {
-        if (context.Types.Remove(node.Name.Value)) return VisitResult.SkipChildren;
-        var fields = node.Fields;
-
-        var fieldDescList = new List<KeyValuePair<string, FieldNode>>();
-        foreach (var field in fields)
+        context.TranslationTable.TryGetSymbol(node, out var typedefPos);
+        
+        if (context.Duplicates.ContainsKey(node.Name.Value))
         {
-            foreach (var name in field.Names)
+            context.Duplicates[node.Name.Value].Add(typedefPos);
+            return VisitResult.SkipChildren;
+        }
+        
+        if (context.SymbolTable.TryGetTypeByName(node.Name.Value, [], out var info))
+        {
+            context.Duplicates[node.Name.Value] = [info.GetDefinitionInfo().DefinitionPosition, typedefPos];
+            return VisitResult.SkipChildren;
+        }
+        
+        if (RuntimeSymbols.GetSymbolTable.TryGetTypeByName(node.Name.Value, [], out _))
+        {
+            var record = PlampExceptionInfo.CannotDefineCoreType();
+            SetExceptionToSymbol(node, record, context);
+            return VisitResult.SkipChildren;
+        }
+        
+        var typeRef = context.SymbolTable.TryAddType(node.Name.Value, typedefPos);
+        //Возможно в случае если было 2 объявления, но проверка выше должна такое нивелировать.
+        if(typeRef != null) node.SetTypeInfo(typeRef);
+        
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult PostVisitRoot(RootNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
+    {
+        foreach (var duplicate in context.Duplicates)
+        {
+            var record = PlampExceptionInfo.DuplicateTypeDefinition(duplicate.Key);
+            foreach (var position in duplicate.Value)
             {
-                fieldDescList.Add(new (name.Value, field));
+                context.Exceptions.Add(new PlampException(record, position));
             }
         }
 
-        return VisitResult.SkipChildren;
+        return VisitResult.Continue;
     }
 }

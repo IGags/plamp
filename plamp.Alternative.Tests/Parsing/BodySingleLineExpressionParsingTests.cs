@@ -9,6 +9,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
+using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -20,7 +21,7 @@ public class BodySingleLineExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [])];
-        yield return ["a := 41", new AssignNode([new MemberNode("a")], [new LiteralNode(41, typeof(int))])];
+        yield return ["a := 41", new AssignNode([new MemberNode("a")], [new LiteralNode(41, RuntimeSymbols.GetSymbolTable.MakeInt())])];
         yield return ["!a", new NotNode(new MemberNode("a"))];
         yield return ["a:int", new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))];
     }

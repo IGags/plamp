@@ -13,17 +13,17 @@ public class ModuleNameVisitorTests
     [Fact]
     public void ModuleExistsInTree_ReturnsNoException()
     {
-        var symbols = new TranslationTable();
+        var translationTable = new TranslationTable();
         var moduleName = "aaa";
         var module = new ModuleDefinitionNode(moduleName);
-        symbols.AddSymbol(module, new FilePosition(0, 3, ""));
+        translationTable.AddSymbol(module, new FilePosition(0, 3, ""));
         var tree = new RootNode([], module, [], []);
-        symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
-        var context = new PreCreationContext(symbols);
+        translationTable.AddSymbol(tree, new FilePosition(-1, 0, ""));
+        var context = new PreCreationContext(translationTable, new SymbolTable("%UNDEFINED%", []));
         var visitor = new ModuleNameValidator();
         var resultContext = visitor.Validate(tree, context);
         Assert.Empty(context.Exceptions);
-        Assert.Equal(moduleName, resultContext.ModuleName);
+        Assert.Equal(moduleName, resultContext.SymbolTable.ModuleName);
     }
 
     [Fact]
@@ -33,9 +33,10 @@ public class ModuleNameVisitorTests
         var tree = new RootNode([], null, [], []);
         symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
         var visitor = new ModuleNameValidator();
-        var context = new PreCreationContext(symbols);
+        const string nameShould = "%UNDEFINED%";
+        var context = new PreCreationContext(symbols, new SymbolTable(nameShould, []));
         var resultContext = visitor.Validate(tree, context);
         Assert.Single(context.Exceptions);
-        Assert.Null(resultContext.ModuleName);
+        Assert.Equal(nameShould, resultContext.SymbolTable.ModuleName);
     }
 }

@@ -1,48 +1,42 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using plamp.Abstractions.Ast;
 
 namespace plamp.Abstractions;
 
-
+/// <summary>
+/// Информация об объявлении типа внутри модуля
+/// </summary>
 public class TypeDefinitionInfo
 {
-    public string TypeName { get; }
+    /// <summary>
+    /// Имя типа
+    /// </summary>
+    public required string TypeName { get; init; }
     
-    public string ModuleName { get; }
-    
+    /// <summary>
+    /// Представление типа в .net clr
+    /// </summary>
     public Type? ClrType { get; private set; }
     
-    public FilePosition DefinitionPosition { get; }
+    /// <summary>
+    /// Позиция объявления типа в кодовом файле
+    /// </summary>
+    public FilePosition DefinitionPosition { get; init; }
     
-    public List<FieldDefinitionInfo> Fields { get; }
+    /// <summary>
+    /// Поля, которые объявлены в типе
+    /// </summary>
+    public required List<FieldDefinitionInfo> Fields { get; init; }
+    
+    /// <summary>
+    /// Если данный тип является массивом, то здесь лежит значение типа элемента массива != default.
+    /// </summary>
+    public ICompileTimeType? ArrayUnderlyingType { get; init; }
 
+    /// <summary>
+    /// Установить скомпилированный тип .net clr
+    /// </summary>
+    /// <param name="clrType">Тип внутри .net</param>
     public void SetClrType(Type clrType) => ClrType = clrType;
-}
-
-public class FieldDefinitionInfo
-{
-    public string Name { get; }
-    
-    public TypeDefinitionInfo Type { get; }
-    
-    public FieldInfo? ClrField { get; private set; }
-
-    public void SetClrField(FieldInfo clrField) => ClrField = clrField;
-}
-
-public class FunctionDefinitionInfo
-{
-    public string Name { get; }
-    
-    public TypeDefinitionInfo ReturnType { get; }
-    
-    public List<TypeDefinitionInfo> ArgumentList { get; }
-    
-    public FilePosition DefinitionPosition { get; }
-    
-    public MethodInfo? ClrMethod { get; set; }
-
-    public void SetClrMethod(MethodInfo clrMethod) => ClrMethod = clrMethod;
 }

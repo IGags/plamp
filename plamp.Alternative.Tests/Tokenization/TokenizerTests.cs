@@ -144,13 +144,13 @@ public class TokenizerTests
         yield return ["if", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.If)];
         yield return ["as", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.As)];
         yield return ["module", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Module)];
-        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
+        yield return ["type", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
         yield return ["else", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Else)];
         yield return ["null", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Null)];
         yield return ["return", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Return)];
         yield return ["break", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Break)];
         yield return ["continue", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Continue)];
-        yield return ["model", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
+        yield return ["type", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
         yield return ["1", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];
         yield return ["0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 0)];
         yield return ["1i", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];

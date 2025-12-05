@@ -63,7 +63,7 @@ public class ArgPassingTests
         var body = new BodyNode(
         [
             new VariableDefinitionNode(
-                EmissionSetupHelper.CreateTypeNode(argType),
+                EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(argType)),
                 new VariableNameNode(tempVarName)
                 ),
             new AssignNode(
