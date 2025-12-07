@@ -16,7 +16,7 @@ public class WhileLoopParsingTests
 {
     public static IEnumerable<object[]> ParseWhileLoop_Correct_DataProvider()
     {
-        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new BodyNode([]))];
+        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()), new BodyNode([]))];
         yield return
         [
             "while(!a) fn1();",
@@ -36,10 +36,10 @@ public class WhileLoopParsingTests
             }
             """,
             new WhileNode(
-                new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+                new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([
                     new CallNode(null, new FuncCallNameNode("calli"), 
-                        [new MulNode(new LiteralNode(1245, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(244, RuntimeSymbols.GetSymbolTable.MakeInt()))])
+                        [new MulNode(new LiteralNode(1245, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(244, RuntimeSymbols.SymbolTable.MakeInt()))])
                 ])
             )
         ];

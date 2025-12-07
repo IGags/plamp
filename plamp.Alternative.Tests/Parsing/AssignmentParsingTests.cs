@@ -20,15 +20,15 @@ public class AssignmentParsingTests
             "a := 14.3",
             new AssignNode(
                 [new MemberNode("a")],
-                [new LiteralNode(14.3, RuntimeSymbols.GetSymbolTable.MakeDouble())]
+                [new LiteralNode(14.3, RuntimeSymbols.SymbolTable.MakeDouble())]
             )
         ];
         yield return
         [
             "a[1] := 14",
             new AssignNode(
-                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))],
-                [new LiteralNode(14, RuntimeSymbols.GetSymbolTable.MakeInt())]
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))],
+                [new LiteralNode(14, RuntimeSymbols.SymbolTable.MakeInt())]
             )
         ];
         yield return
@@ -36,7 +36,7 @@ public class AssignmentParsingTests
             "a[b] := 5",
             new AssignNode(
                 [new IndexerNode(new MemberNode("a"), new MemberNode("b"))],
-                [new LiteralNode(5, RuntimeSymbols.GetSymbolTable.MakeInt())]
+                [new LiteralNode(5, RuntimeSymbols.SymbolTable.MakeInt())]
             )
         ];
         yield return
@@ -52,13 +52,13 @@ public class AssignmentParsingTests
             "a, b := 1, 2",
             new AssignNode(
                 [new MemberNode("a"), new MemberNode("b")],
-                [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt())])
         ];
         yield return
         [
             "a[1], b := c, d",
             new AssignNode(
-                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())), new MemberNode("b")],
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())), new MemberNode("b")],
                 [new MemberNode("c"), new MemberNode("d")])
         ];
         yield return
@@ -66,7 +66,7 @@ public class AssignmentParsingTests
             "x, y := \"def\", c",
             new AssignNode(
                 [new MemberNode("x"), new MemberNode("y")],
-                [new LiteralNode("def", RuntimeSymbols.GetSymbolTable.MakeString()), new MemberNode("c")])
+                [new LiteralNode("def", RuntimeSymbols.SymbolTable.MakeString()), new MemberNode("c")])
         ];
         yield return
         [
@@ -86,8 +86,8 @@ public class AssignmentParsingTests
         [
             "a[1][x] := t, 3",
             new AssignNode(
-                [new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())), new MemberNode("x"))],
-                [new MemberNode("t"), new LiteralNode(3, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                [new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())), new MemberNode("x"))],
+                [new MemberNode("t"), new LiteralNode(3, RuntimeSymbols.SymbolTable.MakeInt())])
         ];
     }
     

@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Alternative;
 using plamp.Alternative.Parsing;
@@ -28,9 +29,14 @@ public static class CompilationDriver
         var translationTable = new TranslationTable();
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, translationTable);
         var ast = Parser.ParseFile(parsingContext);
-        
-        var context = new PreCreationContext(translationTable, new SymbolTable("%UNDEFINED%", []));
-        context.Dependencies.Add(RuntimeSymbols.GetSymbolTable);
+
+        var dependencies = new List<ISymbolTable> { RuntimeSymbols.SymbolTable };
+        var currentModuleTable = new SymbolTable("%UNDEFINED%", dependencies);
+        dependencies.Add(currentModuleTable);
+        var context = new SymbolTableBuildingContext(
+            translationTable, 
+            dependencies,
+            currentModuleTable);
         context.Exceptions.AddRange(parsingContext.Exceptions);
 
         if (printAst)
@@ -57,23 +63,26 @@ public static class CompilationDriver
         var funcDefInferenceWeaver = new FuncDefInferenceWeaver();
         context = funcDefInferenceWeaver.WeaveDiffs(ast, context);
 
+        dependencies.Add(context.CurrentModuleTable);
+        var preCreateContext = new PreCreationContext(context.TranslationTable, dependencies);
+        
         //Проверка того, что функция всегда возвращает значеие.
         var funcReturnVisitor = new FuncMustReturnValueValidator();
-        context = funcReturnVisitor.Validate(ast, context);
+        preCreateContext = funcReturnVisitor.Validate(ast, preCreateContext);
         
         var typeInferenceVisitor = new TypeInferenceWeaver();
-        context = typeInferenceVisitor.WeaveDiffs(ast, context);
+        preCreateContext = typeInferenceVisitor.WeaveDiffs(ast, preCreateContext);
 
-        if (context.Exceptions.Count != 0)
+        if (preCreateContext.Exceptions.Count != 0)
         {
             return new(context.Exceptions, null);
         }
         
         var assemblyName = new AssemblyName(DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-        var moduleBuilder = assemblyBuilder.DefineDynamicModule(context.SymbolTable.ModuleName);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule(currentModuleTable.ModuleName);
 
-        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, context.SymbolTable, context);
+        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, currentModuleTable, context);
         var signatureVisitor = new DefSignatureCreationValidator();
         compilationContext = signatureVisitor.Validate(ast, compilationContext);
         var callVisitor = new MethodCallInferenceValidator();

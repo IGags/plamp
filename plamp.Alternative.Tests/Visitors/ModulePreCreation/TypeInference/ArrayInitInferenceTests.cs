@@ -26,7 +26,7 @@ public class ArrayInitInferenceTests
             [new MemberNode("a")],
             [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(3, RuntimeSymbols.GetSymbolTable.MakeInt()))]);
+                new LiteralNode(3, RuntimeSymbols.SymbolTable.MakeInt()))]);
 
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -35,7 +35,7 @@ public class ArrayInitInferenceTests
         
         context.Exceptions.ShouldBeEmpty();
         assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>()
-            .ArrayItemType.TypedefRef.ShouldNotBeNull().ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt());
+            .ArrayItemType.TypedefRef.ShouldNotBeNull().ShouldBe(RuntimeSymbols.SymbolTable.MakeInt());
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class ArrayInitInferenceTests
             [new MemberNode("a")],
             [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeByte()))]);
+                new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeByte()))]);
         
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -78,7 +78,7 @@ public class ArrayInitInferenceTests
         context.Exceptions.ShouldBeEmpty();
         assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>()
             .LengthDefinition.ShouldBeOfType<CastNode>()
-            .FromType.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeByte());
+            .FromType.ShouldBe(RuntimeSymbols.SymbolTable.MakeByte());
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class ArrayInitInferenceTests
             [new MemberNode("a")],
             [new InitArrayNode(
                 new TypeNode(new TypeNameNode("int")),
-                new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeLong()))]);
+                new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeLong()))]);
         
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
@@ -118,10 +118,10 @@ public class ArrayInitInferenceTests
         var assign = body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
         
         assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
-            .Type.ShouldNotBeNull().TypedefRef.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt().MakeArrayType().MakeArrayType());
+            .Type.ShouldNotBeNull().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt().MakeArrayType().MakeArrayType());
         
         var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitArrayNode>();
-        call.ArrayItemType.TypedefRef.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt().MakeArrayType());
-        call.LengthDefinition.ShouldBeEquivalentTo(new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        call.ArrayItemType.TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt().MakeArrayType());
+        call.LengthDefinition.ShouldBeEquivalentTo(new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
     }
 }

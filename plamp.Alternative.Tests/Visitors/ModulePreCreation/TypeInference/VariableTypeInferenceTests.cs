@@ -29,7 +29,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())])
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
@@ -43,7 +43,7 @@ public class VariableTypeInferenceTests
         ]);
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         
         translationTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>()), Times.Once);
@@ -57,7 +57,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())]),
             new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
@@ -66,14 +66,14 @@ public class VariableTypeInferenceTests
     [Theory, AutoData]
     public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", RuntimeSymbols.GetSymbolTable.MakeString())]);
+        var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", RuntimeSymbols.SymbolTable.MakeString())]);
         var ast = new BodyNode([
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())]),
             exceptionMember
         ]);
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         
         translationTable.Verify(x => x.SetExceptionToNode(exceptionMember, It.IsAny<PlampExceptionRecord>()), Times.Once);
@@ -87,10 +87,10 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())]),
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt())])
             ])
         ]);
         
@@ -105,13 +105,13 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt())])
             ]),
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())])
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())])
         ]);
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldSatisfyAllConditions(
@@ -128,11 +128,11 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt())])
             ]),
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())])
             ])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
@@ -155,7 +155,7 @@ public class VariableTypeInferenceTests
         [
             new AssignNode(
                 [new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))],
-                [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())])
+                [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -172,7 +172,7 @@ public class VariableTypeInferenceTests
         ]);
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldSatisfyAllConditions(
@@ -187,7 +187,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())]),
             new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
@@ -201,7 +201,7 @@ public class VariableTypeInferenceTests
             new AssignNode([new MemberNode("a")], [new MemberNode("b")])
         ]);
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -216,7 +216,7 @@ public class VariableTypeInferenceTests
             new AssignNode([new MemberNode("a")], [new MemberNode("a")])
         ]);
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -251,7 +251,7 @@ public class VariableTypeInferenceTests
     {
         var filePosition = new FilePosition();
         translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty();
     }
@@ -344,7 +344,7 @@ public class VariableTypeInferenceTests
         [
             """
             {
-                a := print("14");
+                a := Print("14");
             }
             """,
             new List<string>{PlampExceptionInfo.CannotAssignNone().Code}
@@ -380,7 +380,7 @@ public class VariableTypeInferenceTests
     public static IEnumerable<object[]> InitDefault_Correct_DataProvider()
     {
         var defType1 = new TypeNode(new TypeNameNode("int"));
-        defType1.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        defType1.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         yield return
         [
             """
@@ -395,16 +395,16 @@ public class VariableTypeInferenceTests
                         [new VariableNameNode("a"), new VariableNameNode("b"), new VariableNameNode("c")])
                 ],
                 [
-                    new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt())
+                    new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())
                 ]
             )
         ];
 
         var defType2 = new TypeNode(new TypeNameNode("string")){ArrayDefinitions = [new ArrayTypeSpecificationNode()]};
-        defType2.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeString().MakeArrayType());
+        defType2.SetTypeRef(RuntimeSymbols.SymbolTable.MakeString().MakeArrayType());
         var itemType = new TypeNode(new TypeNameNode("string"));
-        itemType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeString());
-        var mkArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.GetSymbolTable.MakeInt()));
+        itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeString());
+        var mkArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
         yield return
         [
             """

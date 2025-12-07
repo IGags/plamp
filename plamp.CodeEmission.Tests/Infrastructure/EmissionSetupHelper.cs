@@ -45,6 +45,7 @@ public class EmissionSetupHelper
     }
 
     public static ICompileTimeFunction MakeFuncRef(MethodInfo info) => new MockFuncRef(info);
+    public static ICompileTimeFunction MakeFuncRef(MethodInfo info, IEnumerable<Type> argTypes, Type retType) => new MockFuncRef(info, argTypes, retType);
 
     public static ICompileTimeType MakeTypeRef(Type type) => new MockTypeRef(type);
 
@@ -156,6 +157,19 @@ public class EmissionSetupHelper
         public string Name { get; }
         public IReadOnlyList<ICompileTimeType> ArgumentTypes => _args;
 
+        public MockFuncRef(MethodInfo info, IEnumerable<Type> argTypes, Type retType)
+        {
+            _definition = info;
+            Name = info.Name;
+            _args = new List<ICompileTimeType>();
+            foreach (var argType in argTypes)
+            {
+                _args.Add(new MockTypeRef(argType));
+            }
+
+            _returnType = new MockTypeRef(retType);
+        }
+        
         public MockFuncRef(MethodInfo info)
         {
             _definition = info;

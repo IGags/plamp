@@ -1,5 +1,4 @@
 using System;
-using AutoFixture;
 using AutoFixture.Kernel;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -21,7 +20,9 @@ public class ModulePreCreateCustomization : ISpecimenBuilder
         translationTableMock.Setup(x =>
                 x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
             .Returns((Func<NodeBase, PlampExceptionRecord, PlampException>)((_, rec) => new PlampException(rec, new())));
+
+        var symbolTables = SymbolTableInitHelper.CreateDefaultTables();
         
-        return new PreCreationContext(translationTableMock.Object, new SymbolTable(context.Create<string>(), []));
+        return new PreCreationContext(translationTableMock.Object, symbolTables);
     }
 }

@@ -58,8 +58,8 @@ public class CastEmissionTests
     [Fact]
     public void EmitShortIntConversion()
     {
-        var to = RuntimeSymbols.GetSymbolTable.MakeInt();
-        var from = RuntimeSymbols.GetSymbolTable.MakeShort();
+        var to = RuntimeSymbols.SymbolTable.MakeInt();
+        var from = RuntimeSymbols.SymbolTable.MakeShort();
         const short instance = 31;
         var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
@@ -70,8 +70,8 @@ public class CastEmissionTests
     [Fact]
     public void EmitByteIntConversion()
     {
-        var to = RuntimeSymbols.GetSymbolTable.MakeInt();
-        var from = RuntimeSymbols.GetSymbolTable.MakeByte();
+        var to = RuntimeSymbols.SymbolTable.MakeInt();
+        var from = RuntimeSymbols.SymbolTable.MakeByte();
         const byte instance = 31;
         var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
@@ -138,10 +138,10 @@ public class CastEmissionTests
          * return (float)43;
          */
         var to = new TypeNode(new TypeNameNode("float"));
-        to.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeFloat());
+        to.SetTypeRef(RuntimeSymbols.SymbolTable.MakeFloat());
         const int literal = 43;
-        var cast = new CastNode(to, new LiteralNode(literal, RuntimeSymbols.GetSymbolTable.MakeInt()));
-        cast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeInt());
+        var cast = new CastNode(to, new LiteralNode(literal, RuntimeSymbols.SymbolTable.MakeInt()));
+        cast.SetFromType(RuntimeSymbols.SymbolTable.MakeInt());
         
         var methodBody = new BodyNode(
         [
@@ -163,12 +163,12 @@ public class CastEmissionTests
          * return (double)Example();
          */
         var to = new TypeNode(new TypeNameNode("double"));
-        to.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeDouble());
+        to.SetTypeRef(RuntimeSymbols.SymbolTable.MakeDouble());
         var call = new CallNode(null, new FuncCallNameNode("Example"), []);
         var info = typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!;
         call.SetInfo(EmissionSetupHelper.MakeFuncRef(info));
         var cast = new CastNode(to, call);
-        cast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeInt());
+        cast.SetFromType(RuntimeSymbols.SymbolTable.MakeInt());
         
         var methodBody = new BodyNode(
         [
@@ -188,9 +188,9 @@ public class CastEmissionTests
          * return (short)(32768 - 1);
          */
         var to = new TypeNode(new TypeNameNode("short"));
-        to.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeShort());
-        var cast = new CastNode(to, new SubNode(new LiteralNode(32768, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())));
-        cast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeInt());
+        to.SetTypeRef(RuntimeSymbols.SymbolTable.MakeShort());
+        var cast = new CastNode(to, new SubNode(new LiteralNode(32768, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())));
+        cast.SetFromType(RuntimeSymbols.SymbolTable.MakeInt());
         
         var methodBody = new BodyNode(
         [
@@ -210,9 +210,9 @@ public class CastEmissionTests
          * return (int)-1.5;
          */
         var to = new TypeNode(new TypeNameNode("int"));
-        to.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
-        var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, RuntimeSymbols.GetSymbolTable.MakeFloat())));
-        cast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeFloat());
+        to.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+        var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, RuntimeSymbols.SymbolTable.MakeFloat())));
+        cast.SetFromType(RuntimeSymbols.SymbolTable.MakeFloat());
 
         var methodBody = new BodyNode(
         [
@@ -232,13 +232,13 @@ public class CastEmissionTests
          * return (int)1.5;
          */
         var innerType = new TypeNode(new TypeNameNode("double"));
-        innerType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeDouble());
-        var innerCast = new CastNode(innerType, new LiteralNode(1.5f, RuntimeSymbols.GetSymbolTable.MakeFloat()));
-        innerCast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeFloat());
+        innerType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeDouble());
+        var innerCast = new CastNode(innerType, new LiteralNode(1.5f, RuntimeSymbols.SymbolTable.MakeFloat()));
+        innerCast.SetFromType(RuntimeSymbols.SymbolTable.MakeFloat());
         var to = new TypeNode(new TypeNameNode("int"));
-        to.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        to.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var cast = new CastNode(to, innerCast);
-        cast.SetFromType(RuntimeSymbols.GetSymbolTable.MakeDouble());
+        cast.SetFromType(RuntimeSymbols.SymbolTable.MakeDouble());
         
         var methodBody = new BodyNode(
         [
@@ -259,24 +259,24 @@ public class CastEmissionTests
          * return int(a[1]);
          */
         var variableType = new TypeNode(new TypeNameNode("double[]"));
-        variableType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeDouble().MakeArrayType());
+        variableType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeDouble().MakeArrayType());
         var arrayItemType = new TypeNode(new TypeNameNode("double"));
-        arrayItemType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeDouble());
+        arrayItemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeDouble());
 
         var castToType = new TypeNode(new TypeNameNode("int"));
-        castToType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        castToType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         
-        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()));
-        elemGetter.SetItemType(RuntimeSymbols.GetSymbolTable.MakeDouble());
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()));
+        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.MakeDouble());
         
         var castNode = new CastNode(castToType, elemGetter);
-        castNode.SetFromType(RuntimeSymbols.GetSymbolTable.MakeDouble());
+        castNode.SetFromType(RuntimeSymbols.SymbolTable.MakeDouble());
         
         var body = new BodyNode(
         [
             new AssignNode(
                 [new VariableDefinitionNode(variableType, new VariableNameNode("a"))], 
-                [new InitArrayNode(arrayItemType, new LiteralNode(5, RuntimeSymbols.GetSymbolTable.MakeInt()))]
+                [new InitArrayNode(arrayItemType, new LiteralNode(5, RuntimeSymbols.SymbolTable.MakeInt()))]
             ),
             new ReturnNode(castNode)
         ]);

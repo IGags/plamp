@@ -29,7 +29,7 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<BodyNode>()
             .ShouldSatisfyAllConditions(
@@ -39,8 +39,8 @@ public class AssignNodeImplicitCastTests
                     .Sources.ShouldHaveSingleItem()
                     .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
-                        y => y.FromType.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt()),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeDouble())));
+                        y => y.FromType.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt()),
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.MakeDouble())));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -59,7 +59,7 @@ public class AssignNodeImplicitCastTests
         expressions.ShouldNotBeNull().ExpressionList.Count.ShouldBe(2);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var weaveResult = visitor.WeaveDiffs(expressions, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }

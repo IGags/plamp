@@ -150,12 +150,13 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         return true;
     }
 
-    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType> signature)
+    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType?> signature)
     {
-        var matchingFuncs = _definedFuncs.Keys
-            .Where(x => x.Name == fnName && RuntimeSymbols.GetSymbolTable.MatchSignature(x.ArgumentTypes, signature))
-            .Cast<ICompileTimeFunction>().ToArray();
-        return matchingFuncs;
+        var overloads = _definedFuncs.Keys.Where(x => x.Name == fnName);
+        var matchingFuncs = overloads
+            .Select(x => (x, RuntimeSymbols.SymbolTable.MatchSignature(x.ArgumentTypes, signature)))
+            .Where(x => x.Item2 >= 0).OrderBy(x => x.Item2).Select(x => x.x).Cast<ICompileTimeFunction>();
+        return matchingFuncs.ToArray();
     }
 
     public IReadOnlyList<ICompileTimeFunction> ListFunctions() => _definedFuncs.Keys.ToList();

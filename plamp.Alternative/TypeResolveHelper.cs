@@ -16,9 +16,9 @@ internal static class TypeResolveHelper
     {
         typeRef = null;
         var types = new List<ICompileTimeType>();
-        foreach (var symbolTable in symbolTables)
+        foreach (var table in symbolTables)
         {
-            symbolTable.TryGetTypeByName(name, arrayDefs, out var type);
+            table.TryGetTypeByName(name, arrayDefs, out var type);
             if(type != null) types.Add(type);
         }
 
@@ -34,7 +34,7 @@ internal static class TypeResolveHelper
 
     public static PlampExceptionRecord? FindFuncBySignature(
         string name, 
-        IReadOnlyList<ICompileTimeType> argTypes,
+        IReadOnlyList<ICompileTimeType?> argTypes,
         IEnumerable<ISymbolTable> symbolTables, 
         out ICompileTimeFunction? funcRef)
     {
@@ -42,7 +42,9 @@ internal static class TypeResolveHelper
         var funcs = new List<ICompileTimeFunction>();
         foreach (var symbolTable in symbolTables)
         {
-            funcs.AddRange(symbolTable.GetMatchingFunctions(name, argTypes));
+            var found = symbolTable.GetMatchingFunctions(name, argTypes);
+            //Так как модуль валилидруется перед компиляцией и дубликаты сигнатур недопустимы, то выбираем самую близкую сигнатуру.
+            if(found.Length > 0) funcs.Add(found[0]);
         }
 
         if (funcs.Count == 0)

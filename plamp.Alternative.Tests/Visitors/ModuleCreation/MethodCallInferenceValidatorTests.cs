@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using AutoFixture.Xunit2;
@@ -21,16 +22,16 @@ public class MethodCallInferenceValidatorTests
     public void InferenceIntrinsic_ReturnsCorrect([Frozen] Mock<ITranslationTable> translationTable, MethodCallInferenceValidator visitor)
     {
         var symbolTable = new SymbolTable("mod1", []);
-        symbolTable.TryAddFunc("println", RuntimeSymbols.GetSymbolTable.MakeVoid(), [RuntimeSymbols.GetSymbolTable.MakeAny()], default, out var fnRef);
+        symbolTable.TryAddFunc("println", RuntimeSymbols.SymbolTable.MakeVoid(), [RuntimeSymbols.SymbolTable.MakeAny()], default, out var fnRef);
 
         var methodInfo = typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!;
         
         fnRef.GetDefinitionInfo().SetClrMethod(methodInfo);
-        var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", RuntimeSymbols.GetSymbolTable.MakeString())]);
+        var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", RuntimeSymbols.SymbolTable.MakeString())]);
         call.SetInfo(fnRef);
         
         var ast = new BodyNode([call]);
-        var context = CreateContext(translationTable, symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldBeEmpty());
@@ -46,10 +47,10 @@ public class MethodCallInferenceValidatorTests
     {
         var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
         var symbolTable = new SymbolTable("mod", []);
-        symbolTable.TryAddFunc("Abc", RuntimeSymbols.GetSymbolTable.MakeVoid(), [], default, out var fnRef);
+        symbolTable.TryAddFunc("Abc", RuntimeSymbols.SymbolTable.MakeVoid(), [], default, out var fnRef);
         call.SetInfo(fnRef);
         var ast = new BodyNode([call]);
-        var context = CreateContext(translationTable, symbolTable);
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldBeEmpty());
@@ -63,20 +64,22 @@ public class MethodCallInferenceValidatorTests
     {
         var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
         var ast = new BodyNode([call]);
-        var context = CreateContext(translationTable, new SymbolTable("mod", []));
+        var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldBeEmpty());
         call.Symbol.ShouldBeNull();
     }
     
-    private CreationContext CreateContext(Mock<ITranslationTable> translationTable, SymbolTable symbolTable)
+    private CreationContext CreateContext(Mock<ITranslationTable> translationTable)
     {
-        var preCreationContext = new PreCreationContext(translationTable.Object, symbolTable);
+        var defaultTables = SymbolTableInitHelper.CreateDefaultTables();
+        var preCreationContext = new PreCreationContext(translationTable.Object, defaultTables);
+        var currentModule = (SymbolTable)defaultTables.First(x => x != RuntimeSymbols.SymbolTable);
         var asmName = new AssemblyName(Guid.NewGuid().ToString());
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(asmName.Name!);
-        var context = new CreationContext(asm, module, symbolTable, preCreationContext);
+        var context = new CreationContext(asm, module, currentModule, preCreationContext);
         return context;
     }
 }

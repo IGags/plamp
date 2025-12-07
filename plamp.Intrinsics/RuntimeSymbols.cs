@@ -13,7 +13,7 @@ public class RuntimeSymbols : ISymbolTable
     private readonly Dictionary<ICompileTimeType, IImplicitConversionRule> _conversionRules;
     private readonly Dictionary<ICompileTimeFunction, FunctionDefinitionInfo> _funcs;
     
-    public static readonly RuntimeSymbols GetSymbolTable = new();
+    public static readonly RuntimeSymbols SymbolTable = new();
 
     private const string VoidName   = "void";
     private const string IntName    = "int";
@@ -138,10 +138,13 @@ public class RuntimeSymbols : ISymbolTable
     }
     
     /// <inheritdoc/>
-    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType> signature)
+    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType?> signature)
     {
         var overloads = _funcs.Keys.Where(x => x.Name == fnName);
-        var matching = overloads.Where(x => MatchSignature(x.ArgumentTypes, signature));
+        //Сортировка по дешевизне конверсии
+        var matching = overloads
+            .Select(x => (x, MatchSignature(x.ArgumentTypes, signature)))
+            .Where(x => x.Item2 >= 0).OrderBy(x => x.Item2).Select(x => x.x);
         return matching.ToArray();
     }
 
@@ -163,17 +166,26 @@ public class RuntimeSymbols : ISymbolTable
     /// </summary>
     /// <param name="signatureTypes">Типы аргументов объявленной функции.</param>
     /// <param name="actualTypes">Типы аргументов, для проверки.</param>
-    public bool MatchSignature(
+    /// <returns>Число конверсий, которые надо совершить, чтобы получить вызов функции. Меньше - лучше. Отрицательное число значит, что вызов функции невозможен.</returns>
+    public int MatchSignature(
         IReadOnlyList<ICompileTimeType> signatureTypes,
-        IReadOnlyList<ICompileTimeType> actualTypes)
+        IReadOnlyList<ICompileTimeType?> actualTypes)
     {
-        if (signatureTypes.Count != actualTypes.Count) return false;
+        if (signatureTypes.Count != actualTypes.Count) return -1;
+        var conversionCost = 0;
         for (var i = 0; i < signatureTypes.Count; i++)
         {
-            if (!TypeIsImplicitlyConvertable(actualTypes[i], signatureTypes[i])) return false;
+            var type = actualTypes[i];
+            if(type == null) continue;
+            if (!TypeIsImplicitlyConvertable(type, signatureTypes[i])) return -1;
+            
+            if(type.Equals(signatureTypes[i])) continue;
+            //Конверсия в any всегда дороже, поэтому такие варианты возвращаем в последнюю очередь
+            if (signatureTypes[i].Equals(MakeAny())) conversionCost += 100;
+            else conversionCost++;
         }
 
-        return true;
+        return conversionCost;
     }
 
     private Dictionary<ICompileTimeType, TypeDefinitionInfo> InitTypes()

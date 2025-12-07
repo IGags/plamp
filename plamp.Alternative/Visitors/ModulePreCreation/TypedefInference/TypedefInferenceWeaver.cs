@@ -7,13 +7,13 @@ using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypedefInference;
 
-public class TypedefInferenceWeaver : BaseWeaver<PreCreationContext, TypedefInferenceVisitorContext>
+public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, TypedefInferenceVisitorContext>
 {
-    protected override TypedefInferenceVisitorContext CreateInnerContext(PreCreationContext context) => new(context);
+    protected override TypedefInferenceVisitorContext CreateInnerContext(SymbolTableBuildingContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(
+    protected override SymbolTableBuildingContext MapInnerToOuter(
         TypedefInferenceVisitorContext innerContext,
-        PreCreationContext outerContext)
+        SymbolTableBuildingContext outerContext)
         => innerContext;
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
@@ -26,20 +26,20 @@ public class TypedefInferenceWeaver : BaseWeaver<PreCreationContext, TypedefInfe
             return VisitResult.SkipChildren;
         }
         
-        if (context.SymbolTable.TryGetTypeByName(node.Name.Value, [], out var info))
+        if (context.CurrentModuleTable.TryGetTypeByName(node.Name.Value, [], out var info))
         {
             context.Duplicates[node.Name.Value] = [info.GetDefinitionInfo().DefinitionPosition, typedefPos];
             return VisitResult.SkipChildren;
         }
         
-        if (RuntimeSymbols.GetSymbolTable.TryGetTypeByName(node.Name.Value, [], out _))
+        if (RuntimeSymbols.SymbolTable.TryGetTypeByName(node.Name.Value, [], out _))
         {
             var record = PlampExceptionInfo.CannotDefineCoreType();
             SetExceptionToSymbol(node, record, context);
             return VisitResult.SkipChildren;
         }
         
-        var typeRef = context.SymbolTable.TryAddType(node.Name.Value, typedefPos);
+        var typeRef = context.CurrentModuleTable.TryAddType(node.Name.Value, typedefPos);
         //Возможно в случае если было 2 объявления, но проверка выше должна такое нивелировать.
         if(typeRef != null) node.SetTypeInfo(typeRef);
         

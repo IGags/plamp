@@ -1,14 +1,14 @@
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.AstManipulation;
 using plamp.Abstractions.AstManipulation.Validation;
-using plamp.Alternative.Visitors.ModulePreCreation;
 
 namespace plamp.Cli.Diagnostics;
 
-public class PrintAstVisitor : BaseValidator<PreCreationContext, AstPrintingContext>
+public class PrintAstVisitor : BaseValidator<BaseVisitorContext, AstPrintingContext>
 {
-    protected override AstPrintingContext CreateInnerContext(PreCreationContext context) => new(context);
+    protected override AstPrintingContext CreateInnerContext(BaseVisitorContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, AstPrintingContext innerContext) => innerContext;
+    protected override BaseVisitorContext MapInnerToOuter(BaseVisitorContext outerContext, AstPrintingContext innerContext) => innerContext;
 
     protected override VisitResult VisitNodeBase(NodeBase node, AstPrintingContext context, NodeBase? parent)
     {
@@ -25,7 +25,7 @@ public class PrintAstVisitor : BaseValidator<PreCreationContext, AstPrintingCont
     }
 }
 
-public class AstPrintingContext(PreCreationContext context) : PreCreationContext(context)
+public class AstPrintingContext(BaseVisitorContext context) : BaseVisitorContext(context)
 {
     public int Depth { get; set; }
 }

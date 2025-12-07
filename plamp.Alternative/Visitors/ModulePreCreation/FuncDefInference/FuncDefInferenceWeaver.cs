@@ -10,14 +10,14 @@ using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.FuncDefInference;
 
-public class FuncDefInferenceWeaver : BaseWeaver<PreCreationContext, FuncDefInferenceContext>
+public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, FuncDefInferenceContext>
 {
-    protected override FuncDefInferenceContext CreateInnerContext(PreCreationContext context)
+    protected override FuncDefInferenceContext CreateInnerContext(SymbolTableBuildingContext context)
         => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(
+    protected override SymbolTableBuildingContext MapInnerToOuter(
         FuncDefInferenceContext innerContext,
-        PreCreationContext outerContext)
+        SymbolTableBuildingContext outerContext)
         => innerContext;
 
     protected override VisitResult PreVisitParameter(ParameterNode node, FuncDefInferenceContext context, NodeBase? parent)
@@ -30,7 +30,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<PreCreationContext, FuncDefInfe
     {
         if (node.ReturnType == null)
         {
-            var voidType = RuntimeSymbols.GetSymbolTable.MakeVoid();
+            var voidType = RuntimeSymbols.SymbolTable.MakeVoid();
             var typ = new TypeNode(new TypeNameNode(voidType.TypeName));
             typ.SetTypeRef(voidType);
             if (!context.TranslationTable.TryGetSymbol(node.FuncName, out var nameSymbol))
@@ -90,7 +90,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<PreCreationContext, FuncDefInfe
             .Where(x => x.Type.TypedefRef != null)
             .Select(x => x.Type.TypedefRef).ToList();
 
-        var added = context.SymbolTable.TryAddFunc(
+        var added = context.CurrentModuleTable.TryAddFunc(
             node.FuncName.Value, 
             node.ReturnType.TypedefRef, 
             argumentTypes!,
@@ -108,7 +108,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<PreCreationContext, FuncDefInfe
 
     private VisitResult ResolveTypeOrSetError(string typeName, List<ArrayTypeSpecificationNode> arrayDefs, TypeNode typeNode, FuncDefInferenceContext context)
     {
-        var record = TypeResolveHelper.FindTypeByName(typeName, arrayDefs, [context.SymbolTable], out var type);
+        var record = TypeResolveHelper.FindTypeByName(typeName, arrayDefs, context.Dependencies, out var type);
         if (record != null)
         {
             SetExceptionToSymbol(typeNode, record, context);

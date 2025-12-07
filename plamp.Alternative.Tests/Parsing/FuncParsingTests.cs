@@ -25,7 +25,7 @@ public class FuncParsingTests
                 new TypeNode(new TypeNameNode("any")), 
                 new FuncNameNode("a"), [],
                 new BodyNode([
-                    new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))
+                    new ReturnNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))
                 ]))
         ];
         yield return

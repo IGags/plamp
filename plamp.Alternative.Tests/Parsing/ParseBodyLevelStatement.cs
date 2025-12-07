@@ -17,10 +17,10 @@ public class ParseBodyLevelStatement
     {
         yield return ["a + b;", new AddNode(new MemberNode("a"), new MemberNode("b"))];
         yield return ["if(a);", new ConditionNode(new MemberNode("a"), new BodyNode([]), null)];
-        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new BodyNode([]))];
+        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()), new BodyNode([]))];
         yield return ["break;", new BreakNode()];
         yield return ["continue;", new ContinueNode()];
-        yield return ["return false;", new ReturnNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()))];
+        yield return ["return false;", new ReturnNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()))];
     }
     
     [Theory]

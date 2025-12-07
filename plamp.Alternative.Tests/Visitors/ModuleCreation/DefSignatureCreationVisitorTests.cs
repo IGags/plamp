@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using AutoFixture;
@@ -23,8 +24,8 @@ public class DefSignatureCreationVisitorTests
 {
     public static IEnumerable<object[]> VisitNoArgs_ReturnNoException_DataProvider()
     {
-        yield return [RuntimeSymbols.GetSymbolTable.MakeInt()];
-        yield return [RuntimeSymbols.GetSymbolTable.MakeVoid()];
+        yield return [RuntimeSymbols.SymbolTable.MakeInt()];
+        yield return [RuntimeSymbols.SymbolTable.MakeVoid()];
     }
 
     [Theory]
@@ -62,10 +63,10 @@ public class DefSignatureCreationVisitorTests
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        argType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -95,7 +96,7 @@ public class DefSignatureCreationVisitorTests
         var returnType = new TypeNode(new TypeNameNode("void"));
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        argType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -119,7 +120,7 @@ public class DefSignatureCreationVisitorTests
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
         
         var argType = new TypeNode(new TypeNameNode("int"));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
@@ -140,11 +141,12 @@ public class DefSignatureCreationVisitorTests
 
     private CreationContext CreateContext(Mock<ITranslationTable> translationTable)
     {
-        var preCreationContext = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var preCreationContext = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
+        var currentModule = (SymbolTable)preCreationContext.Dependencies.First(x => x != RuntimeSymbols.SymbolTable);
         var asmName = new AssemblyName(Guid.NewGuid().ToString());
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(asmName.Name!);
-        var context = new CreationContext(asm, module, preCreationContext.SymbolTable, preCreationContext);
+        var context = new CreationContext(asm, module, currentModule, preCreationContext);
         return context;
     }
 }

@@ -7,7 +7,9 @@ namespace plamp.Abstractions.AstManipulation;
 /// Базовый тип контекста, который гарантирует, что посетитель получит некоторые необходимые поля.
 /// </summary>
 /// <param name="translationTable">Таблица символов, в которой находятся узлы текущего AST.</param>
-public abstract class BaseVisitorContext(ITranslationTable translationTable)
+public abstract class BaseVisitorContext(
+    ITranslationTable translationTable,
+    IReadOnlyList<ISymbolTable> dependencies)
 {
     /// <summary>
     /// Таблица символов, в которой находятся узлы текущего AST.
@@ -20,14 +22,13 @@ public abstract class BaseVisitorContext(ITranslationTable translationTable)
     public List<PlampException> Exceptions { get; init; } = [];
 
     /// <summary>
-    /// Список зависимостей текущего компилируемого модуля.
+    /// Полный список явных зависимостей текущего компилируемого модуля. Включая сам модуль.
     /// </summary>
-    //TODO: Сделать безопаснее.
-    public List<ISymbolTable> Dependencies { get; init; } = [];
+    public IReadOnlyList<ISymbolTable> Dependencies { get; init; } = dependencies;
 
-    protected BaseVisitorContext(BaseVisitorContext other) : this(other.TranslationTable)
+    protected BaseVisitorContext(BaseVisitorContext other) 
+        : this(other.TranslationTable, other.Dependencies)
     {
         Exceptions = other.Exceptions;
-        Dependencies = other.Dependencies;
     }
 }

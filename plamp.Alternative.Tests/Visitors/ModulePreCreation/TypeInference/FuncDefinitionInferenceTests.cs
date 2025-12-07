@@ -21,7 +21,7 @@ public class FuncDefinitionInferenceTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var weaveResult = Should.NotThrow(() => visitor.WeaveDiffs(expression!, preCreation));
         weaveResult.Exceptions.ShouldBeEmpty();
     }

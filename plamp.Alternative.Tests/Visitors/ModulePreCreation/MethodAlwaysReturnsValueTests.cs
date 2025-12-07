@@ -24,7 +24,7 @@ public class MethodAlwaysReturnsValueTests
     {
         var defNode = CreateMethod(returnType, methodName, [], body);
         var validator = new FuncMustReturnValueValidator();
-        var context = new PreCreationContext(new MockTranslationTable(), new SymbolTable("mod", []));
+        var context = new PreCreationContext(new MockTranslationTable(), SymbolTableInitHelper.CreateDefaultTables());
         
         var res = validator.Validate(defNode, context);
         
@@ -41,101 +41,101 @@ public class MethodAlwaysReturnsValueTests
 
     public static IEnumerable<object[]> AlwaysReturnsValidatorDataProvider()
     {
-        var returnNode = new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())); 
-        yield return [new BodyNode([]), "VoidMethod", RuntimeSymbols.GetSymbolTable.MakeVoid(), false];
-        yield return [new BodyNode([returnNode]), "SimpleReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
-        yield return [new BodyNode([returnNode, returnNode]), "ReturnTwice", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
-        yield return [new BodyNode([]), "SimpleDoesNotReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), true];
-        yield return [new BodyNode([new ReturnNode(null)]), "VoidButReturn", RuntimeSymbols.GetSymbolTable.MakeVoid(), false];
+        var returnNode = new ReturnNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())); 
+        yield return [new BodyNode([]), "VoidMethod", RuntimeSymbols.SymbolTable.MakeVoid(), false];
+        yield return [new BodyNode([returnNode]), "SimpleReturn", RuntimeSymbols.SymbolTable.MakeInt(), false];
+        yield return [new BodyNode([returnNode, returnNode]), "ReturnTwice", RuntimeSymbols.SymbolTable.MakeInt(), false];
+        yield return [new BodyNode([]), "SimpleDoesNotReturn", RuntimeSymbols.SymbolTable.MakeInt(), true];
+        yield return [new BodyNode([new ReturnNode(null)]), "VoidButReturn", RuntimeSymbols.SymbolTable.MakeVoid(), false];
 
         var whileBody = new BodyNode(
         [
             new WhileNode(
-                new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+                new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]))
         ]);
 
-        yield return [whileBody, "WhileDoesNotGuaranteeReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), true];
+        yield return [whileBody, "WhileDoesNotGuaranteeReturn", RuntimeSymbols.SymbolTable.MakeInt(), true];
 
         var ifBody = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]),
                 null)
         ]);
 
-        yield return [ifBody, "IfDoesNotGuaranteeReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), true];
+        yield return [ifBody, "IfDoesNotGuaranteeReturn", RuntimeSymbols.SymbolTable.MakeInt(), true];
 
         var ifElseBody = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]),
                 new BodyNode([returnNode]))
         ]);
 
-        yield return [ifElseBody, "IfElseGuaranteeReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
+        yield return [ifElseBody, "IfElseGuaranteeReturn", RuntimeSymbols.SymbolTable.MakeInt(), false];
 
         var ifElseWithoutIfReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([]),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [ifElseWithoutIfReturn, "IfElseWithoutReturnInIfBranch", RuntimeSymbols.GetSymbolTable.MakeInt(), true];
+        yield return [ifElseWithoutIfReturn, "IfElseWithoutReturnInIfBranch", RuntimeSymbols.SymbolTable.MakeInt(), true];
         
         var ifElseWithoutElseReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]),
                 new BodyNode([]))
         ]);
         
-        yield return [ifElseWithoutElseReturn, "IfElseWithoutReturnInElseBranch", RuntimeSymbols.GetSymbolTable.MakeInt(), true];
+        yield return [ifElseWithoutElseReturn, "IfElseWithoutReturnInElseBranch", RuntimeSymbols.SymbolTable.MakeInt(), true];
         
         var notFullIfElseWithBaseReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]),
                 new BodyNode([])),
             returnNode
         ]);
         
-        yield return [notFullIfElseWithBaseReturn, "IfElseWithBaseReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
+        yield return [notFullIfElseWithBaseReturn, "IfElseWithBaseReturn", RuntimeSymbols.SymbolTable.MakeInt(), false];
         
         var ifElseWithCompleteReturnAndBase = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new BodyNode([returnNode]),
                 new BodyNode([returnNode])),
             returnNode
         ]);
         
-        yield return [ifElseWithCompleteReturnAndBase, "FullIfElseWithBaseReturn", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
+        yield return [ifElseWithCompleteReturnAndBase, "FullIfElseWithBaseReturn", RuntimeSymbols.SymbolTable.MakeInt(), false];
 
         var nestedFullIfElse = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new ConditionNode(
-                    new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+                    new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                     new BodyNode([returnNode]),
                     new BodyNode([returnNode])),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [nestedFullIfElse, "NestedConditionFull", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
+        yield return [nestedFullIfElse, "NestedConditionFull", RuntimeSymbols.SymbolTable.MakeInt(), false];
         
         var nestedNotFull = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new ConditionNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                 new ConditionNode(
-                    new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+                    new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()),
                     new BodyNode([returnNode]),
                     new BodyNode([])),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [nestedNotFull, "NestedNotFull", RuntimeSymbols.GetSymbolTable.MakeInt(), false];
+        yield return [nestedNotFull, "NestedNotFull", RuntimeSymbols.SymbolTable.MakeInt(), false];
     }
 
     [Fact]
@@ -143,13 +143,14 @@ public class MethodAlwaysReturnsValueTests
     {
         var node = new RootNode([], null,
             [
-                CreateMethod(RuntimeSymbols.GetSymbolTable.MakeInt(), "1", [], new BodyNode([])),
-                CreateMethod(RuntimeSymbols.GetSymbolTable.MakeInt(), "1", [], new BodyNode([]))
+                CreateMethod(RuntimeSymbols.SymbolTable.MakeInt(), "1", [], new BodyNode([])),
+                CreateMethod(RuntimeSymbols.SymbolTable.MakeInt(), "1", [], new BodyNode([]))
             ],
             []);
         
         var validator = new FuncMustReturnValueValidator();
-        var context = new PreCreationContext(new MockTranslationTable(), new SymbolTable("mod", []));
+        
+        var context = new PreCreationContext(new MockTranslationTable(), SymbolTableInitHelper.CreateDefaultTables());
         
         var res = validator.Validate(node, context);
         Assert.Equal(2, res.Exceptions.Count);

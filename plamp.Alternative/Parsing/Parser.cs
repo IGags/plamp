@@ -981,15 +981,15 @@ public static class Parser
             switch (keywordToken.Keyword)
             {
                 case Keywords.Null:
-                    node = new LiteralNode(null, RuntimeSymbols.GetSymbolTable.MakeAny());
+                    node = new LiteralNode(null, RuntimeSymbols.SymbolTable.MakeAny());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.True:
-                    node = new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical());
+                    node = new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.False:
-                    node = new LiteralNode(false, RuntimeSymbols.GetSymbolTable.MakeLogical());
+                    node = new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical());
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
             }
@@ -1005,7 +1005,7 @@ public static class Parser
 
         if (context.Sequence.Current() is Literal literal)
         {
-            if (!RuntimeSymbols.GetSymbolTable.TryGetFromClrType(literal.ActualType, out var typeRef)) return false;
+            if (!RuntimeSymbols.SymbolTable.TryGetFromClrType(literal.ActualType, out var typeRef)) return false;
             node = new LiteralNode(literal.ActualValue, typeRef);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));

@@ -11,7 +11,6 @@ module playground;
 type Point { X, Y: int, Z: int }
 
 fn array_init() {
-    pt := Point{X, Y, Z: 11};
     arr, i := [100]int, 0;
     while(i < arr.length()) arr[i++] := i * i;
     
@@ -43,7 +42,7 @@ fn binary_search(array: []int, target: int) int {
     
     public static async Task Main()
     {
-        var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File, true);
+        var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File, false);
         if (res.Exceptions.Count > 0 || res.Compiled == null)
         {
             PrintRes(res.Exceptions);

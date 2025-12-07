@@ -19,9 +19,9 @@ public class ConditionTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new ConditionNode(
-            new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
             new BodyNode([]), null);
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymbolTable("mod", []), visitor);
+        SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
@@ -30,22 +30,22 @@ public class ConditionTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new ConditionNode(
-            new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()),
+            new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()),
             new BodyNode([]), new BodyNode([]));
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.PredicateMustBeBooleanType().Code));
     }
     
-    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> translationTable, SymbolTable symbolTable, TypeInferenceWeaver visitor)
+    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var filePosition = new FilePosition();
         translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(translationTable.Object, symbolTable);
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty();
     }

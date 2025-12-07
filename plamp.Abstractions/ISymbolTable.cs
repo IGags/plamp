@@ -47,7 +47,7 @@ public interface ISymbolTable
     /// <returns>Список объявлений функции, которые подходят с точностью до неявной конверсии типа.</returns>
     public ICompileTimeFunction[] GetMatchingFunctions(
         string fnName,
-        IReadOnlyList<ICompileTimeType> signature);
+        IReadOnlyList<ICompileTimeType?> signature);
     
     /// <summary>
     /// Получить список имён модулей, от которых зависит текущий

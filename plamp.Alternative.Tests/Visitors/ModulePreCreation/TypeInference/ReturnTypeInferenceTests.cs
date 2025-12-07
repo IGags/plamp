@@ -29,21 +29,21 @@ public class ReturnTypeInferenceTests
             [],
             new BodyNode([new ReturnNode(null)])); 
         SetupExceptionMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
-            x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.TypesIsNotSupported().Code));
+            x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound("aaa").Code));
     }
 
     [Theory, AutoData]
     public void ReturnSameTypeAsFunc_ReturnNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
-            new BodyNode([new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))]));
+            new BodyNode([new ReturnNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))]));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
     
@@ -51,7 +51,7 @@ public class ReturnTypeInferenceTests
     public void VoidFuncReturnNull_ReturnNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
@@ -64,12 +64,12 @@ public class ReturnTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
-            new BodyNode([new ReturnNode(new LiteralNode(1d, RuntimeSymbols.GetSymbolTable.MakeDouble()))]));
+            new BodyNode([new ReturnNode(new LiteralNode(1d, RuntimeSymbols.SymbolTable.MakeDouble()))]));
         SetupExceptionMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -82,12 +82,12 @@ public class ReturnTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
-            new BodyNode([new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()))]));
+            new BodyNode([new ReturnNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))]));
         SetupExceptionMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -100,12 +100,12 @@ public class ReturnTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"));
-        returnType.SetTypeRef(RuntimeSymbols.GetSymbolTable.MakeInt());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
         var ast = new FuncNode(
             returnType, new FuncNameNode("aaa"), [],
             new BodyNode([new ReturnNode(null)]));
         SetupExceptionMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -121,15 +121,15 @@ public class ReturnTypeInferenceTests
         var result = Parser.TryParseTopLevel(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression
             .ShouldBeOfType<FuncNode>()
             .Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<ReturnNode>()
             .ReturnValue.ShouldBeOfType<CastNode>()
             .ShouldSatisfyAllConditions(
-                x => x.FromType.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeInt()),
-                x => x.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.GetSymbolTable.MakeLong()));
+                x => x.FromType.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt()),
+                x => x.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.MakeLong()));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -145,7 +145,7 @@ public class ReturnTypeInferenceTests
     {
         var filePosition = new FilePosition();
         translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty(); 
     }

@@ -6,11 +6,14 @@ using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
 
-public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameValidatorContext>
+public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, ModuleNameValidatorContext>
 {
-    protected override ModuleNameValidatorContext CreateInnerContext(PreCreationContext context) => new(context);
+    protected override ModuleNameValidatorContext CreateInnerContext(
+        SymbolTableBuildingContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, ModuleNameValidatorContext context) => new(context);
+    protected override SymbolTableBuildingContext MapInnerToOuter(
+        SymbolTableBuildingContext outerContext, 
+        ModuleNameValidatorContext context) => new(context);
 
     protected override VisitResult PreVisitRoot(RootNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
@@ -21,13 +24,13 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
             return VisitResult.Break;
         }
         
-        context.SymbolTable.SetModuleName(node.ModuleName?.ModuleName ?? "%__INVALID_TABLE__%");
+        context.CurrentModuleTable.SetModuleName(node.ModuleName?.ModuleName ?? "%__INVALID_TABLE__%");
         return VisitResult.Continue;
     }
 
     protected override VisitResult PreVisitFuncName(FuncNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (parent is null || !node.Value.Equals(context.SymbolTable.ModuleName)) return VisitResult.SkipChildren;
+        if (parent is null || !node.Value.Equals(context.CurrentModuleTable.ModuleName)) return VisitResult.SkipChildren;
 
         var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
         SetExceptionToSymbol(parent, record, context);
@@ -37,7 +40,7 @@ public class ModuleNameValidator : BaseValidator<PreCreationContext, ModuleNameV
 
     protected override VisitResult PreVisitTypedefName(TypedefNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (parent is null || !node.Value.Equals(context.SymbolTable.ModuleName)) return VisitResult.SkipChildren;
+        if (parent is null || !node.Value.Equals(context.CurrentModuleTable.ModuleName)) return VisitResult.SkipChildren;
 
         var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
         SetExceptionToSymbol(parent, record, context);

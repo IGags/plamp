@@ -46,7 +46,7 @@ public class ReturnParsingTests
         yield return
         [
             "return 1", new List<string> { PlampExceptionInfo.ExpectedEndOfStatement().Code },
-            new ReturnNode(new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt())), true
+            new ReturnNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt())), true
         ];
     } 
     

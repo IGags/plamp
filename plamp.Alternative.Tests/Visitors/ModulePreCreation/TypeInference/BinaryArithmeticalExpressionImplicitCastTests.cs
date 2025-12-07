@@ -32,40 +32,40 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         yield return
         [
             "10 * 11",
-            new MulNode(new LiteralNode(10, RuntimeSymbols.GetSymbolTable.MakeInt()), new LiteralNode(11, RuntimeSymbols.GetSymbolTable.MakeInt()))
+            new MulNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(11, RuntimeSymbols.SymbolTable.MakeInt()))
         ];
         yield return 
         [
             "10i + 1b", 
-            new AddNode(new LiteralNode(10, RuntimeSymbols.GetSymbolTable.MakeInt()), CreateCast((byte)1, RuntimeSymbols.GetSymbolTable.MakeByte(), RuntimeSymbols.GetSymbolTable.MakeInt()))
+            new AddNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.MakeInt()), CreateCast((byte)1, RuntimeSymbols.SymbolTable.MakeByte(), RuntimeSymbols.SymbolTable.MakeInt()))
         ];
         yield return
         [
             "10ui + 10i",
             new AddNode(
-                CreateCast((uint)10, RuntimeSymbols.GetSymbolTable.MakeUint(), RuntimeSymbols.GetSymbolTable.MakeLong()),
-                CreateCast(10, RuntimeSymbols.GetSymbolTable.MakeInt(), RuntimeSymbols.GetSymbolTable.MakeLong()))
+                CreateCast((uint)10, RuntimeSymbols.SymbolTable.MakeUint(), RuntimeSymbols.SymbolTable.MakeLong()),
+                CreateCast(10, RuntimeSymbols.SymbolTable.MakeInt(), RuntimeSymbols.SymbolTable.MakeLong()))
         ];
         yield return
         [
             "10.1 / 3",
             new DivNode(
-                new LiteralNode(10.1, RuntimeSymbols.GetSymbolTable.MakeDouble()),
-                CreateCast(3, RuntimeSymbols.GetSymbolTable.MakeInt(), RuntimeSymbols.GetSymbolTable.MakeDouble()))
+                new LiteralNode(10.1, RuntimeSymbols.SymbolTable.MakeDouble()),
+                CreateCast(3, RuntimeSymbols.SymbolTable.MakeInt(), RuntimeSymbols.SymbolTable.MakeDouble()))
         ];
         yield return
         [
             "13f * 441.2",
             new MulNode(
-                CreateCast(13f, RuntimeSymbols.GetSymbolTable.MakeFloat(), RuntimeSymbols.GetSymbolTable.MakeDouble()),
-                new LiteralNode(441.2, RuntimeSymbols.GetSymbolTable.MakeDouble()))
+                CreateCast(13f, RuntimeSymbols.SymbolTable.MakeFloat(), RuntimeSymbols.SymbolTable.MakeDouble()),
+                new LiteralNode(441.2, RuntimeSymbols.SymbolTable.MakeDouble()))
         ];
         yield return
         [
             "1b + 124ul",
             new AddNode(
-                CreateCast((byte)1, RuntimeSymbols.GetSymbolTable.MakeByte(), RuntimeSymbols.GetSymbolTable.MakeUlong()),
-                new LiteralNode((ulong)124, RuntimeSymbols.GetSymbolTable.MakeUlong()))
+                CreateCast((byte)1, RuntimeSymbols.SymbolTable.MakeByte(), RuntimeSymbols.SymbolTable.MakeUlong()),
+                new LiteralNode((ulong)124, RuntimeSymbols.SymbolTable.MakeUlong()))
         ];
     }
     
@@ -78,8 +78,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
-        preCreation.Dependencies.Add(RuntimeSymbols.GetSymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         resContext.Exceptions.ShouldBeEmpty();
         expression.ShouldBeEquivalentTo(astShould);
@@ -94,8 +93,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
-        preCreation.Dependencies.Add(RuntimeSymbols.GetSymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);
@@ -110,8 +108,7 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         var result = Parser.TryParsePrecedence(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, new SymbolTable("mod", []));
-        preCreation.Dependencies.Add(RuntimeSymbols.GetSymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var resContext = visitor.WeaveDiffs(expression!, preCreation);
         var exception = PlampExceptionInfo.CannotApplyOperator().Code;
         resContext.Exceptions.Select(x => x.Code).ShouldContain(exception);

@@ -6,20 +6,25 @@ using plamp.Abstractions.AstManipulation.Modification;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.FieldDefInference;
 
-public class FieldDefInferenceWeaver : BaseWeaver<PreCreationContext, FieldInferenceInnerContext>
+public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, FieldInferenceInnerContext>
 {
-    protected override FieldInferenceInnerContext CreateInnerContext(PreCreationContext context) => new(context);
+    protected override FieldInferenceInnerContext CreateInnerContext(SymbolTableBuildingContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(
+    protected override SymbolTableBuildingContext MapInnerToOuter(
         FieldInferenceInnerContext innerContext,
-        PreCreationContext outerContext) 
+        SymbolTableBuildingContext outerContext) 
         => innerContext;
 
     protected override VisitResult PreVisitFieldNode(FieldNode node, FieldInferenceInnerContext context, NodeBase? parent)
     {
         var fieldType = node.FieldType;
+
+        var record = TypeResolveHelper.FindTypeByName(
+            fieldType.TypeName.Name, 
+            fieldType.ArrayDefinitions,  
+            context.Dependencies, 
+            out var typeRef);
         
-        var record = TypeResolveHelper.FindTypeByName(fieldType.TypeName.Name, fieldType.ArrayDefinitions,  [context.SymbolTable], out var typeRef);
         if (record != null)
         {
             SetExceptionToSymbol(node.FieldType, record, context);

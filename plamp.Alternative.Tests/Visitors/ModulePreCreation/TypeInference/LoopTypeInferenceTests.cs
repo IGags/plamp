@@ -19,7 +19,7 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()),
+            new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
             new BodyNode([]));
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -30,11 +30,11 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(1, RuntimeSymbols.GetSymbolTable.MakeInt()),
+            new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()),
             new BodyNode([]));
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
@@ -45,7 +45,7 @@ public class LoopTypeInferenceTests
     {
         var filePosition = new FilePosition();
         translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(translationTable.Object, new SymbolTable("mod", []));
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty();
     }

@@ -176,15 +176,7 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord TypesIsNotSupported()
-    {
-        return new()
-        {
-            Code = "PRS1129",
-            Level = ExceptionLevel.Error,
-            Message = "Types is not supported in current version of language",
-        };
-    }
+    // PRS1129 Свободный код ошибки
 
     public static PlampExceptionRecord ExpectedModuleName()
     {
@@ -514,21 +506,21 @@ public static class PlampExceptionInfo
 
     public static PlampExceptionRecord FunctionIsNotFound(
         string functionName, 
-        IEnumerable<ICompileTimeType> signature) =>
+        IEnumerable<ICompileTimeType?> signature) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x.TypeName))}) not found.",
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.TypeName ?? "???"))}) not found.",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 
     public static PlampExceptionRecord AmbigulousFunctionReference(
         string functionName,
-        IEnumerable<ICompileTimeType> signature,
+        IEnumerable<ICompileTimeType?> signature,
         IEnumerable<string> modules) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x.TypeName))}) defined in {string.Join(", ", modules)} modules",
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.TypeName ?? "???"))}) defined in {string.Join(", ", modules)} modules",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
