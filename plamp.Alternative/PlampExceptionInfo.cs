@@ -302,7 +302,15 @@ public static class PlampExceptionInfo
         };
     }
 
-    //SEM1303 - свободен
+    public static PlampExceptionRecord DuplicateFunctionDefinition(string funcName)
+    {
+        return new PlampExceptionRecord()
+        {
+            Code = "SEM1303",
+            Level = ExceptionLevel.Error,
+            Message = "This function overload already defined."
+        };
+    }
 
     public static PlampExceptionRecord PredicateMustBeBooleanType()
     {

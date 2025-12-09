@@ -13,8 +13,8 @@ namespace plamp.Alternative;
 /// <inheritdoc cref="ISymbolTable"/>
 public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : ISymbolTable
 {
-    private readonly Dictionary<CompileTimeType, TypeDefinitionInfo> _definedTypes = new ();
-    private readonly Dictionary<CompileTimeFunction, FunctionDefinitionInfo> _definedFuncs = [];
+    private readonly Dictionary<TypeKey, TypeDefinitionInfo> _definedTypes = new ();
+    private readonly Dictionary<string, List<KeyValuePair<string, FunctionDefinitionInfo>>> _definedFuncs = [];
     
     /// <inheritdoc/>
     public string ModuleName { get; private set; } = moduleName;
@@ -32,11 +32,11 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
     /// <returns></returns>
     private CompileTimeType MakeArrayFromRef(CompileTimeType type)
     {
-        var info = _definedTypes[type];
+        var typeKey = new TypeKey(type.TypeName, type.ArrayDefCount);
+        var info = _definedTypes[typeKey];
 
-        var arrayTypeKey = new CompileTimeType(this, type.TypeName);
-
-        if (_definedTypes.TryGetValue(arrayTypeKey, out _)) return arrayTypeKey;
+        var arrayTypeKey = new TypeKey(type.TypeName, type.ArrayDefCount + 1);
+        if (_definedTypes.TryGetValue(arrayTypeKey, out _)) return arrayTypeKey.ToRef(this);
         
         var arrayInfo = new TypeDefinitionInfo()
         {
@@ -51,9 +51,9 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             var arrayClr = info.ClrType.MakeArrayType();
             arrayInfo.SetClrType(arrayClr);
         }
-        var arrayRef = new CompileTimeType(this, arrayInfo.TypeName, type.ArrayDefCount + 1);
+        var arrayRef = arrayTypeKey.ToRef(this);
 
-        _definedTypes[arrayRef] = arrayInfo;
+        _definedTypes[arrayTypeKey] = arrayInfo;
         return arrayRef;
     }
     
@@ -66,7 +66,8 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
     /// <returns>Было ли поле добавлено</returns>
     private ICompileTimeField? DefineField(CompileTimeType type, string name, ICompileTimeType fieldType)
     {
-        var typeInfo = _definedTypes[type];
+        var key = new TypeKey(type.TypeName, type.ArrayDefCount);
+        var typeInfo = _definedTypes[key];
         var fld = typeInfo.Fields.FirstOrDefault(x => x.Name == name);
         if (fld != null && fld.Type.GetDefinitionInfo() != type.GetDefinitionInfo()) return null;
         if (fld != null) return new CompileTimeField(this, type, name);
@@ -89,8 +90,8 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             TypeName = typeName,
             DefinitionPosition = typeDefPosition
         };
-        var key = new CompileTimeType(this, typeName);
-        return !_definedTypes.TryAdd(key, def) ? null : key;
+        var key = new TypeKey(typeName, 0);
+        return !_definedTypes.TryAdd(key, def) ? null : key.ToRef(this);
     }
     
     /// <summary>
@@ -294,5 +295,10 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             }
             return HashCode.Combine(DeclaringTable, Name, hash.ToHashCode());
         }
+    }
+
+    private record struct TypeKey(string Name, int ArrayDefCount)
+    {
+        public CompileTimeType ToRef(SymbolTable symbolTable) => new CompileTimeType(symbolTable, Name, ArrayDefCount);
     }
 }
