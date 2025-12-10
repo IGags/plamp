@@ -14,7 +14,7 @@ namespace plamp.Alternative;
 public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : ISymbolTable
 {
     private readonly Dictionary<TypeKey, TypeDefinitionInfo> _definedTypes = new ();
-    private readonly Dictionary<string, List<KeyValuePair<string, FunctionDefinitionInfo>>> _definedFuncs = [];
+    private readonly Dictionary<string, HashSet<FunctionDefinitionInfo>> _definedFuncs = [];
     
     /// <inheritdoc/>
     public string ModuleName { get; private set; } = moduleName;
@@ -117,50 +117,71 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             ReturnType = returnType,
             Name = name
         };
-        var key = new CompileTimeFunction(this, func.Name, func.ArgumentList);
-        var add = _definedFuncs.TryAdd(key, func);
-        fnRef = key;
-        return add;
+        fnRef = new CompileTimeFunction(this, func.Name, func.ArgumentList);
+        if (_definedFuncs.TryGetValue(func.Name, out var overloads))
+        {
+            var added = overloads.Add(func);
+            return added;
+        }
+        overloads = [];
+        _definedFuncs[func.Name] = overloads;
+        return overloads.Add(func);
     }
 
     /// <inheritdoc/>
-    public bool TryGetTypeByName(string typeName, List<ArrayTypeSpecificationNode> arrayDefs, [NotNullWhen(true)] out ICompileTimeType? type)
+    public bool TryGetTypeByName(
+        string typeName, 
+        List<ArrayTypeSpecificationNode> arrayDefs, 
+        [NotNullWhen(true)] out ICompileTimeType? type)
     {
+        var key = new TypeKey(typeName, arrayDefs.Count);
         type = null;
-        var typeRef = _definedTypes.FirstOrDefault(x => x.Key.TypeName == typeName).Key;
-        if (typeRef != null)
+        
+        if (_definedTypes.TryGetValue(key, out _))
         {
-            type = typeRef;
-            for (var i = 0; i < arrayDefs.Count; i++)
-            {
-                type = type.MakeArrayType();
-            }
+            type = key.ToRef(this);
             return true;
         }
 
-        return false;
-    }
+        if (arrayDefs.Count == 0) return false;
+        
+        key = new TypeKey(typeName, 0);
+        if (!_definedTypes.TryGetValue(key, out _)) return false;
+        type = key.ToRef(this);
+        for (var i = 0; i < arrayDefs.Count; i++)
+        {
+            type = type.MakeArrayType();
+        }
 
-    /// <inheritdoc/>
-    public bool TryGetFunction(string fnName, IReadOnlyList<ICompileTimeType> signature, [NotNullWhen(true)] out ICompileTimeFunction? function)
-    {
-        function = null;
-        var matchingFuncs = GetMatchingFunctions(fnName, signature);
-        if (matchingFuncs.Length != 1) return false;
-        function = matchingFuncs[0];
         return true;
     }
 
-    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType?> signature)
+    public ICompileTimeFunction? GetMatchingFunction(string fnName, IReadOnlyList<ICompileTimeType?> signature)
     {
-        var overloads = _definedFuncs.Keys.Where(x => x.Name == fnName);
-        var matchingFuncs = overloads
-            .Select(x => (x, RuntimeSymbols.SymbolTable.MatchSignature(x.ArgumentTypes, signature)))
-            .Where(x => x.Item2 >= 0).OrderBy(x => x.Item2).Select(x => x.x).Cast<ICompileTimeFunction>();
-        return matchingFuncs.ToArray();
+        if (!_definedFuncs.TryGetValue(fnName, out var overloads)) return null;
+        var cost = int.MaxValue;
+        FunctionDefinitionInfo? fn = null;
+        foreach (var overload in overloads)
+        {
+            var currentCost = RuntimeSymbols.SymbolTable.MatchSignature(overload.ArgumentList, signature);
+            if(currentCost < 0) continue;
+            if (currentCost >= cost) continue;
+            cost = currentCost;
+            fn = overload;
+        }
+
+        if (fn == null) return null;
+        return new CompileTimeFunction(this, fnName, fn.ArgumentList);
     }
 
-    public IReadOnlyList<ICompileTimeFunction> ListFunctions() => _definedFuncs.Keys.ToList();
+    public IReadOnlyList<ICompileTimeFunction> ListFunctions() 
+        => _definedFuncs.Values
+            .SelectMany(x => x)
+            .Select(x => new CompileTimeFunction(this, x.Name, x.ArgumentList))
+            .ToList();
+
+    public IReadOnlyList<ICompileTimeType> ListTypes() 
+        => _definedTypes.Values.Select(x => new CompileTimeType(this, x.TypeName)).ToList();
 
     /// <inheritdoc/>
     public IReadOnlyList<ISymbolTable> GetDependencies() => dependencies;
@@ -187,7 +208,7 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         }
 
         /// <inheritdoc/>
-        public TypeDefinitionInfo GetDefinitionInfo() => _symbolTable._definedTypes[this];
+        public TypeDefinitionInfo GetDefinitionInfo() => _symbolTable._definedTypes[new TypeKey(TypeName, ArrayDefCount)];
 
         /// <inheritdoc/>
         public ICompileTimeType MakeArrayType() => _symbolTable.MakeArrayFromRef(this);
@@ -240,7 +261,8 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         /// <inheritdoc/>
         public FieldDefinitionInfo GetDefinitionInfo()
         {
-            var typeInfo = _containingTable._definedTypes[_containingType];
+            var typeInfo =
+                _containingTable._definedTypes[new TypeKey(_containingType.TypeName, _containingType.ArrayDefCount)];
             return typeInfo.Fields.First(x => x.Name == Name);
         }
     }
@@ -270,7 +292,9 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         /// <inheritdoc/>
         public FunctionDefinitionInfo GetDefinitionInfo()
         {
-            return _symbolTable._definedFuncs[this];
+            var overloads = _symbolTable._definedFuncs[Name];
+            return overloads.First(x =>
+                StructuralComparisons.StructuralEqualityComparer.Equals(x.ArgumentList, ArgumentTypes));
         }
 
         public bool Equals(ICompileTimeFunction? other)

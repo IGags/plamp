@@ -126,15 +126,7 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedArgName()
-    {
-        return new()
-        {
-            Code = "PRS1124",
-            Level = ExceptionLevel.Error,
-            Message = "Expected argument name"
-        };
-    }
+    // PRS1124 - свободный
 
     public static PlampExceptionRecord ExpectedAssignment()
     {
@@ -530,6 +522,14 @@ public static class PlampExceptionInfo
         {
             Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.TypeName ?? "???"))}) defined in {string.Join(", ", modules)} modules",
             Code = "SEM1327",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldCannotHasSameNameAsEnclosingType() =>
+        new()
+        {
+            Message = "The field cannot has same name as its enclosing type",
+            Code = "SEM1328",
             Level = ExceptionLevel.Error
         };
 

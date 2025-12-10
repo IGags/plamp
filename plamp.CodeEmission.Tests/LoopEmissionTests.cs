@@ -30,8 +30,8 @@ public class LoopEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(iter)))],
-                [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]
+                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(iter)))],
+                [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]
             ),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
@@ -42,7 +42,7 @@ public class LoopEmissionTests
                         [
                             new AddNode(
                                 new MemberNode(nameof(iter)),
-                                new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))
+                                new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))
                         ]
                     )
                 ])),

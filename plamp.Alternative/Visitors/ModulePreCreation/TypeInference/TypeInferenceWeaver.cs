@@ -123,7 +123,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         if (RuntimeSymbols.SymbolTable.IsLogical(type) && unaryNode is NotNode)
         {
-            context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.MakeLogical());
+            context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
             return VisitResult.Continue;
         }
         
@@ -180,7 +180,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             SetExceptionToSymbol(node, record, context);
         }
 
-        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.MakeLogical());
+        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
         return VisitResult.Continue;
     }
     
@@ -190,7 +190,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         ICompileTimeType? rightType, 
         TypeInferenceInnerContext context)
     {
-        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.MakeLogical());
+        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
         if (leftType != null
             && rightType != null
             && RuntimeSymbols.SymbolTable.IsLogical(leftType)
@@ -264,7 +264,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         TypeInferenceInnerContext context)
     {
         if(fromType.Equals(toType)) return true;
-        if (!RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(fromType, toType)) return false;
+        if (RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(fromType, toType) == -1) return false;
         var toTypeNode = new TypeNode(new TypeNameNode(toType.TypeName));
         context.TranslationTable.AddSymbol(toTypeNode, default);
         toTypeNode.SetTypeRef(toType);
@@ -297,14 +297,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return true;
         }
 
-        var intType = RuntimeSymbols.SymbolTable.MakeInt();
+        var intType = RuntimeSymbols.SymbolTable.Int;
         if (TryExpandBoth(left, right, leftType, rightType, intType, context))
         {
             resultType = intType;
             return true;
         }
 
-        var longType = RuntimeSymbols.SymbolTable.MakeLong();
+        var longType = RuntimeSymbols.SymbolTable.Long;
         if (TryExpandBoth(left, right, leftType, rightType, longType, context))
         {
             resultType = longType;
@@ -322,8 +322,8 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         ICompileTimeType target,
         TypeInferenceInnerContext context)
     {
-        if (RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(leftType, target)
-            && RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(rightType, target))
+        if (RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(leftType, target) != -1
+            && RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(rightType, target) != -1)
         {
             TryExpandType(left, leftType, target, context);
             TryExpandType(right, rightType, target, context);
@@ -348,7 +348,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.Continue;
         }
 
-        if (!TryExpandType(node.LengthDefinition, lengthType, RuntimeSymbols.SymbolTable.MakeInt(), context))
+        if (!TryExpandType(node.LengthDefinition, lengthType, RuntimeSymbols.SymbolTable.Int, context))
         {
             SetExceptionToSymbol(node.LengthDefinition, PlampExceptionInfo.ArrayLengthMustBeInteger(), context);
         }
@@ -374,7 +374,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.Continue;
         }
 
-        if (!TryExpandType(node.IndexMember, indexerExpression, RuntimeSymbols.SymbolTable.MakeInt(), context))
+        if (!TryExpandType(node.IndexMember, indexerExpression, RuntimeSymbols.SymbolTable.Int, context))
         {
             SetExceptionToSymbol(node.IndexMember, PlampExceptionInfo.IndexerValueMustBeInteger(), context);
         }
@@ -610,7 +610,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         {
             var itemType = new TypeNode(new TypeNameNode(type.TypeName));
             itemType.SetTypeRef(arrayUnderlyingType);
-            var initArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
+            var initArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
             // []int a; => []int a := Array.Empty<int>()
             return new AssignNode([variableDefinition], [initArrayNode]);
         }
@@ -625,12 +625,12 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return new AssignNode([variableDefinition], [new LiteralNode(false, type)]);
         }
 
-        if (RuntimeSymbols.SymbolTable.MakeChar().Equals(type))
+        if (RuntimeSymbols.SymbolTable.Char.Equals(type))
         {
             return new AssignNode([variableDefinition], [new LiteralNode((char)0, type)]);
         }
 
-        if (RuntimeSymbols.SymbolTable.MakeString().Equals(type))
+        if (RuntimeSymbols.SymbolTable.String.Equals(type))
         {
             return new AssignNode([variableDefinition], [new LiteralNode(string.Empty, type)]);
         }

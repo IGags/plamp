@@ -8,12 +8,14 @@ using plamp.Alternative.Parsing;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
-using plamp.Alternative.Visitors.ModulePreCreation.FieldDefInference;
-using plamp.Alternative.Visitors.ModulePreCreation.FuncDefInference;
-using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
-using plamp.Alternative.Visitors.ModulePreCreation.TypedefInference;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding;
+using plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
+using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
+using plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
 using plamp.Cli.Diagnostics;
 using plamp.Intrinsics;
 
@@ -33,38 +35,41 @@ public static class CompilationDriver
         var dependencies = new List<ISymbolTable> { RuntimeSymbols.SymbolTable };
         var currentModuleTable = new SymbolTable("%UNDEFINED%", dependencies);
         dependencies.Add(currentModuleTable);
-        var context = new SymbolTableBuildingContext(
+        var symTableBuildingContext = new SymbolTableBuildingContext(
             translationTable, 
             dependencies,
             currentModuleTable);
-        context.Exceptions.AddRange(parsingContext.Exceptions);
+        symTableBuildingContext.Exceptions.AddRange(parsingContext.Exceptions);
 
         if (printAst)
         {
             var printVisitor = new PrintAstVisitor();
-            printVisitor.Validate(ast, context);
-            return new CompilationRes(context.Exceptions, null);
+            printVisitor.Validate(ast, symTableBuildingContext);
+            return new CompilationRes(symTableBuildingContext.Exceptions, null);
         }
         
         //Валидация того, что имя модуля не совпадает с именем члена, объявленного в нём.
         var moduleNameVisitor = new ModuleNameValidator();
-        context = moduleNameVisitor.Validate(ast, context);
+        symTableBuildingContext = moduleNameVisitor.Validate(ast, symTableBuildingContext);
+
+        //Имена типов не должны совпадать с именами функции.
+        var memberNameUniquenessValidator = new MemberNameUniquenessValidator();
+        symTableBuildingContext = memberNameUniquenessValidator.Validate(ast, symTableBuildingContext);
 
         //Валидация и добавление типов в таблицу символов
         var typeDefInferenceWeaver = new TypedefInferenceWeaver();
-        context = typeDefInferenceWeaver.WeaveDiffs(ast, context);
+        symTableBuildingContext = typeDefInferenceWeaver.WeaveDiffs(ast, symTableBuildingContext);
 
         //Валидация, типизация и добавление полей в таблицу символов.
         var fieldDefInferenceWeaver = new FieldDefInferenceWeaver();
-        context = fieldDefInferenceWeaver.WeaveDiffs(ast, context);
+        symTableBuildingContext = fieldDefInferenceWeaver.WeaveDiffs(ast, symTableBuildingContext);
 
         //Вывод сигнатур функции, вывод типов и возвращаемых значение, запись в таблицу символов.
         //Валидация дублирующихся объявлений.
         var funcDefInferenceWeaver = new FuncDefInferenceWeaver();
-        context = funcDefInferenceWeaver.WeaveDiffs(ast, context);
+        symTableBuildingContext = funcDefInferenceWeaver.WeaveDiffs(ast, symTableBuildingContext);
 
-        dependencies.Add(context.CurrentModuleTable);
-        var preCreateContext = new PreCreationContext(context.TranslationTable, dependencies);
+        var preCreateContext = new PreCreationContext(symTableBuildingContext.TranslationTable, dependencies);
         
         //Проверка того, что функция всегда возвращает значеие.
         var funcReturnVisitor = new FuncMustReturnValueValidator();
@@ -75,14 +80,14 @@ public static class CompilationDriver
 
         if (preCreateContext.Exceptions.Count != 0)
         {
-            return new(context.Exceptions, null);
+            return new(preCreateContext.Exceptions, null);
         }
         
         var assemblyName = new AssemblyName(DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
         var moduleBuilder = assemblyBuilder.DefineDynamicModule(currentModuleTable.ModuleName);
 
-        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, currentModuleTable, context);
+        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, currentModuleTable, symTableBuildingContext);
         var signatureVisitor = new DefSignatureCreationValidator();
         compilationContext = signatureVisitor.Validate(ast, compilationContext);
         var callVisitor = new MethodCallInferenceValidator();

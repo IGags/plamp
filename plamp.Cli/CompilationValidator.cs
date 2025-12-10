@@ -14,8 +14,11 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
     protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
         var builder = context.Methods.Single(x => x.Name == node.FuncName.Value);
-        if (!context.SymbolTable.TryGetFunction(node.FuncName.Value,
-                node.ParameterList.Select(x => x.Type.TypedefRef!).ToList(), out var function))
+        var overload = context.SymbolTable.GetMatchingFunction(
+            node.FuncName.Value, 
+            node.ParameterList.Select(x => x.Type.TypedefRef).ToList());
+
+        if (overload == null)
         {
             throw new Exception();
         }
@@ -25,7 +28,7 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
-            context.FuncParams[function], context.TranslationTable);
+            context.FuncParams[overload], context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;

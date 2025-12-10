@@ -19,7 +19,7 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
+            new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool),
             new BodyNode([]));
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -30,7 +30,7 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()),
+            new LiteralNode(1, RuntimeSymbols.SymbolTable.Int),
             new BodyNode([]));
         
         SetupExceptionGenerationMock(translationTable);

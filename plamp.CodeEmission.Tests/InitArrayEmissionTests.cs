@@ -41,7 +41,7 @@ public class InitArrayEmissionTests
           var itemType = new TypeNode(new TypeNameNode(arrayItemType.Name));
           itemType.SetTypeRef(EmissionSetupHelper.MakeTypeRef(arrayItemType));
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, RuntimeSymbols.SymbolTable.MakeInt()));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, RuntimeSymbols.SymbolTable.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var arrayType = arrayItemType.MakeArrayType();
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, arrayType);
@@ -56,9 +56,9 @@ public class InitArrayEmissionTests
      public void InitArrayOfZeroLiteralLength_ReturnsCorrect()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           var result = method!.Invoke(instance, []);
@@ -72,9 +72,9 @@ public class InitArrayEmissionTests
      public void InitArrayOfNegativeLength_ThrowsRuntimeException()
      {
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, RuntimeSymbols.SymbolTable.MakeInt()));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, []))
@@ -90,7 +90,7 @@ public class InitArrayEmissionTests
           var parameter = new TestParameter(typeof(int), "length");
           
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
           var arrayInit = new InitArrayNode(itemType, new MemberNode("length"));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -113,7 +113,7 @@ public class InitArrayEmissionTests
           var parameter = new TestParameter(typeof(int), "length");
           
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
           var arrayInit = new InitArrayNode(itemType, new PostfixIncrementNode(new MemberNode("length")));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -134,9 +134,9 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [4 - 3]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
-          var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(3, RuntimeSymbols.SymbolTable.MakeInt())));
+          var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, RuntimeSymbols.SymbolTable.Int), new LiteralNode(3, RuntimeSymbols.SymbolTable.Int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
@@ -154,10 +154,10 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [int(4.0)]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
-          var cast = new CastNode(itemType, new LiteralNode(4.0, RuntimeSymbols.SymbolTable.MakeDouble()));
-          cast.SetFromType(RuntimeSymbols.SymbolTable.MakeDouble());
+          var cast = new CastNode(itemType, new LiteralNode(4.0, RuntimeSymbols.SymbolTable.Double));
+          cast.SetFromType(RuntimeSymbols.SymbolTable.Double);
           
           var arrayInit = new InitArrayNode(itemType, cast);
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -177,7 +177,7 @@ public class InitArrayEmissionTests
            * fn mk_arr() []int { return [getLength()]int; }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
           var call = new CallNode(null, new FuncCallNameNode(nameof(GetLength)), []);
           var info = typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!;
@@ -206,23 +206,23 @@ public class InitArrayEmissionTests
            * }
            */
           var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+          itemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
 
           var arrayType = new TypeNode(new TypeNameNode("[]int"));
-          arrayType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt().MakeArrayType());
+          arrayType.SetTypeRef(RuntimeSymbols.SymbolTable.Int.MakeArrayType());
           
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, RuntimeSymbols.SymbolTable.Int));
           var assign = new AssignNode([new VariableDefinitionNode(arrayType, new VariableNameNode("a"))], [arrayInit]);
 
-          var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
-          indexer.SetItemType(RuntimeSymbols.SymbolTable.MakeInt());
+          var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
+          indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
           var setItem = new AssignNode(
                [indexer],
-               [new LiteralNode(5, RuntimeSymbols.SymbolTable.MakeInt())]
+               [new LiteralNode(5, RuntimeSymbols.SymbolTable.Int)]
           );
           
-          var getter = new IndexerNode(new MemberNode("a"), new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
-          getter.SetItemType(RuntimeSymbols.SymbolTable.MakeInt());
+          var getter = new IndexerNode(new MemberNode("a"), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
+          getter.SetItemType(RuntimeSymbols.SymbolTable.Int);
           var returnArrayInit = new InitArrayNode(itemType, getter);
           
           var body = new BodyNode(

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
-namespace plamp.Abstractions.Ast.Node;
+namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 
 /// <summary>
 /// Узел ast инициализации поля типа

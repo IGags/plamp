@@ -19,7 +19,7 @@ public class ConditionTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new ConditionNode(
-            new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
+            new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool),
             new BodyNode([]), null);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
@@ -30,7 +30,7 @@ public class ConditionTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new ConditionNode(
-            new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()),
+            new LiteralNode(1, RuntimeSymbols.SymbolTable.Int),
             new BodyNode([]), new BodyNode([]));
         
         SetupExceptionGenerationMock(translationTable);

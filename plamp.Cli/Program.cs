@@ -12,25 +12,24 @@ type Point { X, Y: int, Z: int }
 
 fn array_init() {
     arr, i := [100]int, 0;
-    while(i < arr.length()) arr[i++] := i * i;
+    while(i < Length(arr)) arr[i++] := i * i;
     
     res := arr.binary_search(144);
     
     if(res >= 0){
-        print("The index of an element is: ");
-        println(res);
+        Print("The index of an element is: ");
+        Println(res);
     }
-    else print("Element not found");
+    else Print("Element not found");
 }
 
 fn binary_search(array: []int, target: int) int {
-    if(array.length() = 0) return -1;
+    if(Length(array) = 0) return -1;
     
-    left, right := 0, array.length() - 1;
+    left, right := 0, Length(array) - 1;
     
     while(left <= right){
         center := (left + right) / 2;
-        
         if(array[center] = target)      return center;
         else if(array[center] < target) left  := center + 1;
         else                            right := center - 1;
@@ -61,7 +60,9 @@ fn binary_search(array: []int, target: int) int {
                 rowStart = rowStart == -1 ? 0 : rowStart;
                 
                 var row = File[rowStart..rowEnd];
-                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ', start - rowStart - 1) + '^' + '\n';
+                var ptrStart = start - rowStart;
+                var len = Math.Min(ex.FilePosition.CharacterLength, rowEnd - ptrStart + 1) - 1;
+                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ',  ptrStart - 1) + '^' + new string('~', len) + '\n';
                 Console.WriteLine(str);
             }
         }

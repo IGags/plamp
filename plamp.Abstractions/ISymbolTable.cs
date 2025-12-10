@@ -28,24 +28,12 @@ public interface ISymbolTable
         [NotNullWhen(true)] out ICompileTimeType? type);
 
     /// <summary>
-    /// Попытка получить функцию по имени и сигнатуре.
-    /// </summary>
-    /// <param name="fnName">Имя функции</param>
-    /// <param name="signature">Описание типов аргументов</param>
-    /// <param name="function">Объект-указатель на информацию об объявлении функции.</param>
-    /// <returns>Признак того, была ли получена функция.</returns>
-    public bool TryGetFunction(
-        string fnName,
-        IReadOnlyList<ICompileTimeType> signature,
-        [NotNullWhen(true)] out ICompileTimeFunction? function);
-
-    /// <summary>
-    /// Получить функции, которые подходят по сигнатуре.
+    /// Получить функцию по имени и сигнатуре
     /// </summary>
     /// <param name="fnName">Имя функции</param>
     /// <param name="signature">Сигнатура функции.</param>
-    /// <returns>Список объявлений функции, которые подходят с точностью до неявной конверсии типа.</returns>
-    public ICompileTimeFunction[] GetMatchingFunctions(
+    /// <returns>Функция, которая наиболее подходит с точностью до неявной конверсии типа аргумента.</returns>
+    public ICompileTimeFunction? GetMatchingFunction(
         string fnName,
         IReadOnlyList<ICompileTimeType?> signature);
     

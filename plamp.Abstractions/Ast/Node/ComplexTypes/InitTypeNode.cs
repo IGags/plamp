@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 
-namespace plamp.Abstractions.Ast.Node;
+namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 
 /// <summary>
 /// Узел ast инициализации объекта пользовательского типа.

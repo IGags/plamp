@@ -5,11 +5,11 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 /// <summary>
 /// Узел ast обозначающий объявление типа. Является классом из c#
 /// </summary>
-public class TypedefNode(TypedefNameNode name, List<FieldNode> fields) : NodeBase
+public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields) : NodeBase
 {
     public TypedefNameNode Name { get; private set; } = name;
 
-    public IReadOnlyList<FieldNode> Fields => fields;
+    public IReadOnlyList<FieldDefNode> Fields => fields;
 
     public ICompileTimeType? TypeInfo { get; private set; }
     
@@ -30,7 +30,7 @@ public class TypedefNode(TypedefNameNode name, List<FieldNode> fields) : NodeBas
     {
         if (Name == child && newChild is TypedefNameNode newName) Name = newName;
         int ix;
-        if (child is FieldNode field && (ix = fields.IndexOf(field)) != -1 && newChild is FieldNode newField)
+        if (child is FieldDefNode field && (ix = fields.IndexOf(field)) != -1 && newChild is FieldDefNode newField)
         {
             fields[ix] = newField;
         }

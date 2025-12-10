@@ -459,12 +459,12 @@ public static class IlCodeEmitter
         //Подготовка цели присвоения.
         switch (target)
         {
-            case MemberAccessNode accessNode:
-                if (accessNode.Member is not MemberNode { Symbol: FieldInfo info })
+            case FieldAccessNode accessNode:
+                if (accessNode.Field is not { Symbol: { } info })
                 {
                     throw new Exception("Member access must be a field. If you see this exception write to a compiler developer.");
                 }
-                emitFld = info;
+                emitFld = info.GetDefinitionInfo().ClrField;
                 EmitGetMember(accessNode.From, context, false);
                 break;
             case VariableDefinitionNode varDef:
@@ -532,7 +532,7 @@ public static class IlCodeEmitter
             case CallNode            callNode:            EmitCall(callNode, context, false);               break;
             case CastNode            castNode:            EmitTypeConversion(castNode, context);            break;
             case LiteralNode         literalNode:         EmitLiteral(literalNode, context);                break;
-            case MemberAccessNode    memberAccessNode:    EmitGetField(memberAccessNode, context, true);    break;
+            case FieldAccessNode    memberAccessNode:    EmitGetField(memberAccessNode, context, true);    break;
             case InitArrayNode       initArrayNode:       EmitArrayInitialization(initArrayNode, context);  break;
             case IndexerNode         indexerNode:         EmitIndexer(indexerNode, context);                break;
             default:                                                                                        throw new Exception("Cannot emit expression. If you see this exception write to a compiler developer.");
@@ -546,25 +546,21 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <param name="byValue">Нужно ли получать поле по значению</param>
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
-    private static void EmitGetField(MemberAccessNode accessNode, EmissionContext context, bool byValue)
+    private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
-        if (accessNode.From is not MemberNode from || accessNode.Member is not MemberNode memberNode)
+        if (accessNode.From is not MemberNode from || accessNode.Field is not { } fieldNode)
         {
             throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
         }
 
-        if (memberNode.Symbol == null)
+        var fieldInfo = fieldNode.Symbol?.GetDefinitionInfo().ClrField;
+        if (fieldInfo == null)
         {
-            throw new Exception("Member access must has .net meber representation. If you see this exception write to a compiler developer.");
+            throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
         }
         
         EmitGetMember(from, context, byValue);
-        switch (memberNode.Symbol)
-        {
-            case FieldInfo fi:
-                context.Generator.Emit(OpCodes.Ldfld, fi);
-                return;
-        }
+        context.Generator.Emit(OpCodes.Ldfld, fieldInfo);
     }
     
     /// <summary>

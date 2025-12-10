@@ -1,10 +1,6 @@
 ﻿using System.Linq;
-using AutoFixture;
-using plamp.Alternative.Parsing;
-using plamp.Alternative.Tests.Parsing;
-using plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference.Util;
-using plamp.Alternative.Visitors.ModulePreCreation;
-using plamp.Alternative.Visitors.ModulePreCreation.FuncDefInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding;
+using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
@@ -18,8 +14,6 @@ namespace plamp.Alternative.Tests.Visitors.SymbolTableBuildingTests;
 public class FuncDefInferenceTests
 {
     [Fact]
-    //2 перегрузки одной функции, всё хорошо
-    [InlineData("module test;\n fn x(a: int) {} \n fn x(a: string) {}")]
     //Функций нет в модуле - корректно
     public void InferenceEmptyDef_Correct()
     {
@@ -42,9 +36,8 @@ public class FuncDefInferenceTests
         var item = res.CurrentModuleTable.ListFunctions().ShouldHaveSingleItem();
         var info = item.GetDefinitionInfo();
         info.Name.ShouldBe("a");
-        info.ReturnType.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt());
         var argument = info.ArgumentList.ShouldHaveSingleItem();
-        argument.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt());
+        argument.ShouldBe(RuntimeSymbols.SymbolTable.Int);
     }
 
     [Fact]
@@ -61,8 +54,8 @@ public class FuncDefInferenceTests
         var funcs = res.CurrentModuleTable.ListFunctions();
         funcs.Count.ShouldBe(2);
         funcs.Select(x => x.Name).ShouldAllBe(x => x == "a");
-        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.MakeInt());
-        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.MakeString());
+        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.Int);
+        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.String);
     }
 
     [Fact]
@@ -76,17 +69,69 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);
-        
+    }
+
+    [Fact]
+    //Функция с возвращаемым значением void - визитор должен добавить тип
+    public void InferenceVoidFunction_Correct()
+    {
+        var code = """
+                   module test;
+                   fn a() {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(0);
+        var fn = res.CurrentModuleTable.ListFunctions().ShouldHaveSingleItem();
+        var info = fn.GetDefinitionInfo();
+        info.ReturnType.ShouldBe(RuntimeSymbols.SymbolTable.Void);
+    }
+
+    [Fact]
+    //У функции неизвестный тип возвращаемого значения, поэтому мы не добавляем такую функцию
+    public void InferenceUnknownReturnTypeFunction_DoesNotAddToSymbols()
+    {
+        var code = """
+                   module test;
+                   fn a() MadeUpType {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(1);
+        res.CurrentModuleTable.ListFunctions().ShouldBeEmpty();
+    }
+
+    [Fact]
+    //У функции неизвестный тип аргумента, такую функцию нельзя добавить в таблицу символов
+    public void InferenceUnknownArgTypeFunction_DoesNotAddToSymbols()
+    {
+        var code = """
+                   module test;
+                   fn a(x: MadeUpType) {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(1);
+        res.CurrentModuleTable.ListFunctions().ShouldBeEmpty();
+    }
+
+    [Fact]
+    //У функции 2 аргумента с одинаковым именем, однако функция будет добавлена в таблицу символов
+    public void InferenceDuplicateArgNameFunction_AddsToSymbols()
+    {
+        var code = """
+                   module test;
+                   fn a(x, x: int) {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        res.Exceptions.All(x => x.Code == PlampExceptionInfo.DuplicateParameterName().Code).ShouldBe(true);
+        res.CurrentModuleTable.ListFunctions().ShouldHaveSingleItem();
     }
 
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
-        var fixture = new Fixture() { Customizations = { new SymbolTableBuildingContextCustomization([]), new ParserContextCustomization(code) } };
-        var parserContext = fixture.Create<ParsingContext>();
-        var ast = Parser.ParseFile(parserContext);
-        var context = fixture.Create<SymbolTableBuildingContext>();
-        var visitor = new FuncDefInferenceWeaver();
-        var res = visitor.WeaveDiffs(ast, context);
-        return res;
+        var weaver = new FuncDefInferenceWeaver();
+        return CompilationPipelineBuilder.RunSymbolTableBuildingPipeline(
+                code,
+                [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
+            );
     }
 }

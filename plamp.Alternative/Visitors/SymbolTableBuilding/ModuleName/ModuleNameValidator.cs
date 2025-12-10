@@ -4,7 +4,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Validation;
 
-namespace plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
+namespace plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 
 public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, ModuleNameValidatorContext>
 {

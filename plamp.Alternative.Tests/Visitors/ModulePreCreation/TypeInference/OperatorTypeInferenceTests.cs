@@ -17,84 +17,84 @@ public class OperatorTypeInferenceTests
     [Theory, AutoData]
     public void UnaryLogicalWithMatchInner_ReturnsNoException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new NotNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()));
+        var ast = new NotNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void UnaryLogicalWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new NotNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()));
+        var ast = new NotNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void UnaryArithmeticWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new PrefixIncrementNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()));
+        var ast = new PrefixIncrementNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void UnaryArithmeticWithMismatchInner_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new PrefixIncrementNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()));
+        var ast = new PrefixIncrementNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryLogicalGateWithMatchInner_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new AndNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()), new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical()));
+        var ast = new AndNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool), new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryLogicalWithMismatchFirst_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.SymbolTable.MakeFloat()), new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()));
+        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.SymbolTable.Float), new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryLogicalWithMismatchSecond_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.MakeFloat()));
+        var ast = new OrNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.Float));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryLogicalWithMismatchBoth_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.SymbolTable.MakeFloat()), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.MakeFloat()));
+        var ast = new OrNode(new LiteralNode(1.4, RuntimeSymbols.SymbolTable.Float), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.Float));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryComparisionDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new LessNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.MakeFloat()));
+        var ast = new LessNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(1.4, RuntimeSymbols.SymbolTable.Float));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryComparisionSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new GreaterNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
+        var ast = new GreaterNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryArithmeticalDifferentType_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new AddNode(new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()));
+        var ast = new AddNode(new LiteralNode(2, RuntimeSymbols.SymbolTable.Int), new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool));
         SetupMockAndAssertError(ast, translationTable, visitor);
     }
 
     [Theory, AutoData]
     public void BinaryArithmeticalSameType_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var ast = new DivNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt()));
+        var ast = new DivNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 

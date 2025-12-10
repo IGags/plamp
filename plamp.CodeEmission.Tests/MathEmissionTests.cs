@@ -59,18 +59,18 @@ public class MathEmissionTests
 
     public static IEnumerable<object[]> SimpleMathDataProvider()
     {
-        var firstLiteral = new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt());
-        var secondLiteral = new LiteralNode(-3, RuntimeSymbols.SymbolTable.MakeInt());
-        var trueLiteral = new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical());
-        var falseLiteral = new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical());
+        var firstLiteral = new LiteralNode(2, RuntimeSymbols.SymbolTable.Int);
+        var secondLiteral = new LiteralNode(-3, RuntimeSymbols.SymbolTable.Int);
+        var trueLiteral = new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool);
+        var falseLiteral = new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool);
         const float fl1 = 3.14f;
         const float fl2 = 6.81f;
-        var firstFloat = new LiteralNode(fl1, RuntimeSymbols.SymbolTable.MakeFloat());
-        var secondFloat = new LiteralNode(fl2, RuntimeSymbols.SymbolTable.MakeFloat());
+        var firstFloat = new LiteralNode(fl1, RuntimeSymbols.SymbolTable.Float);
+        var secondFloat = new LiteralNode(fl2, RuntimeSymbols.SymbolTable.Float);
         const double d1 = 3e-8d;
         const double d2 = 6.81d;
-        var firstDouble = new LiteralNode(d1, RuntimeSymbols.SymbolTable.MakeDouble());
-        var secondDouble = new LiteralNode(d2, RuntimeSymbols.SymbolTable.MakeDouble());
+        var firstDouble = new LiteralNode(d1, RuntimeSymbols.SymbolTable.Double);
+        var secondDouble = new LiteralNode(d2, RuntimeSymbols.SymbolTable.Double);
 
         var firstName = new MemberNode("tempConst1");
         var firstVariableName = new VariableNameNode("tempConst1");
@@ -189,7 +189,7 @@ public class MathEmissionTests
     {
         var objParam = new TestParameter(typeof(CallbackClass), "obj");
         var toType = new TypeNode(new TypeNameNode(nameof(Object)));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeAny());
+        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
 
         var firstArg = new CastNode(toType, new MemberNode("a"));
         firstArg.SetFromType(variableType.TypedefRef!);
@@ -218,22 +218,22 @@ public class MathEmissionTests
     public static IEnumerable<object[]> EmitIncrementDecrementDataProvider()
     {
         var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)));
-        intTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+        intTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
         
         var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)));
-        floatTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeFloat());
+        floatTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Float);
         
         var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)));
-        uintTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeUint());
+        uintTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Uint);
         
         var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)));
-        doubleTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeDouble());
+        doubleTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Double);
         
         var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)));
-        longTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeLong());
+        longTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Long);
         
         var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)));
-        ulongTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.MakeUlong());
+        ulongTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Ulong);
         
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2, 2];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0, 0];
@@ -273,7 +273,7 @@ public class MathEmissionTests
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
         variableType.SetTypeRef(EmissionSetupHelper.MakeTypeRef(actualType));
         var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeAny());
+        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
         var castToObj = new CastNode(toType, new MemberNode("a"));
         castToObj.SetFromType(EmissionSetupHelper.MakeTypeRef(actualType));
         var body = new BodyNode(
@@ -308,7 +308,7 @@ public class MathEmissionTests
         var variableType = new TypeNode(new TypeNameNode(actualType.Name));
         variableType.SetTypeRef(EmissionSetupHelper.MakeTypeRef(actualType));
         var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeAny());
+        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
         var castToObj = new CastNode(toType, new MemberNode("a"));
         castToObj.SetFromType(EmissionSetupHelper.MakeTypeRef(actualType));
         var body = new BodyNode(
@@ -341,7 +341,7 @@ public class MathEmissionTests
     {
         var ast = new BodyNode(
         [
-            new ReturnNode(new DivNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())))
+            new ReturnNode(new DivNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)))
         ]);
         var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(int));
         Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();

@@ -22,12 +22,12 @@ public class MethodCallInferenceValidatorTests
     public void InferenceIntrinsic_ReturnsCorrect([Frozen] Mock<ITranslationTable> translationTable, MethodCallInferenceValidator visitor)
     {
         var symbolTable = new SymbolTable("mod1", []);
-        symbolTable.TryAddFunc("println", RuntimeSymbols.SymbolTable.MakeVoid(), [RuntimeSymbols.SymbolTable.MakeAny()], default, out var fnRef);
+        symbolTable.TryAddFunc("println", RuntimeSymbols.SymbolTable.Void, [RuntimeSymbols.SymbolTable.Any], default, out var fnRef);
 
         var methodInfo = typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!;
         
         fnRef.GetDefinitionInfo().SetClrMethod(methodInfo);
-        var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", RuntimeSymbols.SymbolTable.MakeString())]);
+        var call = new CallNode(null, new FuncCallNameNode("println"), [new LiteralNode("aaa", RuntimeSymbols.SymbolTable.String)]);
         call.SetInfo(fnRef);
         
         var ast = new BodyNode([call]);
@@ -47,7 +47,7 @@ public class MethodCallInferenceValidatorTests
     {
         var call = new CallNode(null, new FuncCallNameNode("Abc"), []);
         var symbolTable = new SymbolTable("mod", []);
-        symbolTable.TryAddFunc("Abc", RuntimeSymbols.SymbolTable.MakeVoid(), [], default, out var fnRef);
+        symbolTable.TryAddFunc("Abc", RuntimeSymbols.SymbolTable.Void, [], default, out var fnRef);
         call.SetInfo(fnRef);
         var ast = new BodyNode([call]);
         var context = CreateContext(translationTable);

@@ -24,8 +24,8 @@ public class DefSignatureCreationVisitorTests
 {
     public static IEnumerable<object[]> VisitNoArgs_ReturnNoException_DataProvider()
     {
-        yield return [RuntimeSymbols.SymbolTable.MakeInt()];
-        yield return [RuntimeSymbols.SymbolTable.MakeVoid()];
+        yield return [RuntimeSymbols.SymbolTable.Int];
+        yield return [RuntimeSymbols.SymbolTable.Void];
     }
 
     [Theory]
@@ -63,10 +63,10 @@ public class DefSignatureCreationVisitorTests
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+        argType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -96,7 +96,7 @@ public class DefSignatureCreationVisitorTests
         var returnType = new TypeNode(new TypeNameNode("void"));
 
         var argType = new TypeNode(new TypeNameNode("int"));
-        argType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeInt());
+        argType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));
         
         var ast = new FuncNode(
@@ -120,7 +120,7 @@ public class DefSignatureCreationVisitorTests
     {
         const string funcName = "TestFunc";
         var returnType = new TypeNode(new TypeNameNode("void"));
-        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.MakeVoid());
+        returnType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
         
         var argType = new TypeNode(new TypeNameNode("int"));
         var arg = new ParameterNode(argType, new ParameterNameNode("first"));

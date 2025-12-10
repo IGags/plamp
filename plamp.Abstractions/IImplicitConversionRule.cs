@@ -9,12 +9,12 @@ public interface IImplicitConversionRule
     /// <summary>
     /// Целевой тип, к которому намереваемся привести искомый
     /// </summary>
-    ICompileTimeType ApplicableForTargetType { get; }
+    ICompileTimeType ConversionTargetType { get; }
 
     /// <summary>
     /// Возможно ли приведение данного типа к целевому.
     /// </summary>
     /// <param name="type">Искомый тип</param>
-    /// <returns>Флаг, говорящий о (не)возможности приведения типа.</returns>
-    public bool Convertable(ICompileTimeType type);
+    /// <returns>Значение говорящее о цене приведения типа к целевому. -1 тип неприводим</returns>
+    public int GetConversionCost(ICompileTimeType type);
 }

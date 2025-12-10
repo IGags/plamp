@@ -42,9 +42,9 @@ internal static class TypeResolveHelper
         var funcs = new List<ICompileTimeFunction>();
         foreach (var symbolTable in symbolTables)
         {
-            var found = symbolTable.GetMatchingFunctions(name, argTypes);
+            var found = symbolTable.GetMatchingFunction(name, argTypes);
             //Так как модуль валилидруется перед компиляцией и дубликаты сигнатур недопустимы, то выбираем самую близкую сигнатуру.
-            if(found.Length > 0) funcs.Add(found[0]);
+            if(found != null) funcs.Add(found);
         }
 
         if (funcs.Count == 0)

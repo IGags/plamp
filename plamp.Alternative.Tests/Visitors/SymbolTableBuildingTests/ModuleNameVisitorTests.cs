@@ -1,12 +1,12 @@
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Alternative.Visitors.ModulePreCreation;
-using plamp.Alternative.Visitors.ModulePreCreation.ModuleName;
+using plamp.Alternative.Visitors.SymbolTableBuilding;
+using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 using plamp.Intrinsics;
 using Xunit;
 
-namespace plamp.Alternative.Tests.Visitors.ModulePreCreation;
+namespace plamp.Alternative.Tests.Visitors.SymbolTableBuildingTests;
 
 public class ModuleNameVisitorTests
 {

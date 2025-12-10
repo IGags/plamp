@@ -9,7 +9,7 @@ namespace plamp.Intrinsics;
 /// <inheritdoc cref="ISymbolTable"/>
 public class RuntimeSymbols : ISymbolTable
 {
-    private readonly Dictionary<ICompileTimeType, TypeDefinitionInfo> _types;
+    private readonly Dictionary<TypeKey, TypeDefinitionInfo> _types;
     private readonly Dictionary<ICompileTimeType, IImplicitConversionRule> _conversionRules;
     private readonly Dictionary<ICompileTimeFunction, FunctionDefinitionInfo> _funcs;
     
@@ -41,16 +41,25 @@ public class RuntimeSymbols : ISymbolTable
 
     /// <inheritdoc/>
     public string ModuleName => "$RUNTIME$";
-    
-    public bool IsVoid(ICompileTimeType type) 
-        => _types.TryGetValue(type, out var value) && value.ClrType == typeof(void);
+
+    public bool IsVoid(ICompileTimeType type)
+    {
+        if (type is not RuntimeType runtimeType) return false;
+        return _types.TryGetValue(new TypeKey(runtimeType.TypeName, runtimeType.ArrayDefCount), out var value) 
+               && value.ClrType == typeof(void);
+    }
 
     public bool IsAny(ICompileTimeType type)
-        => _types.TryGetValue(type, out var value) && value.ClrType == typeof(object);
+    {
+        if (type is not RuntimeType runtimeType) return false;
+        return _types.TryGetValue(new TypeKey(runtimeType.TypeName, runtimeType.ArrayDefCount), out var value)
+               && value.ClrType == typeof(object);
+    }
 
     public bool IsNumeric(ICompileTimeType type)
     {
-        if (!_types.TryGetValue(type, out var typeDef)) return false;
+        if (type is not RuntimeType runtimeType) return false;
+        if (!_types.TryGetValue(new TypeKey(runtimeType.TypeName, runtimeType.ArrayDefCount), out var typeDef)) return false;
         var value = typeDef.ClrType;
         return value == typeof(int)
                || value == typeof(uint)
@@ -66,7 +75,8 @@ public class RuntimeSymbols : ISymbolTable
 
     public bool IsLogical(ICompileTimeType type)
     {
-        if (!_types.TryGetValue(type, out var value)) return false;
+        if (type is not RuntimeType runtimeType) return false;
+        if (!_types.TryGetValue(new TypeKey(runtimeType.TypeName, runtimeType.ArrayDefCount), out var value)) return false;
         return value.ClrType == typeof(bool);
     }
 
@@ -74,78 +84,222 @@ public class RuntimeSymbols : ISymbolTable
     public bool TryGetTypeByName(string typeName, List<ArrayTypeSpecificationNode> arrayDefs, [NotNullWhen(true)] out ICompileTimeType? type)
     {
         type = null;
-        var typeRef = _types.FirstOrDefault(x => x.Key.TypeName == typeName).Key;
-        if (typeRef != null)
+        var typeKey = new TypeKey(typeName, arrayDefs.Count);
+        if (_types.TryGetValue(typeKey, out var info))
         {
+            type = new RuntimeType(this, info.TypeName, arrayDefs.Count);
+            return true;
+        }
+
+        if (_types.TryGetValue(new TypeKey(typeName, 0), out info))
+        {
+            type = new RuntimeType(this, info.TypeName);
             for (var i = 0; i < arrayDefs.Count; i++)
             {
-                typeRef = typeRef.MakeArrayType();
+                type = type.MakeArrayType();
             }
-            type = typeRef;
+
             return true;
         }
 
         return false;
     }
 
-    public ICompileTimeType MakeVoid() => new RuntimeType(this, VoidName);
+    private RuntimeType? _void;
 
-    public ICompileTimeType MakeLogical() => new RuntimeType(this, BoolName);
-
-    public ICompileTimeType MakeInt() => new RuntimeType(this, IntName);
-
-    public ICompileTimeType MakeUint() => new RuntimeType(this, UintName);
-
-    public ICompileTimeType MakeShort() => new RuntimeType(this, ShortName);
-
-    public ICompileTimeType MakeUshort() => new RuntimeType(this, UshortName);
-
-    public ICompileTimeType MakeByte() => new RuntimeType(this, ByteName);
-
-    public ICompileTimeType MakeSbyte() => new RuntimeType(this, SbyteName);
-
-    public ICompileTimeType MakeLong() => new RuntimeType(this, LongName);
-
-    public ICompileTimeType MakeUlong() => new RuntimeType(this, UlongName);
-
-    public ICompileTimeType MakeDouble() => new RuntimeType(this, DoubleName);
-
-    public ICompileTimeType MakeFloat() => new RuntimeType(this, FloatName);
-
-    public ICompileTimeType MakeAny() => new RuntimeType(this, AnyName);
-
-    public ICompileTimeType MakeString() => new RuntimeType(this, StringName);
-
-    public ICompileTimeType MakeChar() => new RuntimeType(this, CharName);
-
-    public bool TryGetFromClrType(Type clrType, out ICompileTimeType type)
+    public ICompileTimeType Void
     {
-        type = _types.FirstOrDefault(x => x.Value.ClrType == clrType).Key;
-        return type != null;
+        get
+        {
+            if (_void != null) return _void;
+            _void = new RuntimeType(this, VoidName);
+            return _void;
+        }
+    }
+
+    private RuntimeType? _bool;
+
+    public ICompileTimeType Bool
+    {
+        get
+        {
+            if (_bool != null) return _bool;
+            _bool = new RuntimeType(this, BoolName);
+            return _bool;
+        }
+    }
+
+    private RuntimeType? _int;
+    
+    public ICompileTimeType Int
+    {
+        get
+        {
+            if (_int != null) return _int;
+            _int = new RuntimeType(this, IntName);
+            return _int;
+        }
+    }
+
+    private RuntimeType? _uint;
+    
+    public ICompileTimeType Uint
+    {
+        get
+        {
+            if (_uint != null) return _uint;
+            _uint = new RuntimeType(this, UintName);
+            return _uint;
+        }
+    }
+
+    private RuntimeType? _short;
+    
+    public ICompileTimeType Short
+    {
+        get
+        {
+            if (_short != null) return _short;
+            _short = new RuntimeType(this, ShortName);
+            return _short;
+        }
+    }
+
+    private RuntimeType? _ushort;
+    
+    public ICompileTimeType Ushort
+    {
+        get
+        {
+            if (_ushort != null) return _ushort;
+            _ushort = new RuntimeType(this, UshortName);
+            return _ushort;
+        }
+    }
+
+    private RuntimeType? _byte;
+    
+    public ICompileTimeType Byte
+    {
+        get
+        {
+            if (_byte != null) return _byte;
+            _byte = new RuntimeType(this, ByteName);
+            return _byte;
+        }
+    }
+
+    private RuntimeType? _sbyte;
+    
+    public ICompileTimeType Sbyte
+    {
+        get
+        {
+            if (_sbyte != null) return _sbyte;
+            _sbyte = new RuntimeType(this, SbyteName);
+            return _sbyte;
+        }
+    }
+
+    private RuntimeType? _long;
+    
+    public ICompileTimeType Long
+    {
+        get
+        {
+            if (_long != null) return _long;
+            _long = new RuntimeType(this, LongName);
+            return _long;
+        }
+    }
+
+    private RuntimeType? _ulong;
+    
+    public ICompileTimeType Ulong
+    {
+        get
+        {
+            if (_ulong != null) return _ulong;
+            _ulong = new RuntimeType(this, UlongName);
+            return _ulong;
+        }
+    }
+
+    private RuntimeType? _double;
+    
+    public ICompileTimeType Double
+    {
+        get
+        {
+            if (_double != null) return _double;
+            _double = new RuntimeType(this, DoubleName);
+            return _double;
+        }
+    }
+
+    private RuntimeType? _float;
+    
+    public ICompileTimeType Float
+    {
+        get
+        {
+            if (_float != null) return _float;
+            _float = new RuntimeType(this, FloatName);
+            return _float;
+        }
+    }
+
+    private RuntimeType? _any;
+    
+    public ICompileTimeType Any
+    {
+        get
+        {
+            if (_any != null) return _any;
+            _any = new RuntimeType(this, AnyName);
+            return _any;
+        }
+    }
+
+    private RuntimeType? _string;
+    
+    public ICompileTimeType String
+    {
+        get
+        {
+            if (_string != null) return _string;
+            _string = new RuntimeType(this, StringName);
+            return _string;
+        }
+    }
+
+    private RuntimeType? _char;
+    
+    public ICompileTimeType Char
+    {
+        get
+        {
+            if (_char != null) return _char;
+            _char = new RuntimeType(this, CharName);
+            return _char;
+        }
+    }
+
+    public bool TryGetFromClrType(Type clrType, [NotNullWhen(true)]out ICompileTimeType? type)
+    {
+        var info = _types.FirstOrDefault(x => x.Value.ClrType == clrType);
+        return TryGetTypeByName(info.Key.Name, [], out type);
     }
     
     /// <inheritdoc/>
-    public bool TryGetFunction(
-        string fnName, 
-        IReadOnlyList<ICompileTimeType> signature, 
-        [NotNullWhen(true)] out ICompileTimeFunction? function)
-    {
-        function = null;
-        var matching = GetMatchingFunctions(fnName, signature);
-        if (matching.Length != 1) return false;
-        function = matching.First();
-        return true;
-    }
-    
-    /// <inheritdoc/>
-    public ICompileTimeFunction[] GetMatchingFunctions(string fnName, IReadOnlyList<ICompileTimeType?> signature)
+    public ICompileTimeFunction? GetMatchingFunction(string fnName, IReadOnlyList<ICompileTimeType?> signature)
     {
         var overloads = _funcs.Keys.Where(x => x.Name == fnName);
         //Сортировка по дешевизне конверсии
         var matching = overloads
             .Select(x => (x, MatchSignature(x.ArgumentTypes, signature)))
             .Where(x => x.Item2 >= 0).OrderBy(x => x.Item2).Select(x => x.x);
-        return matching.ToArray();
+        return matching.FirstOrDefault();
     }
 
     /// <inheritdoc/>
@@ -157,9 +311,13 @@ public class RuntimeSymbols : ISymbolTable
     /// </summary>
     /// <param name="from">Тип из которого надо проверить конверсию</param>
     /// <param name="to">Тип, в который надо проверить конверсию</param>
-    /// <returns>Флаг возможности проведения конверсии</returns>
-    public bool TypeIsImplicitlyConvertable(ICompileTimeType from, ICompileTimeType to) 
-        => from.Equals(to) || _conversionRules.TryGetValue(to, out var rule) && rule.Convertable(from);
+    /// <returns>Цена конверсии типа в целевой. -1 конверсия невозможна.</returns>
+    public int TypeIsImplicitlyConvertable(ICompileTimeType from, ICompileTimeType to)
+    {
+        if (from.Equals(to)) return 0;
+        if (!_conversionRules.TryGetValue(to, out var rule)) return -1;
+        return rule.GetConversionCost(from);
+    }
 
     /// <summary>
     /// Метод-помогатор, позволяет по правилам языка проверить, что сигнатура метода подходит с точностью до неявных преобразований типа.
@@ -177,18 +335,15 @@ public class RuntimeSymbols : ISymbolTable
         {
             var type = actualTypes[i];
             if(type == null) continue;
-            if (!TypeIsImplicitlyConvertable(type, signatureTypes[i])) return -1;
-            
-            if(type.Equals(signatureTypes[i])) continue;
-            //Конверсия в any всегда дороже, поэтому такие варианты возвращаем в последнюю очередь
-            if (signatureTypes[i].Equals(MakeAny())) conversionCost += 100;
-            else conversionCost++;
+            var cost = TypeIsImplicitlyConvertable(type, signatureTypes[i]);
+            if (cost == -1) return -1;
+            conversionCost += cost;
         }
 
         return conversionCost;
     }
 
-    private Dictionary<ICompileTimeType, TypeDefinitionInfo> InitTypes()
+    private Dictionary<TypeKey, TypeDefinitionInfo> InitTypes()
     {
         var voidDef = new TypeDefinitionInfo{ArrayUnderlyingType = null, Fields = [], TypeName = VoidName, DefinitionPosition = default};
         var intDef = new TypeDefinitionInfo{ArrayUnderlyingType = null, Fields = [], TypeName = IntName, DefinitionPosition = default};
@@ -225,51 +380,51 @@ public class RuntimeSymbols : ISymbolTable
         
         return new ()
         {
-            {new RuntimeType(this, voidDef.TypeName),   voidDef},
-            {new RuntimeType(this, intDef.TypeName),    intDef},
-            {new RuntimeType(this, uintDef.TypeName),   uintDef},
-            {new RuntimeType(this, longDef.TypeName),   longDef},
-            {new RuntimeType(this, ulongDef.TypeName),  ulongDef},
-            {new RuntimeType(this, charDef.TypeName),   charDef},
-            {new RuntimeType(this, stringDef.TypeName), stringDef},
-            {new RuntimeType(this, byteDef.TypeName),   byteDef},
-            {new RuntimeType(this, boolDef.TypeName),   boolDef},
-            {new RuntimeType(this, shortDef.TypeName),  shortDef},
-            {new RuntimeType(this, ushortDef.TypeName), ushortDef},
-            {new RuntimeType(this, sbyteDef.TypeName),  sbyteDef},
-            {new RuntimeType(this, floatDef.TypeName),  floatDef},
-            {new RuntimeType(this, doubleDef.TypeName), doubleDef},
-            {new RuntimeType(this, anyDef.TypeName),    anyDef},
-            {new RuntimeType(this, arrayDef.TypeName),  arrayDef}
+            {new TypeKey(voidDef.TypeName, 0),   voidDef},
+            {new TypeKey(intDef.TypeName, 0),    intDef},
+            {new TypeKey(uintDef.TypeName, 0),   uintDef},
+            {new TypeKey(longDef.TypeName, 0),   longDef},
+            {new TypeKey(ulongDef.TypeName, 0),  ulongDef},
+            {new TypeKey(charDef.TypeName, 0),   charDef},
+            {new TypeKey(stringDef.TypeName, 0), stringDef},
+            {new TypeKey(byteDef.TypeName, 0),   byteDef},
+            {new TypeKey(boolDef.TypeName, 0),   boolDef},
+            {new TypeKey(shortDef.TypeName, 0),  shortDef},
+            {new TypeKey(ushortDef.TypeName, 0), ushortDef},
+            {new TypeKey(sbyteDef.TypeName, 0),  sbyteDef},
+            {new TypeKey(floatDef.TypeName, 0),  floatDef},
+            {new TypeKey(doubleDef.TypeName, 0), doubleDef},
+            {new TypeKey(anyDef.TypeName, 0),    anyDef},
+            {new TypeKey(arrayDef.TypeName, 0),  arrayDef}
         };
     }
 
     private Dictionary<ICompileTimeType, IImplicitConversionRule> InitConversionRules()
     {
-        var byteRef = (RuntimeType)MakeByte();
-        var sbyteRef = (RuntimeType)MakeSbyte();
-        var shortRef = (RuntimeType)MakeShort();
-        var ushortRef = (RuntimeType)MakeUshort();
-        var intRef = (RuntimeType)MakeInt();
-        var uintRef = (RuntimeType)MakeUint();
-        var longRef = (RuntimeType)MakeLong();
-        var ulongRef = (RuntimeType)MakeUlong();
-        var floatRef = (RuntimeType)MakeFloat();
-        var doubleRef = (RuntimeType)MakeDouble();
-        var anyRef = MakeAny();
-        var voidRef = MakeVoid();
+        var byteRef = (RuntimeType)Byte;
+        var sbyteRef = (RuntimeType)Sbyte;
+        var shortRef = (RuntimeType)Short;
+        var ushortRef = (RuntimeType)Ushort;
+        var intRef = (RuntimeType)Int;
+        var uintRef = (RuntimeType)Uint;
+        var longRef = (RuntimeType)Long;
+        var ulongRef = (RuntimeType)Ulong;
+        var floatRef = (RuntimeType)Float;
+        var doubleRef = (RuntimeType)Double;
+        var anyRef = Any;
+        var voidRef = Void;
         var arrayRef = new RuntimeType(this, ArrayName);
 
         return new()
         {
-            { doubleRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef, intRef, uintRef, longRef, ulongRef, floatRef]) },
-            { floatRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef, intRef, uintRef, longRef, ulongRef]) },
-            { ulongRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef, intRef, uintRef]) },
-            { longRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef, intRef, uintRef]) },
-            { intRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef]) },
-            { uintRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef, shortRef, ushortRef]) },
-            { shortRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef]) },
-            { ushortRef, new RuntimeImplicitConversionRule(doubleRef, [byteRef, sbyteRef]) },
+            { doubleRef, new RuntimeImplicitConversionRule(doubleRef, [floatRef, ulongRef, longRef, uintRef, intRef, ushortRef, shortRef, sbyteRef, byteRef]) },
+            { floatRef, new RuntimeImplicitConversionRule(floatRef, [ulongRef, longRef, uintRef, intRef, ushortRef, shortRef, sbyteRef, byteRef]) },
+            { ulongRef, new RuntimeImplicitConversionRule(ulongRef, [uintRef, intRef, ushortRef, shortRef, sbyteRef, byteRef]) },
+            { longRef, new RuntimeImplicitConversionRule(longRef, [uintRef, intRef, ushortRef, shortRef, sbyteRef, byteRef]) },
+            { intRef, new RuntimeImplicitConversionRule(intRef, [ushortRef, shortRef, sbyteRef, byteRef]) },
+            { uintRef, new RuntimeImplicitConversionRule(uintRef, [ushortRef, shortRef, sbyteRef, byteRef]) },
+            { shortRef, new RuntimeImplicitConversionRule(shortRef, [sbyteRef, byteRef]) },
+            { ushortRef, new RuntimeImplicitConversionRule(ushortRef, [sbyteRef, byteRef]) },
             { anyRef, new AnyConversionRule(anyRef, voidRef)},
             { arrayRef, new UniversalArrayRule(arrayRef) }
         };
@@ -336,32 +491,34 @@ public class RuntimeSymbols : ISymbolTable
     
     private class AnyConversionRule(ICompileTimeType anyType, ICompileTimeType voidType) : IImplicitConversionRule
     {
-        public ICompileTimeType ApplicableForTargetType { get; } = anyType;
-
-        public bool Convertable(ICompileTimeType type)
+        public ICompileTimeType ConversionTargetType { get; } = anyType;
+        
+        public int GetConversionCost(ICompileTimeType type)
         {
-            return !voidType.Equals(type);
+            return voidType.Equals(type) ? -1 : 1000;
         }
     }
 
     private class UniversalArrayRule(ICompileTimeType arrayType) : IImplicitConversionRule
     {
-        public ICompileTimeType ApplicableForTargetType => arrayType;
+        public ICompileTimeType ConversionTargetType => arrayType;
         
-        public bool Convertable(ICompileTimeType type) => type.GetDefinitionInfo().ArrayUnderlyingType != null;
+        public int GetConversionCost(ICompileTimeType type)
+        {
+            return type.GetDefinitionInfo().ArrayUnderlyingType != null ? 1 : -1;
+        }
     }
 
     private class RuntimeImplicitConversionRule(RuntimeType to, List<RuntimeType> sources) : IImplicitConversionRule
     {
-        private readonly HashSet<RuntimeType> _sources = sources.ToHashSet();
-        
-        public ICompileTimeType ApplicableForTargetType { get; } = to;
+        public ICompileTimeType ConversionTargetType { get; } = to;
 
-        public bool Convertable(ICompileTimeType type)
+        public int GetConversionCost(ICompileTimeType type)
         {
-            if (type is not RuntimeType runtimeType) return false;
-            if (ApplicableForTargetType.Equals(runtimeType)) return false;
-            return _sources.Contains(type);
+            if (type is not RuntimeType runtimeType) return -1;
+            if (ConversionTargetType.Equals(runtimeType)) return 0;
+            var index = sources.IndexOf(runtimeType);
+            return index == -1 ? -1 : index + 1;
         }
     }
 
@@ -382,13 +539,14 @@ public class RuntimeSymbols : ISymbolTable
         
         public TypeDefinitionInfo GetDefinitionInfo()
         {
-            return table._types[this];
+            return table._types[new TypeKey(TypeName, ArrayDefCount)];
         }
 
         public ICompileTimeType MakeArrayType()
         {
             var arrayRef = new RuntimeType(table, TypeName, ArrayDefCount + 1);
-            if (table._types.TryGetValue(arrayRef, out _)) return arrayRef;
+            var arrayKey = new TypeKey(TypeName, ArrayDefCount + 1);
+            if (table._types.TryGetValue(arrayKey, out _)) return arrayRef;
             var currentInfo = GetDefinitionInfo();
             var info = new TypeDefinitionInfo()
             {
@@ -399,7 +557,7 @@ public class RuntimeSymbols : ISymbolTable
             };
             var arrayType = currentInfo.ClrType!.MakeArrayType();
             info.SetClrType(arrayType);
-            table._types.Add(arrayRef, info);
+            table._types.Add(arrayKey, info);
             return arrayRef;
         }
 
@@ -447,4 +605,6 @@ public class RuntimeSymbols : ISymbolTable
             return HashCode.Combine(hash.ToHashCode(), Name, DeclaringTable);
         }
     }
+
+    private record struct TypeKey(string Name, int ArrayDefCount);
 }

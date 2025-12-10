@@ -36,23 +36,23 @@ public class FlowControlTests
         bool iter, t;
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(iter)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(t)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(iter)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(t)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
             new WhileNode(new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
                 new BodyNode(
                 [
-                    new AssignNode([new MemberNode(nameof(iter))], [new AddNode(new MemberNode(nameof(iter)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))]),
+                    new AssignNode([new MemberNode(nameof(iter))], [new AddNode(new MemberNode(nameof(iter)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))]),
                     new ConditionNode(
                         new EqualNode(
                             new ModuloNode(
                                 new MemberNode(nameof(iter)),
-                                new LiteralNode(2, RuntimeSymbols.SymbolTable.MakeInt())),
-                            new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())),
+                                new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)),
+                            new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)),
                         new BodyNode(
                         [
                             new ContinueNode()
                         ]), null),
-                    new AssignNode([new MemberNode(nameof(t))], [new AddNode(new MemberNode(nameof(t)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                    new AssignNode([new MemberNode(nameof(t))], [new AddNode(new MemberNode(nameof(t)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                 ])),
             new ReturnNode(new MemberNode(nameof(t)))
         ]);
@@ -81,21 +81,21 @@ public class FlowControlTests
         const int iterationCount = 10;
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(k)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
-            new WhileNode(new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.MakeInt())),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(k)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new WhileNode(new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.Int)),
                 new BodyNode(
                 [
-                    new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(j)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
+                    new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(j)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
                     new WhileNode(
-                        new LessNode(new MemberNode(nameof(j)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.MakeInt())),
+                        new LessNode(new MemberNode(nameof(j)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.Int)),
                         new BodyNode(
                         [
-                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))]),
+                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))]),
                             new ContinueNode(),
-                            new AssignNode([new MemberNode(nameof(k))], [new AddNode(new MemberNode(nameof(k)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                            new AssignNode([new MemberNode(nameof(k))], [new AddNode(new MemberNode(nameof(k)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                         ])),
-                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                 ])),
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(k))))
         ]);
@@ -125,8 +125,8 @@ public class FlowControlTests
         bool i;
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
-            new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool),
                 new BodyNode(
                 [
                     new ConditionNode(
@@ -135,7 +135,7 @@ public class FlowControlTests
                         [
                             new BreakNode()
                         ]), null),
-                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                 ])),
             new ReturnNode(new MemberNode(nameof(i)))
         ]);
@@ -162,19 +162,19 @@ public class FlowControlTests
         bool i, j;
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
-            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.MakeInt()), new VariableNameNode(nameof(j)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.MakeInt())]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(i)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(j)))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
             new WhileNode(
-                new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.MakeInt())),
+                new LessNode(new MemberNode(nameof(i)), new LiteralNode(iterationCount, RuntimeSymbols.SymbolTable.Int)),
                 new BodyNode(
                 [
-                    new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical()),
+                    new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool),
                         new BodyNode(
                         [
                             new BreakNode(),
-                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                            new AssignNode([new MemberNode(nameof(j))], [new AddNode(new MemberNode(nameof(j)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                         ])),
-                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.MakeInt()))])
+                    new AssignNode([new MemberNode(nameof(i))], [new AddNode(new MemberNode(nameof(i)), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))])
                 ])),
             new ReturnNode(new AddNode(new MemberNode(nameof(i)), new MemberNode(nameof(j))))
         ]);

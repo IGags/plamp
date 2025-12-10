@@ -32,40 +32,40 @@ public class BinaryArithmeticalExpressionImplicitCastTests
         yield return
         [
             "10 * 11",
-            new MulNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.MakeInt()), new LiteralNode(11, RuntimeSymbols.SymbolTable.MakeInt()))
+            new MulNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.Int), new LiteralNode(11, RuntimeSymbols.SymbolTable.Int))
         ];
         yield return 
         [
             "10i + 1b", 
-            new AddNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.MakeInt()), CreateCast((byte)1, RuntimeSymbols.SymbolTable.MakeByte(), RuntimeSymbols.SymbolTable.MakeInt()))
+            new AddNode(new LiteralNode(10, RuntimeSymbols.SymbolTable.Int), CreateCast((byte)1, RuntimeSymbols.SymbolTable.Byte, RuntimeSymbols.SymbolTable.Int))
         ];
         yield return
         [
             "10ui + 10i",
             new AddNode(
-                CreateCast((uint)10, RuntimeSymbols.SymbolTable.MakeUint(), RuntimeSymbols.SymbolTable.MakeLong()),
-                CreateCast(10, RuntimeSymbols.SymbolTable.MakeInt(), RuntimeSymbols.SymbolTable.MakeLong()))
+                CreateCast((uint)10, RuntimeSymbols.SymbolTable.Uint, RuntimeSymbols.SymbolTable.Long),
+                CreateCast(10, RuntimeSymbols.SymbolTable.Int, RuntimeSymbols.SymbolTable.Long))
         ];
         yield return
         [
             "10.1 / 3",
             new DivNode(
-                new LiteralNode(10.1, RuntimeSymbols.SymbolTable.MakeDouble()),
-                CreateCast(3, RuntimeSymbols.SymbolTable.MakeInt(), RuntimeSymbols.SymbolTable.MakeDouble()))
+                new LiteralNode(10.1, RuntimeSymbols.SymbolTable.Double),
+                CreateCast(3, RuntimeSymbols.SymbolTable.Int, RuntimeSymbols.SymbolTable.Double))
         ];
         yield return
         [
             "13f * 441.2",
             new MulNode(
-                CreateCast(13f, RuntimeSymbols.SymbolTable.MakeFloat(), RuntimeSymbols.SymbolTable.MakeDouble()),
-                new LiteralNode(441.2, RuntimeSymbols.SymbolTable.MakeDouble()))
+                CreateCast(13f, RuntimeSymbols.SymbolTable.Float, RuntimeSymbols.SymbolTable.Double),
+                new LiteralNode(441.2, RuntimeSymbols.SymbolTable.Double))
         ];
         yield return
         [
             "1b + 124ul",
             new AddNode(
-                CreateCast((byte)1, RuntimeSymbols.SymbolTable.MakeByte(), RuntimeSymbols.SymbolTable.MakeUlong()),
-                new LiteralNode((ulong)124, RuntimeSymbols.SymbolTable.MakeUlong()))
+                CreateCast((byte)1, RuntimeSymbols.SymbolTable.Byte, RuntimeSymbols.SymbolTable.Ulong),
+                new LiteralNode((ulong)124, RuntimeSymbols.SymbolTable.Ulong))
         ];
     }
     

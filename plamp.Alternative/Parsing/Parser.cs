@@ -107,6 +107,16 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
 
+        if (context.Sequence.Current() is EndOfStatement)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            var defName = new TypedefNameNode(typeName.GetStringRepresentation());
+            context.TranslationTable.AddSymbol(defName, typeName.Position);
+            typedef = new TypedefNode(defName, []);
+            context.TranslationTable.AddSymbol(typedef, typeKeyword.Position);
+            return true;
+        }
+        
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
             var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
@@ -115,24 +125,17 @@ public static class Parser
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
-        var fields = new List<FieldNode>();
+        var fields = new List<FieldDefNode>();
 
         var first = true;
         
         do
         {
             if (!first) context.Sequence.MoveNextNonWhiteSpace();
-            if (TryParseField(context, out var fieldNode))
-            {
-                fields.Add(fieldNode);
-            }
-            else
-            {
-                return false;
-            }
-            
+            if (TryParseField(context, out var fieldNode)) fields.AddRange(fieldNode);
+            else break;
             first = false;
-        } while (context.Sequence.Current() is Comma);
+        } while (context.Sequence.Current() is EndOfStatement);
 
         if (context.Sequence.Current() is not CloseCurlyBracket)
         {
@@ -149,10 +152,10 @@ public static class Parser
         return true;
     }
 
-    public static bool TryParseField(ParsingContext context, [NotNullWhen(true)] out FieldNode? fieldNode)
+    public static bool TryParseField(ParsingContext context, out List<FieldDefNode> fieldNodes)
     {
-        fieldNode = null;
-        if (context.Sequence.Current() is not Word start) return false;
+        fieldNodes = [];
+        if (context.Sequence.Current() is not Word) return false;
 
         var fieldNames = new List<FieldNameNode>();
         var first = true;
@@ -187,8 +190,13 @@ public static class Parser
         }
 
         context.Merge(typFork);
-        fieldNode = new FieldNode(type, fieldNames);
-        context.TranslationTable.AddSymbol(fieldNode, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        foreach (var name in fieldNames)
+        {
+            var fieldNode = new FieldDefNode(type, name);
+            context.TranslationTable.TryGetSymbol(fieldNode, out var position);
+            context.TranslationTable.AddSymbol(fieldNode, position);
+            fieldNodes.Add(fieldNode);
+        }
 
         return true;
     }
@@ -767,18 +775,31 @@ public static class Parser
             context.TranslationTable.AddSymbol(memberNode, member.Position);
             context.Sequence.MoveNextNonWhiteSpace();
 
-            var indexerFork = context.Fork();
-            if (context.Sequence.Current() is OpenSquareBracket
-                && TryParseArrayIndexerSequence(indexerFork, memberNode, out var indexerSequence))
-            {
-                context.Merge(indexerFork);
-                members.Add(indexerSequence);
-            }
-            else
-            {
-                members.Add(memberNode);
-            }
 
+            bool postfixParsed;
+            NodeBase baseMemberNode = memberNode;
+            do
+            {
+                postfixParsed = false;
+                if (context.Sequence.Current() is OpenSquareBracket)
+                {
+                    var indexerFork = context.Fork();
+                    if (!TryParseArrayIndexerSequence(indexerFork, baseMemberNode, out var indexerSequence)) continue;
+                    context.Merge(indexerFork);
+                    baseMemberNode = indexerSequence;
+                    postfixParsed = true;
+                }
+                else if(context.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Access })
+                {
+                    var accessFork = context.Fork();
+                    if (!TryParseFieldAccessSequence(accessFork, baseMemberNode, out var accessSequence)) continue;
+                    context.Merge(accessFork);
+                    baseMemberNode = accessSequence;
+                    postfixParsed = true;
+                }
+            } while (postfixParsed);
+            
+            members.Add(baseMemberNode);
             moveNext = true;
         } while (context.Sequence.Current() is Comma);
 
@@ -808,6 +829,36 @@ public static class Parser
             moveNext = true;
         } while (context.Sequence.Current() is Comma);
 
+        return true;
+    }
+
+    public static bool TryParseFieldAccessSequence(
+        ParsingContext context,
+        NodeBase from,
+        [NotNullWhen(true)] out FieldAccessNode? accessNode)
+    {
+        accessNode = null;
+        if (context.Sequence.Current() is not OperatorToken { Operator: OperatorEnum.Access }) return false;
+        
+        while (context.Sequence.Current() is OperatorToken { Operator: OperatorEnum.Access } access)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            var current = context.Sequence.Current(); 
+            if (current is not Word fieldName)
+            {
+                var record = PlampExceptionInfo.ExpectedFieldName();
+                context.Exceptions.Add(new PlampException(record, current.Position));
+                break;
+            }
+            
+            var field = new FieldNode(fieldName.GetStringRepresentation());
+            context.TranslationTable.AddSymbol(field, fieldName.Position);
+            from = accessNode = new FieldAccessNode(from, field);
+            context.TranslationTable.AddSymbol(from, access.Position);
+            context.Sequence.MoveNextNonWhiteSpace();
+        }
+
+        if (accessNode == null) return false;
         return true;
     }
 
@@ -981,15 +1032,15 @@ public static class Parser
             switch (keywordToken.Keyword)
             {
                 case Keywords.Null:
-                    node = new LiteralNode(null, RuntimeSymbols.SymbolTable.MakeAny());
+                    node = new LiteralNode(null, RuntimeSymbols.SymbolTable.Any);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.True:
-                    node = new LiteralNode(true, RuntimeSymbols.SymbolTable.MakeLogical());
+                    node = new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.False:
-                    node = new LiteralNode(false, RuntimeSymbols.SymbolTable.MakeLogical());
+                    node = new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
             }
@@ -1015,8 +1066,11 @@ public static class Parser
         var prefixFork = context.Fork();
         if (prefixFork.Sequence.Current() is OperatorToken
             {
-                Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not or OperatorEnum.Sub
-                or OperatorEnum.Add
+                Operator: OperatorEnum.Increment 
+                       or OperatorEnum.Decrement 
+                       or OperatorEnum.Not 
+                       or OperatorEnum.Sub
+                       or OperatorEnum.Add
             })
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
@@ -1067,37 +1121,30 @@ public static class Parser
                 case OperatorEnum.Increment:
                     if (inner is not MemberNode or IndexerNode) return false;
                     output = new PostfixIncrementNode(inner);
+                    context.TranslationTable.AddSymbol(output, operatorToken.Position);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case OperatorEnum.Decrement:
                     if (inner is not MemberNode or IndexerNode) return false;
                     output = new PostfixDecrementNode(inner);
+                    context.TranslationTable.AddSymbol(output, operatorToken.Position);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case OperatorEnum.Access:
-                    var postfixFork = context.Fork();
-                    postfixFork.Sequence.MoveNextNonWhiteSpace();
-                    if (!TryParseFuncCall(postfixFork, out var call)) return false;
-                    context.Merge(postfixFork);
-
-                    var args = new List<NodeBase> { inner };
-                    args.AddRange(call.Args);
-                    if (!context.TranslationTable.TryGetSymbol(call, out var pos)) throw new Exception();
-                    output = new CallNode(call.From, call.Name, args);
-                    context.TranslationTable.AddSymbol(output, pos);
+                    var sequenceFork = context.Fork();
+                    if (!TryParseFieldAccessSequence(sequenceFork, inner, out var access)) return false;
+                    context.Merge(sequenceFork);
+                    output = access;
                     return true;
             }
         }
 
         var indexerFork = context.Fork();
-        if (TryParseArrayIndexerSequence(indexerFork, inner, out var indexers))
-        {
-            context.Merge(indexerFork);
-            output = indexers;
-            return true;
-        }
-
-        return false;
+        if (!TryParseArrayIndexerSequence(indexerFork, inner, out var indexers)) return false;
+        
+        context.Merge(indexerFork);
+        output = indexers;
+        return true;
     }
 
     private static bool TryParseLed(
@@ -1386,7 +1433,10 @@ public static class Parser
     {
         initTypeNode = null;
         var start = context.Sequence.Current();
-        if (!TryParseType(context, out var type)) return false;
+        
+        var typeFork = context.Fork();
+        if (!TryParseType(typeFork, out var type)) return false;
+        context.Merge(typeFork);
 
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
@@ -1397,13 +1447,14 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
         var fields = new List<InitFieldNode>();
+        var first = true;
         do
         {
-            var fldFork = context.Fork();
-            if (!TryParseFieldInit(fldFork, out var init)) break;
-            context.Merge(fldFork);
-            fields.AddRange(init);
-        } while (context.Sequence.Current() is Comma);
+            if (!first) context.Sequence.MoveNextNonWhiteSpace();
+            if(!TryParseFieldInit(context, out var init)) break;
+            fields.Add(init);
+            first = false;
+        } while (context.Sequence.Current() is EndOfStatement);
 
         if (context.Sequence.Current() is not CloseCurlyBracket)
         {
@@ -1421,29 +1472,21 @@ public static class Parser
 
     private static bool TryParseFieldInit(
         ParsingContext context, 
-        [NotNullWhen(true)]out List<InitFieldNode>? initList)
+        [NotNullWhen(true)]out InitFieldNode? initNode)
     {
-        initList = null;
+        initNode = null;
         if (context.Sequence.Current() is not Word) return false;
         
-        var fldNameList = new List<FieldNameNode>();
-        var first = true;
-        do
+        if (context.Sequence.Current() is not Word fieldName)
         {
-            if(!first) context.Sequence.MoveNextNonWhiteSpace(); 
-            if (context.Sequence.Current() is not Word fieldName)
-            {
-                var record = PlampExceptionInfo.ExpectedFieldName();
-                context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
-                return false;
-            }
-            
-            var nameNode = new FieldNameNode(fieldName.GetStringRepresentation());
-            context.TranslationTable.AddSymbol(nameNode, fieldName.Position);
-            context.Sequence.MoveNextNonWhiteSpace();
-            fldNameList.Add(nameNode);
-            first = false;
-        } while (context.Sequence.Current() is Comma);
+            var record = PlampExceptionInfo.ExpectedFieldName();
+            context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+            return false;
+        }
+        
+        var nameNode = new FieldNameNode(fieldName.GetStringRepresentation());
+        context.TranslationTable.AddSymbol(nameNode, fieldName.Position);
+        context.Sequence.MoveNextNonWhiteSpace();
         
         if (context.Sequence.Current() is not Colon colonSep)
         {
@@ -1460,14 +1503,10 @@ public static class Parser
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
-        initList = [];
         context.Merge(fieldValueFork);
-        foreach (var fldName in fldNameList)
-        {
-            var field = new InitFieldNode(fldName, fieldValue);
-            context.TranslationTable.AddSymbol(field, colonSep.Position);
-            initList.Add(field);
-        }
+        
+        initNode = new InitFieldNode(nameNode, fieldValue);
+        context.TranslationTable.AddSymbol(initNode, colonSep.Position);
 
         return true;
     }

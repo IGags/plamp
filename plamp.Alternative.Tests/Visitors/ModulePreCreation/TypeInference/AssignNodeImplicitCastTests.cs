@@ -39,8 +39,8 @@ public class AssignNodeImplicitCastTests
                     .Sources.ShouldHaveSingleItem()
                     .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
-                        y => y.FromType.ShouldBe(RuntimeSymbols.SymbolTable.MakeInt()),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.MakeDouble())));
+                        y => y.FromType.ShouldBe(RuntimeSymbols.SymbolTable.Int),
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.Double)));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
