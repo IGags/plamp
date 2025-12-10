@@ -115,8 +115,7 @@ public class FuncCallTypeInferenceTests
         var currentModule = (SymbolTable)context.Dependencies.First(x => x != RuntimeSymbols.SymbolTable);
         foreach (var kvp in funcDict)
         {
-            currentModule.TryAddFunc(kvp.Key, kvp.Value.ReturnType!.TypedefRef!,
-                kvp.Value.ParameterList.Select(x => x.Type.TypedefRef).Cast<ICompileTimeType>().ToList(), default, out _);
+            currentModule.TryAddFunc(kvp.Key, kvp.Value.ReturnType.TypedefRef!, [], default, out _);
         }
         
         var result = visitor.WeaveDiffs(ast, context);
@@ -126,7 +125,7 @@ public class FuncCallTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CallNotFullArgs_ReturnExceptionFuncFounc([Frozen] Mock<ITranslationTable> translationTable,
+    public void CallNotFullArgs_ReturnExceptionFuncFunc([Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -143,7 +142,11 @@ public class FuncCallTypeInferenceTests
         SetupExceptionGenerationMock(translationTable);
         var symbolTable = SymbolTableInitHelper.CreateEmptyTable();
         
-        symbolTable.TryAddFunc("a", retType.TypedefRef!, [firstArgType.TypedefRef!, secondArgType.TypedefRef!], default, out _);
+        symbolTable.TryAddFunc("a", retType.TypedefRef!, 
+            [
+                new ("first", firstArgType.TypedefRef!), new ("second", secondArgType.TypedefRef!)
+            ], 
+            default, out _);
         var context = new PreCreationContext(translationTable.Object, [symbolTable, RuntimeSymbols.SymbolTable]);
         
         var result = visitor.WeaveDiffs(ast, context);
@@ -170,7 +173,7 @@ public class FuncCallTypeInferenceTests
         var argType = new TypeNode(new TypeNameNode("any"));
         argType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
         
-        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [argType.TypedefRef!], default, out _);
+        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [new ("first", argType.TypedefRef!)], default, out _);
         var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
@@ -193,7 +196,7 @@ public class FuncCallTypeInferenceTests
         var argType = new TypeNode(new TypeNameNode("long"));
         argType.SetTypeRef(RuntimeSymbols.SymbolTable.Long);
         
-        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [argType.TypedefRef!], default, out _);
+        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [new ("first", argType.TypedefRef!)], default, out _);
         var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
@@ -218,9 +221,10 @@ public class FuncCallTypeInferenceTests
         var context = new PreCreationContext(translationTable.Object, [symbolTable]);
         foreach (var kvp in funcs)
         {
-            if (kvp.Value.ReturnType?.TypedefRef == null) throw new Exception();
+            if (kvp.Value.ReturnType.TypedefRef == null) throw new Exception();
             symbolTable.TryAddFunc(kvp.Key, kvp.Value.ReturnType.TypedefRef,
-                kvp.Value.ParameterList.Select(x => x.Type.TypedefRef).Cast<ICompileTimeType>().ToList(), default, out _);
+                kvp.Value.ParameterList.Select(x => new KeyValuePair<string, ICompileTimeType>(x.Name.Value, x.Type.TypedefRef!)).ToList(), 
+                default, out _);
         }
         
         var result = visitor.WeaveDiffs(ast, context);

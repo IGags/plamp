@@ -32,7 +32,7 @@ public class FuncParsingTests
         [
             "fn b(x, y: int) { return; }",
             new FuncNode(
-                null,
+                new TypeNode(new TypeNameNode("void")),
                 new FuncNameNode("b"),
                 [
                     new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("x")),
@@ -63,7 +63,7 @@ public class FuncParsingTests
         [
             "fn min(){}",
             new FuncNode(
-                null,
+                new TypeNode(new TypeNameNode("void")),
                 new FuncNameNode("min"),
                 [],
                 new BodyNode([]))

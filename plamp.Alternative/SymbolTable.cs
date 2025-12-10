@@ -106,7 +106,7 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
     public bool TryAddFunc(
         string name, 
         ICompileTimeType returnType, 
-        List<ICompileTimeType> argumentTypes, 
+        List<KeyValuePair<string, ICompileTimeType>> argumentTypes, 
         FilePosition definitionPosition,
         out ICompileTimeFunction fnRef)
     {
@@ -117,7 +117,7 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             ReturnType = returnType,
             Name = name
         };
-        fnRef = new CompileTimeFunction(this, func.Name, func.ArgumentList);
+        fnRef = new CompileTimeFunction(this, func.Name, func.ArgumentList.Select(x => x.Value).ToList());
         if (_definedFuncs.TryGetValue(func.Name, out var overloads))
         {
             var added = overloads.Add(func);
@@ -163,7 +163,8 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         FunctionDefinitionInfo? fn = null;
         foreach (var overload in overloads)
         {
-            var currentCost = RuntimeSymbols.SymbolTable.MatchSignature(overload.ArgumentList, signature);
+            var types = overload.ArgumentList.Select(x => x.Value).ToList();
+            var currentCost = RuntimeSymbols.SymbolTable.MatchSignature(types, signature);
             if(currentCost < 0) continue;
             if (currentCost >= cost) continue;
             cost = currentCost;
@@ -171,13 +172,13 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         }
 
         if (fn == null) return null;
-        return new CompileTimeFunction(this, fnName, fn.ArgumentList);
+        return new CompileTimeFunction(this, fnName, fn.ArgumentList.Select(x => x.Value).ToList());
     }
 
     public IReadOnlyList<ICompileTimeFunction> ListFunctions() 
         => _definedFuncs.Values
             .SelectMany(x => x)
-            .Select(x => new CompileTimeFunction(this, x.Name, x.ArgumentList))
+            .Select(x => new CompileTimeFunction(this, x.Name, x.ArgumentList.Select(y => y.Value).ToList()))
             .ToList();
 
     public IReadOnlyList<ICompileTimeType> ListTypes() 
@@ -293,8 +294,11 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
         public FunctionDefinitionInfo GetDefinitionInfo()
         {
             var overloads = _symbolTable._definedFuncs[Name];
+            //TODO: это пиздец жопа, чини api таблицы символов
             return overloads.First(x =>
-                StructuralComparisons.StructuralEqualityComparer.Equals(x.ArgumentList, ArgumentTypes));
+                StructuralComparisons.StructuralEqualityComparer.Equals(
+                    x.ArgumentList.Select(y => y.Value).ToArray(), 
+                    ArgumentTypes.ToArray()));
         }
 
         public bool Equals(ICompileTimeFunction? other)
@@ -302,7 +306,7 @@ public class SymbolTable(string moduleName, List<ISymbolTable> dependencies) : I
             if (other == null) return false;
             return DeclaringTable.Equals(other.DeclaringTable) 
                    && Name == other.Name 
-                   && StructuralComparisons.StructuralEqualityComparer.Equals(ArgumentTypes, other.ArgumentTypes);
+                   && StructuralComparisons.StructuralEqualityComparer.Equals(ArgumentTypes.ToArray(), other.ArgumentTypes.ToArray());
         }
 
         public override bool Equals(object? obj)

@@ -47,13 +47,9 @@ public class DefSignatureCreationVisitorTests
         var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldBeEmpty(),
-            x => x.Methods.ShouldHaveSingleItem(),
-            x => x.Methods[0]
-                .ShouldSatisfyAllConditions(
-                    y => y.Name.ShouldBe(funcName),
-                    y => y.ReturnType.ShouldBe(returnTypeObject.GetDefinitionInfo().ClrType!)));
+        result.Exceptions.ShouldBeEmpty();
+        var fn = context.SymbolTable.ListFunctions().ShouldHaveSingleItem();
+        fn.GetDefinitionInfo().ReturnType.GetDefinitionInfo().ClrType.ShouldBe(returnTypeObject.GetDefinitionInfo().ClrType!);
     }
 
     [Theory, AutoData]
@@ -78,13 +74,9 @@ public class DefSignatureCreationVisitorTests
         var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldBeEmpty(),
-            x => x.Methods.ShouldHaveSingleItem(),
-            x => x.Methods[0]
-                .ShouldSatisfyAllConditions(
-                    y => y.Name.ShouldBe(funcName),
-                    y => y.ReturnType.ShouldBe(typeof(void))));
+        result.Exceptions.ShouldBeEmpty();
+        var fn = context.SymbolTable.ListFunctions().ShouldHaveSingleItem();
+        fn.GetDefinitionInfo().ReturnType.GetDefinitionInfo().ClrType.ShouldBe(typeof(void));
     }
 
     [Theory, AutoData]
@@ -108,9 +100,8 @@ public class DefSignatureCreationVisitorTests
         var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldBeEmpty(),
-            x => x.Methods.ShouldBeEmpty());
+        result.Exceptions.ShouldBeEmpty();
+        context.SymbolTable.ListFunctions().ShouldBeEmpty();
     }
 
     [Theory, AutoData]
@@ -134,9 +125,8 @@ public class DefSignatureCreationVisitorTests
         var context = CreateContext(translationTable);
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldBeEmpty(),
-            x => x.Methods.ShouldBeEmpty());
+        result.Exceptions.ShouldBeEmpty();
+        context.SymbolTable.ListFunctions().ShouldBeEmpty();
     }
 
     private CreationContext CreateContext(Mock<ITranslationTable> translationTable)

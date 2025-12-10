@@ -469,11 +469,11 @@ public class RuntimeSymbols : ISymbolTable
         var name = info.Name;
         if (!TryGetFromClrType(returnType, out var returnTypeRef)) throw new Exception();
 
-        var arguments = new List<ICompileTimeType>();
+        var arguments = new List<KeyValuePair<string, ICompileTimeType>>();
         foreach (var parameter in args)
         {
             if (!TryGetFromClrType(parameter.ParameterType, out var argTypeRef)) throw new Exception();
-            arguments.Add(argTypeRef);
+            arguments.Add(new (parameter.Name!, argTypeRef));
         }
 
         var funcInfo = new FunctionDefinitionInfo()
@@ -485,7 +485,7 @@ public class RuntimeSymbols : ISymbolTable
         };
         funcInfo.SetClrMethod(info);
 
-        var fnRef = new RuntimeFunction(this, name, arguments);
+        var fnRef = new RuntimeFunction(this, name, arguments.Select(x => x.Value).ToList());
         return new (fnRef, funcInfo);
     }
     

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection.Emit;
 using plamp.Abstractions.AstManipulation;
 
@@ -10,8 +9,6 @@ public class CreationContext : BaseVisitorContext
 
     public ModuleBuilder ModuleBuilder { get; }
 
-    public List<MethodBuilder> Methods { get; }
-
     public SymbolTable SymbolTable { get; init; }
 
     public CreationContext(
@@ -22,7 +19,6 @@ public class CreationContext : BaseVisitorContext
     {
         AssemblyBuilder = assemblyBuilder;
         ModuleBuilder = moduleBuilder;
-        Methods = [];
         TranslationTable = other.TranslationTable;
         Exceptions = other.Exceptions;
         Dependencies = other.Dependencies;
@@ -33,7 +29,6 @@ public class CreationContext : BaseVisitorContext
     {
         AssemblyBuilder = other.AssemblyBuilder;
         ModuleBuilder = other.ModuleBuilder;
-        Methods = other.Methods;
         SymbolTable = other.SymbolTable;
     }
 }

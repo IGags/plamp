@@ -8,13 +8,13 @@ public static class Program
 """
 module playground;
 
-type Point { X, Y: int, Z: int }
+type Point { X, Y: int; Z: int }
 
 fn array_init() {
     arr, i := [100]int, 0;
     while(i < Length(arr)) arr[i++] := i * i;
     
-    res := arr.binary_search(144);
+    res := binary_search(arr, 144);
     
     if(res >= 0){
         Print("The index of an element is: ");

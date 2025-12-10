@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Reflection.Emit;
 using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -13,22 +14,18 @@ public class CompilationValidator : BaseValidator<CreationContext, InnerCompilat
 {
     protected override VisitResult PreVisitFunction(FuncNode node, InnerCompilationContext context, NodeBase? parent)
     {
-        var builder = context.Methods.Single(x => x.Name == node.FuncName.Value);
-        var overload = context.SymbolTable.GetMatchingFunction(
-            node.FuncName.Value, 
-            node.ParameterList.Select(x => x.Type.TypedefRef).ToList());
-
-        if (overload == null)
+        var funcRef = node.Symbol;
+        var builder = funcRef?.GetDefinitionInfo().ClrMethod as MethodBuilder;
+        if (funcRef == null || builder == null)
         {
             throw new Exception();
         }
-        
         
         var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
             dbg,
-            context.FuncParams[overload], context.TranslationTable);
+            context.FuncParams[funcRef], context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
         Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
@@ -48,7 +45,7 @@ public class InnerCompilationContext : CreationContext
         FuncParams = other.SymbolTable.ListFunctions().ToDictionary(
             x => x, 
             x => x.GetDefinitionInfo().ArgumentList
-                .Select(y => new ParamImpl(y.GetDefinitionInfo().ClrType!, y.TypeName))
+                .Select(y => new ParamImpl(y.Value.GetDefinitionInfo().ClrType!, y.Key))
                 .Cast<ParameterInfo>().ToArray());
     }
 }

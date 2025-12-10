@@ -21,7 +21,7 @@ public class DefSignatureCreationValidator : BaseValidator<CreationContext, Crea
             signatureTypes.Add(info.ClrType);
         }
         
-        var retType = node.ReturnType?.TypedefRef;
+        var retType = node.ReturnType.TypedefRef;
         var typeInfo = retType?.GetDefinitionInfo();
         if (typeInfo?.ClrType == null) return VisitResult.SkipChildren;
         
@@ -31,7 +31,8 @@ public class DefSignatureCreationValidator : BaseValidator<CreationContext, Crea
             CallingConventions.Standard,
             typeInfo.ClrType,
             signatureTypes.ToArray());
-        context.Methods.Add(methodBuilder);
+        var fnRef = context.SymbolTable.GetMatchingFunction(node.FuncName.Value, signature);
+        fnRef?.GetDefinitionInfo().SetClrMethod(methodBuilder);
         return VisitResult.SkipChildren;
     }
 

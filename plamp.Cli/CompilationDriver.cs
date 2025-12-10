@@ -70,6 +70,7 @@ public static class CompilationDriver
         symTableBuildingContext = funcDefInferenceWeaver.WeaveDiffs(ast, symTableBuildingContext);
 
         var preCreateContext = new PreCreationContext(symTableBuildingContext.TranslationTable, dependencies);
+        preCreateContext.Exceptions.AddRange(symTableBuildingContext.Exceptions);
         
         //Проверка того, что функция всегда возвращает значеие.
         var funcReturnVisitor = new FuncMustReturnValueValidator();
@@ -90,8 +91,6 @@ public static class CompilationDriver
         var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, currentModuleTable, symTableBuildingContext);
         var signatureVisitor = new DefSignatureCreationValidator();
         compilationContext = signatureVisitor.Validate(ast, compilationContext);
-        var callVisitor = new MethodCallInferenceValidator();
-        compilationContext = callVisitor.Validate(ast, compilationContext);
 
         var compilationVisitor = new CompilationValidator();
         compilationVisitor.Validate(ast, compilationContext);

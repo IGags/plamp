@@ -11,7 +11,7 @@ public class FuncMustReturnValueValidator : BaseValidator<PreCreationContext, Mu
 {
     protected override VisitResult PreVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType?.TypedefRef is { } type 
+        if (node.ReturnType.TypedefRef is { } type 
             && RuntimeSymbols.SymbolTable.IsVoid(type)) return VisitResult.SkipChildren;
         
         //Root body lexical scope
@@ -21,7 +21,7 @@ public class FuncMustReturnValueValidator : BaseValidator<PreCreationContext, Mu
 
     protected override VisitResult PostVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
-        if (node.ReturnType?.TypedefRef is { } retType && RuntimeSymbols.SymbolTable.IsVoid(retType)) return VisitResult.SkipChildren;
+        if (node.ReturnType.TypedefRef is { } retType && RuntimeSymbols.SymbolTable.IsVoid(retType)) return VisitResult.SkipChildren;
         if (context.LexicalScopeAlwaysReturns) return VisitResult.SkipChildren;
         SetExceptionToSymbol(node, PlampExceptionInfo.FuncMustReturnValue(), context);
         return VisitResult.Continue;

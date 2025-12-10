@@ -45,7 +45,7 @@ public class EmissionSetupHelper
     }
 
     public static ICompileTimeFunction MakeFuncRef(MethodInfo info) => new MockFuncRef(info);
-    public static ICompileTimeFunction MakeFuncRef(MethodInfo info, IEnumerable<Type> argTypes, Type retType) => new MockFuncRef(info, argTypes, retType);
+    public static ICompileTimeFunction MakeFuncRef(MethodInfo info, IEnumerable<ParameterInfo> argTypes, Type retType) => new MockFuncRef(info, argTypes, retType);
 
     public static ICompileTimeType MakeTypeRef(Type type) => new MockTypeRef(type);
 
@@ -147,7 +147,7 @@ public class EmissionSetupHelper
     {
         private readonly MethodInfo _definition;
 
-        private readonly List<ICompileTimeType> _args;
+        private readonly List<KeyValuePair<string, ICompileTimeType>> _args;
 
         private readonly ICompileTimeType _returnType;
         
@@ -155,16 +155,16 @@ public class EmissionSetupHelper
 
         public ISymbolTable DeclaringTable => throw new Exception();
         public string Name { get; }
-        public IReadOnlyList<ICompileTimeType> ArgumentTypes => _args;
+        public IReadOnlyList<ICompileTimeType> ArgumentTypes => _args.Select(x => x.Value).ToList();
 
-        public MockFuncRef(MethodInfo info, IEnumerable<Type> argTypes, Type retType)
+        public MockFuncRef(MethodInfo info, IEnumerable<ParameterInfo> argTypes, Type retType)
         {
             _definition = info;
             Name = info.Name;
-            _args = new List<ICompileTimeType>();
-            foreach (var argType in argTypes)
+            _args = new List<KeyValuePair<string, ICompileTimeType>>();
+            foreach (var parameter in argTypes)
             {
-                _args.Add(new MockTypeRef(argType));
+                _args.Add(new (parameter.Name!, new MockTypeRef(parameter.ParameterType)));
             }
 
             _returnType = new MockTypeRef(retType);
@@ -174,10 +174,10 @@ public class EmissionSetupHelper
         {
             _definition = info;
             Name = info.Name;
-            _args = new List<ICompileTimeType>();
-            foreach (var type in info.GetParameters().Select(x => x.ParameterType))
+            _args = new List<KeyValuePair<string, ICompileTimeType>>();
+            foreach (var parameter in info.GetParameters())
             {
-                _args.Add(new MockTypeRef(type));
+                _args.Add(new (parameter.Name!, new MockTypeRef(parameter.ParameterType)));
             }
 
             _returnType = new MockTypeRef(info.ReturnType);

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 
@@ -28,24 +28,8 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
 
     protected override VisitResult PreVisitFunction(FuncNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
-        if (node.ReturnType == null)
-        {
-            var voidType = RuntimeSymbols.SymbolTable.Void;
-            var typ = new TypeNode(new TypeNameNode(voidType.TypeName));
-            typ.SetTypeRef(voidType);
-            if (!context.TranslationTable.TryGetSymbol(node.FuncName, out var nameSymbol))
-            {
-                throw new ArgumentException("Symbol is not found, parser error");
-            }
-        
-            context.TranslationTable.AddSymbol(typ, nameSymbol);
-            var newDef = new FuncNode(typ, node.FuncName, node.ParameterList, node.Body);
-            Replace(node, newDef, context);
-            return VisitResult.Continue;
-        }
-
         var returnType = node.ReturnType;
-        ResolveTypeOrSetError(returnType.TypeName.Name, returnType.ArrayDefinitions, node.ReturnType!, context);
+        ResolveTypeOrSetError(returnType.TypeName.Name, returnType.ArrayDefinitions, node.ReturnType, context);
         return VisitResult.Continue;
     }
 
@@ -89,14 +73,14 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         var args = node.ParameterList;
         ValidateParameters(args, context);
         
-        var argTypes = args.Select(x => x.Type.TypedefRef).ToList();
+        var argTypes = args.Select(x => new KeyValuePair<string, ICompileTimeType?>(x.Name.Value, x.Type.TypedefRef)).ToList();
         
-        //Если node.ReturnType - значит тип void, иначе тип невозможно определить
-        var returnType = node.ReturnType == null ? RuntimeSymbols.SymbolTable.Void : node.ReturnType.TypedefRef;
-        if (returnType == null || argTypes.Any(x => x == null)) return;
+        var returnType = node.ReturnType.TypedefRef;
+        if (returnType == null || argTypes.Any(x => x.Value == null)) return;
         
         if (!context.TranslationTable.TryGetSymbol(node, out var position)) throw new Exception("Parser error func def location is not set");
-        context.CurrentModuleTable.TryAddFunc(node.FuncName.Value, returnType, argTypes!, position, out _);
+        context.CurrentModuleTable.TryAddFunc(node.FuncName.Value, returnType, argTypes!, position, out var funcRef);
+        node.SetFunctionInfo(funcRef);
     }
 
     private void ValidateParameters(List<ParameterNode> parameters, FuncDefInferenceContext context)

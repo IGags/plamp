@@ -401,6 +401,15 @@ public static class Parser
 
         var funcNameNode = new FuncNameNode(name);
         context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
+
+        if (type == null)
+        {
+            var voidName = new TypeNameNode(RuntimeSymbols.SymbolTable.Void.TypeName);
+            context.TranslationTable.AddSymbol(voidName, funcName.Position);
+            type = new TypeNode(voidName);
+            context.TranslationTable.AddSymbol(type, funcName.Position);
+        }
+        
         func = new FuncNode(type, funcNameNode, list, body);
         context.TranslationTable.AddSymbol(func, fnToken.Position);
         return true;

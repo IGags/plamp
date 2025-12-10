@@ -432,6 +432,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             //Так как сигнатура была определена, то правильный каст типов гарантирован.
             TryExpandType(node.Args[i], argTypes[i]!, fnRef!.ArgumentTypes[i], context);
         }
+        node.SetInfo(fnRef!);
         context.InnerExpressionTypeStack.Push(fnRef?.GetDefinitionInfo().ReturnType);
         return VisitResult.Continue;
     }
@@ -681,13 +682,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitReturn(ReturnNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         ICompileTimeType? returnType = null;
-        var functionReturnType = context.CurrentFunc?.ReturnType?.TypedefRef;
+        var functionReturnType = context.CurrentFunc?.ReturnType.TypedefRef;
         if (node.ReturnValue != null)
         {
             returnType = context.InnerExpressionTypeStack.Pop();
         }
         
-        if (context.CurrentFunc?.ReturnType?.TypedefRef == null) return VisitResult.SkipChildren;
+        if (context.CurrentFunc?.ReturnType.TypedefRef == null) return VisitResult.SkipChildren;
         
         if (!RuntimeSymbols.SymbolTable.IsVoid(context.CurrentFunc.ReturnType.TypedefRef) && node.ReturnValue is null)
         {

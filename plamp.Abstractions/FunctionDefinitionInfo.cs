@@ -22,7 +22,7 @@ public class FunctionDefinitionInfo
     /// <summary>
     /// Список аргументов функции
     /// </summary>
-    public required List<ICompileTimeType> ArgumentList { get; init; }
+    public required List<KeyValuePair<string, ICompileTimeType>> ArgumentList { get; init; }
     
     /// <summary>
     /// Позиция объявления функции в кодовом файле

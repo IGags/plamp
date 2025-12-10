@@ -37,7 +37,8 @@ public class FuncDefInferenceTests
         var info = item.GetDefinitionInfo();
         info.Name.ShouldBe("a");
         var argument = info.ArgumentList.ShouldHaveSingleItem();
-        argument.ShouldBe(RuntimeSymbols.SymbolTable.Int);
+        argument.Key.ShouldBe("x");
+        argument.Value.ShouldBe(RuntimeSymbols.SymbolTable.Int);
     }
 
     [Fact]
