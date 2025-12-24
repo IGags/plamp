@@ -20,7 +20,7 @@ public class FieldDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.GetDefinitionInfo().Fields.ShouldBeEmpty();
     }
 
@@ -34,7 +34,7 @@ public class FieldDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         var field = type.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
         field.Name.ShouldBe("x");
         field.Type.ShouldBe(RuntimeSymbols.SymbolTable.Int);
@@ -51,7 +51,7 @@ public class FieldDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var types = res.CurrentModuleTable.ListTypes();
+        var types = res.SymTableBuilder.ListTypes();
         types.Count.ShouldBe(2);
         var fieldTypeInfo = types.First(x => x.TypeName == "B");
         fieldTypeInfo.GetDefinitionInfo().Fields.ShouldBeEmpty();
@@ -72,7 +72,7 @@ public class FieldDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         var field = type.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
         
         field.Name.ShouldBe("x");
@@ -91,7 +91,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         
-        var types = res.CurrentModuleTable.ListTypes();
+        var types = res.SymTableBuilder.ListTypes();
         //Тип массива тоже учитывается
         types.Count.ShouldBe(3);
         var fieldTypeInfo = types.First(x => x.TypeName == "B");
@@ -115,7 +115,7 @@ public class FieldDefInferenceTests
         var ex = res.Exceptions.ShouldHaveSingleItem();
         ex.Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound("B").Code);
         
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.GetDefinitionInfo().Fields.ShouldBeEmpty();
     }
 
@@ -134,7 +134,7 @@ public class FieldDefInferenceTests
             .All(x => x == PlampExceptionInfo.DuplicateFieldDefinition("x").Code)
             .ShouldBeTrue();
         
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.GetDefinitionInfo().Fields.ShouldBeEmpty();
     }
 
@@ -150,7 +150,7 @@ public class FieldDefInferenceTests
         var ex = res.Exceptions.ShouldHaveSingleItem();
         ex.Code.ShouldBe(PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType().Code);
      
-        var type = res.CurrentModuleTable.ListTypes().ShouldHaveSingleItem();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.GetDefinitionInfo().Fields.ShouldBeEmpty();
     }
     

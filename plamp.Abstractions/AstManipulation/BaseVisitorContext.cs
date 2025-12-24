@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Abstractions.AstManipulation;
 
@@ -9,7 +10,7 @@ namespace plamp.Abstractions.AstManipulation;
 /// <param name="translationTable">Таблица символов, в которой находятся узлы текущего AST.</param>
 public abstract class BaseVisitorContext(
     ITranslationTable translationTable,
-    IReadOnlyList<ISymbolTable> dependencies)
+    IReadOnlyList<ISymTable> dependencies)
 {
     /// <summary>
     /// Таблица символов, в которой находятся узлы текущего AST.
@@ -24,7 +25,7 @@ public abstract class BaseVisitorContext(
     /// <summary>
     /// Полный список явных зависимостей текущего компилируемого модуля. Включая сам модуль.
     /// </summary>
-    public IReadOnlyList<ISymbolTable> Dependencies { get; init; } = dependencies;
+    public IReadOnlyList<ISymTable> Dependencies { get; init; } = dependencies;
 
     protected BaseVisitorContext(BaseVisitorContext other) 
         : this(other.TranslationTable, other.Dependencies)

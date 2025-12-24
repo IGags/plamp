@@ -2,33 +2,32 @@ using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative;
 
-internal static class TypeResolveHelper
+internal static class SymbolSearchUtility
 {
-    public static PlampExceptionRecord? FindTypeByName(
-        string name, 
-        List<ArrayTypeSpecificationNode> arrayDefs,
-        IEnumerable<ISymbolTable> symbolTables, 
-        out ICompileTimeType? typeRef)
+    public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
+        string name,
+        IEnumerable<ISymTable> symbolTables,
+        out ITypeInfo? typeInfo)
     {
-        typeRef = null;
-        var types = new List<ICompileTimeType>();
+        typeInfo = null;
+        var types = new List<(ITypeInfo typ, ISymTable table)>();
         foreach (var table in symbolTables)
         {
-            table.TryGetTypeByName(name, arrayDefs, out var type);
-            if(type != null) types.Add(type);
+            var type = table.FindType(name);
+            if(type != null) types.Add((type, table));
         }
 
         if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
         if (types.Count > 1)
         {
-            return PlampExceptionInfo.AmbigulousTypeName(name, types.Select(x => x.DeclaringTable.ModuleName));
+            return PlampExceptionInfo.AmbigulousTypeName(name, types.Select(x => x.table.ModuleName));
         }
 
-        typeRef = types[0];
+        typeInfo = types[0].typ;
         return null;
     }
 

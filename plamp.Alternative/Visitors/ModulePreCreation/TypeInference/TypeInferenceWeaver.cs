@@ -413,7 +413,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
         argTypes.Reverse();
 
-        var errRecord = TypeResolveHelper.FindFuncBySignature(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
+        var errRecord = SymbolSearchUtility.FindFuncBySignature(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
         if (errRecord != null)
         {
             SetExceptionToSymbol(node, errRecord, context);
@@ -648,7 +648,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         if(node.TypedefRef != null) return VisitResult.Continue;
-        var record = TypeResolveHelper.FindTypeByName(node.TypeName.Name, node.ArrayDefinitions, context.Dependencies, out var typeRef);
+        var record = SymbolSearchUtility.GetTypeOrDefault(node.TypeName.Name, node.ArrayDefinitions, context.Dependencies, out var typeRef);
         if (record != null) SetExceptionToSymbol(node, record, context);
         else node.SetTypeRef(typeRef!);
         return VisitResult.SkipChildren;

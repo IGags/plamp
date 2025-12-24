@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
@@ -39,9 +38,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
             if (typeList.Count == 1)
             {
                 var type = typeList[0];
-                if(!context.TranslationTable.TryGetSymbol(type, out var position)) throw new Exception("Type is not found in source file");
-                var typeRef = context.CurrentModuleTable.TryAddType(type.Name.Value, position);
-                if(typeRef != null) type.SetTypeInfo(typeRef);
+                _ = context.SymTableBuilder.DefineType(type);
                 continue;
             }
 

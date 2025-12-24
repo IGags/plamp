@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions;
@@ -7,6 +6,7 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.AstManipulation.Modification;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 
@@ -23,13 +23,13 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
     protected override VisitResult PreVisitParameter(ParameterNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
         var typeNode = node.Type;
-        return ResolveTypeOrSetError(typeNode.TypeName.Name, typeNode.ArrayDefinitions, typeNode, context);
+        return ResolveTypeOrSetError(typeNode.TypeName.Name, typeNode, context);
     }
 
     protected override VisitResult PreVisitFunction(FuncNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
         var returnType = node.ReturnType;
-        ResolveTypeOrSetError(returnType.TypeName.Name, returnType.ArrayDefinitions, node.ReturnType, context);
+        ResolveTypeOrSetError(returnType.TypeName.Name, node.ReturnType, context);
         return VisitResult.Continue;
     }
 
@@ -77,10 +77,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         
         var returnType = node.ReturnType.TypedefRef;
         if (returnType == null || argTypes.Any(x => x.Value == null)) return;
-        
-        if (!context.TranslationTable.TryGetSymbol(node, out var position)) throw new Exception("Parser error func def location is not set");
-        context.CurrentModuleTable.TryAddFunc(node.FuncName.Value, returnType, argTypes!, position, out var funcRef);
-        node.SetFunctionInfo(funcRef);
+        _ = context.SymTableBuilder.DefineFunc(node);
     }
 
     private void ValidateParameters(List<ParameterNode> parameters, FuncDefInferenceContext context)
@@ -117,16 +114,16 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         return true;
     }
 
-    private VisitResult ResolveTypeOrSetError(string typeName, List<ArrayTypeSpecificationNode> arrayDefs, TypeNode typeNode, FuncDefInferenceContext context)
+    private VisitResult ResolveTypeOrSetError(string typeName, TypeNode typeNode, FuncDefInferenceContext context)
     {
-        var record = TypeResolveHelper.FindTypeByName(typeName, arrayDefs, context.Dependencies, out var type);
+        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(typeName, context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]), out var type);
         if (record != null)
         {
             SetExceptionToSymbol(typeNode, record, context);
             return VisitResult.SkipChildren;
         }
         
-        typeNode.SetTypeRef(type!);
+        typeNode.TypeInfo = type;
         return VisitResult.SkipChildren;
     }
 }

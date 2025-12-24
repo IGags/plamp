@@ -29,7 +29,7 @@ public class TypeDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var types = res.CurrentModuleTable.ListTypes();
+        var types = res.SymTableBuilder.ListTypes();
         var typ = types.ShouldHaveSingleItem();
         var info = typ.GetDefinitionInfo();
         info.TypeName.ShouldBe("A");
@@ -60,7 +60,7 @@ public class TypeDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var types = res.CurrentModuleTable.ListTypes();
+        var types = res.SymTableBuilder.ListTypes();
         types.Count.ShouldBe(2);
         var names = new[] { "A", "B" };
         types.Select(x => x.TypeName).All(names.Contains).ShouldBeTrue();
@@ -78,7 +78,7 @@ public class TypeDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);
         res.Exceptions.Select(x => x.Code).ShouldAllBe(x => x == PlampExceptionInfo.DuplicateTypeDefinition("").Code);
-        res.CurrentModuleTable.ListTypes().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
     }
     
     private SymbolTableBuildingContext SetupAndAct(string code)

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type;
 
@@ -22,6 +23,8 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     /// Ссылка на информацию об объявлении типа.
     /// </summary>
     public ICompileTimeType? TypedefRef { get; protected set; }
+    
+    public ITypeInfo? TypeInfo { get; set; }
 
     /// <summary>
     /// Установка ссылки на объявление внутри таблицы символов

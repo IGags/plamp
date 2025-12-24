@@ -2,24 +2,25 @@
 using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.AstManipulation;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding;
 
 public class SymbolTableBuildingContext : BaseVisitorContext
 {
-    public SymbolTable CurrentModuleTable { get; init; }
+    public ISymTableBuilder SymTableBuilder { get; init; }
     
     public SymbolTableBuildingContext(
         SymbolTableBuildingContext other) : base(other)
     {
-        CurrentModuleTable = other.CurrentModuleTable;
+        SymTableBuilder = other.SymTableBuilder;
     }
 
     public SymbolTableBuildingContext(
         ITranslationTable translationTable, 
-        List<ISymbolTable> dependencies, 
-        SymbolTable table) : base(translationTable, dependencies)
+        List<ISymTable> dependencies, 
+        ISymTableBuilder symTableBuilder) : base(translationTable, dependencies)
     {
-        CurrentModuleTable = table;
+        SymTableBuilder = symTableBuilder;
     }
 }

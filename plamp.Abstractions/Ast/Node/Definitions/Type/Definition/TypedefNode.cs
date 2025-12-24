@@ -11,10 +11,6 @@ public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields) : Node
 
     public IReadOnlyList<FieldDefNode> Fields => fields;
 
-    public ICompileTimeType? TypeInfo { get; private set; }
-    
-    public void SetTypeInfo(ICompileTimeType typeInfo) => TypeInfo = typeInfo;
-
     /// <inheritdoc />
     public override IEnumerable<NodeBase> Visit()
     {

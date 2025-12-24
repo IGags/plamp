@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 
@@ -24,20 +26,18 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         }
         
         var fieldType = defNode.FieldType;
-        
-        var record = TypeResolveHelper.FindTypeByName(
+        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(
             fieldType.TypeName.Name, 
-            fieldType.ArrayDefinitions,  
-            context.Dependencies, 
-            out var typeRef);
+            context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]), 
+            out var info);
         
         if (record != null)
         {
-            SetExceptionToSymbol(defNode.FieldType, record, context);
+            SetExceptionToSymbol(fieldType, record, context);
             return VisitResult.SkipChildren;
         }
         
-        defNode.FieldType.SetTypeRef(typeRef!);
+        defNode.FieldType.TypeInfo = info;
         context.Fields.Add(defNode);
         return VisitResult.SkipChildren;
     }
@@ -57,18 +57,9 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         for (var i = 0; i < context.Fields.Count; i++)
         {
             var fieldName = context.Fields[i].Name.Value;
-            if (duplicateIndexes.Contains(i))
-            {
-                var record = PlampExceptionInfo.DuplicateFieldDefinition(fieldName);
-                SetExceptionToSymbol(node, record, context);
-            }
-            else
-            {
-                var parentType = node.TypeInfo;
-                var fieldInfo = context.Fields[i].FieldType.TypedefRef;
-                if(fieldInfo == null) continue;
-                parentType?.DefineField(fieldName, fieldInfo);
-            }
+            if (!duplicateIndexes.Contains(i)) continue;
+            var record = PlampExceptionInfo.DuplicateFieldDefinition(fieldName);
+            SetExceptionToSymbol(node, record, context);
         }
         
         context.Fields.Clear();

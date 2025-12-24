@@ -7,7 +7,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Variable;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
-public class TypeInferenceInnerContext : PreCreationContext
+public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationContext(other)
 {
     private int _monotonicScopeCounter;
     private int _currentDepth;
@@ -17,8 +17,6 @@ public class TypeInferenceInnerContext : PreCreationContext
 
     public Stack<ICompileTimeType?> InnerExpressionTypeStack { get; private set; } = [];
 
-    public List<ISymbolTable> AllDependencyList { get; } = [];
-
     public FuncNode? CurrentFunc { get; set; }
 
     public ScopeLocation InstructionInScopePosition { get; private set; } = new(-1, -1, -1);
@@ -26,23 +24,6 @@ public class TypeInferenceInnerContext : PreCreationContext
     public Dictionary<string, VariableWithPosition> VariableDefinitions { get; } = [];
 
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
-
-    public TypeInferenceInnerContext(PreCreationContext other) : base(other)
-    {
-        var dependencyStack = new Stack<ISymbolTable>();
-        foreach (var table in Dependencies)
-        {
-            dependencyStack.Push(table);
-        }
-
-        var visitedModules = new HashSet<string>();
-        while (dependencyStack.Count > 0)
-        {
-            var table = dependencyStack.Pop();
-            if(!visitedModules.Add(table.ModuleName)) continue;
-            AllDependencyList.Add(table);
-        }
-    }
 
     public void AddVariableWithPosition(
         VariableNameNode name, 

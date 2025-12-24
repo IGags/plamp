@@ -32,10 +32,6 @@ public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<Parameter
     /// Блок тела функции
     /// </summary>
     public BodyNode Body { get; private set; } = body;
-    
-    public ICompileTimeFunction? Symbol { get; private set; }
-
-    public void SetFunctionInfo(ICompileTimeFunction info) => Symbol = info;
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

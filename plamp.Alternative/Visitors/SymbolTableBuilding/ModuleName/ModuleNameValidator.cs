@@ -24,13 +24,13 @@ public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, Mod
             return VisitResult.Break;
         }
         
-        context.CurrentModuleTable.SetModuleName(node.ModuleName?.ModuleName ?? "%__INVALID_TABLE__%");
+        context.SymTableBuilder.ModuleName = node.ModuleName?.ModuleName ?? "";
         return VisitResult.Continue;
     }
 
     protected override VisitResult PreVisitFuncName(FuncNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (parent is null || !node.Value.Equals(context.CurrentModuleTable.ModuleName)) return VisitResult.SkipChildren;
+        if (parent is null || !node.Value.Equals(context.SymTableBuilder.ModuleName)) return VisitResult.SkipChildren;
 
         var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
         SetExceptionToSymbol(parent, record, context);
@@ -40,7 +40,7 @@ public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, Mod
 
     protected override VisitResult PreVisitTypedefName(TypedefNameNode node, ModuleNameValidatorContext context, NodeBase? parent)
     {
-        if (parent is null || !node.Value.Equals(context.CurrentModuleTable.ModuleName)) return VisitResult.SkipChildren;
+        if (parent is null || !node.Value.Equals(context.SymTableBuilder.ModuleName)) return VisitResult.SkipChildren;
 
         var record = PlampExceptionInfo.MemberCannotHaveSameNameAsDeclaringModule();
         SetExceptionToSymbol(parent, record, context);

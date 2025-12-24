@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.AstManipulation;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation;
 
@@ -13,7 +13,7 @@ public class PreCreationContext : BaseVisitorContext
 
     public PreCreationContext(
         ITranslationTable translationTable, 
-        List<ISymbolTable> dependencies) 
+        List<ISymTable> dependencies) 
         : base(translationTable, dependencies)
     {
     }

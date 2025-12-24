@@ -25,7 +25,7 @@ public class ModuleNameVisitorTests
         var visitor = new ModuleNameValidator();
         var resultContext = visitor.Validate(tree, context);
         Assert.Empty(context.Exceptions);
-        Assert.Equal(moduleName, resultContext.CurrentModuleTable.ModuleName);
+        Assert.Equal(moduleName, resultContext.SymTableBuilder.ModuleName);
     }
 
     [Fact]
@@ -40,6 +40,6 @@ public class ModuleNameVisitorTests
         var context = new SymbolTableBuildingContext(symbols, [RuntimeSymbols.SymbolTable], symbolTable);
         var resultContext = visitor.Validate(tree, context);
         Assert.Single(context.Exceptions);
-        Assert.Equal(nameBeforeVisit, resultContext.CurrentModuleTable.ModuleName);
+        Assert.Equal(nameBeforeVisit, resultContext.SymTableBuilder.ModuleName);
     }
 }
