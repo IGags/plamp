@@ -52,11 +52,11 @@ fn binary_search(array: []int, target: int) int {
         }
         var method = res.Compiled!.Modules.First().GetMethod("array_init");
         method!.Invoke(null, []);
-        method!.Invoke(null, []);
-        method!.Invoke(null, []);
+        method.Invoke(null, []);
+        method.Invoke(null, []);
         
         sw.Restart();
-        method!.Invoke(null, []);
+        method.Invoke(null, []);
         Console.WriteLine($"Execution took {sw.Elapsed}");
 
         void PrintRes(List<PlampException> exList)

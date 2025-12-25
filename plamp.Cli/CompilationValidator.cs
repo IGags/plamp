@@ -2,7 +2,6 @@
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Alternative.Visitors.ModuleCreation;
-using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 
 namespace plamp.Cli;

@@ -47,6 +47,7 @@ public class EmissionSetupHelper
     }
 
     public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info);
+    public static IFnInfo MakeFuncRef(MethodBuilder info, ParameterInfo[] parameters, Type returnType) => new MethodBuilderFnInfo(info, parameters, returnType);
 
     public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
 
@@ -70,6 +71,26 @@ public class EmissionSetupHelper
         return new ConcreteCastNode(toTyp, inner, from) { FromType = from };
     }
 
+    internal class MethodBuilderFnInfo(MethodBuilder builder, ParameterInfo[] parameters, Type returnType) : IFnInfo
+    {
+        private readonly MethodBuilder _builder = builder;
+
+        public bool Equals(IFnInfo? other)
+        {
+            if (other is not MethodBuilderFnInfo info) return false;
+            return info._builder == _builder;
+        }
+
+        public string Name => _builder.Name;
+
+        public IReadOnlyList<IArgInfo> Arguments { get; } =
+            parameters.Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+
+        public ITypeInfo ReturnType { get; } = new TypeInfo(returnType);
+
+        public MethodInfo AsFunc() => _builder;
+    }
+    
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(
         ParameterInfo[] args,
         BodyNode body,

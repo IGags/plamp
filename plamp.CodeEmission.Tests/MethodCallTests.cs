@@ -508,7 +508,7 @@ public class MethodCallTests
          */
         bool zero, one, two, eq0, eq1, nm1, nm2, sum;
         var arg = new TestParameter(argType, "n");
-        var fnRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner());
+        var fnRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner(), [arg], retType);
         var body = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(zero))),
@@ -593,7 +593,7 @@ public class MethodCallTests
 
         var otherDebugBuilder = new DebugMethodBuilder(otherBuilder);
         var otherArg = new TestParameter(otherArgType, "arg");
-        var otherBuilderRef = EmissionSetupHelper.MakeFuncRef(otherBuilder);
+        var otherBuilderRef = EmissionSetupHelper.MakeFuncRef(otherBuilder, [otherArg], returnType);
             
         
         bool temp1, temp2;
@@ -708,7 +708,7 @@ public class MethodCallTests
                 firstName, typeof(string), [argType], MethodAttributes.Final | MethodAttributes.Static | MethodAttributes.Public);
 
         var arg = new TestParameter(argType, "from");
-        var methodBuilderRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner());
+        var methodBuilderRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner(), [arg], typeof(string));
 
         var secondTypeName = $"{Guid.NewGuid()}_secondType";
         var typ2 = module.DefineType(secondTypeName, TypeAttributes.Class | TypeAttributes.Sealed);
@@ -717,7 +717,7 @@ public class MethodCallTests
             MethodAttributes.Final | MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard,
             typeof(string), [argType]);
         var method2Dbg = new DebugMethodBuilder(method2Builder);
-        var method2BuilderRef = EmissionSetupHelper.MakeFuncRef(method2Builder);
+        var method2BuilderRef = EmissionSetupHelper.MakeFuncRef(method2Builder, [arg], typeof(string));
 
         var equality = EmissionSetupHelper.MakeFuncRef(typeof(string).GetMethod(
             "op_Equality", 
