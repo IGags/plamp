@@ -123,6 +123,11 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
             SetExceptionToSymbol(typeNode, record, context);
             return VisitResult.SkipChildren;
         }
+
+        for (var i = 0; i < typeNode.ArrayDefinitions.Count; i++)
+        {
+            type = type!.MakeArrayType();
+        }
         
         typeNode.TypeInfo = type;
         return VisitResult.SkipChildren;

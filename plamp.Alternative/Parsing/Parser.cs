@@ -151,7 +151,7 @@ public static class Parser
         return true;
     }
 
-    public static bool TryParseField(ParsingContext context, out List<FieldDefNode> fieldNodes)
+    private static bool TryParseField(ParsingContext context, out List<FieldDefNode> fieldNodes)
     {
         fieldNodes = [];
         if (context.Sequence.Current() is not Word) return false;
@@ -204,7 +204,7 @@ public static class Parser
 
     #region Use
 
-    public static bool TryParseUse(
+    private static bool TryParseUse(
         ParsingContext context,
         [NotNullWhen(true)] out ImportNode? importNode)
     {
@@ -937,7 +937,7 @@ public static class Parser
         return true;
     }
 
-    public static bool TryParseArrayDefinitionSequence(
+    private static bool TryParseArrayDefinitionSequence(
         ParsingContext context,
         [NotNullWhen(true)] out List<ArrayTypeSpecificationNode>? definitions)
     {
@@ -1064,8 +1064,7 @@ public static class Parser
 
         if (context.Sequence.Current() is Literal literal)
         {
-            var builtinType = Builtins.SymTable.FindType(literal.ActualType.Name);
-            if (builtinType == null) return false;
+            var builtinType = literal.ActualType;
             node = new LiteralNode(literal.ActualValue, builtinType);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));

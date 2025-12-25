@@ -57,17 +57,17 @@ public class EmissionSetupHelper
         return (instance, createdMethod);
     }
 
-    public static TypeNode CreateTypeNode(ITypeInfo type) => new ConcreteType(new TypeNameNode(type.Name));
+    public static TypeNode CreateTypeNode(ITypeInfo type) => new ConcreteType(new TypeNameNode(type.Name)) {TypeInfo = type};
 
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
     public static CallNode CreateCallNode(NodeBase? from, IFnInfo info, List<NodeBase> args) 
-        => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info);
+        => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info) { FnInfo = info };
 
     public static CastNode CreateCastNode(ITypeInfo from, ITypeInfo to, NodeBase inner)
     {
         var toTyp = CreateTypeNode(to);
-        return new ConcreteCastNode(toTyp, inner, from);
+        return new ConcreteCastNode(toTyp, inner, from) { FromType = from };
     }
 
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(

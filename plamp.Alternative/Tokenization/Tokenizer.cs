@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
 
@@ -137,43 +138,43 @@ public static class Tokenizer
         return new Literal(numberPart + postfix, filePosition, value, type!);
     }
 
-    private static bool TryParseNumberTypePostfix(string value, string postfix, out (object, Type?) result)
+    private static bool TryParseNumberTypePostfix(string value, string postfix, out (object, ITypeInfo?) result)
     {
         switch (postfix)
         {
             case "i":
                 var res = int.TryParse(value, CultureInfo.InvariantCulture, out var i);
-                result = (i, typeof(int));
+                result = (i, Builtins.Int);
                 return res;
             case "ui":
                 res = uint.TryParse(value, CultureInfo.InvariantCulture, out var j);
-                result = (j, typeof(uint));
+                result = (j, Builtins.Uint);
                 return res;
             case "l":
                 res = long.TryParse(value, CultureInfo.InvariantCulture, out var k);
-                result = (k, typeof(long));
+                result = (k, Builtins.Long);
                 return res;
             case "ul":
                 res = ulong.TryParse(value, CultureInfo.InvariantCulture, out var l);
-                result = (l, typeof(ulong));
+                result = (l, Builtins.Ulong);
                 return res;
             case "d":
                 res = double.TryParse(value, CultureInfo.InvariantCulture, out var m);
-                result = (m, typeof(double));
+                result = (m, Builtins.Double);
                 return res;
             case "f":
                 res = float.TryParse(value, CultureInfo.InvariantCulture, out var n);
-                result = (n, typeof(float));
+                result = (n, Builtins.Float);
                 return res;
             case "b":
                 res = byte.TryParse(value, CultureInfo.InvariantCulture, out var o);
-                result = (o, typeof(byte));
+                result = (o, Builtins.Byte);
                 return res;
             case "":
                 if (value.Contains('.'))
                 {
                     res = double.TryParse(value, CultureInfo.InvariantCulture, out var s);
-                    result = (s, typeof(double));
+                    result = (s, Builtins.Double);
                     return res;
                 }
 
@@ -182,11 +183,11 @@ public static class Tokenizer
                 {
                     if (t is <= int.MaxValue and >= int.MinValue)
                     {
-                        result = ((int)t, typeof(int));
+                        result = ((int)t, Builtins.Int);
                         return true;
                     }
 
-                    result = (t, typeof(long));
+                    result = (t, Builtins.Long);
                     return true;
                 }
 
@@ -213,7 +214,7 @@ public static class Tokenizer
             {
                 case '"':
                     position++;
-                    var literal = new Literal($"\"{builder}\"", new FilePosition(byteOffset, position - start, fileName), builder.ToString(), typeof(string));
+                    var literal = new Literal($"\"{builder}\"", new FilePosition(byteOffset, position - start, fileName), builder.ToString(), Builtins.String);
                     return literal;
                 case '\\':
                     position++;
@@ -227,7 +228,7 @@ public static class Tokenizer
 
         var filePosition = new FilePosition(byteOffset, position - start, fileName);
         context.Exceptions.Add(new PlampException(PlampExceptionInfo.StringIsNotClosed(), filePosition));
-        return new Literal($"\"{builder}", filePosition, builder.ToString(), typeof(string));
+        return new Literal($"\"{builder}", filePosition, builder.ToString(), Builtins.String);
     }
     
     private static void TryParseEscapedSequence(

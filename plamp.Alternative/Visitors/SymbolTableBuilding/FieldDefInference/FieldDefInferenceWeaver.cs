@@ -36,6 +36,11 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             SetExceptionToSymbol(fieldType, record, context);
             return VisitResult.SkipChildren;
         }
+
+        for (var i = 0; i < fieldType.ArrayDefinitions.Count; i++)
+        {
+            info = info!.MakeArrayType();
+        }
         
         defNode.FieldType.TypeInfo = info;
         context.Fields.Add(defNode);

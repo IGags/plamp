@@ -1,4 +1,5 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System.Diagnostics;
+using plamp.Abstractions.Ast;
 
 namespace plamp.Cli;
 
@@ -12,21 +13,21 @@ type Point { X, Y: int; Z: int }
 
 fn array_init() {
     arr, i := [100]int, 0;
-    while(i < Length(arr)) arr[i++] := i * i;
+    while(i < length(arr)) arr[i++] := i * i;
     
     res := binary_search(arr, 144);
     
     if(res >= 0){
-        Print("The index of an element is: ");
-        Println(res);
+        print("The index of an element is: ");
+        println(res);
     }
-    else Print("Element not found");
+    else print("Element not found");
 }
 
 fn binary_search(array: []int, target: int) int {
-    if(Length(array) = 0) return -1;
+    if(length(array) = 0) return -1;
     
-    left, right := 0, Length(array) - 1;
+    left, right := 0, length(array) - 1;
     
     while(left <= right){
         center := (left + right) / 2;
@@ -41,7 +42,9 @@ fn binary_search(array: []int, target: int) int {
     
     public static async Task Main()
     {
+        var sw = Stopwatch.StartNew();
         var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File, false);
+        Console.WriteLine($"Compilation tool {sw.Elapsed}");
         if (res.Exceptions.Count > 0 || res.Compiled == null)
         {
             PrintRes(res.Exceptions);
@@ -49,6 +52,12 @@ fn binary_search(array: []int, target: int) int {
         }
         var method = res.Compiled!.Modules.First().GetMethod("array_init");
         method!.Invoke(null, []);
+        method!.Invoke(null, []);
+        method!.Invoke(null, []);
+        
+        sw.Restart();
+        method!.Invoke(null, []);
+        Console.WriteLine($"Execution took {sw.Elapsed}");
 
         void PrintRes(List<PlampException> exList)
         {

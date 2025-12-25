@@ -40,77 +40,77 @@ public class TokenizerTests
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "";
         })];
         yield return ["\"abc\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"abc\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "abc";
         })];
         yield return ["\"123\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"123\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "123";
         })];
         yield return ["\"a1\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"a1\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "a1";
         })];
         yield return ["\"1a\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"1a\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "1a";
         })];
         yield return ["\"!@#№;$%:^?&*)(_-+={}[]/,.'~<>\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"!@#№;$%:^?&*)(_-+={}[]/,.'~<>\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "!@#№;$%:^?&*)(_-+={}[]/,.'~<>";
         })];
         yield return ["\"\\n\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\n\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\n";
         })];
         yield return ["\"\\\\\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\\\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\\";
         })];
         yield return ["\"\\r\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\r\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\r";
         })];
         yield return ["\"\\t\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\t\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\t";
         })];
         yield return ["\"\\\"\"", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
             return literal.GetStringRepresentation() == "\"\"\""
-                   && literal.ActualType == typeof(string)
+                   && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\"";
         })];
         yield return ["[", typeof(OpenSquareBracket)];
@@ -151,17 +151,17 @@ public class TokenizerTests
         yield return ["break", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Break)];
         yield return ["continue", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Continue)];
         yield return ["type", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
-        yield return ["1", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];
-        yield return ["0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 0)];
-        yield return ["1i", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(int) && (int)((Literal)t).ActualValue == 1)];
-        yield return ["1ui", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(uint) && (uint)((Literal)t).ActualValue == 1)];
-        yield return ["5000000000", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(long) && (long)((Literal)t).ActualValue == 5000000000)];
-        yield return ["1l", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(long) && (long)((Literal)t).ActualValue == 1)];
-        yield return ["1ul", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(ulong) && (ulong)((Literal)t).ActualValue == 1)];
-        yield return ["1.0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(double) && Math.Abs((double)((Literal)t).ActualValue - 1) < 1e-9)];
-        yield return ["1d", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(double) && Math.Abs((double)((Literal)t).ActualValue - 1) < 1e-9)];
-        yield return ["1f", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(float) && Math.Abs((float)((Literal)t).ActualValue - 1) < 1e-5)];
-        yield return ["1b", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType == typeof(byte) && (byte)((Literal)t).ActualValue == 1)];
+        yield return ["1", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 1)];
+        yield return ["0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 0)];
+        yield return ["1i", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 1)];
+        yield return ["1ui", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Uint) && (uint)((Literal)t).ActualValue == 1)];
+        yield return ["5000000000", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Long) && (long)((Literal)t).ActualValue == 5000000000)];
+        yield return ["1l", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Long) && (long)((Literal)t).ActualValue == 1)];
+        yield return ["1ul", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Ulong) && (ulong)((Literal)t).ActualValue == 1)];
+        yield return ["1.0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Double) && Math.Abs((double)((Literal)t).ActualValue - 1) < 1e-9)];
+        yield return ["1d", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Double) && Math.Abs((double)((Literal)t).ActualValue - 1) < 1e-9)];
+        yield return ["1f", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Float) && Math.Abs((float)((Literal)t).ActualValue - 1) < 1e-5)];
+        yield return ["1b", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Byte) && (byte)((Literal)t).ActualValue == 1)];
     }
     
     [Theory]

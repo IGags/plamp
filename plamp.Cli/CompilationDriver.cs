@@ -90,8 +90,14 @@ public static class CompilationDriver
         var moduleBuilder = assemblyBuilder.DefineDynamicModule(currentModuleTableBuilder.ModuleName);
 
         var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, symTableBuildingContext);
-        var signatureVisitor = new FuncCreatorValidator();
-        compilationContext = signatureVisitor.Validate(ast, compilationContext);
+        var typeCreationVisitor = new TypeCreatorValidator();
+        compilationContext = typeCreationVisitor.Validate(ast, compilationContext);
+
+        var fieldCreationVisitor = new FieldCreatorValidator();
+        compilationContext = fieldCreationVisitor.Validate(ast, compilationContext);
+        
+        var fnSignatureVisitor = new FuncCreatorValidator();
+        compilationContext = fnSignatureVisitor.Validate(ast, compilationContext);
 
         var compilationVisitor = new CompilationValidator();
         compilationVisitor.Validate(ast, compilationContext);

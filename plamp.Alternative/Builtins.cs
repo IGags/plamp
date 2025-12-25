@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using plamp.Abstractions.Symbols;
 using plamp.Alternative.SymbolsImpl;
 
@@ -26,6 +27,12 @@ public static class Builtins
     public static ITypeInfo Any => SymTable.FindType(BuiltinSymTable.AnyName)!;
     public static ITypeInfo Array => SymTable.FindType(BuiltinSymTable.ArrayName)!;
     public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName)!;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Length(string str) => str.Length;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Length(Array arr) => arr.Length;
 }
 
 internal class BuiltinSymTable : ISymTable
@@ -57,21 +64,52 @@ internal class BuiltinSymTable : ISymTable
         var typeDict = new Dictionary<string, TypeInfo>()
         {
             [IntName] = new(typeof(int)),
+            [nameof(Int32)] = new(typeof(int)),
+            
             [UintName] = new(typeof(uint)),
+            [nameof(UInt32)] = new(typeof(uint)),
+            
             [LongName] = new(typeof(long)),
+            [nameof(Int64)] = new(typeof(long)),
+            
             [UlongName] = new(typeof(ulong)),
+            [nameof(UInt64)] = new(typeof(ulong)),
+            
             [ShortName] = new(typeof(short)),
+            [nameof(Int16)] = new(typeof(short)),
+            
             [UshortName] = new(typeof(ushort)),
+            [nameof(UInt16)] = new(typeof(ushort)),
+            
             [ByteName] = new(typeof(byte)),
+            [nameof(Byte)] = new(typeof(byte)),
+            
             [SbyteName] = new(typeof(sbyte)),
+            [nameof(SByte)] = new(typeof(sbyte)),
+            
             [FloatName] = new(typeof(float)),
+            [nameof(Single)] = new(typeof(float)),
+            
             [DoubleName] = new(typeof(double)),
+            [nameof(Double)] = new(typeof(double)),
+            
             [BoolName] = new(typeof(bool)),
+            [nameof(Boolean)] = new(typeof(bool)),
+            
             [StringName] = new(typeof(string)),
+            [nameof(String)] = new(typeof(string)),
+            
             [CharName] = new(typeof(char)),
+            [nameof(Char)] = new(typeof(char)),
+            
             [AnyName] = new(typeof(object)),
+            [nameof(Object)] = new(typeof(object)),
+            
             [ArrayName] = new(typeof(Array)),
+            [nameof(Array)] = new(typeof(Array)),
+            
             [VoidName] = new(typeof(void)),
+            [typeof(void).Name] = new(typeof(void))
         };
         _types = typeDict.ToFrozenDictionary();
 
@@ -105,8 +143,8 @@ internal class BuiltinSymTable : ISymTable
 
         var lengthOverloads = new List<FuncInfo>()
         {
-            new(typeof(Array).GetProperty(nameof(Array.Length))!.GetMethod!),
-            new(typeof(string).GetProperty(nameof(string.Length))!.GetMethod!)
+            new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!),
+            new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!)
         };
         
         var funcDict = new Dictionary<string, IReadOnlyList<FuncInfo>>()

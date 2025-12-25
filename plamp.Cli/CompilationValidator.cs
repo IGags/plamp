@@ -18,14 +18,14 @@ public class CompilationValidator : BaseValidator<CreationContext, CreationConte
             throw new Exception();
         }
         
-        var dbg = new DebugMethodBuilder(builder);
+        //var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
-            dbg,
+            builder,
             parameters!, 
             context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
-        Console.WriteLine(dbg.GetIlRepresentation());
+        //Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
     }
 

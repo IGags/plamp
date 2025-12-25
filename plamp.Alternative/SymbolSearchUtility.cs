@@ -82,6 +82,12 @@ internal static class SymbolSearchUtility
             }
         }
 
+        if (fullMatch.Count == 1)
+        {
+            fnInfo = fullMatch.First();
+            return null;
+        }
+        
         var totalCount = fullMatch.Count + partialMatch.Count;
         
         if (totalCount == 0)
