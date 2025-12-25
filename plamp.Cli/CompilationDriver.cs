@@ -1,10 +1,11 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols;
 using plamp.Alternative;
 using plamp.Alternative.Parsing;
+using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
@@ -17,7 +18,6 @@ using plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
 using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 using plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
 using plamp.Cli.Diagnostics;
-using plamp.Intrinsics;
 
 namespace plamp.Cli;
 
@@ -32,13 +32,14 @@ public static class CompilationDriver
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, translationTable);
         var ast = Parser.ParseFile(parsingContext);
 
-        var dependencies = new List<ISymbolTable> { RuntimeSymbols.SymbolTable };
-        var currentModuleTable = new SymbolTable("%UNDEFINED%", dependencies);
-        dependencies.Add(currentModuleTable);
+        var dependencies = new List<ISymTable> { Builtins.SymTable };
+        var currentModuleTableBuilder = new SymTableBuilder { ModuleName = "<undefined>" };
+        
+        dependencies.Add(currentModuleTableBuilder);
         var symTableBuildingContext = new SymbolTableBuildingContext(
             translationTable, 
             dependencies,
-            currentModuleTable);
+            currentModuleTableBuilder);
         symTableBuildingContext.Exceptions.AddRange(parsingContext.Exceptions);
 
         if (printAst)
@@ -86,10 +87,10 @@ public static class CompilationDriver
         
         var assemblyName = new AssemblyName(DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-        var moduleBuilder = assemblyBuilder.DefineDynamicModule(currentModuleTable.ModuleName);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule(currentModuleTableBuilder.ModuleName);
 
-        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, currentModuleTable, symTableBuildingContext);
-        var signatureVisitor = new DefSignatureCreationValidator();
+        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, symTableBuildingContext);
+        var signatureVisitor = new FuncCreatorValidator();
         compilationContext = signatureVisitor.Validate(ast, compilationContext);
 
         var compilationVisitor = new CompilationValidator();

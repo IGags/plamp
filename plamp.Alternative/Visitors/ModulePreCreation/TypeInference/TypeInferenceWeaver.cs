@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -15,7 +14,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Intrinsics;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
@@ -93,7 +92,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override VisitResult PostVisitVariableDefinition(VariableDefinitionNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        var type = node.Type?.TypedefRef;
+        var type = node.Type?.TypeInfo;
         if (type == null)
         {
             context.InnerExpressionTypeStack.Push(null);
@@ -121,13 +120,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.SkipChildren;
         }
 
-        if (RuntimeSymbols.SymbolTable.IsLogical(type) && unaryNode is NotNode)
+        if (SymbolSearchUtility.IsLogical(type) && unaryNode is NotNode)
         {
-            context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
+            context.InnerExpressionTypeStack.Push(Builtins.Bool);
             return VisitResult.Continue;
         }
         
-        if (RuntimeSymbols.SymbolTable.IsNumeric(type)
+        if (SymbolSearchUtility.IsNumeric(type)
             && unaryNode is PrefixIncrementNode 
                 or PrefixDecrementNode 
                 or PostfixDecrementNode 
@@ -169,32 +168,32 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     private VisitResult ValidateBinaryLogical(
         BaseBinaryNode node,
-        ICompileTimeType? leftType,
-        ICompileTimeType? rightType,
+        ITypeInfo? leftType,
+        ITypeInfo? rightType,
         TypeInferenceInnerContext context)
     {
-        if (   (leftType  != null && !RuntimeSymbols.SymbolTable.IsLogical(leftType)) 
-            || (rightType != null && !RuntimeSymbols.SymbolTable.IsLogical(rightType)))
+        if (   (leftType  != null && !SymbolSearchUtility.IsLogical(leftType)) 
+            || (rightType != null && !SymbolSearchUtility.IsLogical(rightType)))
         {
             var record = PlampExceptionInfo.CannotApplyOperator();
             SetExceptionToSymbol(node, record, context);
         }
 
-        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
+        context.InnerExpressionTypeStack.Push(Builtins.Bool);
         return VisitResult.Continue;
     }
     
     private VisitResult ValidateBinaryComparision(
         BaseBinaryNode node,
-        ICompileTimeType? leftType, 
-        ICompileTimeType? rightType, 
+        ITypeInfo? leftType, 
+        ITypeInfo? rightType, 
         TypeInferenceInnerContext context)
     {
-        context.InnerExpressionTypeStack.Push(RuntimeSymbols.SymbolTable.Bool);
+        context.InnerExpressionTypeStack.Push(Builtins.Bool);
         if (leftType != null
             && rightType != null
-            && RuntimeSymbols.SymbolTable.IsLogical(leftType)
-            && RuntimeSymbols.SymbolTable.IsLogical(rightType)
+            && SymbolSearchUtility.IsLogical(leftType)
+            && SymbolSearchUtility.IsLogical(rightType)
             && node is NotEqualNode or EqualNode)
         {
             return VisitResult.Continue;
@@ -202,8 +201,8 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         if (   leftType  != null 
             && rightType != null 
-            && RuntimeSymbols.SymbolTable.IsNumeric(leftType) 
-            && RuntimeSymbols.SymbolTable.IsNumeric(rightType))
+            && SymbolSearchUtility.IsNumeric(leftType) 
+            && SymbolSearchUtility.IsNumeric(rightType))
         {
             if (leftType.Equals(rightType) || TryExpandNumericBinary(node.Left, node.Right, leftType, rightType, context, out _))
             {
@@ -218,13 +217,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     private VisitResult ValidateBinaryArithmetic(
         BaseBinaryNode node,
-        ICompileTimeType? leftType, 
-        ICompileTimeType? rightType, 
+        ITypeInfo? leftType, 
+        ITypeInfo? rightType, 
         TypeInferenceInnerContext context)
     {
         var record = PlampExceptionInfo.CannotApplyOperator();   
-        if (   (leftType  != null && !RuntimeSymbols.SymbolTable.IsNumeric(leftType)) 
-            || (rightType != null && !RuntimeSymbols.SymbolTable.IsNumeric(rightType)))
+        if (   (leftType  != null && !SymbolSearchUtility.IsNumeric(leftType)) 
+            || (rightType != null && !SymbolSearchUtility.IsNumeric(rightType)))
         {
             context.InnerExpressionTypeStack.Push(null);
             SetExceptionToSymbol(node, record, context);
@@ -232,9 +231,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
 
         if (leftType != null 
-            && RuntimeSymbols.SymbolTable.IsNumeric(leftType) 
+            && SymbolSearchUtility.IsNumeric(leftType) 
             && rightType != null 
-            && RuntimeSymbols.SymbolTable.IsNumeric(rightType) 
+            && SymbolSearchUtility.IsNumeric(rightType) 
             && !leftType.Equals(rightType))
         {
             if (TryExpandNumericBinary(node.Left, node.Right, leftType, rightType, context, out var resultType))
@@ -259,17 +258,16 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     private bool TryExpandType(
         NodeBase from, 
-        ICompileTimeType fromType,
-        ICompileTimeType toType, 
+        ITypeInfo fromType,
+        ITypeInfo toType, 
         TypeInferenceInnerContext context)
     {
         if(fromType.Equals(toType)) return true;
-        if (RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(fromType, toType) == -1) return false;
-        var toTypeNode = new TypeNode(new TypeNameNode(toType.TypeName));
+        if (!SymbolSearchUtility.ImplicitlyConvertable(fromType, toType)) return false;
+        var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
         context.TranslationTable.AddSymbol(toTypeNode, default);
-        toTypeNode.SetTypeRef(toType);
-        var expanded = new CastNode(toTypeNode, from);
-        expanded.SetFromType(fromType);
+        toTypeNode.TypeInfo = toType;
+        var expanded = new CastNode(toTypeNode, from) { FromType = fromType };
         Replace(from, expanded, context);
         return true;
     }
@@ -277,10 +275,10 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     private bool TryExpandNumericBinary(
         NodeBase left,
         NodeBase right,
-        ICompileTimeType leftType,
-        ICompileTimeType rightType,
+        ITypeInfo leftType,
+        ITypeInfo rightType,
         TypeInferenceInnerContext context,
-        [NotNullWhen(true)] out ICompileTimeType? resultType)
+        [NotNullWhen(true)] out ITypeInfo? resultType)
     {
         resultType = leftType;
         if (leftType.Equals(rightType)) return true;
@@ -297,14 +295,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return true;
         }
 
-        var intType = RuntimeSymbols.SymbolTable.Int;
+        var intType = Builtins.Int;
         if (TryExpandBoth(left, right, leftType, rightType, intType, context))
         {
             resultType = intType;
             return true;
         }
 
-        var longType = RuntimeSymbols.SymbolTable.Long;
+        var longType = Builtins.Long;
         if (TryExpandBoth(left, right, leftType, rightType, longType, context))
         {
             resultType = longType;
@@ -317,13 +315,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     private bool TryExpandBoth(NodeBase left,
         NodeBase right,
-        ICompileTimeType leftType,
-        ICompileTimeType rightType,
-        ICompileTimeType target,
+        ITypeInfo leftType,
+        ITypeInfo rightType,
+        ITypeInfo target,
         TypeInferenceInnerContext context)
     {
-        if (RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(leftType, target) != -1
-            && RuntimeSymbols.SymbolTable.TypeIsImplicitlyConvertable(rightType, target) != -1)
+        if (SymbolSearchUtility.ImplicitlyConvertable(leftType, target)
+            && SymbolSearchUtility.ImplicitlyConvertable(rightType, target))
         {
             TryExpandType(left, leftType, target, context);
             TryExpandType(right, rightType, target, context);
@@ -348,15 +346,15 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.Continue;
         }
 
-        if (!TryExpandType(node.LengthDefinition, lengthType, RuntimeSymbols.SymbolTable.Int, context))
+        if (!TryExpandType(node.LengthDefinition, lengthType, Builtins.Int, context))
         {
             SetExceptionToSymbol(node.LengthDefinition, PlampExceptionInfo.ArrayLengthMustBeInteger(), context);
         }
 
-        ICompileTimeType? arrType = null;
-        if (node.ArrayItemType.TypedefRef != null)
+        ITypeInfo? arrType = null;
+        if (node.ArrayItemType.TypeInfo != null)
         {
-            arrType = node.ArrayItemType.TypedefRef.MakeArrayType();
+            arrType = node.ArrayItemType.TypeInfo.MakeArrayType();
         }
 
         context.InnerExpressionTypeStack.Push(arrType);
@@ -374,20 +372,20 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.Continue;
         }
 
-        if (!TryExpandType(node.IndexMember, indexerExpression, RuntimeSymbols.SymbolTable.Int, context))
+        if (!TryExpandType(node.IndexMember, indexerExpression, Builtins.Int, context))
         {
             SetExceptionToSymbol(node.IndexMember, PlampExceptionInfo.IndexerValueMustBeInteger(), context);
         }
 
-        if (indexationTargetType.GetDefinitionInfo().ArrayUnderlyingType == null)
+        if (indexationTargetType.ElementType() == null)
         {
             SetExceptionToSymbol(node.From, PlampExceptionInfo.IndexerIsNotApplicable(), context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.Continue;
         }
         
-        var elementType = indexationTargetType.GetDefinitionInfo().ArrayUnderlyingType;
-        node.SetItemType(elementType);
+        var elementType = indexationTargetType.ElementType();
+        node.ItemType = elementType;
         context.InnerExpressionTypeStack.Push(elementType);
         return VisitResult.Continue;
     }
@@ -406,14 +404,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         var argCount = context.InnerExpressionTypeStack.Count - context.RestoreInferenceStackSize();
         if (argCount < 0) throw new InvalidOperationException("Parser error, expression type stack invalid");
-        var argTypes = new List<ICompileTimeType?>();
+        var argTypes = new List<ITypeInfo?>();
         for (var i = 0; i < argCount; i++)
         {
             argTypes.Add(context.InnerExpressionTypeStack.Pop());
         }
         argTypes.Reverse();
 
-        var errRecord = SymbolSearchUtility.FindFuncBySignature(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
+        var errRecord = SymbolSearchUtility.TryGetFuncOrErrorRecord(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
         if (errRecord != null)
         {
             SetExceptionToSymbol(node, errRecord, context);
@@ -423,17 +421,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         if (argTypes.Any(x => x == null))
         {
-            context.InnerExpressionTypeStack.Push(fnRef?.GetDefinitionInfo().ReturnType);
+            context.InnerExpressionTypeStack.Push(fnRef?.ReturnType);
             return VisitResult.Continue;
         }
         
         for (var i = 0; i < argTypes.Count; i++)
         {
             //Так как сигнатура была определена, то правильный каст типов гарантирован.
-            TryExpandType(node.Args[i], argTypes[i]!, fnRef!.ArgumentTypes[i], context);
+            TryExpandType(node.Args[i], argTypes[i]!, fnRef!.Arguments[i].Type, context);
         }
-        node.SetInfo(fnRef!);
-        context.InnerExpressionTypeStack.Push(fnRef?.GetDefinitionInfo().ReturnType);
+        node.FnInfo = fnRef;
+        context.InnerExpressionTypeStack.Push(fnRef?.ReturnType);
         return VisitResult.Continue;
     }
 
@@ -445,7 +443,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         VisitNodeBase(node.Condition, context, node);
         var predicateType = context.InnerExpressionTypeStack.Pop();
-        if (predicateType != null && !RuntimeSymbols.SymbolTable.IsLogical(predicateType))
+        if (predicateType != null && !SymbolSearchUtility.IsLogical(predicateType))
         {
             var record = PlampExceptionInfo.PredicateMustBeBooleanType();
             context.Exceptions.Add(context.TranslationTable.SetExceptionToNode(node, record));
@@ -463,7 +461,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         VisitNodeBase(node.Predicate, context, node);
         var predicateType = context.InnerExpressionTypeStack.Pop();
-        if (predicateType != null && !RuntimeSymbols.SymbolTable.IsLogical(predicateType))
+        if (predicateType != null && !SymbolSearchUtility.IsLogical(predicateType))
         {
             var record = PlampExceptionInfo.PredicateMustBeBooleanType();
             context.Exceptions.Add(context.TranslationTable.SetExceptionToNode(node, record));
@@ -484,7 +482,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.Continue;
     }
 
-    private record AssignmentPair(ICompileTimeType? SourceType, ICompileTimeType? TargetType, NodeBase SourceNode, NodeBase TargetNode);
+    private record AssignmentPair(ITypeInfo? SourceType, ITypeInfo? TargetType, NodeBase SourceNode, NodeBase TargetNode);
     
     protected override VisitResult PostVisitAssign(AssignNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
@@ -499,7 +497,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var assignTypeCount = context.InnerExpressionTypeStack.Count - context.RestoreInferenceStackSize();
         if (assignTypeCount == 0) return VisitResult.Continue;
 
-        var types = new List<ICompileTimeType?>(assignTypeCount);
+        var types = new List<ITypeInfo?>(assignTypeCount);
         for (var i = 0; i < assignTypeCount; i++)
         {
             types.Add(context.InnerExpressionTypeStack.Pop());
@@ -524,7 +522,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         foreach (var assignment in assignmentPairs) 
         {
-            if (assignment.SourceType is not null && RuntimeSymbols.SymbolTable.IsVoid(assignment.SourceType))
+            if (assignment.SourceType is not null && assignment.SourceType.Equals(Builtins.Void))
             {
                 var record = PlampExceptionInfo.CannotAssignNone();
                 context.Exceptions.Add(context.TranslationTable.SetExceptionToNode(node, record));
@@ -556,9 +554,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     private void ValidateAssignmentToDefinition(
         NodeBase assignNode,
         NodeBase assignmentSource, 
-        ICompileTimeType? leftType, 
+        ITypeInfo? leftType, 
         TypeInferenceInnerContext context,
-        ICompileTimeType? rightType)
+        ITypeInfo? rightType)
     {
         if (leftType == null || rightType == null || leftType.Equals(rightType)) return;
         if (TryExpandType(assignmentSource, rightType, leftType, context)) return;
@@ -577,17 +575,16 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         SetExceptionToSymbol(left, record, context);
     }
 
-    private void CreateVariableDefinitionFromMember(MemberNode leftMember, TypeInferenceInnerContext context, ICompileTimeType? rightType)
+    private void CreateVariableDefinitionFromMember(MemberNode leftMember, TypeInferenceInnerContext context, ITypeInfo? rightType)
     {
         if (!context.TranslationTable.TryGetSymbol(leftMember, out var symbol))
             throw new ArgumentException("Parser error, symbol should exist");
         TypeNode? typeNode = null;
         if (rightType != null)
         {
-            var typeName = new TypeNameNode(rightType.TypeName);
+            var typeName = new TypeNameNode(rightType.Name);
             context.TranslationTable.AddSymbol(typeName, symbol);
-            typeNode = new TypeNode(typeName);
-            typeNode.SetTypeRef(rightType);
+            typeNode = new TypeNode(typeName) { TypeInfo = rightType };
             context.TranslationTable.AddSymbol(typeNode, symbol);
         }
 
@@ -602,42 +599,40 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
-        var type = variableDefinition.Type.TypedefRef;
+        var type = variableDefinition.Type.TypeInfo;
 
         if (type is null) return null;
 
-        var arrayUnderlyingType = type.GetDefinitionInfo().ArrayUnderlyingType;
+        var arrayUnderlyingType = type.ElementType();
         if (arrayUnderlyingType != null)
         {
-            var itemType = new TypeNode(new TypeNameNode(type.TypeName));
-            itemType.SetTypeRef(arrayUnderlyingType);
-            var initArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
+            var itemType = new TypeNode(new TypeNameNode(type.Name)) { TypeInfo = arrayUnderlyingType };
+            var initArrayNode = new InitArrayNode(itemType, new LiteralNode(0, Builtins.Int));
             // []int a; => []int a := Array.Empty<int>()
             return new AssignNode([variableDefinition], [initArrayNode]);
         }
 
-        if (RuntimeSymbols.SymbolTable.IsNumeric(type))
+        if (SymbolSearchUtility.IsNumeric(type))
         {
             return new AssignNode([variableDefinition], [new LiteralNode(0, type)]);
         }
 
-        if (RuntimeSymbols.SymbolTable.IsLogical(type))
+        if (SymbolSearchUtility.IsLogical(type))
         {
             return new AssignNode([variableDefinition], [new LiteralNode(false, type)]);
         }
 
-        if (RuntimeSymbols.SymbolTable.Char.Equals(type))
+        if (type.Equals(Builtins.Char))
         {
             return new AssignNode([variableDefinition], [new LiteralNode((char)0, type)]);
         }
 
-        if (RuntimeSymbols.SymbolTable.String.Equals(type))
+        if (type.Equals(Builtins.String))
         {
             return new AssignNode([variableDefinition], [new LiteralNode(string.Empty, type)]);
         }
 
-        var typeNode = new TypeNode(new TypeNameNode(type.TypeName));
-        typeNode.SetTypeRef(type);
+        var typeNode = new TypeNode(new TypeNameNode(type.Name)){ TypeInfo = type };
         return new AssignNode([variableDefinition], [new InitTypeNode(typeNode, [])]);
     }
     
@@ -647,10 +642,21 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        if(node.TypedefRef != null) return VisitResult.Continue;
-        var record = SymbolSearchUtility.GetTypeOrDefault(node.TypeName.Name, node.ArrayDefinitions, context.Dependencies, out var typeRef);
-        if (record != null) SetExceptionToSymbol(node, record, context);
-        else node.SetTypeRef(typeRef!);
+        if(node.TypeInfo != null) return VisitResult.Continue;
+        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node.TypeName.Name, context.Dependencies, out var typeRef);
+        
+        if (record != null)
+        {
+            SetExceptionToSymbol(node, record, context);
+        }
+        else
+        {
+            for (var i = 0; i < node.ArrayDefinitions.Count; i++)
+            {
+                typeRef = typeRef!.MakeArrayType();
+            }
+            node.TypeInfo = typeRef;
+        }
         return VisitResult.SkipChildren;
     }
     
@@ -674,33 +680,33 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.SkipChildren;
         }
         
-        var memberType = withPosition?.Variable.Type?.TypedefRef ?? arg?.Type.TypedefRef;
+        var memberType = withPosition?.Variable.Type?.TypeInfo ?? arg?.Type.TypeInfo;
         context.InnerExpressionTypeStack.Push(memberType);
         return VisitResult.Continue;
     }
     
     protected override VisitResult PostVisitReturn(ReturnNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        ICompileTimeType? returnType = null;
-        var functionReturnType = context.CurrentFunc?.ReturnType.TypedefRef;
+        ITypeInfo? returnType = null;
+        var functionReturnType = context.CurrentFunc?.ReturnType.TypeInfo;
         if (node.ReturnValue != null)
         {
             returnType = context.InnerExpressionTypeStack.Pop();
         }
         
-        if (context.CurrentFunc?.ReturnType.TypedefRef == null) return VisitResult.SkipChildren;
+        if (context.CurrentFunc?.ReturnType.TypeInfo == null) return VisitResult.SkipChildren;
         
-        if (!RuntimeSymbols.SymbolTable.IsVoid(context.CurrentFunc.ReturnType.TypedefRef) && node.ReturnValue is null)
+        if (!Builtins.Void.Equals(context.CurrentFunc.ReturnType.TypeInfo) && node.ReturnValue is null)
         {
             var record = PlampExceptionInfo.ReturnValueIsMissing();
             SetExceptionToSymbol(node, record, context);
         }
-        else if (RuntimeSymbols.SymbolTable.IsVoid(context.CurrentFunc.ReturnType.TypedefRef) && node.ReturnValue is not null)
+        else if (Builtins.Void.Equals(context.CurrentFunc.ReturnType.TypeInfo) && node.ReturnValue is not null)
         {
             var record = PlampExceptionInfo.CannotReturnValue();
             SetExceptionToSymbol(node, record, context);
         }
-        else if (functionReturnType is not null && !RuntimeSymbols.SymbolTable.IsVoid(functionReturnType) && returnType is not null)
+        else if (functionReturnType is not null && !Builtins.Void.Equals(functionReturnType) && returnType is not null)
         {
             if (returnType.Equals(functionReturnType)) return VisitResult.SkipChildren;
             if (TryExpandType(node.ReturnValue!, returnType, functionReturnType, context)) return VisitResult.SkipChildren;

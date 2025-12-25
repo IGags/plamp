@@ -7,9 +7,9 @@ using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
-using plamp.Intrinsics;
 using Shouldly;
 
 // ReSharper disable EntityNameCapturedOnly.Local
@@ -508,19 +508,19 @@ public class MethodCallTests
          */
         bool zero, one, two, eq0, eq1, nm1, nm2, sum;
         var arg = new TestParameter(argType, "n");
-        var fnRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner(), [arg], retType);
+        var fnRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner());
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(zero))),
-            new AssignNode([new MemberNode(nameof(zero))], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(zero))),
+            new AssignNode([new MemberNode(nameof(zero))], [new LiteralNode(0, Builtins.Int)]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(one))),
-            new AssignNode([new MemberNode(nameof(one))], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(one))),
+            new AssignNode([new MemberNode(nameof(one))], [new LiteralNode(1, Builtins.Int)]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(two))),
-            new AssignNode([new MemberNode(nameof(two))], [new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(two))),
+            new AssignNode([new MemberNode(nameof(two))], [new LiteralNode(2, Builtins.Int)]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(eq0))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(eq0))),
             new AssignNode([new MemberNode(nameof(eq0))], [new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(zero)))]),
             
             new ConditionNode(
@@ -530,7 +530,7 @@ public class MethodCallTests
                         new ReturnNode(new MemberNode(nameof(zero)))
                     ]), null),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(eq1))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(eq1))),
             new AssignNode([new MemberNode(nameof(eq1))], [new EqualNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))]),
             
             new ConditionNode(
@@ -540,15 +540,15 @@ public class MethodCallTests
                         new ReturnNode(new MemberNode(nameof(one)))
                     ]), null),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(nm1))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(nm1))),
             new AssignNode([new MemberNode(nameof(nm1))], [new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(one)))]),
             new AssignNode([new MemberNode(nameof(nm1))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), fnRef, [new MemberNode(nameof(nm1))])]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(nm2))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(nm2))),
             new AssignNode([new MemberNode(nameof(nm2))], [new SubNode(new MemberNode(arg.Name), new MemberNode(nameof(two)))]),
             new AssignNode([new MemberNode(nameof(nm2))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), fnRef, [new MemberNode(nameof(nm2))])]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(sum))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(sum))),
             new AssignNode([new MemberNode(nameof(sum))], [new AddNode(new MemberNode(nameof(nm1)), new MemberNode (nameof(nm2)))]),
             new ReturnNode(new MemberNode(nameof(sum)))
         ]);
@@ -593,7 +593,7 @@ public class MethodCallTests
 
         var otherDebugBuilder = new DebugMethodBuilder(otherBuilder);
         var otherArg = new TestParameter(otherArgType, "arg");
-        var otherBuilderRef = EmissionSetupHelper.MakeFuncRef(otherBuilder, [otherArg], returnType);
+        var otherBuilderRef = EmissionSetupHelper.MakeFuncRef(otherBuilder);
             
         
         bool temp1, temp2;
@@ -612,13 +612,13 @@ public class MethodCallTests
         
         var otherBody = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String),
                 new VariableNameNode(nameof(temp1))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String),
                 new VariableNameNode(nameof(temp2))),
 
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode("Hi", RuntimeSymbols.SymbolTable.String)]),
-            new AssignNode([new MemberNode(nameof(temp2))], [new LiteralNode("Bye", RuntimeSymbols.SymbolTable.String)]),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode("Hi", Builtins.String)]),
+            new AssignNode([new MemberNode(nameof(temp2))], [new LiteralNode("Bye", Builtins.String)]),
 
             new AssignNode([new MemberNode(otherArg.Name)],
                 [EmissionSetupHelper.CreateCallNode(new MemberNode(otherArg.Name), mthRef, [new MemberNode(nameof(temp1)), new MemberNode(nameof(temp2))])]),
@@ -634,8 +634,8 @@ public class MethodCallTests
         const string literal = "Hi you're cool";
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String), new VariableNameNode(nameof(temp1))),
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(literal, RuntimeSymbols.SymbolTable.String)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(nameof(temp1))),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(literal, Builtins.String)]),
             new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(new ThisNode(), otherBuilderRef, [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
@@ -685,7 +685,7 @@ public class MethodCallTests
         var mthRef = EmissionSetupHelper.MakeFuncRef(mth);
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Int), new VariableNameNode(nameof(temp1))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(temp1))),
             new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(new MemberNode(instanceArg.Name), mthRef, [])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
@@ -708,7 +708,7 @@ public class MethodCallTests
                 firstName, typeof(string), [argType], MethodAttributes.Final | MethodAttributes.Static | MethodAttributes.Public);
 
         var arg = new TestParameter(argType, "from");
-        var methodBuilderRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner(), [arg], typeof(string));
+        var methodBuilderRef = EmissionSetupHelper.MakeFuncRef(methodBuilder.GetInner());
 
         var secondTypeName = $"{Guid.NewGuid()}_secondType";
         var typ2 = module.DefineType(secondTypeName, TypeAttributes.Class | TypeAttributes.Sealed);
@@ -717,7 +717,7 @@ public class MethodCallTests
             MethodAttributes.Final | MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard,
             typeof(string), [argType]);
         var method2Dbg = new DebugMethodBuilder(method2Builder);
-        var method2BuilderRef = EmissionSetupHelper.MakeFuncRef(method2Builder, [arg], typeof(string));
+        var method2BuilderRef = EmissionSetupHelper.MakeFuncRef(method2Builder);
 
         var equality = EmissionSetupHelper.MakeFuncRef(typeof(string).GetMethod(
             "op_Equality", 
@@ -743,21 +743,21 @@ public class MethodCallTests
         const string m1Literal = "hi from M1, bro";
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String), new VariableNameNode(nameof(temp1))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Bool), new VariableNameNode(nameof(temp2))),
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, RuntimeSymbols.SymbolTable.String)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(nameof(temp1))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(nameof(temp2))),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, Builtins.String)]),
             new AssignNode([new MemberNode(nameof(temp2))], [EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])]),
             
             new ConditionNode(
                 new MemberNode(nameof(temp2)),
                 new BodyNode(
                     [
-                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String), new VariableNameNode(nameof(temp3))),
-                        new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m1Literal, RuntimeSymbols.SymbolTable.String)]),
+                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(nameof(temp3))),
+                        new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m1Literal, Builtins.String)]),
                         new ReturnNode(new MemberNode(nameof(temp3)))
                     ]),
                 null),
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, RuntimeSymbols.SymbolTable.String)]),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, Builtins.String)]),
             new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(null, method2BuilderRef, [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
@@ -766,21 +766,21 @@ public class MethodCallTests
         const string m2Literal = "hi from M2, bro";
         var body2 = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String), new VariableNameNode(nameof(temp1))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.Bool), new VariableNameNode(nameof(temp2))),
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, RuntimeSymbols.SymbolTable.String)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(nameof(temp1))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(nameof(temp2))),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(firstName, Builtins.String)]),
             new AssignNode([new MemberNode(nameof(temp2))], [EmissionSetupHelper.CreateCallNode(null, equality, [new MemberNode(nameof(temp1)), new MemberNode(arg.Name)])]),
             
             new ConditionNode(
                 new MemberNode(nameof(temp2)),
                 new BodyNode(
                 [
-                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(RuntimeSymbols.SymbolTable.String), new VariableNameNode(nameof(temp3))),
-                    new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m2Literal, RuntimeSymbols.SymbolTable.String)]),
+                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(nameof(temp3))),
+                    new AssignNode([new MemberNode(nameof(temp3))], [new LiteralNode(m2Literal, Builtins.String)]),
                     new ReturnNode(new MemberNode(nameof(temp3)))
                 ]),
                 null),
-            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, RuntimeSymbols.SymbolTable.String)]),
+            new AssignNode([new MemberNode(nameof(temp1))], [new LiteralNode(secondName, Builtins.String)]),
             new AssignNode([new MemberNode(nameof(temp1))], [EmissionSetupHelper.CreateCallNode(null, methodBuilderRef, [new MemberNode(nameof(temp1))])]),
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
@@ -816,12 +816,16 @@ public class MethodCallTests
         var arrayParam = new TestParameter(typeof(int[]), "a");
         var indexerParam = new TestParameter(typeof(int), "ix");
 
-        var getter = new IndexerNode(new MemberNode("a"), new MemberNode("ix"));
-        getter.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var getter = new IndexerNode(new MemberNode("a"), new MemberNode("ix"))
+        {
+            ItemType = Builtins.Int
+        };
 
-        var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter]);
-        callNode.SetInfo(EmissionSetupHelper.MakeFuncRef(typeof(MethodCallTests).GetMethod(nameof(Square), [typeof(int)])!));
-        
+        var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter])
+        {
+            FnInfo = EmissionSetupHelper.MakeFuncRef(typeof(MethodCallTests).GetMethod(nameof(Square), [typeof(int)])!)
+        };
+
         var body = new BodyNode([new ReturnNode(callNode)]);
         var (instance, method) =
             EmissionSetupHelper.CreateInstanceWithMethod(
@@ -854,7 +858,7 @@ public class MethodCallTests
         var call = new CallNode(new MemberNode("a"), new FuncCallNameNode(nameof(NonVoidCallback.CallbackWithResult)), []);
         var info = EmissionSetupHelper.MakeFuncRef(
             typeof(NonVoidCallback).GetMethod(nameof(NonVoidCallback.CallbackWithResult))!);
-        call.SetInfo(info);
+        call.FnInfo = info;
         var ast = new BodyNode(
         [
            call,

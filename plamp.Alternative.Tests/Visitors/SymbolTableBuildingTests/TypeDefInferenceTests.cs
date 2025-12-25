@@ -31,9 +31,8 @@ public class TypeDefInferenceTests
         res.Exceptions.ShouldBeEmpty();
         var types = res.SymTableBuilder.ListTypes();
         var typ = types.ShouldHaveSingleItem();
-        var info = typ.GetDefinitionInfo();
-        info.TypeName.ShouldBe("A");
-        info.Fields.ShouldBeEmpty();
+        typ.Name.ShouldBe("A");
+        typ.Fields.ShouldBeEmpty();
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public class TypeDefInferenceTests
         var types = res.SymTableBuilder.ListTypes();
         types.Count.ShouldBe(2);
         var names = new[] { "A", "B" };
-        types.Select(x => x.TypeName).All(names.Contains).ShouldBeTrue();
+        types.Select(x => x.Name).All(names.Contains).ShouldBeTrue();
     }
 
     [Fact]

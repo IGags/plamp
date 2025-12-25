@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
-using plamp.Abstractions;
-using plamp.Intrinsics;
+using plamp.Abstractions.Symbols;
+using plamp.Alternative.SymbolsImpl;
 
 namespace plamp.Alternative.Tests;
 
 public static class SymbolTableInitHelper
 {
-    public static SymbolTable CreateEmptyTable() => new("mod", [RuntimeSymbols.SymbolTable]);
+    public static ISymTable CreateEmptyTable() => new SymTable("mod", [], []);
 
-    public static List<ISymbolTable> CreateDefaultTables() => [CreateEmptyTable(), RuntimeSymbols.SymbolTable];
+    public static List<ISymTable> CreateDefaultTables() => [CreateEmptyTable(), Builtins.SymTable];
 }

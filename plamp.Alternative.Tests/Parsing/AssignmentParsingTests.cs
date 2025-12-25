@@ -5,7 +5,6 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -20,15 +19,15 @@ public class AssignmentParsingTests
             "a := 14.3",
             new AssignNode(
                 [new MemberNode("a")],
-                [new LiteralNode(14.3, RuntimeSymbols.SymbolTable.Double)]
+                [new LiteralNode(14.3, Builtins.Double)]
             )
         ];
         yield return
         [
             "a[1] := 14",
             new AssignNode(
-                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))],
-                [new LiteralNode(14, RuntimeSymbols.SymbolTable.Int)]
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))],
+                [new LiteralNode(14, Builtins.Int)]
             )
         ];
         yield return
@@ -36,7 +35,7 @@ public class AssignmentParsingTests
             "a[b] := 5",
             new AssignNode(
                 [new IndexerNode(new MemberNode("a"), new MemberNode("b"))],
-                [new LiteralNode(5, RuntimeSymbols.SymbolTable.Int)]
+                [new LiteralNode(5, Builtins.Int)]
             )
         ];
         yield return
@@ -52,13 +51,13 @@ public class AssignmentParsingTests
             "a, b := 1, 2",
             new AssignNode(
                 [new MemberNode("a"), new MemberNode("b")],
-                [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)])
+                [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int)])
         ];
         yield return
         [
             "a[1], b := c, d",
             new AssignNode(
-                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)), new MemberNode("b")],
+                [new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)), new MemberNode("b")],
                 [new MemberNode("c"), new MemberNode("d")])
         ];
         yield return
@@ -66,7 +65,7 @@ public class AssignmentParsingTests
             "x, y := \"def\", c",
             new AssignNode(
                 [new MemberNode("x"), new MemberNode("y")],
-                [new LiteralNode("def", RuntimeSymbols.SymbolTable.String), new MemberNode("c")])
+                [new LiteralNode("def", Builtins.String), new MemberNode("c")])
         ];
         yield return
         [
@@ -86,8 +85,8 @@ public class AssignmentParsingTests
         [
             "a[1][x] := t, 3",
             new AssignNode(
-                [new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)), new MemberNode("x"))],
-                [new MemberNode("t"), new LiteralNode(3, RuntimeSymbols.SymbolTable.Int)])
+                [new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)), new MemberNode("x"))],
+                [new MemberNode("t"), new LiteralNode(3, Builtins.Int)])
         ];
         yield return
         [
@@ -99,7 +98,7 @@ public class AssignmentParsingTests
                 ],
                 [
                     new FieldAccessNode(new MemberNode("y"), new FieldNode("x")),
-                    new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)
+                    new LiteralNode(0, Builtins.Int)
                 ])
         ];
         yield return
@@ -113,12 +112,12 @@ public class AssignmentParsingTests
                                 new FieldAccessNode(
                                     new MemberNode("x"),
                                     new FieldNode("y")),
-                                new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)),
+                                new LiteralNode(1, Builtins.Int)),
                             new FieldNode("z")),
-                        new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)), 
-                    new LiteralNode(2, RuntimeSymbols.SymbolTable.Int))
+                        new LiteralNode(0, Builtins.Int)), 
+                    new LiteralNode(2, Builtins.Int))
                 ],
-                [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)])
+                [new LiteralNode(1, Builtins.Int)])
         ];
     }
     

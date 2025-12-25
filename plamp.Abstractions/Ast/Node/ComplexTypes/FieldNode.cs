@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 
@@ -11,13 +12,7 @@ public class FieldNode(string fieldName) : NodeBase
     /// <summary>
     /// Ссылка на информацию о поле
     /// </summary>
-    public ICompileTimeField? Symbol { get; private set; }
-
-    /// <summary>
-    /// Установить информацию о поле.
-    /// </summary>
-    /// <param name="info">Ссылка на информацию о поле</param>
-    public void SetInfo(ICompileTimeField info) => Symbol = info;
+    public IFieldInfo? FieldInfo { get; set; }
 
     /// <summary>
     /// Имя поля

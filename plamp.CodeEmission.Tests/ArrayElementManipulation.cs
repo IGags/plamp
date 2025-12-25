@@ -10,8 +10,8 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
-using plamp.Intrinsics;
 using Shouldly;
 
 namespace plamp.CodeEmission.Tests;
@@ -27,24 +27,32 @@ public class ArrayElementManipulation
          * a[1] := 1;
          * a[2] := 2;
          */
-        var arrayItemType = new TypeNode(new TypeNameNode("int"));
-        arrayItemType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
+        var arrayItemType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
-        var arrayType = new TypeNode(new TypeNameNode("[]int"));
-        arrayType.SetTypeRef(RuntimeSymbols.SymbolTable.Int.MakeArrayType());
-        
+        var arrayType = new TypeNode(new TypeNameNode("[]int"))
+        {
+            TypeInfo = Builtins.Int.MakeArrayType()
+        };
+
         var assign = new AssignNode(
             [new VariableDefinitionNode(arrayType, new VariableNameNode("a"))],
-            [new InitArrayNode(arrayItemType, new LiteralNode(3, RuntimeSymbols.SymbolTable.Int))]);
+            [new InitArrayNode(arrayItemType, new LiteralNode(3, Builtins.Int))]);
 
-        var literal1 = new LiteralNode(1, RuntimeSymbols.SymbolTable.Int);
-        var indexer1 = new IndexerNode(new MemberNode("a"), literal1);
-        indexer1.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var literal1 = new LiteralNode(1, Builtins.Int);
+        var indexer1 = new IndexerNode(new MemberNode("a"), literal1)
+        {
+            ItemType = Builtins.Int
+        };
         var setter1 = new AssignNode([indexer1], [literal1]);
         
-        var literal2 = new LiteralNode(2, RuntimeSymbols.SymbolTable.Int);
-        var indexer2 = new IndexerNode(new MemberNode("a"), literal2);
-        indexer2.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var literal2 = new LiteralNode(2, Builtins.Int);
+        var indexer2 = new IndexerNode(new MemberNode("a"), literal2)
+        {
+            ItemType = Builtins.Int
+        };
         var setter2 = new AssignNode([indexer2], [literal2]);
         
         return 
@@ -66,8 +74,10 @@ public class ArrayElementManipulation
         /*
          * return a[ix];
          */
-        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(index, RuntimeSymbols.SymbolTable.Int));
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(index, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -84,8 +94,10 @@ public class ArrayElementManipulation
         /*
          * return a[-1];
          */
-        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int));
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -102,8 +114,10 @@ public class ArrayElementManipulation
         /*
          * return a[4];
          */
-        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(4, RuntimeSymbols.SymbolTable.Int));
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(4, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -121,15 +135,19 @@ public class ArrayElementManipulation
          * i := 0;
          * return a[i++];
          */
-        var variableType = new TypeNode(new TypeNameNode("int"));
-        variableType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
+        var variableType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
         var definition = new VariableDefinitionNode(variableType, new VariableNameNode("i"));
-        var assign = new AssignNode([definition], [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]);
+        var assign = new AssignNode([definition], [new LiteralNode(0, Builtins.Int)]);
         
-        var elemGetter = new IndexerNode(new MemberNode("a"), new PostfixIncrementNode(new MemberNode("i")));
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), new PostfixIncrementNode(new MemberNode("i")))
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.AddRange([assign, new ReturnNode(elemGetter)]);
         var body = new BodyNode(bodyItems);
@@ -145,9 +163,11 @@ public class ArrayElementManipulation
         /*
          * return a[1 + 1];
          */
-        var elemGetter = new IndexerNode(new MemberNode("a"), new AddNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)));
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), new AddNode(new LiteralNode(1, Builtins.Int), new LiteralNode(1, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -163,15 +183,21 @@ public class ArrayElementManipulation
         /*
          * return a[int(1.0)]
          */
-        var castTargetType = new TypeNode(new TypeNameNode("int"));
-        castTargetType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
+        var castTargetType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
-        var cast = new CastNode(castTargetType, new LiteralNode(1.0, RuntimeSymbols.SymbolTable.Double));
-        cast.SetFromType(RuntimeSymbols.SymbolTable.Double);
-        
-        var elemGetter = new IndexerNode(new MemberNode("a"), cast);
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
+        var cast = new CastNode(castTargetType, new LiteralNode(1.0, Builtins.Double))
+        {
+            FromType = Builtins.Double
+        };
+
+        var elemGetter = new IndexerNode(new MemberNode("a"), cast)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -189,11 +215,13 @@ public class ArrayElementManipulation
          */
         var call = new CallNode(null, new FuncCallNameNode(nameof(GetZero)), []);
         var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
-        call.SetInfo(EmissionSetupHelper.MakeFuncRef(info));
+        call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
         
-        var elemGetter = new IndexerNode(new MemberNode("a"), call);
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), call)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -209,12 +237,16 @@ public class ArrayElementManipulation
         /*
          * return a[a[1]];
          */
-        var elemGetterInner = new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int));
-        elemGetterInner.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
-        var elemGetter = new IndexerNode(new MemberNode("a"), elemGetterInner);
-        elemGetter.SetItemType(RuntimeSymbols.SymbolTable.Int);
-        
+        var elemGetterInner = new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
+
+        var elemGetter = new IndexerNode(new MemberNode("a"), elemGetterInner)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -238,8 +270,10 @@ public class ArrayElementManipulation
          * a[ix] := -ix;
          * return a;
          */
-        var indexerNode = new IndexerNode(new MemberNode("a"), new MemberNode("ix"));
-        indexerNode.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexerNode = new IndexerNode(new MemberNode("a"), new MemberNode("ix"))
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexerNode],
             [new UnaryMinusNode(new MemberNode("ix"))]
@@ -262,11 +296,13 @@ public class ArrayElementManipulation
         /*
          * a[-1] := -1;
          */
-        var indexerNode = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int));
-        indexerNode.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexerNode = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexerNode], 
-            [new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(-1, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -285,11 +321,13 @@ public class ArrayElementManipulation
         /*
          * a[4] := 0;
          */
-        var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(4, RuntimeSymbols.SymbolTable.Int));
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(4, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(0, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -308,11 +346,13 @@ public class ArrayElementManipulation
         /*
          * a[-(-1)] := 42;
          */
-        var indexer = new IndexerNode(new MemberNode("a"), new UnaryMinusNode(new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int)));
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexer = new IndexerNode(new MemberNode("a"), new UnaryMinusNode(new LiteralNode(-1, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(42, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(42, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -331,12 +371,14 @@ public class ArrayElementManipulation
          * a[100 - 99] := 98;
          */
         var indexer = new IndexerNode(new MemberNode("a"),
-            new SubNode(new LiteralNode(100, RuntimeSymbols.SymbolTable.Int), new LiteralNode(99, RuntimeSymbols.SymbolTable.Int)));
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+            new SubNode(new LiteralNode(100, Builtins.Int), new LiteralNode(99, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
 
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(98, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(98, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -354,16 +396,22 @@ public class ArrayElementManipulation
         /*
          * a[int(2.0)] := 11;
          */
-        var toType = new TypeNode(new TypeNameNode("int"));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
-        var cast = new CastNode(toType, new LiteralNode(2.0, RuntimeSymbols.SymbolTable.Double));
-        cast.SetFromType(RuntimeSymbols.SymbolTable.Double);
+        var toType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
+        var cast = new CastNode(toType, new LiteralNode(2.0, Builtins.Double))
+        {
+            FromType = Builtins.Double
+        };
 
-        var indexer = new IndexerNode(new MemberNode("a"), cast);
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexer = new IndexerNode(new MemberNode("a"), cast)
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(11, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(11, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -383,13 +431,15 @@ public class ArrayElementManipulation
          */
         var callNode = new CallNode(null, new FuncCallNameNode("getZero"), []);
         var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
-        callNode.SetInfo(EmissionSetupHelper.MakeFuncRef(info));
+        callNode.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
 
-        var indexer = new IndexerNode(new MemberNode("a"), callNode);
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexer = new IndexerNode(new MemberNode("a"), callNode)
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(-99, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(-99, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();
@@ -407,14 +457,18 @@ public class ArrayElementManipulation
         /*
          * a[a[1]] := -1;
          */
-        var getterNode = new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int));
-        getterNode.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var getterNode = new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
-        var indexer = new IndexerNode(new MemberNode("a"), getterNode);
-        indexer.SetItemType(RuntimeSymbols.SymbolTable.Int);
+        var indexer = new IndexerNode(new MemberNode("a"), getterNode)
+        {
+            ItemType = Builtins.Int
+        };
         var setter = new AssignNode(
             [indexer],
-            [new LiteralNode(-1, RuntimeSymbols.SymbolTable.Int)]
+            [new LiteralNode(-1, Builtins.Int)]
         );
 
         var instructionList = MakeArrayInitAst();

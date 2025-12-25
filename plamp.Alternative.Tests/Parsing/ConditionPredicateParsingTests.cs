@@ -4,7 +4,6 @@ using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -15,7 +14,7 @@ public class ConditionPredicateParsingTests
     public static IEnumerable<object[]> ParseConditionPredicate_Correct_DataProvider()
     {
         yield return ["(a)", new MemberNode("a")];
-        yield return ["(true)", new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool)];
+        yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
         yield return ["(fn1())", new CallNode(null, new FuncCallNameNode("fn1"), [])];
     }
     

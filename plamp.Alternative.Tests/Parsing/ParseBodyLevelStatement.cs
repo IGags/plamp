@@ -5,7 +5,6 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -17,10 +16,10 @@ public class ParseBodyLevelStatement
     {
         yield return ["a + b;", new AddNode(new MemberNode("a"), new MemberNode("b"))];
         yield return ["if(a);", new ConditionNode(new MemberNode("a"), new BodyNode([]), null)];
-        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool), new BodyNode([]))];
+        yield return ["while(true);", new WhileNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]))];
         yield return ["break;", new BreakNode()];
         yield return ["continue;", new ContinueNode()];
-        yield return ["return false;", new ReturnNode(new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool))];
+        yield return ["return false;", new ReturnNode(new LiteralNode(false, Builtins.Bool))];
     }
     
     [Theory]

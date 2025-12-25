@@ -6,7 +6,6 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -16,7 +15,7 @@ public class WhileLoopParsingTests
 {
     public static IEnumerable<object[]> ParseWhileLoop_Correct_DataProvider()
     {
-        yield return ["while(true);", new WhileNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool), new BodyNode([]))];
+        yield return ["while(true);", new WhileNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]))];
         yield return
         [
             "while(!a) fn1();",
@@ -36,10 +35,10 @@ public class WhileLoopParsingTests
             }
             """,
             new WhileNode(
-                new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool),
+                new LiteralNode(false, Builtins.Bool),
                 new BodyNode([
                     new CallNode(null, new FuncCallNameNode("calli"), 
-                        [new MulNode(new LiteralNode(1245, RuntimeSymbols.SymbolTable.Int), new LiteralNode(244, RuntimeSymbols.SymbolTable.Int))])
+                        [new MulNode(new LiteralNode(1245, Builtins.Int), new LiteralNode(244, Builtins.Int))])
                 ])
             )
         ];

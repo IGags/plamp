@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative;
 
@@ -506,21 +506,21 @@ public static class PlampExceptionInfo
 
     public static PlampExceptionRecord FunctionIsNotFound(
         string functionName, 
-        IEnumerable<ICompileTimeType?> signature) =>
+        IEnumerable<ITypeInfo?> signature) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.TypeName ?? "???"))}) not found.",
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) not found.",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 
     public static PlampExceptionRecord AmbigulousFunctionReference(
         string functionName,
-        IEnumerable<ICompileTimeType?> signature,
+        IEnumerable<ITypeInfo?> signature,
         IEnumerable<string> modules) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.TypeName ?? "???"))}) defined in {string.Join(", ", modules)} modules",
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) defined in {string.Join(", ", modules)} modules",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };

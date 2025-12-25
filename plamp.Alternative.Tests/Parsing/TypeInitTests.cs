@@ -1,7 +1,6 @@
 using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -80,7 +79,7 @@ public class TypeInitTests
         node.Type.TypeName.Name.ShouldBe("MyType");
         var initField = node.FieldInitializers.ShouldHaveSingleItem();
         initField.FieldName.Value.ShouldBe("x");
-        initField.Value.ShouldBeEquivalentTo(new LiteralNode(10, RuntimeSymbols.SymbolTable.Int));
+        initField.Value.ShouldBeEquivalentTo(new LiteralNode(10, Builtins.Int));
     }
 
     [Fact]
@@ -97,10 +96,10 @@ public class TypeInitTests
         node.FieldInitializers.Count.ShouldBe(2);
 
         var xField = node.FieldInitializers.First(x => x.FieldName.Value == "x");
-        xField.Value.ShouldBeEquivalentTo(new LiteralNode(10, RuntimeSymbols.SymbolTable.Int));
+        xField.Value.ShouldBeEquivalentTo(new LiteralNode(10, Builtins.Int));
         
         var yField = node.FieldInitializers.First(x => x.FieldName.Value == "y");
-        yField.Value.ShouldBeEquivalentTo(new LiteralNode("bib", RuntimeSymbols.SymbolTable.String));
+        yField.Value.ShouldBeEquivalentTo(new LiteralNode("bib", Builtins.String));
     }
 
     [Fact]

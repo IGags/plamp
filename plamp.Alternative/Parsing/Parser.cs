@@ -17,7 +17,6 @@ using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
-using plamp.Intrinsics;
 
 namespace plamp.Alternative.Parsing;
 
@@ -404,7 +403,7 @@ public static class Parser
 
         if (type == null)
         {
-            var voidName = new TypeNameNode(RuntimeSymbols.SymbolTable.Void.TypeName);
+            var voidName = new TypeNameNode(Builtins.Void.Name);
             context.TranslationTable.AddSymbol(voidName, funcName.Position);
             type = new TypeNode(voidName);
             context.TranslationTable.AddSymbol(type, funcName.Position);
@@ -1041,15 +1040,15 @@ public static class Parser
             switch (keywordToken.Keyword)
             {
                 case Keywords.Null:
-                    node = new LiteralNode(null, RuntimeSymbols.SymbolTable.Any);
+                    node = new LiteralNode(null, Builtins.Any);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.True:
-                    node = new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool);
+                    node = new LiteralNode(true, Builtins.Bool);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case Keywords.False:
-                    node = new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool);
+                    node = new LiteralNode(false, Builtins.Bool);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
             }
@@ -1065,8 +1064,9 @@ public static class Parser
 
         if (context.Sequence.Current() is Literal literal)
         {
-            if (!RuntimeSymbols.SymbolTable.TryGetFromClrType(literal.ActualType, out var typeRef)) return false;
-            node = new LiteralNode(literal.ActualValue, typeRef);
+            var builtinType = Builtins.SymTable.FindType(literal.ActualType.Name);
+            if (builtinType == null) return false;
+            node = new LiteralNode(literal.ActualValue, builtinType);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(node, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
@@ -8,6 +9,8 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields) : NodeBase
 {
     public TypedefNameNode Name { get; private set; } = name;
+    
+    public TypeBuilder? Type { get; set; }
 
     public IReadOnlyList<FieldDefNode> Fields => fields;
 

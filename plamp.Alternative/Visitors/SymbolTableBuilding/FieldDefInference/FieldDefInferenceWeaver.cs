@@ -16,7 +16,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         SymbolTableBuildingContext outerContext) 
         => innerContext;
 
-    protected override VisitResult PreVisitFieldDefNode(FieldDefNode defNode, FieldInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PreVisitFieldDef(FieldDefNode defNode, FieldInferenceInnerContext context, NodeBase? parent)
     {
         if (parent is TypedefNode parentType && defNode.Name.Value == parentType.Name.Value)
         {

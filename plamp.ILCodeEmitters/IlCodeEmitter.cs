@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Reflection.Emit;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -10,6 +9,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.ILCodeEmitters;
 
@@ -460,11 +460,11 @@ public static class IlCodeEmitter
         switch (target)
         {
             case FieldAccessNode accessNode:
-                if (accessNode.Field is not { Symbol: { } info })
+                if (accessNode.Field is not { FieldInfo: { } info })
                 {
                     throw new Exception("Member access must be a field. If you see this exception write to a compiler developer.");
                 }
-                emitFld = info.GetDefinitionInfo().ClrField;
+                emitFld = info.AsField();
                 EmitGetMember(accessNode.From, context, false);
                 break;
             case VariableDefinitionNode varDef:
@@ -504,7 +504,7 @@ public static class IlCodeEmitter
         }
         else if (target is IndexerNode indexerNode)
         {
-            var itemType = indexerNode.ItemType?.GetDefinitionInfo().ClrType;
+            var itemType = indexerNode.ItemType?.AsType();
             if (itemType == null)
                 throw new Exception("Array item type is not set. If you see this exception write to a compiler developer.");
             EmitSetArrayElemOpcode(itemType, context);
@@ -553,7 +553,7 @@ public static class IlCodeEmitter
             throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
         }
 
-        var fieldInfo = fieldNode.Symbol?.GetDefinitionInfo().ClrField;
+        var fieldInfo = fieldNode.FieldInfo?.AsField();
         if (fieldInfo == null)
         {
             throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
@@ -726,7 +726,7 @@ public static class IlCodeEmitter
         }
         
         var toType = GetTypeFromNode(node.ToType)!;
-        var fromType = node.FromType?.GetDefinitionInfo().ClrType;
+        var fromType = node.FromType?.AsType();
 
         if (fromType == null) throw new ArgumentException("From type cannot be null semantics exception");
         if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
@@ -791,7 +791,7 @@ public static class IlCodeEmitter
     private static void EmitLiteral(LiteralNode literalNode, EmissionContext context)
     {
         const string errorText = "Unknown literal type. Please report to compiler developer.";
-        var literalType = literalNode.Type.GetDefinitionInfo().ClrType;
+        var literalType = literalNode.Type.AsType();
         if (literalType == null) throw new Exception(errorText);
         
         if (literalType == typeof(string))
@@ -826,7 +826,7 @@ public static class IlCodeEmitter
         VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
-        if(variableDefinitionNode.Type?.TypedefRef?.GetDefinitionInfo().ClrType is not { } type) throw new Exception();
+        if(variableDefinitionNode.Type?.TypeInfo?.AsType() is not { } type) throw new Exception();
         if(variableDefinitionNode.Names is not { } members) throw new Exception();
         if (type == null) throw new ArgumentException("Cannot emit variable definition with null type");
         foreach (var member in members)
@@ -845,7 +845,7 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">Не известно как интерпретировать кому принадлежит метод</exception>
     private static void EmitCall(CallNode callNode, EmissionContext context, bool popResult)
     {
-        if(callNode.Symbol == null) throw new Exception();
+        if(callNode.FnInfo == null) throw new Exception();
         
         switch (callNode.From)
         {
@@ -864,7 +864,7 @@ public static class IlCodeEmitter
             if(arg is MemberNode) EmitGetMember(arg, context, true);
             else EmitSingleLineExpression(arg, context);
         }
-        var returnType = EmitMethodCall(callNode.Symbol, context);
+        var returnType = EmitMethodCall(callNode.FnInfo, context);
         
         if (returnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
     }
@@ -878,7 +878,7 @@ public static class IlCodeEmitter
     /// </summary>
     /// <param name="node">Узел AST</param>
     /// <returns>Тип в случае успеха иначе null</returns>
-    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypedefRef?.GetDefinitionInfo().ClrType;
+    private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypeInfo?.AsType();
 
     /// <summary>
     /// Выбор и генерация инструкции вызова метода по метаинформации о нём
@@ -886,9 +886,9 @@ public static class IlCodeEmitter
     /// <param name="fnRef">Метоинформация о методе</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <returns>Тип, который должен возвращать метод.</returns>
-    private static Type EmitMethodCall(ICompileTimeFunction fnRef, EmissionContext context)
+    private static Type EmitMethodCall(IFnInfo fnRef, EmissionContext context)
     {
-        var methodInfo = fnRef.GetDefinitionInfo().ClrMethod;
+        var methodInfo = fnRef.AsFunc();
         if (methodInfo == null) throw new Exception();
         var opcode = methodInfo.IsStatic ? OpCodes.Call : OpCodes.Callvirt;
         context.Generator.Emit(opcode, methodInfo);
@@ -970,7 +970,7 @@ public static class IlCodeEmitter
 
     private static void EmitArrayInitialization(InitArrayNode initArrayNode, EmissionContext context)
     {
-        var type = initArrayNode.ArrayItemType.TypedefRef?.GetDefinitionInfo().ClrType;
+        var type = initArrayNode.ArrayItemType.TypeInfo?.AsType();
         if (type == null) throw new Exception();
         EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
         context.Generator.Emit(OpCodes.Newarr, type);
@@ -978,7 +978,7 @@ public static class IlCodeEmitter
     
     private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context)
     {
-        if (indexerNode.ItemType?.GetDefinitionInfo().ClrType is not {} fromType) throw new Exception();
+        if (indexerNode.ItemType?.AsType() is not {} fromType) throw new Exception();
         EmitSingleLineExpression(indexerNode.From, context);
         EmitSingleLineExpression(indexerNode.IndexMember, context);
         

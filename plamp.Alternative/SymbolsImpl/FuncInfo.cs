@@ -8,6 +8,7 @@ namespace plamp.Alternative.SymbolsImpl;
 public class FuncInfo : IFnInfo
 {
     private readonly MethodInfo _fnInfo;
+    
     public string Name { get; }
     
     public IReadOnlyList<IArgInfo> Arguments { get; }
@@ -23,5 +24,11 @@ public class FuncInfo : IFnInfo
         ReturnType = new TypeInfo(fnInfo.ReturnType);
         Arguments = fnInfo.GetParameters()
             .Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+    }
+
+    public bool Equals(IFnInfo? other)
+    {
+        if (other is not FuncInfo fnInfo) return false;
+        return fnInfo._fnInfo == _fnInfo;
     }
 }

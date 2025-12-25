@@ -4,7 +4,6 @@ using System.Linq;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
@@ -13,10 +12,10 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
+using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -35,14 +34,16 @@ public class FuncCallTypeInferenceTests
             new CallNode(null, new FuncCallNameNode("a"), [])
         ]);
         
-        var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
+        var retType = new TypeNode(new TypeNameNode("void"))
+        {
+            TypeInfo = Builtins.Void
+        };
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymbolTable("mod", []), visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder(){ModuleName = "mod"}, visitor, funcDict);
     }
 
     [Theory, AutoData]
@@ -55,14 +56,16 @@ public class FuncCallTypeInferenceTests
             new CallNode(null, new FuncCallNameNode("a"), [])
         ]);
 
-        var retType = new TypeNode(new TypeNameNode("int"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
+        var retType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymbolTable("mod", []), visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder(){ModuleName = "mod"}, visitor, funcDict);
     }
 
     [Theory, AutoData]
@@ -70,14 +73,14 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode("hi", RuntimeSymbols.SymbolTable.String)])
+            new CallNode(null, new FuncCallNameNode("a"), [new LiteralNode(1, Builtins.Int), new LiteralNode("hi", Builtins.String)])
         ]);
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));
         var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
-        firstArgType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
-        secondArgType.SetTypeRef(RuntimeSymbols.SymbolTable.String);
+        retType.TypeInfo = Builtins.Void;
+        firstArgType.TypeInfo = Builtins.Int;
+        secondArgType.TypeInfo = Builtins.String;
         
         var def = new FuncNode(
             retType, 
@@ -91,7 +94,7 @@ public class FuncCallTypeInferenceTests
         {
             ["a"] = def
         };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymbolTable("mod", []), visitor, funcDict);
+        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder{ ModuleName = "mod" }, visitor, funcDict);
     }
 
     [Theory, AutoData]
@@ -102,8 +105,10 @@ public class FuncCallTypeInferenceTests
             new AssignNode([new MemberNode("b")], [new CallNode(null, new FuncCallNameNode("a"), [])])
         ]);
         
-        var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
+        var retType = new TypeNode(new TypeNameNode("void"))
+        {
+            TypeInfo = Builtins.Void
+        };
         var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
@@ -111,11 +116,11 @@ public class FuncCallTypeInferenceTests
         };
         
         SetupExceptionGenerationMock(translationTable);
-        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
-        var currentModule = (SymbolTable)context.Dependencies.First(x => x != RuntimeSymbols.SymbolTable);
+        var currentModule = new SymTableBuilder();
+        var context = new PreCreationContext(translationTable.Object, [currentModule]);
         foreach (var kvp in funcDict)
         {
-            currentModule.TryAddFunc(kvp.Key, kvp.Value.ReturnType.TypedefRef!, [], default, out _);
+            currentModule.DefineFunc(kvp.Value);
         }
         
         var result = visitor.WeaveDiffs(ast, context);
@@ -130,24 +135,21 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [new MemberNode("c"), new LiteralNode("hi", RuntimeSymbols.SymbolTable.String)])
+            new CallNode(null, new FuncCallNameNode("a"), [new MemberNode("c"), new LiteralNode("hi", Builtins.String)])
         ]);
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));
         var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
-        firstArgType.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
-        secondArgType.SetTypeRef(RuntimeSymbols.SymbolTable.String);
+        retType.TypeInfo = Builtins.Void;
+        firstArgType.TypeInfo = Builtins.Int;
+        secondArgType.TypeInfo = Builtins.String;
         
         SetupExceptionGenerationMock(translationTable);
-        var symbolTable = SymbolTableInitHelper.CreateEmptyTable();
+        var symbolTable = new SymTableBuilder();
+        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("a"),
+            [new(firstArgType, new("first")), new(secondArgType, new("second"))], new([])));
         
-        symbolTable.TryAddFunc("a", retType.TypedefRef!, 
-            [
-                new ("first", firstArgType.TypedefRef!), new ("second", secondArgType.TypedefRef!)
-            ], 
-            default, out _);
-        var context = new PreCreationContext(translationTable.Object, [symbolTable, RuntimeSymbols.SymbolTable]);
+        var context = new PreCreationContext(translationTable.Object, [symbolTable, Builtins.SymTable]);
         
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
@@ -165,15 +167,21 @@ public class FuncCallTypeInferenceTests
         result.ShouldBe(true);
         expression.ShouldNotBeNull();
         var visitor = new TypeInferenceWeaver();
-        var symbolTable = SymbolTableInitHelper.CreateEmptyTable();
-        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable, RuntimeSymbols.SymbolTable]);
-
-        var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
-        var argType = new TypeNode(new TypeNameNode("any"));
-        argType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
+        var symbolTable = new SymTableBuilder();
+        var retType = new TypeNode(new TypeNameNode("void"))
+        {
+            TypeInfo = Builtins.Void
+        };
+        var argType = new TypeNode(new TypeNameNode("any"))
+        {
+            TypeInfo = Builtins.Any
+        };
         
-        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [new ("first", argType.TypedefRef!)], default, out _);
+        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [new(argType, new("first"))], new([])));
+        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable, Builtins.SymTable]);
+
+        
+        
         var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
@@ -188,15 +196,20 @@ public class FuncCallTypeInferenceTests
         expression.ShouldNotBeNull();
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var symbolTable = SymbolTableInitHelper.CreateEmptyTable();
-        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable, RuntimeSymbols.SymbolTable]);
-
-        var retType = new TypeNode(new TypeNameNode("void"));
-        retType.SetTypeRef(RuntimeSymbols.SymbolTable.Void);
-        var argType = new TypeNode(new TypeNameNode("long"));
-        argType.SetTypeRef(RuntimeSymbols.SymbolTable.Long);
+        var symbolTable = new SymTableBuilder();
         
-        symbolTable.TryAddFunc("mock", retType.TypedefRef!, [new ("first", argType.TypedefRef!)], default, out _);
+        var retType = new TypeNode(new TypeNameNode("void"))
+        {
+            TypeInfo = Builtins.Void
+        };
+        var argType = new TypeNode(new TypeNameNode("long"))
+        {
+            TypeInfo = Builtins.Long
+        };
+
+        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [new(argType, new("first"))], new ([])));
+        
+        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable]);
         var weaveResult = visitor.WeaveDiffs(expression, preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
@@ -212,7 +225,7 @@ public class FuncCallTypeInferenceTests
     private void SetupMocksAndAssertCorrect(
         NodeBase ast, 
         Mock<ITranslationTable> translationTable, 
-        SymbolTable symbolTable,
+        SymTableBuilder symbolTable,
         TypeInferenceWeaver visitor, 
         Dictionary<string, FuncNode> funcs)
     {
@@ -221,10 +234,8 @@ public class FuncCallTypeInferenceTests
         var context = new PreCreationContext(translationTable.Object, [symbolTable]);
         foreach (var kvp in funcs)
         {
-            if (kvp.Value.ReturnType.TypedefRef == null) throw new Exception();
-            symbolTable.TryAddFunc(kvp.Key, kvp.Value.ReturnType.TypedefRef,
-                kvp.Value.ParameterList.Select(x => new KeyValuePair<string, ICompileTimeType>(x.Name.Value, x.Type.TypedefRef!)).ToList(), 
-                default, out _);
+            if (kvp.Value.ReturnType.TypeInfo == null) throw new Exception();
+            symbolTable.DefineFunc(kvp.Value);
         }
         
         var result = visitor.WeaveDiffs(ast, context);

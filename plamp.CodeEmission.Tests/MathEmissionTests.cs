@@ -9,8 +9,8 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
-using plamp.Intrinsics;
 using Shouldly;
 
 namespace plamp.CodeEmission.Tests;
@@ -59,18 +59,18 @@ public class MathEmissionTests
 
     public static IEnumerable<object[]> SimpleMathDataProvider()
     {
-        var firstLiteral = new LiteralNode(2, RuntimeSymbols.SymbolTable.Int);
-        var secondLiteral = new LiteralNode(-3, RuntimeSymbols.SymbolTable.Int);
-        var trueLiteral = new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool);
-        var falseLiteral = new LiteralNode(false, RuntimeSymbols.SymbolTable.Bool);
+        var firstLiteral = new LiteralNode(2, Builtins.Int);
+        var secondLiteral = new LiteralNode(-3, Builtins.Int);
+        var trueLiteral = new LiteralNode(true, Builtins.Bool);
+        var falseLiteral = new LiteralNode(false, Builtins.Bool);
         const float fl1 = 3.14f;
         const float fl2 = 6.81f;
-        var firstFloat = new LiteralNode(fl1, RuntimeSymbols.SymbolTable.Float);
-        var secondFloat = new LiteralNode(fl2, RuntimeSymbols.SymbolTable.Float);
+        var firstFloat = new LiteralNode(fl1, Builtins.Float);
+        var secondFloat = new LiteralNode(fl2, Builtins.Float);
         const double d1 = 3e-8d;
         const double d2 = 6.81d;
-        var firstDouble = new LiteralNode(d1, RuntimeSymbols.SymbolTable.Double);
-        var secondDouble = new LiteralNode(d2, RuntimeSymbols.SymbolTable.Double);
+        var firstDouble = new LiteralNode(d1, Builtins.Double);
+        var secondDouble = new LiteralNode(d2, Builtins.Double);
 
         var firstName = new MemberNode("tempConst1");
         var firstVariableName = new VariableNameNode("tempConst1");
@@ -188,21 +188,29 @@ public class MathEmissionTests
     public void EmitIncrementDecrement_Success(object inner, TypeNode variableType, Func<NodeBase, NodeBase> createFromInner, object innerShould, object resultShould)
     {
         var objParam = new TestParameter(typeof(CallbackClass), "obj");
-        var toType = new TypeNode(new TypeNameNode(nameof(Object)));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
+        var toType = new TypeNode(new TypeNameNode(nameof(Object)))
+        {
+            TypeInfo = Builtins.Any
+        };
 
-        var firstArg = new CastNode(toType, new MemberNode("a"));
-        firstArg.SetFromType(variableType.TypedefRef!);
-        
-        var secondArg = new CastNode(toType, new MemberNode("b"));
-        secondArg.SetFromType(variableType.TypedefRef!);
-        
-        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg]);
-        call.SetInfo(EmissionSetupHelper.MakeFuncRef(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!));
-        
+        var firstArg = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = variableType.TypeInfo!
+        };
+
+        var secondArg = new CastNode(toType, new MemberNode("b"))
+        {
+            FromType = variableType.TypeInfo!
+        };
+
+        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg])
+        {
+            FnInfo = EmissionSetupHelper.MakeFuncRef(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!)
+        };
+
         var body = new BodyNode(
         [
-            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.TypedefRef!)]),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.TypeInfo!)]),
             new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("b"))], [createFromInner(new MemberNode("a"))]),
             call,
             new ReturnNode(null)
@@ -217,24 +225,36 @@ public class MathEmissionTests
 
     public static IEnumerable<object[]> EmitIncrementDecrementDataProvider()
     {
-        var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)));
-        intTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
-        
-        var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)));
-        floatTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Float);
-        
-        var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)));
-        uintTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Uint);
-        
-        var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)));
-        doubleTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Double);
-        
-        var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)));
-        longTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Long);
-        
-        var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)));
-        ulongTypeNode.SetTypeRef(RuntimeSymbols.SymbolTable.Ulong);
-        
+        var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)))
+        {
+            TypeInfo = Builtins.Int
+        };
+
+        var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)))
+        {
+            TypeInfo = Builtins.Float
+        };
+
+        var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)))
+        {
+            TypeInfo = Builtins.Uint
+        };
+
+        var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)))
+        {
+            TypeInfo = Builtins.Double
+        };
+
+        var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)))
+        {
+            TypeInfo = Builtins.Long
+        };
+
+        var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)))
+        {
+            TypeInfo = Builtins.Ulong
+        };
+
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2, 2];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0, 0];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2, 1];
@@ -270,12 +290,18 @@ public class MathEmissionTests
     [MemberData(nameof(MaxValueOverflowDataProvider))]
     public void MaxValueOverflow_Success(object value, object one, Type actualType, object should)
     {
-        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetTypeRef(EmissionSetupHelper.MakeTypeRef(actualType));
-        var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
-        var castToObj = new CastNode(toType, new MemberNode("a"));
-        castToObj.SetFromType(EmissionSetupHelper.MakeTypeRef(actualType));
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name))
+        {
+            TypeInfo = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
+        var toType = new TypeNode(new TypeNameNode("object"))
+        {
+            TypeInfo = Builtins.Any
+        };
+        var castToObj = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
         var body = new BodyNode(
         [
             new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, EmissionSetupHelper.MakeTypeRef(actualType))]),
@@ -305,12 +331,18 @@ public class MathEmissionTests
     [MemberData(nameof(MaxValueUnderflowDataProvider))]
     public void MinValueUnderflow_Success(object value, object one, Type actualType, object should)
     {
-        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetTypeRef(EmissionSetupHelper.MakeTypeRef(actualType));
-        var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetTypeRef(RuntimeSymbols.SymbolTable.Any);
-        var castToObj = new CastNode(toType, new MemberNode("a"));
-        castToObj.SetFromType(EmissionSetupHelper.MakeTypeRef(actualType));
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name))
+        {
+            TypeInfo = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
+        var toType = new TypeNode(new TypeNameNode("object"))
+        {
+            TypeInfo = Builtins.Any
+        };
+        var castToObj = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
         var body = new BodyNode(
         [
             new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, EmissionSetupHelper.MakeTypeRef(actualType))]),
@@ -341,7 +373,7 @@ public class MathEmissionTests
     {
         var ast = new BodyNode(
         [
-            new ReturnNode(new DivNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)))
+            new ReturnNode(new DivNode(new LiteralNode(1, Builtins.Int), new LiteralNode(0, Builtins.Int)))
         ]);
         var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(int));
         Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();

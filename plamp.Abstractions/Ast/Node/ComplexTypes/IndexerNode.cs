@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 
@@ -18,10 +19,8 @@ public class IndexerNode(NodeBase from, NodeBase indexMember) : NodeBase
     /// </summary>
     public NodeBase From { get; private set; } = from;
     
-    public ICompileTimeType? ItemType { get; private set; }
+    public ITypeInfo? ItemType { get; set; }
     
-    public void SetItemType(ICompileTimeType? itemType) => ItemType = itemType;
-
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit() => [IndexMember, From];
 

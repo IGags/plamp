@@ -3,7 +3,6 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Intrinsics;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
 
@@ -18,7 +17,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
     {
-        if (RuntimeSymbols.SymbolTable.TryGetTypeByName(node.Name.Value, [], out _))
+        if (Builtins.SymTable.FindType(node.Name.Value) != null)
         {
             var record = PlampExceptionInfo.CannotDefineCoreType();
             SetExceptionToSymbol(node, record, context);

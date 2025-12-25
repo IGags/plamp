@@ -1,13 +1,15 @@
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Symbols;
+using plamp.Alternative.SymbolsImpl;
 using plamp.ILCodeEmitters;
+using TypeInfo = plamp.Alternative.SymbolsImpl.TypeInfo;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 
@@ -44,10 +46,9 @@ public class EmissionSetupHelper
         return (type, dbgMeth, module);
     }
 
-    public static ICompileTimeFunction MakeFuncRef(MethodInfo info) => new MockFuncRef(info);
-    public static ICompileTimeFunction MakeFuncRef(MethodInfo info, IEnumerable<ParameterInfo> argTypes, Type retType) => new MockFuncRef(info, argTypes, retType);
+    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info);
 
-    public static ICompileTimeType MakeTypeRef(Type type) => new MockTypeRef(type);
+    public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
 
     public static (object? instance, MethodInfo? methodInfo) CreateObject(Type builtType, string methodName)
     {
@@ -56,14 +57,14 @@ public class EmissionSetupHelper
         return (instance, createdMethod);
     }
 
-    public static TypeNode CreateTypeNode(ICompileTimeType type) => new ConcreteType(new TypeNameNode(type.TypeName), type);
+    public static TypeNode CreateTypeNode(ITypeInfo type) => new ConcreteType(new TypeNameNode(type.Name));
 
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
-    public static CallNode CreateCallNode(NodeBase? from, ICompileTimeFunction info, List<NodeBase> args) 
+    public static CallNode CreateCallNode(NodeBase? from, IFnInfo info, List<NodeBase> args) 
         => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info);
 
-    public static CastNode CreateCastNode(ICompileTimeType from, ICompileTimeType to, NodeBase inner)
+    public static CastNode CreateCastNode(ITypeInfo from, ITypeInfo to, NodeBase inner)
     {
         var toTyp = CreateTypeNode(to);
         return new ConcreteCastNode(toTyp, inner, from);
@@ -86,19 +87,13 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCastNode : CastNode
     {
-        public ConcreteCastNode(NodeBase toType, NodeBase inner, ICompileTimeType fromType) : base(toType, inner)
+        public ConcreteCastNode(NodeBase toType, NodeBase inner, ITypeInfo fromType) : base(toType, inner)
         {
             FromType = fromType;
         }
     }
     
-    private sealed class ConcreteType : TypeNode
-    {
-        public ConcreteType(TypeNameNode name, ICompileTimeType typedefRef) : base(name)
-        {
-            TypedefRef = typedefRef;
-        }
-    }
+    private sealed class ConcreteType(TypeNameNode name) : TypeNode(name);
     
     private sealed class ConcreteMember : MemberNode
     {
@@ -110,90 +105,9 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, ICompileTimeFunction symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args)
         {
-            Symbol = symbol;
-        }
-    }
-
-    private class MockTypeRef(Type definition) : ICompileTimeType
-    {
-        public bool Equals(ICompileTimeType? other) => ReferenceEquals(this, other);
-
-        public string TypeName { get; } = definition.Name;
-
-        public ISymbolTable DeclaringTable => throw new Exception();
-
-        public TypeDefinitionInfo GetDefinitionInfo()
-        {
-            var arrayUnderlyingType = definition.IsArray ? new MockTypeRef(definition.GetElementType()!) : null;
-            var info = new TypeDefinitionInfo()
-            {
-                ArrayUnderlyingType = arrayUnderlyingType,
-                DefinitionPosition = default,
-                Fields = [],
-                TypeName = TypeName
-            };
-            info.SetClrType(definition);
-            return info;
-        }
-
-        public ICompileTimeType MakeArrayType() => new MockTypeRef(definition.MakeArrayType());
-
-        public ICompileTimeField DefineField(string name, ICompileTimeType type) => throw new NotSupportedException();
-    }
-    
-    private class MockFuncRef : ICompileTimeFunction
-    {
-        private readonly MethodInfo _definition;
-
-        private readonly List<KeyValuePair<string, ICompileTimeType>> _args;
-
-        private readonly ICompileTimeType _returnType;
-        
-        public bool Equals(ICompileTimeFunction? other) => ReferenceEquals(this, other);
-
-        public ISymbolTable DeclaringTable => throw new Exception();
-        public string Name { get; }
-        public IReadOnlyList<ICompileTimeType> ArgumentTypes => _args.Select(x => x.Value).ToList();
-
-        public MockFuncRef(MethodInfo info, IEnumerable<ParameterInfo> argTypes, Type retType)
-        {
-            _definition = info;
-            Name = info.Name;
-            _args = new List<KeyValuePair<string, ICompileTimeType>>();
-            foreach (var parameter in argTypes)
-            {
-                _args.Add(new (parameter.Name!, new MockTypeRef(parameter.ParameterType)));
-            }
-
-            _returnType = new MockTypeRef(retType);
-        }
-        
-        public MockFuncRef(MethodInfo info)
-        {
-            _definition = info;
-            Name = info.Name;
-            _args = new List<KeyValuePair<string, ICompileTimeType>>();
-            foreach (var parameter in info.GetParameters())
-            {
-                _args.Add(new (parameter.Name!, new MockTypeRef(parameter.ParameterType)));
-            }
-
-            _returnType = new MockTypeRef(info.ReturnType);
-        }
-        
-        public FunctionDefinitionInfo GetDefinitionInfo()
-        {
-            var info = new FunctionDefinitionInfo()
-            {
-                ArgumentList = _args,
-                DefinitionPosition = default,
-                Name = Name,
-                ReturnType = _returnType
-            };
-            info.SetClrMethod(_definition);
-            return info;
+            FnInfo = symbol;
         }
     }
 }

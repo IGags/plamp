@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 
@@ -13,6 +14,8 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 /// <param name="body">Блок тела функции</param>
 public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<ParameterNode> parameterList, BodyNode body) : NodeBase
 {
+    public MethodBuilder? Func { get; set; }
+    
     /// <summary>
     /// Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void
     /// </summary>

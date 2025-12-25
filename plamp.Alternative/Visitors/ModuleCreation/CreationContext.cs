@@ -9,12 +9,9 @@ public class CreationContext : BaseVisitorContext
 
     public ModuleBuilder ModuleBuilder { get; }
 
-    public SymbolTable SymbolTable { get; init; }
-
     public CreationContext(
         AssemblyBuilder assemblyBuilder, 
         ModuleBuilder moduleBuilder, 
-        SymbolTable symbolTable, 
         BaseVisitorContext other) : base(other)
     {
         AssemblyBuilder = assemblyBuilder;
@@ -22,13 +19,11 @@ public class CreationContext : BaseVisitorContext
         TranslationTable = other.TranslationTable;
         Exceptions = other.Exceptions;
         Dependencies = other.Dependencies;
-        SymbolTable = symbolTable;
     }
 
     public CreationContext(CreationContext other) : base(other)
     {
         AssemblyBuilder = other.AssemblyBuilder;
         ModuleBuilder = other.ModuleBuilder;
-        SymbolTable = other.SymbolTable;
     }
 }

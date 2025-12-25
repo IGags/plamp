@@ -8,7 +8,6 @@ using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Alternative.Parsing;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -20,17 +19,17 @@ public class ExpressionParsingTests
     
     public static IEnumerable<object[]> ParseSimpleNud_DataProvider()
     {
-        yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["++1", new PrefixIncrementNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["+1", new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)];
-        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["!true", new NotNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool))];
-        yield return ["(true)", new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool)];
-        yield return ["(((true)))", new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool)];
+        yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["++1", new PrefixIncrementNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["+1", new LiteralNode(1, Builtins.Int)];
+        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["!true", new NotNode(new LiteralNode(true, Builtins.Bool))];
+        yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
+        yield return ["(((true)))", new LiteralNode(true, Builtins.Bool)];
         yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [])];
-        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int), new MemberNode("a")])];
+        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int), new MemberNode("a")])];
         yield return ["a", new MemberNode("a")];
-        yield return ["\"a\"", new LiteralNode("a", RuntimeSymbols.SymbolTable.String)];
+        yield return ["\"a\"", new LiteralNode("a", Builtins.String)];
     }
     
     [Theory]
@@ -81,10 +80,10 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
-        yield return ["a[1]", new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["a[1][t]", new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)), new MemberNode("t"))];
+        yield return ["a[1]", new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a[1][t]", new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)), new MemberNode("t"))];
         yield return ["a.b.c", new FieldAccessNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new FieldNode("c"))];
-        yield return ["a.b[1].c", new FieldAccessNode(new IndexerNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)), new FieldNode("c"))];
+        yield return ["a.b[1].c", new FieldAccessNode(new IndexerNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new LiteralNode(1, Builtins.Int)), new FieldNode("c"))];
     }
     
     [Theory]
@@ -139,16 +138,16 @@ public class ExpressionParsingTests
 
     public static IEnumerable<object[]> ParseBinaryExpression_Correct_DataProvider()
     {
-        yield return ["a + 1", new AddNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["a - 1", new SubNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["a * 1", new MulNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["a / 1", new DivNode(new MemberNode("a"), new LiteralNode(1, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["true = a", new EqualNode(new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool), new MemberNode("a"))];
-        yield return ["a != 5", new NotEqualNode(new MemberNode("a"), new LiteralNode(5, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["1 < 2", new LessNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["1 > 2", new GreaterNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["1 <= 2", new LessOrEqualNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int))];
-        yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, RuntimeSymbols.SymbolTable.Int), new LiteralNode(2, RuntimeSymbols.SymbolTable.Int))];
+        yield return ["a + 1", new AddNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a - 1", new SubNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a * 1", new MulNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a / 1", new DivNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["true = a", new EqualNode(new LiteralNode(true, Builtins.Bool), new MemberNode("a"))];
+        yield return ["a != 5", new NotEqualNode(new MemberNode("a"), new LiteralNode(5, Builtins.Int))];
+        yield return ["1 < 2", new LessNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 > 2", new GreaterNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 <= 2", new LessOrEqualNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
         yield return ["x || y", new OrNode(new MemberNode("x"), new MemberNode("y"))];
         yield return ["a && b", new AndNode(new MemberNode("a"), new MemberNode("b"))];
     }

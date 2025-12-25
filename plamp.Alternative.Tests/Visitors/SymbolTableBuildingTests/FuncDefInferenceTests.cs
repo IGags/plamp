@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -20,7 +19,7 @@ public class FuncDefInferenceTests
         var code = "module test;";
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        res.SymTableBuilder.ListFunctions().ShouldBeEmpty();
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
     [Fact]
@@ -33,12 +32,11 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var item = res.SymTableBuilder.ListFunctions().ShouldHaveSingleItem();
-        var info = item.GetDefinitionInfo();
-        info.Name.ShouldBe("a");
-        var argument = info.ArgumentList.ShouldHaveSingleItem();
-        argument.Key.ShouldBe("x");
-        argument.Value.ShouldBe(RuntimeSymbols.SymbolTable.Int);
+        var item = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        item.Name.ShouldBe("a");
+        var argument = item.Arguments.ShouldHaveSingleItem();
+        argument.Name.ShouldBe("x");
+        argument.Type.ShouldBe(Builtins.Int);
     }
 
     [Fact]
@@ -52,11 +50,11 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
-        var funcs = res.SymTableBuilder.ListFunctions();
+        var funcs = res.SymTableBuilder.ListFuncs();
         funcs.Count.ShouldBe(2);
         funcs.Select(x => x.Name).ShouldAllBe(x => x == "a");
-        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.Int);
-        funcs.Select(x => x.ArgumentTypes[0]).ShouldContain(RuntimeSymbols.SymbolTable.String);
+        funcs.Select(x => x.Arguments[0].Type).ShouldContain(Builtins.Int);
+        funcs.Select(x => x.Arguments[0].Type).ShouldContain(Builtins.String);
     }
 
     [Fact]
@@ -82,9 +80,8 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(0);
-        var fn = res.SymTableBuilder.ListFunctions().ShouldHaveSingleItem();
-        var info = fn.GetDefinitionInfo();
-        info.ReturnType.ShouldBe(RuntimeSymbols.SymbolTable.Void);
+        var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        fn.ReturnType.ShouldBe(Builtins.Void);
     }
 
     [Fact]
@@ -97,7 +94,7 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(1);
-        res.SymTableBuilder.ListFunctions().ShouldBeEmpty();
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
     [Fact]
@@ -110,7 +107,7 @@ public class FuncDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(1);
-        res.SymTableBuilder.ListFunctions().ShouldBeEmpty();
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
     [Fact]
@@ -124,7 +121,7 @@ public class FuncDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);
         res.Exceptions.All(x => x.Code == PlampExceptionInfo.DuplicateParameterName().Code).ShouldBe(true);
-        res.SymTableBuilder.ListFunctions().ShouldHaveSingleItem();
+        res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
     }
 
     private SymbolTableBuildingContext SetupAndAct(string code)

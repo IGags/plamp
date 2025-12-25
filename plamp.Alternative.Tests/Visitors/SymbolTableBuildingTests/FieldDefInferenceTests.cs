@@ -2,7 +2,6 @@ using System.Linq;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -21,7 +20,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        type.Fields.ShouldBeEmpty();
     }
 
     [Fact]
@@ -35,9 +34,9 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        var field = type.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
+        var field = type.Fields.ShouldHaveSingleItem();
         field.Name.ShouldBe("x");
-        field.Type.ShouldBe(RuntimeSymbols.SymbolTable.Int);
+        field.FieldType.ShouldBe(Builtins.Int);
     }
 
     [Fact]
@@ -53,13 +52,13 @@ public class FieldDefInferenceTests
         res.Exceptions.ShouldBeEmpty();
         var types = res.SymTableBuilder.ListTypes();
         types.Count.ShouldBe(2);
-        var fieldTypeInfo = types.First(x => x.TypeName == "B");
-        fieldTypeInfo.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        var fieldTypeInfo = types.First(x => x.Name == "B");
+        fieldTypeInfo.Fields.ShouldBeEmpty();
         
-        var parentTypeInfo = types.First(x => x.TypeName == "A");
-        var field = parentTypeInfo.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
+        var parentTypeInfo = types.First(x => x.Name == "A");
+        var field = parentTypeInfo.Fields.ShouldHaveSingleItem();
         field.Name.ShouldBe("x");
-        field.Type.ShouldBe(fieldTypeInfo);
+        field.FieldType.ShouldBe(fieldTypeInfo);
     }
 
     [Fact]
@@ -73,10 +72,10 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        var field = type.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
+        var field = type.Fields.ShouldHaveSingleItem();
         
         field.Name.ShouldBe("x");
-        field.Type.ShouldBe(type);
+        field.FieldType.ShouldBe(type);
     }
 
     [Fact]
@@ -94,13 +93,13 @@ public class FieldDefInferenceTests
         var types = res.SymTableBuilder.ListTypes();
         //Тип массива тоже учитывается
         types.Count.ShouldBe(3);
-        var fieldTypeInfo = types.First(x => x.TypeName == "B");
-        fieldTypeInfo.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        var fieldTypeInfo = types.First(x => x.Name == "B");
+        fieldTypeInfo.Fields.ShouldBeEmpty();
         
-        var parentTypeInfo = types.First(x => x.TypeName == "A");
-        var field = parentTypeInfo.GetDefinitionInfo().Fields.ShouldHaveSingleItem();
+        var parentTypeInfo = types.First(x => x.Name == "A");
+        var field = parentTypeInfo.Fields.ShouldHaveSingleItem();
         field.Name.ShouldBe("x");
-        field.Type.ShouldBe(fieldTypeInfo.MakeArrayType());
+        field.FieldType.ShouldBe(fieldTypeInfo.MakeArrayType());
     }
 
     [Fact]
@@ -116,7 +115,7 @@ public class FieldDefInferenceTests
         ex.Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound("B").Code);
         
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        type.Fields.ShouldBeEmpty();
     }
 
     [Fact]
@@ -135,7 +134,7 @@ public class FieldDefInferenceTests
             .ShouldBeTrue();
         
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        type.Fields.ShouldBeEmpty();
     }
 
     [Fact]
@@ -151,7 +150,7 @@ public class FieldDefInferenceTests
         ex.Code.ShouldBe(PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType().Code);
      
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetDefinitionInfo().Fields.ShouldBeEmpty();
+        type.Fields.ShouldBeEmpty();
     }
     
     private SymbolTableBuildingContext SetupAndAct(string code)

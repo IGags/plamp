@@ -27,8 +27,8 @@
 
     <ItemGroup>
       <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
+      <ProjectReference Include="..\plamp.Alternative\plamp.Alternative.csproj" />
       <ProjectReference Include="..\plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" />
-      <ProjectReference Include="..\plamp.Intrinsics\plamp.Intrinsics.csproj" />
     </ItemGroup>
 
 </Project>

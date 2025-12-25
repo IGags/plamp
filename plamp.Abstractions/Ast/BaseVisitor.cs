@@ -174,7 +174,7 @@ public abstract class BaseVisitor<TContext>
             case TypedefNode typedef:
                 return VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef);
             case FieldDefNode fieldDef:
-                return VisitCore(fieldDef, context, parent, PreVisitFieldDefNode, PostVisitFieldDefNode);
+                return VisitCore(fieldDef, context, parent, PreVisitFieldDef, PostVisitFieldDef);
             case TypedefNameNode typedefName:
                 return VisitCore(typedefName, context, parent, PreVisitTypedefName, PostVisitTypedefName);
             case FieldNameNode fieldName:
@@ -1200,7 +1200,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="defNode">Узел объявления поля типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitFieldDefNode(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PreVisitFieldDef(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов после посещением узла объявления поля типа 
@@ -1208,7 +1208,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="defNode">Узел объявления поля типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitFieldDefNode(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PostVisitFieldDef(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов перед посещением узла имени поля типа

@@ -7,7 +7,10 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 
 public class EmptyFieldInfo(FieldDefNode fieldDef) : IFieldInfo
 {
-    public FieldInfo AsField() => throw new NotSupportedException();
+    public FieldInfo AsField()
+    {
+        return fieldDef.Field ?? throw new NullReferenceException();
+    }
 
     public ITypeInfo FieldType => fieldDef.FieldType.TypeInfo ?? throw new NullReferenceException();
     

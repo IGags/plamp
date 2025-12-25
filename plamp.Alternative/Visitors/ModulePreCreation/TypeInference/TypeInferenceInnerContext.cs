@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
+using plamp.Abstractions.Symbols;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
@@ -15,7 +15,7 @@ public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationCo
     
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
 
-    public Stack<ICompileTimeType?> InnerExpressionTypeStack { get; private set; } = [];
+    public Stack<ITypeInfo?> InnerExpressionTypeStack { get; private set; } = [];
 
     public FuncNode? CurrentFunc { get; set; }
 

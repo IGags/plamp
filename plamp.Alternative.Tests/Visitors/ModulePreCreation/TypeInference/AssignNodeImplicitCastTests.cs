@@ -7,7 +7,6 @@ using plamp.Alternative.Parsing;
 using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -39,8 +38,8 @@ public class AssignNodeImplicitCastTests
                     .Sources.ShouldHaveSingleItem()
                     .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
-                        y => y.FromType.ShouldBe(RuntimeSymbols.SymbolTable.Int),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().TypedefRef.ShouldBe(RuntimeSymbols.SymbolTable.Double)));
+                        y => y.FromType.ShouldBe(Builtins.Int),
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypeInfo.ShouldBe(Builtins.Double)));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 

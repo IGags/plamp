@@ -8,31 +8,30 @@ using plamp.Abstractions.AstManipulation.Validation;
 
 namespace plamp.Alternative.Visitors.ModuleCreation;
 
-public class DefSignatureCreationValidator : BaseValidator<CreationContext, CreationContext>
+public class FuncCreatorValidator : BaseValidator<CreationContext, CreationContext>
 {
     protected override VisitResult PreVisitFunction(FuncNode node, CreationContext context, NodeBase? parent)
     {
-        var signature = node.ParameterList.Select(x => x.Type.TypedefRef).ToArray();
+        var signature = node.ParameterList.Select(x => x.Type.TypeInfo).ToArray();
         var signatureTypes = new List<Type>();
         foreach (var typeRef in signature)
         {
-            var info = typeRef?.GetDefinitionInfo();
-            if (info?.ClrType == null) return VisitResult.SkipChildren;
-            signatureTypes.Add(info.ClrType);
+            var clrType = typeRef?.AsType();
+            if (clrType == null) return VisitResult.SkipChildren;
+            signatureTypes.Add(clrType);
         }
         
-        var retType = node.ReturnType.TypedefRef;
-        var typeInfo = retType?.GetDefinitionInfo();
-        if (typeInfo?.ClrType == null) return VisitResult.SkipChildren;
+        var retTypeInfo = node.ReturnType.TypeInfo;
+        var retType = retTypeInfo?.AsType();
+        if (retType == null) return VisitResult.SkipChildren;
         
         var methodBuilder = context.ModuleBuilder.DefineGlobalMethod(
             node.FuncName.Value,
             MethodAttributes.Static | MethodAttributes.Final | MethodAttributes.Public,
             CallingConventions.Standard,
-            typeInfo.ClrType,
+            retType,
             signatureTypes.ToArray());
-        var fnRef = context.SymbolTable.GetMatchingFunction(node.FuncName.Value, signature);
-        fnRef?.GetDefinitionInfo().SetClrMethod(methodBuilder);
+        node.Func = methodBuilder;
         return VisitResult.SkipChildren;
     }
 

@@ -18,19 +18,8 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     /// Список объявлений массива от внутреннего ко внешнему
     /// </summary>
     public List<ArrayTypeSpecificationNode> ArrayDefinitions { get; init; } = [];
-
-    /// <summary>
-    /// Ссылка на информацию об объявлении типа.
-    /// </summary>
-    public ICompileTimeType? TypedefRef { get; protected set; }
     
     public ITypeInfo? TypeInfo { get; set; }
-
-    /// <summary>
-    /// Установка ссылки на объявление внутри таблицы символов
-    /// </summary>
-    /// <param name="type">Ссылка на объявление типа</param>
-    public void SetTypeRef(ICompileTimeType type) => TypedefRef = type;
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

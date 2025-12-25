@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Abstractions;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.AstManipulation.Modification;
 using plamp.Abstractions.Symbols;
+using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 
@@ -23,6 +23,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
     protected override VisitResult PreVisitParameter(ParameterNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
         var typeNode = node.Type;
+        node.ParamInfo = new EmptyArgInfo(node);
         return ResolveTypeOrSetError(typeNode.TypeName.Name, typeNode, context);
     }
 
@@ -73,9 +74,9 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         var args = node.ParameterList;
         ValidateParameters(args, context);
         
-        var argTypes = args.Select(x => new KeyValuePair<string, ICompileTimeType?>(x.Name.Value, x.Type.TypedefRef)).ToList();
+        var argTypes = args.Select(x => new KeyValuePair<string, ITypeInfo?>(x.Name.Value, x.Type.TypeInfo)).ToList();
         
-        var returnType = node.ReturnType.TypedefRef;
+        var returnType = node.ReturnType.TypeInfo;
         if (returnType == null || argTypes.Any(x => x.Value == null)) return;
         _ = context.SymTableBuilder.DefineFunc(node);
     }
@@ -104,8 +105,8 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         if (first.Count != second.Count) return false;
         for (var i = 0; i < first.Count; i++)
         {
-            var firstRef = first[i].Type.TypedefRef;
-            var secondRef = second[i].Type.TypedefRef;
+            var firstRef = first[i].Type.TypeInfo;
+            var secondRef = second[i].Type.TypeInfo;
             if (firstRef != null && secondRef != null && firstRef.Equals(secondRef)) continue;
             if (firstRef != null && secondRef != null && firstRef.Equals(secondRef)) return false;
             if (first[i].Type.TypeName.Name != second[i].Type.TypeName.Name) return false;

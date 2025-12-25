@@ -5,7 +5,6 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -19,7 +18,7 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(true, RuntimeSymbols.SymbolTable.Bool),
+            new LiteralNode(true, Builtins.Bool),
             new BodyNode([]));
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -30,7 +29,7 @@ public class LoopTypeInferenceTests
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(1, RuntimeSymbols.SymbolTable.Int),
+            new LiteralNode(1, Builtins.Int),
             new BodyNode([]));
         
         SetupExceptionGenerationMock(translationTable);

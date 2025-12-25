@@ -16,7 +16,6 @@ using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference.Util;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
-using plamp.Intrinsics;
 using Shouldly;
 using Xunit;
 
@@ -29,7 +28,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)])
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
@@ -57,7 +56,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)]),
             new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
@@ -66,9 +65,9 @@ public class VariableTypeInferenceTests
     [Theory, AutoData]
     public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", RuntimeSymbols.SymbolTable.String)]);
+        var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", Builtins.String)]);
         var ast = new BodyNode([
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)]),
             exceptionMember
         ]);
         
@@ -87,10 +86,10 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)]),
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, Builtins.Int)])
             ])
         ]);
         
@@ -105,9 +104,9 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, Builtins.Int)])
             ]),
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)])
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)])
         ]);
         
         SetupExceptionGenerationMock(translationTable);
@@ -128,11 +127,11 @@ public class VariableTypeInferenceTests
         [
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(2, RuntimeSymbols.SymbolTable.Int)])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(2, Builtins.Int)])
             ]),
             new BodyNode(
             [
-                new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)])
+                new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)])
             ])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
@@ -155,7 +154,7 @@ public class VariableTypeInferenceTests
         [
             new AssignNode(
                 [new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))],
-                [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)])
+                [new LiteralNode(1, Builtins.Int)])
         ]);
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
@@ -187,7 +186,7 @@ public class VariableTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("a")], [new LiteralNode(1, RuntimeSymbols.SymbolTable.Int)]),
+            new AssignNode([new MemberNode("a")], [new LiteralNode(1, Builtins.Int)]),
             new AssignNode([new MemberNode("b")], [new MemberNode("a")])
         ]);
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
@@ -379,8 +378,10 @@ public class VariableTypeInferenceTests
 
     public static IEnumerable<object[]> InitDefault_Correct_DataProvider()
     {
-        var defType1 = new TypeNode(new TypeNameNode("int"));
-        defType1.SetTypeRef(RuntimeSymbols.SymbolTable.Int);
+        var defType1 = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
         yield return
         [
             """
@@ -395,16 +396,21 @@ public class VariableTypeInferenceTests
                         [new VariableNameNode("a"), new VariableNameNode("b"), new VariableNameNode("c")])
                 ],
                 [
-                    new LiteralNode(0, RuntimeSymbols.SymbolTable.Int)
+                    new LiteralNode(0, Builtins.Int)
                 ]
             )
         ];
 
-        var defType2 = new TypeNode(new TypeNameNode("string")){ArrayDefinitions = [new ArrayTypeSpecificationNode()]};
-        defType2.SetTypeRef(RuntimeSymbols.SymbolTable.String.MakeArrayType());
-        var itemType = new TypeNode(new TypeNameNode("string"));
-        itemType.SetTypeRef(RuntimeSymbols.SymbolTable.String);
-        var mkArrayNode = new InitArrayNode(itemType, new LiteralNode(0, RuntimeSymbols.SymbolTable.Int));
+        var defType2 = new TypeNode(new TypeNameNode("string"))
+        {
+            ArrayDefinitions = [new ArrayTypeSpecificationNode()],
+            TypeInfo = Builtins.String.MakeArrayType()
+        };
+        var itemType = new TypeNode(new TypeNameNode("string"))
+        {
+            TypeInfo = Builtins.String
+        };
+        var mkArrayNode = new InitArrayNode(itemType, new LiteralNode(0, Builtins.Int));
         yield return
         [
             """
