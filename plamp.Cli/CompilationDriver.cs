@@ -35,7 +35,6 @@ public static class CompilationDriver
         var dependencies = new List<ISymTable> { Builtins.SymTable };
         var currentModuleTableBuilder = new SymTableBuilder { ModuleName = "<undefined>" };
         
-        dependencies.Add(currentModuleTableBuilder);
         var symTableBuildingContext = new SymbolTableBuildingContext(
             translationTable, 
             dependencies,
@@ -70,6 +69,7 @@ public static class CompilationDriver
         var funcDefInferenceWeaver = new FuncDefInferenceWeaver();
         symTableBuildingContext = funcDefInferenceWeaver.WeaveDiffs(ast, symTableBuildingContext);
 
+        dependencies.Add(currentModuleTableBuilder);
         var preCreateContext = new PreCreationContext(symTableBuildingContext.TranslationTable, dependencies);
         preCreateContext.Exceptions.AddRange(symTableBuildingContext.Exceptions);
         
@@ -79,6 +79,8 @@ public static class CompilationDriver
         
         var typeInferenceVisitor = new TypeInferenceWeaver();
         preCreateContext = typeInferenceVisitor.WeaveDiffs(ast, preCreateContext);
+        
+        
 
         if (preCreateContext.Exceptions.Count != 0)
         {

@@ -8,8 +8,6 @@ namespace plamp.Alternative.Tests.Parsing;
 
 public class ParseFieldAccessSequenceTests
 {
-    
-
     [Fact]
     //Пустая строка - корректно
     public void ParseEmpty_Correct()

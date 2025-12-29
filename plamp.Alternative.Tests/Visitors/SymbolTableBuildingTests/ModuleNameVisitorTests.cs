@@ -34,9 +34,9 @@ public class ModuleNameVisitorTests
         var tree = new RootNode([], null, [], []);
         symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
         var visitor = new ModuleNameValidator();
-        var symbolTable = SymbolTableInitHelper.CreateEmptyTable();
-        var nameBeforeVisit = symbolTable.ModuleName;
-        var context = new SymbolTableBuildingContext(symbols, [Builtins.SymTable], new SymTableBuilder());
+        var builder = new SymTableBuilder();
+        var nameBeforeVisit = builder.ModuleName;
+        var context = new SymbolTableBuildingContext(symbols, [Builtins.SymTable], builder);
         var resultContext = visitor.Validate(tree, context);
         Assert.Single(context.Exceptions);
         Assert.Equal(nameBeforeVisit, resultContext.SymTableBuilder.ModuleName);

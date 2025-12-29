@@ -533,5 +533,13 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord FieldIsNotFound() =>
+        new()
+        {
+            Message = "Field is not found in declaring type",
+            Code = "SEM1329",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

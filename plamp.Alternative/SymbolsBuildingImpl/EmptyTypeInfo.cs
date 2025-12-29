@@ -28,7 +28,15 @@ public class EmptyTypeInfo(TypedefNode typedefNode) : ITypeInfo
         return type;
     }
 
-    public IReadOnlyList<IFieldInfo> Fields { get; } = typedefNode.Fields.Select(x => new EmptyFieldInfo(x)).ToList();
+    public IReadOnlyList<IFieldInfo> Fields
+    {
+        get 
+        { 
+            return _typedefNode.Fields
+                .Select(x => x.FieldInfo)
+                .Where(x => x != null).ToList()!; 
+        }
+    }
 
     public string Name => _typedefNode.Name.Value;
 

@@ -63,53 +63,22 @@ internal class BuiltinSymTable : ISymTable
     {
         var typeDict = new Dictionary<string, TypeInfo>()
         {
-            [IntName] = new(typeof(int)),
-            [nameof(Int32)] = new(typeof(int)),
-            
-            [UintName] = new(typeof(uint)),
-            [nameof(UInt32)] = new(typeof(uint)),
-            
-            [LongName] = new(typeof(long)),
-            [nameof(Int64)] = new(typeof(long)),
-            
-            [UlongName] = new(typeof(ulong)),
-            [nameof(UInt64)] = new(typeof(ulong)),
-            
-            [ShortName] = new(typeof(short)),
-            [nameof(Int16)] = new(typeof(short)),
-            
-            [UshortName] = new(typeof(ushort)),
-            [nameof(UInt16)] = new(typeof(ushort)),
-            
-            [ByteName] = new(typeof(byte)),
-            [nameof(Byte)] = new(typeof(byte)),
-            
-            [SbyteName] = new(typeof(sbyte)),
-            [nameof(SByte)] = new(typeof(sbyte)),
-            
-            [FloatName] = new(typeof(float)),
-            [nameof(Single)] = new(typeof(float)),
-            
-            [DoubleName] = new(typeof(double)),
-            [nameof(Double)] = new(typeof(double)),
-            
-            [BoolName] = new(typeof(bool)),
-            [nameof(Boolean)] = new(typeof(bool)),
-            
-            [StringName] = new(typeof(string)),
-            [nameof(String)] = new(typeof(string)),
-            
-            [CharName] = new(typeof(char)),
-            [nameof(Char)] = new(typeof(char)),
-            
-            [AnyName] = new(typeof(object)),
-            [nameof(Object)] = new(typeof(object)),
-            
-            [ArrayName] = new(typeof(Array)),
-            [nameof(Array)] = new(typeof(Array)),
-            
-            [VoidName] = new(typeof(void)),
-            [typeof(void).Name] = new(typeof(void))
+            [IntName] = new(typeof(int), IntName),
+            [UintName] = new(typeof(uint), UintName),
+            [LongName] = new(typeof(long), LongName),
+            [UlongName] = new(typeof(ulong), UlongName),
+            [ShortName] = new(typeof(short), ShortName),
+            [UshortName] = new(typeof(ushort), UshortName),
+            [ByteName] = new(typeof(byte), ByteName),
+            [SbyteName] = new(typeof(sbyte), SbyteName),
+            [FloatName] = new(typeof(float), FloatName),
+            [DoubleName] = new(typeof(double), DoubleName),
+            [BoolName] = new(typeof(bool), BoolName),
+            [StringName] = new(typeof(string), StringName),
+            [CharName] = new(typeof(char), CharName),
+            [AnyName] = new(typeof(object), AnyName),
+            [ArrayName] = new(typeof(Array), ArrayName),
+            [VoidName] = new(typeof(void), VoidName)
         };
         _types = typeDict.ToFrozenDictionary();
 

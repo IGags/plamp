@@ -532,6 +532,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             {
                 case VariableDefinitionNode:
                 case IndexerNode:
+                case FieldAccessNode:
                     ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
                     continue;
                 case MemberNode leftMember:
@@ -606,7 +607,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var arrayUnderlyingType = type.ElementType();
         if (arrayUnderlyingType != null)
         {
-            var itemType = new TypeNode(new TypeNameNode(type.Name)) { TypeInfo = arrayUnderlyingType };
+            var itemType = new TypeNode(new TypeNameNode(arrayUnderlyingType.Name)) { TypeInfo = arrayUnderlyingType };
             var initArrayNode = new InitArrayNode(itemType, new LiteralNode(0, Builtins.Int));
             // []int a; => []int a := Array.Empty<int>()
             return new AssignNode([variableDefinition], [initArrayNode]);
@@ -636,6 +637,40 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return new AssignNode([variableDefinition], [new InitTypeNode(typeNode, [])]);
     }
     
+    #endregion
+
+    #region User-defined types
+
+    protected override VisitResult PostVisitFieldAccess(FieldAccessNode accessNode, TypeInferenceInnerContext context, NodeBase? parent)
+    {
+        var fromType = context.InnerExpressionTypeStack.Pop();
+        if (fromType == null)
+        {
+            context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+
+        var fieldName = accessNode.Field.Name;
+        var fieldInfo = fromType.Fields.FirstOrDefault(x => x.Name == fieldName);
+        if (fieldInfo == null)
+        {
+            var record = PlampExceptionInfo.FieldIsNotFound();
+            SetExceptionToSymbol(accessNode.Field, record, context);
+            context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+
+        accessNode.Field.FieldInfo = fieldInfo;
+        context.InnerExpressionTypeStack.Push(fieldInfo.FieldType);
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult PostVisitInitType(InitTypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    {
+        context.InnerExpressionTypeStack.Push(node.Type.TypeInfo);
+        return VisitResult.SkipChildren;
+    }
+
     #endregion
     
     #region Misc

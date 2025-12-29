@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
@@ -13,8 +14,11 @@ public class TypeCreatorValidator : BaseValidator<CreationContext, CreationConte
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, CreationContext context, NodeBase? parent)
     {
-        var typeBuilder = context.ModuleBuilder.DefineType(node.Name.Value,
-            TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed);
+        var typeBuilder = context.ModuleBuilder.DefineType(
+            node.Name.Value,
+            TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, 
+            typeof(ValueType));
+        
         node.Type = typeBuilder;
         return VisitResult.SkipChildren;
     }

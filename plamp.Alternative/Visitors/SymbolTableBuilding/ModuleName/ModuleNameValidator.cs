@@ -24,7 +24,7 @@ public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, Mod
             return VisitResult.Break;
         }
         
-        context.SymTableBuilder.ModuleName = node.ModuleName?.ModuleName ?? "";
+        context.SymTableBuilder.ModuleName = node.ModuleName.ModuleName;
         return VisitResult.Continue;
     }
 

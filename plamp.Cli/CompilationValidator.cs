@@ -1,7 +1,9 @@
 ﻿using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Alternative.Visitors.ModuleCreation;
+using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 
 namespace plamp.Cli;
@@ -17,15 +19,21 @@ public class CompilationValidator : BaseValidator<CreationContext, CreationConte
             throw new Exception();
         }
         
-        //var dbg = new DebugMethodBuilder(builder);
+        var dbg = new DebugMethodBuilder(builder);
         var emissionContext = new CompilerEmissionContext(
             node.Body,
-            builder,
+            dbg,
             parameters!, 
             context.TranslationTable);
         IlCodeEmitter.EmitMethodBody(emissionContext);
-        //Console.WriteLine(dbg.GetIlRepresentation());
+        Console.WriteLine(dbg.GetIlRepresentation());
         return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult PostVisitTypedef(TypedefNode node, CreationContext context, NodeBase? parent)
+    {
+        node.Type?.CreateType();
+        return VisitResult.Continue;
     }
 
     protected override CreationContext CreateInnerContext(CreationContext context) => context;

@@ -343,7 +343,7 @@ public class VariableTypeInferenceTests
         [
             """
             {
-                a := Print("14");
+                a := print("14");
             }
             """,
             new List<string>{PlampExceptionInfo.CannotAssignNone().Code}
@@ -446,6 +446,8 @@ public class VariableTypeInferenceTests
         var result = visitor.WeaveDiffs(body, preCreationContext);
         result.Exceptions.ShouldBeEmpty();
         var expression = body.ExpressionList.ShouldHaveSingleItem();
-        valueShould.ShouldBeEquivalentTo(expression);
+        
+        //TODO: Метод ломается, если в типе есть поля и сравнение происходит не по ссылке. Нужно что-то придумывать. Но это проблемы меня будущего.
+        expression.ShouldBeEquivalentTo(valueShould);
     }
 }

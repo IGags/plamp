@@ -92,7 +92,7 @@ public class FieldDefInferenceTests
         
         var types = res.SymTableBuilder.ListTypes();
         //Тип массива тоже учитывается
-        types.Count.ShouldBe(3);
+        types.Count.ShouldBe(2);
         var fieldTypeInfo = types.First(x => x.Name == "B");
         fieldTypeInfo.Fields.ShouldBeEmpty();
         

@@ -9,11 +9,18 @@ public static class Program
 """
 module playground;
 
-type Point { X, Y: int; Z: int }
+type Point { X, Y, Z: ComplexNumber }
+type ComplexNumber { Re, Im: float }
 
 fn array_init() {
     arr, i := [100]int, 0;
     while(i < length(arr)) arr[i++] := i * i;
+    p := Point{};
+    p.X.Re, p.X.Im := 30, -1;
+    println(p.X.Re);
+    println(p.X.Im);
+    println(p.Y);
+    println(p.Z);
     
     res := binary_search(arr, 144);
     
@@ -44,20 +51,27 @@ fn binary_search(array: []int, target: int) int {
     {
         var sw = Stopwatch.StartNew();
         var res = await CompilationDriver.CompileModuleAsync("aaa.plp", File, false);
-        Console.WriteLine($"Compilation tool {sw.Elapsed}");
+        Console.WriteLine($"Compilation took {sw.Elapsed}");
         if (res.Exceptions.Count > 0 || res.Compiled == null)
         {
             PrintRes(res.Exceptions);
             return;
         }
         var method = res.Compiled!.Modules.First().GetMethod("array_init");
+        sw.Restart();
         method!.Invoke(null, []);
-        method.Invoke(null, []);
-        method.Invoke(null, []);
-        
+        Console.WriteLine($"Execution took {sw.Elapsed}");
         sw.Restart();
         method.Invoke(null, []);
         Console.WriteLine($"Execution took {sw.Elapsed}");
+        sw.Restart();
+        method.Invoke(null, []);
+        Console.WriteLine($"Execution took {sw.Elapsed}");
+        sw.Restart();
+        method.Invoke(null, []);
+        Console.WriteLine($"Execution took {sw.Elapsed}");
+        
+        
 
         void PrintRes(List<PlampException> exList)
         {

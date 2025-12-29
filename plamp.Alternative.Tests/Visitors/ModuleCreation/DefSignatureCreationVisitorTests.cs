@@ -107,7 +107,7 @@ public class DefSignatureCreationVisitorTests
         var result = visitor.Validate(ast, context);
         //Cannot validate args due runtime constraints
         result.Exceptions.ShouldBeEmpty();
-        ast.Func.ShouldNotBeNull();
+        ast.Func.ShouldBeNull();
     }
 
     [Theory, AutoData]

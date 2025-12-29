@@ -54,5 +54,8 @@ public class SymTable : ISymTable
     
     public ITypeInfo? FindType(string name) => _types.GetValueOrDefault(name);
 
-    public IReadOnlyList<IFnInfo> FindFuncs(string name) => _funcs[name];
+    public IReadOnlyList<IFnInfo> FindFuncs(string name)
+    {
+        return _funcs.TryGetValue(name, out var overloads) ? overloads : [];
+    }
 }

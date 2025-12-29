@@ -146,7 +146,7 @@ public abstract class BaseVisitor<TContext>
             case VariableDefinitionNode variableDefinitionNode:
                 return VisitCore(variableDefinitionNode, context, parent, PreVisitVariableDefinition, PostVisitVariableDefinition);
             case FieldAccessNode memberAccessNode:
-                return VisitCore(memberAccessNode, context, parent, PreVisitMemberAccess, PostVisitMemberAccess);
+                return VisitCore(memberAccessNode, context, parent, PreVisitFieldAccess, PostVisitFieldAccess);
             case ThisNode thisNode:
                 return VisitCore(thisNode, context, parent, PreVisitThis, PostVisitThis);
             case LiteralNode constNode:
@@ -864,7 +864,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="accessNode">Узел доступа к члену типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitMemberAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PreVisitFieldAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов после посещения узла доступа к члену типа
@@ -872,7 +872,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="accessNode">Узел доступа к члену типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitMemberAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PostVisitFieldAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов перед посещением литерала(строковый, числовой или булев)

@@ -4,6 +4,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
 using plamp.Abstractions.Symbols;
+using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 
@@ -62,9 +63,15 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         for (var i = 0; i < context.Fields.Count; i++)
         {
             var fieldName = context.Fields[i].Name.Value;
-            if (!duplicateIndexes.Contains(i)) continue;
-            var record = PlampExceptionInfo.DuplicateFieldDefinition(fieldName);
-            SetExceptionToSymbol(node, record, context);
+            if (duplicateIndexes.Contains(i))
+            {
+                var record = PlampExceptionInfo.DuplicateFieldDefinition(fieldName);
+                SetExceptionToSymbol(node, record, context);
+                continue;
+            }
+
+            var field = context.Fields[i];
+            field.FieldInfo = new EmptyFieldInfo(field);
         }
         
         context.Fields.Clear();
