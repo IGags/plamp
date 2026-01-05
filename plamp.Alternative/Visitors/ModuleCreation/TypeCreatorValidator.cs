@@ -1,4 +1,3 @@
-using System;
 using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
@@ -16,9 +15,8 @@ public class TypeCreatorValidator : BaseValidator<CreationContext, CreationConte
     {
         var typeBuilder = context.ModuleBuilder.DefineType(
             node.Name.Value,
-            TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, 
-            typeof(ValueType));
-        
+            TypeAttributes.AutoLayout | TypeAttributes.Public | TypeAttributes.Sealed, 
+            typeof(object));
         node.Type = typeBuilder;
         return VisitResult.SkipChildren;
     }

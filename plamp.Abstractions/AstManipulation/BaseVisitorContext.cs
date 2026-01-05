@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.AstManipulation;
 

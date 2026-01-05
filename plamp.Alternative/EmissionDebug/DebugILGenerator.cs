@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace plamp.CodeEmission.Tests.Infrastructure;
+namespace plamp.Alternative.EmissionDebug;
 
 // ReSharper disable once InconsistentNaming
 public class DebugILGenerator : ILGenerator
@@ -104,7 +107,7 @@ public class DebugILGenerator : ILGenerator
     {
         WritePrefix();
         var code = opcode.ToString() ?? throw new InvalidOperationException();
-        _code.AppendLine($"{code} {con.Name}({string.Join(", ", con.GetParameters().Select(x => x.ParameterType.Name))})");
+        _code.AppendLine($"{code} {GetCtorInfoStringDesc(con)}");
         _inner.Emit(opcode, con);
     }
 
@@ -250,10 +253,21 @@ public class DebugILGenerator : ILGenerator
 
     private string GetMethodInfoStringDesc(MethodInfo meth)
     {
-        if (meth is MethodBuilder bd)
+        if (meth is MethodBuilder || meth.IsGenericMethod)
         {
-            return $"{bd.ReturnType} {bd.Name} DYNAMIC BUILDER METHOD";
+            return $"{meth.ReturnType} {meth.Name} DYNAMIC BUILDER METHOD";
         }
         return $"{meth.ReturnType} {meth.DeclaringType}::{meth.Name}({string.Join(", ", meth.GetParameters().Select(x => x.ParameterType.Name))})";
+    }
+
+    private string GetCtorInfoStringDesc(ConstructorInfo ctor)
+    {
+        var type = ctor.DeclaringType!;
+        if (ctor is ConstructorBuilder bd)
+        {
+            return $"{type.Name}{bd.Name} DYNAMIC BUILDER CONSTRUCTOR";
+        }
+
+        return $"{type.Name}{ctor.Name}({string.Join(", ", ctor.GetParameters().Select(x => x.ParameterType.Name))})";
     }
 }

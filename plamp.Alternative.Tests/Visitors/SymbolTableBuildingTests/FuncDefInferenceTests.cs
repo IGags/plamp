@@ -127,7 +127,7 @@ public class FuncDefInferenceTests
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new FuncDefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymbolTableBuildingPipeline(
+        return CompilationPipelineBuilder.RunSymTableVisitors(
                 code,
                 [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
             );

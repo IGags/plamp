@@ -14,7 +14,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
@@ -37,6 +37,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         context.Arguments.Clear();
+        context.VariableDefinitions.Clear();
         context.CurrentFunc = null;
         return VisitResult.Continue;
     }

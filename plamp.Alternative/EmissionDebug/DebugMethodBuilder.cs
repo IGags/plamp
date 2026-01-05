@@ -1,8 +1,9 @@
+using System;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace plamp.CodeEmission.Tests.Infrastructure;
+namespace plamp.Alternative.EmissionDebug;
 
 public class DebugMethodBuilder : MethodBuilder
 {

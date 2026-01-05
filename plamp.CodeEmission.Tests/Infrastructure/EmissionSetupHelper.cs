@@ -6,7 +6,8 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Alternative.EmissionDebug;
 using plamp.Alternative.SymbolsImpl;
 using plamp.ILCodeEmitters;
 using TypeInfo = plamp.Alternative.SymbolsImpl.TypeInfo;
@@ -50,6 +51,8 @@ public class EmissionSetupHelper
     public static IFnInfo MakeFuncRef(MethodBuilder info, ParameterInfo[] parameters, Type returnType) => new MethodBuilderFnInfo(info, parameters, returnType);
 
     public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
+
+    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field);
 
     public static (object? instance, MethodInfo? methodInfo) CreateObject(Type builtType, string methodName)
     {

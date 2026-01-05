@@ -1,5 +1,5 @@
 ﻿using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Tokenization.Token;
 

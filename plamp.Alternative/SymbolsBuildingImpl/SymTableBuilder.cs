@@ -2,26 +2,27 @@ using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
 public class SymTableBuilder : ISymTableBuilder, ISymTable
 {
-    private readonly List<ITypeInfo> _types = [];
+    private readonly List<ITypeBuilderInfo> _types = [];
 
     private readonly List<IFnInfo> _funcs = [];
 
     public string ModuleName { get; set; } = "";
 
-    public ITypeInfo DefineType(TypedefNode typeNode)
+    public ITypeBuilderInfo DefineType(TypedefNode typeNode)
     {
         var type = new EmptyTypeInfo(typeNode);
         _types.Add(type);
         return type;
     }
 
-    public List<ITypeInfo> ListTypes() => _types;
+    public List<ITypeBuilderInfo> ListTypes() => _types;
 
     public IFnInfo DefineFunc(FuncNode fnNode)
     {

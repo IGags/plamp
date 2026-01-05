@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.AstManipulation;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding;
 

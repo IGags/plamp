@@ -8,7 +8,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;

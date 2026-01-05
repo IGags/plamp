@@ -3,8 +3,7 @@ using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Abstractions.Symbols;
-using plamp.Alternative.SymbolsBuildingImpl;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 
@@ -60,6 +59,11 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             duplicateIndexes.Add(j);
         }
 
+        if (context.Fields.Count == 0) return VisitResult.Continue;
+
+        var type = context.SymTableBuilder.ListTypes().FirstOrDefault(x => x.Definition == node);
+        if (type == null) return VisitResult.Continue;
+        
         for (var i = 0; i < context.Fields.Count; i++)
         {
             var fieldName = context.Fields[i].Name.Value;
@@ -71,7 +75,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             }
 
             var field = context.Fields[i];
-            field.FieldInfo = new EmptyFieldInfo(field);
+            type.AddField(field);
         }
         
         context.Fields.Clear();

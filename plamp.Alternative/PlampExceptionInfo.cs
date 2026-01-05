@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
 
@@ -538,6 +538,14 @@ public static class PlampExceptionInfo
         {
             Message = "Field is not found in declaring type",
             Code = "SEM1329",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldProduceCircularDependency() =>
+        new()
+        {
+            Message = "Field refers to type that produce circular dependency with current type",
+            Code = "SEM1330",
             Level = ExceptionLevel.Error
         };
 

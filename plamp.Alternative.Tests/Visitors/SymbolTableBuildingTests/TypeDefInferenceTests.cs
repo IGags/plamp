@@ -83,7 +83,7 @@ public class TypeDefInferenceTests
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new TypedefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymbolTableBuildingPipeline(
+        return CompilationPipelineBuilder.RunSymTableVisitors(
             code,
             [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
         );

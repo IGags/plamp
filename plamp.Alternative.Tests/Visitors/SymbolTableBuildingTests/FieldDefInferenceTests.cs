@@ -157,7 +157,7 @@ public class FieldDefInferenceTests
     {
         var typeDefWeaver = new TypedefInferenceWeaver();
         var fieldDefWeaver = new FieldDefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymbolTableBuildingPipeline(code,
+        return CompilationPipelineBuilder.RunSymTableVisitors(code,
         [
             (ast, cxt) => typeDefWeaver.WeaveDiffs(ast, cxt),
             (ast, cxt) => fieldDefWeaver.WeaveDiffs(ast, cxt)

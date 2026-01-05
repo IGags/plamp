@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Tokenization.Enums;
 using plamp.Alternative.Tokenization.Token;
 

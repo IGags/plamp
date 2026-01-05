@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace plamp.Abstractions.Symbols;
+namespace plamp.Abstractions.Symbols.SymTable;
 
 public interface IFnInfo : IEquatable<IFnInfo>
 {

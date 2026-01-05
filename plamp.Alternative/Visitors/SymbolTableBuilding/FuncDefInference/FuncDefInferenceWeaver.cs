@@ -5,7 +5,7 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;

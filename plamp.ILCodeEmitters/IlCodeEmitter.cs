@@ -9,7 +9,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.ILCodeEmitters;
 
@@ -513,7 +513,10 @@ public static class IlCodeEmitter
                     throw new Exception("Member access must be a field. If you see this exception write to a compiler developer.");
                 }
                 emitFld = info.AsField();
-                EmitGetMember(accessNode.From, context, false);
+                
+                if(accessNode.From is MemberNode member) EmitGetMember(member, context, false);
+                else if (accessNode.From is FieldAccessNode innerAccess) EmitGetField(innerAccess, context, false);
+                else throw new Exception();
                 break;
             case VariableDefinitionNode varDef:
                 EmitVariableDefinition(varDef, context);
@@ -597,18 +600,24 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
     private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
-        if (accessNode.From is not MemberNode from || accessNode.Field is not { } fieldNode)
-        {
-            throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
-        }
-
-        var fieldInfo = fieldNode.FieldInfo?.AsField();
+        var fieldInfo = accessNode.Field.FieldInfo?.AsField();
         if (fieldInfo == null)
         {
             throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
         }
         
-        EmitGetMember(from, context, byValue);
+        switch (accessNode.From)
+        {
+            case MemberNode member:
+                EmitGetMember(member, context, byValue);
+                break;
+            case FieldAccessNode fieldAccess:
+                EmitGetField(fieldAccess, context, byValue);
+                break;
+            default:
+                throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
+        }
+        
         context.Generator.Emit(OpCodes.Ldfld, fieldInfo);
     }
     
@@ -750,6 +759,9 @@ public static class IlCodeEmitter
     {
         switch (node.Inner)
         {
+            case FieldAccessNode fieldAccessNode:
+                EmitGetField(fieldAccessNode, context, false);
+                break;
             case MemberNode member:
                 EmitGetLocalVarOrArg(member, context, false);
                 break;
@@ -1075,7 +1087,8 @@ public static class IlCodeEmitter
         }
         else
         {
-            throw new Exception("Reference type creation emission is not supported");
+            var ctor = node.Type.TypeInfo.AsType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
+            context.Generator.Emit(OpCodes.Newobj, ctor!);
         }
     }
 

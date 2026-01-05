@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using AutoFixture.Kernel;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 

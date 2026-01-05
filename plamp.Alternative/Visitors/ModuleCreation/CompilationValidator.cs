@@ -1,12 +1,13 @@
-﻿using plamp.Abstractions.Ast.Node;
+﻿using System;
+using System.Linq;
+using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Validation;
-using plamp.Alternative.Visitors.ModuleCreation;
-using plamp.CodeEmission.Tests.Infrastructure;
+using plamp.Alternative.EmissionDebug;
 using plamp.ILCodeEmitters;
 
-namespace plamp.Cli;
+namespace plamp.Alternative.Visitors.ModuleCreation;
 
 public class CompilationValidator : BaseValidator<CreationContext, CreationContext>
 {

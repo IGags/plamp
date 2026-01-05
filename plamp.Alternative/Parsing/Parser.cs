@@ -192,7 +192,7 @@ public static class Parser
         foreach (var name in fieldNames)
         {
             var fieldNode = new FieldDefNode(type, name);
-            context.TranslationTable.TryGetSymbol(fieldNode, out var position);
+            context.TranslationTable.TryGetSymbol(name, out var position);
             context.TranslationTable.AddSymbol(fieldNode, position);
             fieldNodes.Add(fieldNode);
         }
@@ -386,9 +386,8 @@ public static class Parser
         }
 
         if (!TryParseArgSequence(context, out var list)) return false;
-        TypeNode? type = null;
         var typeFork = context.Fork();
-        if (context.Sequence.Current() is Word && TryParseType(typeFork, out type)) context.Merge(typeFork);
+        if (TryParseType(typeFork, out var type)) context.Merge(typeFork);
 
         if (!TryParseMultilineBody(context, out var body))
         {

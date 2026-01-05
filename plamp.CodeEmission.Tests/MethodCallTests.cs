@@ -8,6 +8,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative;
+using plamp.Alternative.EmissionDebug;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 using Shouldly;

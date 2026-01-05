@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace plamp.Abstractions.Symbols;
+namespace plamp.Abstractions.Symbols.SymTable;
 
 public interface ISymTable
 {

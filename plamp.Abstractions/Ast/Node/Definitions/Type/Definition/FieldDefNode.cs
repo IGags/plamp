@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using plamp.Abstractions.Symbols;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
@@ -22,8 +21,6 @@ public class FieldDefNode(TypeNode fieldType, FieldNameNode name) : NodeBase
     /// Имя объявленного поля.
     /// </summary>
     public FieldNameNode Name { get; private set; } = name;
-
-    public IFieldInfo? FieldInfo { get; set; }
     
     /// <inheritdoc />
     public override IEnumerable<NodeBase> Visit()

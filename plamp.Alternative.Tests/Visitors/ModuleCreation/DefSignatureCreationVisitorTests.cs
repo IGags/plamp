@@ -10,7 +10,7 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using Shouldly;
@@ -143,7 +143,8 @@ public class DefSignatureCreationVisitorTests
         var asmName = new AssemblyName(Guid.NewGuid().ToString());
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(asmName.Name!);
-        var context = new CreationContext(asm, module, preCreationContext);
+        //TODO: Null с подавлением не супер круто
+        var context = new CreationContext(asm, module, null!, preCreationContext);
         return context;
     }
 }

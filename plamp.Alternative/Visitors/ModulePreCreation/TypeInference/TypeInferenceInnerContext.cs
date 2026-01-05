@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 

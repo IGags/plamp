@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
 
-internal static class SymbolSearchUtility
+public static class SymbolSearchUtility
 {
     public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
         string name,
@@ -51,6 +51,8 @@ internal static class SymbolSearchUtility
     public static bool IsAny(ITypeInfo type) => type.Equals(Builtins.Any);
 
     public static bool IsVoid(ITypeInfo type) => type.Equals(Builtins.Void);
+
+    public static bool IsString(ITypeInfo type) => type.Equals(Builtins.String);
 
     public static PlampExceptionRecord? TryGetFuncOrErrorRecord(
         string name,
