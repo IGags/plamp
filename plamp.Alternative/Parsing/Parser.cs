@@ -1126,13 +1126,13 @@ public static class Parser
             switch (operatorToken.Operator)
             {
                 case OperatorEnum.Increment:
-                    if (inner is not MemberNode or IndexerNode) return false;
+                    if (inner is not MemberNode and not IndexerNode and not FieldAccessNode) return false;
                     output = new PostfixIncrementNode(inner);
                     context.TranslationTable.AddSymbol(output, operatorToken.Position);
                     context.Sequence.MoveNextNonWhiteSpace();
                     return true;
                 case OperatorEnum.Decrement:
-                    if (inner is not MemberNode or IndexerNode) return false;
+                    if (inner is not MemberNode and not IndexerNode and not FieldAccessNode) return false;
                     output = new PostfixDecrementNode(inner);
                     context.TranslationTable.AddSymbol(output, operatorToken.Position);
                     context.Sequence.MoveNextNonWhiteSpace();

@@ -302,43 +302,54 @@ public static class IlCodeEmitter
         const string innerValueExceptionMessage = "Inner value of unary increment must be a variable arg or model property. Compiler error, please report to developer";
         const string invalidOperatorExceptionMessage = "Node must be an increment or an decrement. Compiler error, please report to developer";
         const string exceptionMessage = "Member is not a numeric type. Compiler error, please report to developer";
+        
         Type memberType;
+        switch (unaryBase.Inner)
+        {
+            case MemberNode member:
+                memberType = EmitGetLocalVarOrArg(member, context, true);
+                break;
+            case FieldAccessNode fieldAccess:
+                memberType = EmitGetField(fieldAccess, context, true);
+                break;
+            default: throw new InvalidOperationException(innerValueExceptionMessage);
+        }
+        
         switch (unaryBase)
         {
             case PrefixIncrementNode:
-                if (unaryBase.Inner is not MemberNode prefixIncMember) throw new InvalidOperationException(innerValueExceptionMessage);
-                memberType = EmitGetLocalVarOrArg(prefixIncMember, context, true);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
                 if(withAssign) context.Generator.Emit(OpCodes.Dup);
-                EmitSetLocalVarOrArg(prefixIncMember.MemberName, context);
                 break;
             case PrefixDecrementNode:
-                if (unaryBase.Inner is not MemberNode prefixDecMember) throw new InvalidOperationException(innerValueExceptionMessage);
-                memberType = EmitGetLocalVarOrArg(prefixDecMember, context, true);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
                 if(withAssign) context.Generator.Emit(OpCodes.Dup);
-                EmitSetLocalVarOrArg(prefixDecMember.MemberName, context);
                 break;
             case PostfixIncrementNode:
-                if (unaryBase.Inner is not MemberNode postfixIncMember) throw new InvalidOperationException(innerValueExceptionMessage);
-                memberType = EmitGetLocalVarOrArg(postfixIncMember, context, true);
                 if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
-                EmitSetLocalVarOrArg(postfixIncMember.MemberName, context);
                 break;
             case PostfixDecrementNode:
-                if (unaryBase.Inner is not MemberNode postfixDecMember) throw new InvalidOperationException(innerValueExceptionMessage);
-                memberType = EmitGetLocalVarOrArg(postfixDecMember, context, true);
                 if(withAssign) context.Generator.Emit(OpCodes.Dup);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
-                EmitSetLocalVarOrArg(postfixDecMember.MemberName, context);
                 break;
             default: throw new InvalidOperationException(invalidOperatorExceptionMessage);
         }
+
+        switch (unaryBase.Inner)
+        {
+            case MemberNode member:
+                EmitSetLocalVarOrArg(member.MemberName, context);
+                break;
+            case FieldAccessNode fieldAccess:
+                Set(fieldAccess, context, true);
+                break;
+        }
+        
         return;
 
         //Загрузка операнда инкремента(происходит особым образом для разных типов)
@@ -598,7 +609,7 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <param name="byValue">Нужно ли получать поле по значению</param>
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
-    private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
+    private static Type EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
         var fieldInfo = accessNode.Field.FieldInfo?.AsField();
         if (fieldInfo == null)
@@ -619,6 +630,7 @@ public static class IlCodeEmitter
         }
         
         context.Generator.Emit(OpCodes.Ldfld, fieldInfo);
+        return fieldInfo.FieldType;
     }
     
     /// <summary>
