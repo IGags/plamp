@@ -389,16 +389,12 @@ public class VariableTypeInferenceTests
                 a, b, c :int;
             }
             """,
-            new AssignNode(
-                [
-                    new VariableDefinitionNode(
-                        defType1, 
-                        [new VariableNameNode("a"), new VariableNameNode("b"), new VariableNameNode("c")])
-                ],
-                [
-                    new LiteralNode(0, Builtins.Int)
-                ]
-            )
+            new BodyNode(
+            [
+                new AssignNode([new VariableDefinitionNode(defType1, new VariableNameNode("a"))], [new LiteralNode(0, Builtins.Int)]),
+                new AssignNode([new VariableDefinitionNode(defType1, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new AssignNode([new VariableDefinitionNode(defType1, new VariableNameNode("c"))], [new LiteralNode(0, Builtins.Int)])
+            ])
         ];
 
         var defType2 = new TypeNode(new TypeNameNode("string"))
@@ -418,22 +414,17 @@ public class VariableTypeInferenceTests
                 a, b :[]string;
             }
             """,
-            new AssignNode(
-                [
-                    new VariableDefinitionNode(
-                        defType2, 
-                        [new VariableNameNode("a"), new VariableNameNode("b")])
-                ],
-                [
-                    mkArrayNode
-                ]
-            )
+            new BodyNode(
+            [
+                new AssignNode([new VariableDefinitionNode(defType2, new VariableNameNode("a"))], [mkArrayNode]),
+                new AssignNode([new VariableDefinitionNode(defType2, new VariableNameNode("b"))], [mkArrayNode]),
+            ])
         ];
     }
 
     [Theory]
     [MemberData(nameof(InitDefault_Correct_DataProvider))]
-    public void InitDefault_Correct(string code, NodeBase valueShould)
+    public void InitDefault_Correct(string code, BodyNode valueShould)
     {
         var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization(), new ParserContextCustomization(code) }};
         var parserContext = fixture.Create<ParsingContext>();
@@ -445,9 +436,9 @@ public class VariableTypeInferenceTests
         var visitor = new TypeInferenceWeaver();
         var result = visitor.WeaveDiffs(body, preCreationContext);
         result.Exceptions.ShouldBeEmpty();
-        var expression = body.ExpressionList.ShouldHaveSingleItem();
+        body.ExpressionList.Count.ShouldBe(valueShould.ExpressionList.Count);
         
         //TODO: Метод ломается, если в типе есть поля и сравнение происходит не по ссылке. Нужно что-то придумывать. Но это проблемы меня будущего.
-        expression.ShouldBeEquivalentTo(valueShould);
+        body.ShouldBeEquivalentTo(valueShould);
     }
 }

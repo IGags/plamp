@@ -265,6 +265,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         if(fromType.Equals(toType)) return true;
         if (!SymbolSearchUtility.ImplicitlyConvertable(fromType, toType)) return false;
+        if (!SymbolSearchUtility.NeedToCreateCast(fromType, toType)) return true;
         var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
         context.TranslationTable.AddSymbol(toTypeNode, default);
         toTypeNode.TypeInfo = toType;
@@ -537,6 +538,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                     ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
                     continue;
                 case MemberNode leftMember:
+                    if(context.Arguments.TryGetValue(leftMember.MemberName, out _)) continue;
                     if (!context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
                     {
                         CreateVariableDefinitionFromMember(leftMember, context, assignment.SourceType);

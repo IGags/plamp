@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Symbols.SymTable;
@@ -30,7 +28,6 @@ public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationCo
         VariableDefinitionNode variable, 
         ScopeLocation position)
     {
-        if (!variable.Names.Contains(name)) throw new ArgumentException();
         VariableDefinitions[name.Value] = new VariableWithPosition(variable, position);
     }
 

@@ -625,7 +625,7 @@ public static class Parser
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
             var expressions = new List<NodeBase>();
-            if (TryParseStatement(context, out var expression)) expressions.Add(expression);
+            if (TryParseStatement(context, out var expression)) expressions.AddRange(expression);
             body = new BodyNode(expressions);
             context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
@@ -646,7 +646,7 @@ public static class Parser
         while (context.Sequence.Current() is not EndOfFile and not CloseCurlyBracket)
         {
             if (!TryParseStatement(context, out var expression)) continue;
-            expressions.Add(expression);
+            expressions.AddRange(expression);
         }
 
         if (context.Sequence.Current() is EndOfFile)
@@ -666,18 +666,18 @@ public static class Parser
 
     public static bool TryParseStatement(
         ParsingContext context,
-        [NotNullWhen(true)] out NodeBase? expression)
+        [NotNullWhen(true)] out List<NodeBase>? expressions)
     {
-        expression = null;
+        expressions = null;
         switch (context.Sequence.Current())
         {
             case KeywordToken { Keyword: Keywords.If }:
                 if (!TryParseCondition(context, out var condition)) return false;
-                expression = condition;
+                expressions = [condition];
                 return true;
             case KeywordToken { Keyword: Keywords.While }:
                 if (!TryParseWhileLoop(context, out var loop)) return false;
-                expression = loop;
+                expressions = [loop];
                 return true;
             //TODO: To separate method.
             case KeywordToken { Keyword: Keywords.Break }:
@@ -686,7 +686,7 @@ public static class Parser
                 context.TranslationTable.AddSymbol(breakExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
-                expression = breakExpression;
+                expressions = [breakExpression];
                 return true;
             case KeywordToken { Keyword: Keywords.Continue }:
                 var continueExpression = new ContinueNode();
@@ -694,20 +694,28 @@ public static class Parser
                 context.TranslationTable.AddSymbol(continueExpression, current.Position);
                 context.Sequence.MoveNextNonWhiteSpace();
                 ConsumeEndOfStatement(context);
-                expression = continueExpression;
+                expressions = [continueExpression];
                 return true;
             case KeywordToken { Keyword: Keywords.Return }:
                 if (!TryParseReturn(context, out var node)) return false;
-                expression = node;
+                expressions = [node];
                 return true;
             case EndOfStatement:
                 ConsumeEndOfStatement(context);
                 break;
             default:
+                var varDefFork = context.Fork();
+                if (TryParseVariableDefinitionSequence(varDefFork, out var defList))
+                {
+                    context.Merge(varDefFork);
+                    expressions = defList;
+                    return true;
+                }
+                
                 var precedenceFork = context.Fork();
                 if (TryParseExpression(precedenceFork, out var precedence))
                 {
-                    expression = precedence;
+                    expressions = [precedence];
                     context.Merge(precedenceFork);
                     ConsumeEndOfStatement(context);
                     return true;
@@ -1339,13 +1347,6 @@ public static class Parser
         [NotNullWhen(true)] out NodeBase? expression)
     {
         expression = null;
-        var variableDefContext = context.Fork();
-        if (TryParseVariableDefinitionSequence(variableDefContext, out var definition))
-        {
-            context.Merge(variableDefContext);
-            expression = definition;
-            return true;
-        }
 
         var assignContext = context.Fork();
         if (TryParseAssignment(assignContext, out var assignment))
@@ -1371,10 +1372,10 @@ public static class Parser
 
     public static bool TryParseVariableDefinitionSequence(
         ParsingContext context,
-        [NotNullWhen(true)] out VariableDefinitionNode? definition)
+        [NotNullWhen(true)] out List<NodeBase>? definitions)
     {
-        definition = null;
-        if (context.Sequence.Current() is not Word start) return false;
+        definitions = null;
+        if (context.Sequence.Current() is not Word) return false;
 
         var varNames = new List<VariableNameNode>();
         var first = true;
@@ -1409,8 +1410,15 @@ public static class Parser
         }
 
         context.Merge(typFork);
-        definition = new VariableDefinitionNode(type, varNames);
-        context.TranslationTable.AddSymbol(definition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+        definitions = [];
+        foreach (var name in varNames)
+        {
+            var definition = new VariableDefinitionNode(type, name);
+            if(!context.TranslationTable.TryGetSymbol(name, out var position))
+                throw new InvalidOperationException("Parser code is incorrect");
+            context.TranslationTable.AddSymbol(definition, position);
+            definitions.Add(definition);
+        }
 
         return true;
     }

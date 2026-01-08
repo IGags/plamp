@@ -137,6 +137,12 @@ public static class SymbolSearchUtility
                || ArrayImplicitlyConvertable(from, to)
                || AnyImplicitlyConvertable(from, to);
     }
+
+    public static bool NeedToCreateCast(ITypeInfo from, ITypeInfo to)
+    {
+        return !ArrayImplicitlyConvertable(from, to)
+               && !AnyImplicitlyConvertable(from, to);
+    }
     
     private static bool ImplicitlyNumericConvertable(ITypeInfo from, ITypeInfo to)
     {

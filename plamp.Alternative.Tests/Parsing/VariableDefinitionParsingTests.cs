@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using AutoFixture;
+using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
@@ -14,7 +16,10 @@ public class VariableDefinitionParsingTests
     public void ParseVariableDefinition_Correct()
     {
         const string code = "a: int";
-        var ast = new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"));
+        var ast = new List<NodeBase>
+        {
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))
+        };
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
@@ -28,9 +33,13 @@ public class VariableDefinitionParsingTests
     public void ParseVariableDefinitionMany_Correct()
     {
         const string code = "a, b, c: int";
-        var ast = new VariableDefinitionNode(
-            new TypeNode(new TypeNameNode("int")), 
-            [new VariableNameNode("a"), new VariableNameNode("b"), new VariableNameNode("c")]);
+        var ast = new List<NodeBase>()
+        {
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a")),
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("b")),
+            new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("c"))
+        };
+        
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
@@ -44,9 +53,12 @@ public class VariableDefinitionParsingTests
     public void ParseArrayTypedVariableDefinition_Correct()
     {
         const string code = "a: []int";
-        var ast = new VariableDefinitionNode(
+        var ast = new List<NodeBase>()
+        {
+            new VariableDefinitionNode(
                 new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [new ArrayTypeSpecificationNode()] },
-                new VariableNameNode("a"));
+                new VariableNameNode("a"))
+        };
         
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));

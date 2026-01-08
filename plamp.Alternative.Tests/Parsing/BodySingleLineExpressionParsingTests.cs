@@ -22,7 +22,6 @@ public class BodySingleLineExpressionParsingTests
         yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [])];
         yield return ["a := 41", new AssignNode([new MemberNode("a")], [new LiteralNode(41, Builtins.Int)])];
         yield return ["!a", new NotNode(new MemberNode("a"))];
-        yield return ["a:int", new VariableDefinitionNode(new TypeNode(new TypeNameNode("int")), new VariableNameNode("a"))];
     }
     
     [Theory]

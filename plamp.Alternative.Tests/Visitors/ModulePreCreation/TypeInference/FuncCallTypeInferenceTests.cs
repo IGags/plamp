@@ -182,7 +182,7 @@ public class FuncCallTypeInferenceTests
 
         
         
-        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
+        var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -210,7 +210,7 @@ public class FuncCallTypeInferenceTests
         symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [new(argType, new("first"))], new ([])));
         
         var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable]);
-        var weaveResult = visitor.WeaveDiffs(expression, preCreation);
+        var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
     }
     

@@ -82,7 +82,7 @@ public static class IlCodeEmitter
                 break;
             default:
                 throw new InvalidOperationException(
-                    "Unknown body level instruction. If you see this, report to programmer");
+                    $"Unknown body level instruction {expression.GetType().Name}. If you see this, report to programmer");
         }
     }
 
@@ -302,35 +302,47 @@ public static class IlCodeEmitter
         const string invalidOperatorExceptionMessage = "Node must be an increment or an decrement. Compiler error, please report to developer";
         const string exceptionMessage = "Member is not a numeric type. Compiler error, please report to developer";
         
-        GetIdentifier(unaryBase.Inner, context, true);
+        LoadAssignTarget(unaryBase.Inner, context);
+        if(unaryBase.Inner is not MemberNode) context.Generator.Emit(OpCodes.Dup);
+        GetIdentifier(unaryBase.Inner, context);
         var memberType = GetAssignTargetType(unaryBase.Inner, context);
+
+        var incVar = context.Generator.DeclareLocal(memberType, false);
         
         switch (unaryBase)
         {
             case PrefixIncrementNode:
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
-                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Stloc, incVar);
                 break;
             case PrefixDecrementNode:
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
-                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Stloc, incVar);
                 break;
             case PostfixIncrementNode:
-                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Stloc, incVar);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Add);
                 break;
             case PostfixDecrementNode:
-                if(withAssign) context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Stloc, incVar);
                 LoadConstant(memberType);
                 context.Generator.Emit(OpCodes.Sub);
                 break;
             default: throw new InvalidOperationException(invalidOperatorExceptionMessage);
         }
-
+        
         SetAssignTarget(unaryBase.Inner, context);
+        
+        if(!withAssign) return;
+        context.Generator.Emit(OpCodes.Ldloc, incVar);
+        
         return;
 
         //Загрузка операнда инкремента(происходит особым для разных типов)
@@ -458,14 +470,14 @@ public static class IlCodeEmitter
         }
     }
 
-    private static void GetIdentifier(NodeBase identifier, EmissionContext context, bool byValue)
+    private static void GetIdentifier(NodeBase identifier, EmissionContext context)
     {
         switch (identifier)
         {
-            case MemberNode memberNode: EmitGetMember(memberNode, context, byValue); break;
-            case FieldAccessNode fieldAccess: EmitGetField(fieldAccess, context, byValue); break;
-            case IndexerNode indexer: EmitIndexer(indexer, context); break;
-            default: throw new Exception();
+            case MemberNode member:           EmitGetMember(member, context, true); break;
+            case FieldAccessNode fieldAccess: EmitFieldAccess(fieldAccess, context, true); break;
+            case IndexerNode indexer:         EmitIndexer(indexer, context); break;
+            default:                          throw new Exception();
         }
     }
 
@@ -494,10 +506,7 @@ public static class IlCodeEmitter
                 EmitSetLocalVarOrArg(member.MemberName, context);
                 break;
             case VariableDefinitionNode varDef:
-                foreach (var name in varDef.Names)
-                {
-                    EmitSetLocalVarOrArg(name.Value, context);
-                }
+                EmitSetLocalVarOrArg(varDef.Name.Value, context);
                 break;
             default: throw new Exception();
         }
@@ -545,7 +554,7 @@ public static class IlCodeEmitter
     {
         switch (expression)
         {
-            case MemberNode          memberNode:          EmitGetLocalVarOrArg(memberNode, context, false); break;
+            case MemberNode          memberNode:          EmitGetLocalVarOrArg(memberNode, context, true);  break;
             case BaseBinaryNode      binaryNode:          EmitBaseBinary(binaryNode, context);              break;
             case BaseUnaryNode       unaryNode:           EmitUnary(unaryNode, context);                    break;
             case CallNode            callNode:            EmitCall(callNode, context, false);               break;
@@ -553,12 +562,24 @@ public static class IlCodeEmitter
             case LiteralNode         literalNode:         EmitLiteral(literalNode, context);                break;
             case FieldAccessNode     memberAccessNode:    EmitGetField(memberAccessNode, context, true);    break;
             case InitArrayNode       initArrayNode:       EmitArrayInitialization(initArrayNode, context);  break;
-            case IndexerNode         indexerNode:         EmitIndexer(indexerNode, context);                break;
+            case IndexerNode         indexerNode:         EmitGetByIndexer(indexerNode, context);           break;
             case InitTypeNode        initTypeNode:        EmitTypeInit(initTypeNode, context);              break;
             default:                                                                                        throw new Exception("Cannot emit expression. If you see this exception write to a compiler developer.");
         }
     }
 
+    private static void EmitFieldAccess(FieldAccessNode accessNode, EmissionContext context, bool byValue)
+    {
+        var fieldInfo = accessNode.Field.FieldInfo?.AsField();
+        if (fieldInfo == null)
+        {
+            throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
+        }
+        
+        var opcode = byValue ? OpCodes.Ldfld : OpCodes.Ldflda;
+        context.Generator.Emit(opcode, fieldInfo);
+    }
+    
     /// <summary>
     /// Генерация IL получения поля модели
     /// </summary>
@@ -568,12 +589,6 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
     private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
-        var fieldInfo = accessNode.Field.FieldInfo?.AsField();
-        if (fieldInfo == null)
-        {
-            throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
-        }
-        
         switch (accessNode.From)
         {
             case MemberNode member:
@@ -585,8 +600,8 @@ public static class IlCodeEmitter
             default:
                 throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
         }
-        
-        context.Generator.Emit(OpCodes.Ldfld, fieldInfo);
+
+        EmitFieldAccess(accessNode, context, byValue);
     }
     
     /// <summary>
@@ -828,13 +843,10 @@ public static class IlCodeEmitter
         EmissionContext context)
     {
         if(variableDefinitionNode.Type?.TypeInfo?.AsType() is not { } type) throw new Exception();
-        if(variableDefinitionNode.Names is not { } members) throw new Exception();
+        if(variableDefinitionNode.Name is not { } name) throw new Exception();
         if (type == null) throw new ArgumentException("Cannot emit variable definition with null type");
-        foreach (var member in members)
-        {
-            var builder = context.Generator.DeclareLocal(type);
-            context.LocalVarStack.Add(member.Value, builder);
-        }
+        var builder = context.Generator.DeclareLocal(type);
+        context.LocalVarStack.Add(name.Value, builder);
     }
     
     /// <summary>
@@ -989,22 +1001,32 @@ public static class IlCodeEmitter
         EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
         context.Generator.Emit(OpCodes.Newarr, type);
     }
+
+    private static void EmitGetByIndexer(IndexerNode indexerNode, EmissionContext context)
+    {
+        EmitSingleLineExpression(indexerNode.From, context);
+        EmitIndexer(indexerNode, context);
+    }
     
     private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context)
     {
-        if (indexerNode.ItemType?.AsType() is not {} fromType) throw new Exception();
-        EmitSingleLineExpression(indexerNode.From, context);
         EmitSingleLineExpression(indexerNode.IndexMember, context);
         
-        if(fromType == typeof(int))                                    context.Generator.Emit(OpCodes.Ldelem_I4);
-        else if(fromType == typeof(uint))                              context.Generator.Emit(OpCodes.Ldelem_U4);
-        else if(fromType == typeof(long) || fromType == typeof(ulong)) context.Generator.Emit(OpCodes.Ldelem_I8);
-        else if(fromType == typeof(byte) || fromType == typeof(bool))  context.Generator.Emit(OpCodes.Ldelem_U1);
-        else if(fromType == typeof(char))                              context.Generator.Emit(OpCodes.Ldelem_U2);
-        else if(fromType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
-        else if(fromType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
-        else if(fromType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
-        else if (fromType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem,     fromType);
+        if (indexerNode.ItemType?.AsType() is not {} fromType) throw new Exception();
+        EmitGetArrayElemOpcode(fromType, context);
+    }
+
+    private static void EmitGetArrayElemOpcode(Type itemType, EmissionContext context)
+    {
+        if(itemType == typeof(int))                                    context.Generator.Emit(OpCodes.Ldelem_I4);
+        else if(itemType == typeof(uint))                              context.Generator.Emit(OpCodes.Ldelem_U4);
+        else if(itemType == typeof(long) || itemType == typeof(ulong)) context.Generator.Emit(OpCodes.Ldelem_I8);
+        else if(itemType == typeof(byte) || itemType == typeof(bool))  context.Generator.Emit(OpCodes.Ldelem_U1);
+        else if(itemType == typeof(char))                              context.Generator.Emit(OpCodes.Ldelem_U2);
+        else if(itemType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
+        else if(itemType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
+        else if(itemType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
+        else if (itemType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem,     itemType);
         else                                                           throw new Exception();
     }
 
