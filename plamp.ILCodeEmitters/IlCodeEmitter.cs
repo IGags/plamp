@@ -302,7 +302,7 @@ public static class IlCodeEmitter
         const string invalidOperatorExceptionMessage = "Node must be an increment or an decrement. Compiler error, please report to developer";
         const string exceptionMessage = "Member is not a numeric type. Compiler error, please report to developer";
         
-        LoadAssignTarget(unaryBase.Inner, context);
+        GetIdentifier(unaryBase.Inner, context, true);
         var memberType = GetAssignTargetType(unaryBase.Inner, context);
         
         switch (unaryBase)
@@ -443,7 +443,7 @@ public static class IlCodeEmitter
         }
     }
 
-    private static void LoadAssignTarget(NodeBase target, EmissionContext context, bool forAssign, bool byRef)
+    private static void LoadAssignTarget(NodeBase target, EmissionContext context)
     {
         switch (target)
         {
@@ -456,20 +456,16 @@ public static class IlCodeEmitter
             case MemberNode: break;
             default: throw new Exception();
         }
+    }
 
-        if (forAssign) return;
-        
-        switch (target)
+    private static void GetIdentifier(NodeBase identifier, EmissionContext context, bool byValue)
+    {
+        switch (identifier)
         {
-            case FieldAccessNode fieldAccess:
-                var fldInfo = fieldAccess.Field.FieldInfo?.AsField();
-                if (fldInfo == null) throw new Exception();
-                var opCode = byRef ? OpCodes.Ldflda : OpCodes.Ldfld;
-                context.Generator.Emit(opCode, fldInfo);
-                break;
-            case IndexerNode indexer:
-                EmitIndexer();
-                break;
+            case MemberNode memberNode: EmitGetMember(memberNode, context, byValue); break;
+            case FieldAccessNode fieldAccess: EmitGetField(fieldAccess, context, byValue); break;
+            case IndexerNode indexer: EmitIndexer(indexer, context); break;
+            default: throw new Exception();
         }
     }
 
@@ -729,35 +725,7 @@ public static class IlCodeEmitter
     /// <exception cref="ArgumentException">Невозможно привести тип.</exception>
     private static void EmitTypeConversion(CastNode node, EmissionContext context)
     {
-        switch (node.Inner)
-        {
-            case FieldAccessNode fieldAccessNode:
-                EmitGetField(fieldAccessNode, context, false);
-                break;
-            case MemberNode member:
-                EmitGetLocalVarOrArg(member, context, false);
-                break;
-            case LiteralNode literal:
-                EmitLiteral(literal, context);
-                break;
-            case CallNode call:
-                EmitCall(call, context, false);
-                break;
-            case BaseBinaryNode binary:
-                EmitBaseBinary(binary, context);
-                break;
-            case BaseUnaryNode unary:
-                EmitUnary(unary, context);
-                break;
-            case CastNode cast:
-                EmitTypeConversion(cast, context);
-                break;
-            case IndexerNode indexer:
-                EmitIndexer(indexer, context);
-                break;
-            default: throw new ArgumentException(nameof(node.Inner));
-        }
-        
+        EmitSingleLineExpression(node.Inner, context);
         var toType = GetTypeFromNode(node.ToType)!;
         var fromType = node.FromType?.AsType();
 

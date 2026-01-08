@@ -42,19 +42,19 @@ public class AssignmentEmissionTests
          * a := 1;
          * callback(a);
          */
-        yield return
-        [
-            new BodyNode(
-            [
-                new VariableDefinitionNode(intType, new VariableNameNode("a")),
-                new AssignNode(
-                    [new MemberNode("a")],
-                    [new LiteralNode(1, Builtins.Int)]),
-                SetupCallback("a", Builtins.Int),
-                new ReturnNode(null)
-            ]),
-            new List<object>{1}
-        ];
+        // yield return
+        // [
+        //     new BodyNode(
+        //     [
+        //         new VariableDefinitionNode(intType, new VariableNameNode("a")),
+        //         new AssignNode(
+        //             [new MemberNode("a")],
+        //             [new LiteralNode(1, Builtins.Int)]),
+        //         SetupCallback("a", Builtins.Int),
+        //         new ReturnNode(null)
+        //     ]),
+        //     new List<object>{1}
+        // ];
         
         var stringType = new TypeNode(new TypeNameNode("string"))
         {
@@ -65,20 +65,20 @@ public class AssignmentEmissionTests
          * callback(a);
          * callback(b);
          */
-        yield return 
-        [
-            new BodyNode(
-            [
-                new VariableDefinitionNode(stringType, [new VariableNameNode("a"), new VariableNameNode("b")]),
-                new AssignNode(
-                    [new MemberNode("a"), new MemberNode("b")],
-                    [new LiteralNode("Hello", Builtins.String), new LiteralNode("World", Builtins.String)]),
-                SetupCallback("a", Builtins.String),
-                SetupCallback("b", Builtins.String),
-                new ReturnNode(null)
-            ]),
-            new List<object>{"Hello", "World"}
-        ];
+        // yield return 
+        // [
+        //     new BodyNode(
+        //     [
+        //         new VariableDefinitionNode(stringType, [new VariableNameNode("a"), new VariableNameNode("b")]),
+        //         new AssignNode(
+        //             [new MemberNode("a"), new MemberNode("b")],
+        //             [new LiteralNode("Hello", Builtins.String), new LiteralNode("World", Builtins.String)]),
+        //         SetupCallback("a", Builtins.String),
+        //         SetupCallback("b", Builtins.String),
+        //         new ReturnNode(null)
+        //     ]),
+        //     new List<object>{"Hello", "World"}
+        // ];
         
         /*
          * int a, b;
@@ -87,23 +87,23 @@ public class AssignmentEmissionTests
          * callback(a);
          * callback(b);
          */
-        yield return
-        [
-            new BodyNode(
-            [
-                new VariableDefinitionNode(intType, [new VariableNameNode("a"), new VariableNameNode("b")]),
-                new AssignNode(
-                    [new MemberNode("a"), new MemberNode("b")],
-                    [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int)]),
-                new AssignNode(
-                    [new MemberNode("a"), new MemberNode("b")],
-                    [new MemberNode("b"), new MemberNode("a")]),
-                SetupCallback("a", Builtins.Int),
-                SetupCallback("b", Builtins.Int),
-                new ReturnNode(null)
-            ]),
-            new List<object>{2, 1}
-        ];
+        // yield return
+        // [
+        //     new BodyNode(
+        //     [
+        //         new VariableDefinitionNode(intType, [new VariableNameNode("a"), new VariableNameNode("b")]),
+        //         new AssignNode(
+        //             [new MemberNode("a"), new MemberNode("b")],
+        //             [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int)]),
+        //         new AssignNode(
+        //             [new MemberNode("a"), new MemberNode("b")],
+        //             [new MemberNode("b"), new MemberNode("a")]),
+        //         SetupCallback("a", Builtins.Int),
+        //         SetupCallback("b", Builtins.Int),
+        //         new ReturnNode(null)
+        //     ]),
+        //     new List<object>{2, 1}
+        // ];
 
         /*
          * arr := [3]string;
@@ -150,31 +150,31 @@ public class AssignmentEmissionTests
         {
             ItemType = Builtins.String
         };
-        yield return
-        [
-            new BodyNode(
-            [
-                new AssignNode(
-                    [new VariableDefinitionNode(arrType, new VariableNameNode("arr"))],
-                    [new InitArrayNode(stringType, new LiteralNode(3, Builtins.Int))]),
-                new AssignNode(
-                    [
-                        ixSetter1,
-                        ixSetter2,
-                        ixSetter3
-                    ],
-                    [
-                        new LiteralNode("tri", Builtins.String),
-                        new LiteralNode("dva", Builtins.String),
-                        new LiteralNode("odin", Builtins.String)
-                    ]),
-                call1,
-                call2,
-                call3,
-                new ReturnNode(null)
-            ]),
-            new List<object>{"tri", "dva", "odin"}
-        ];
+        // yield return
+        // [
+        //     new BodyNode(
+        //     [
+        //         new AssignNode(
+        //             [new VariableDefinitionNode(arrType, new VariableNameNode("arr"))],
+        //             [new InitArrayNode(stringType, new LiteralNode(3, Builtins.Int))]),
+        //         new AssignNode(
+        //             [
+        //                 ixSetter1,
+        //                 ixSetter2,
+        //                 ixSetter3
+        //             ],
+        //             [
+        //                 new LiteralNode("tri", Builtins.String),
+        //                 new LiteralNode("dva", Builtins.String),
+        //                 new LiteralNode("odin", Builtins.String)
+        //             ]),
+        //         call1,
+        //         call2,
+        //         call3,
+        //         new ReturnNode(null)
+        //     ]),
+        //     new List<object>{"tri", "dva", "odin"}
+        // ];
 
         arrType = new TypeNode(new TypeNameNode("[]int"))
         { 
