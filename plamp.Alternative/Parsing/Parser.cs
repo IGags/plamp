@@ -971,21 +971,24 @@ public static class Parser
         int rbp = 0)
     {
         if (!TryParseNud(context, out expression)) return false;
-        while (TryParsePostfix(context, expression, out var withPostfix))
+        
+        NodeBase withPostfix;
+        while (TryParsePostfix(context, expression, out withPostfix))
         {
             expression = withPostfix;
         }
 
-        while (TryParseLed(rbp, expression, out expression, context))
-        {
-        }
+        expression = withPostfix;
+
+        while (TryParseLed(rbp, expression, out expression, context)) { }
 
         return true;
     }
 
     public static bool TryParseNud(
         ParsingContext context,
-        [NotNullWhen(true)] out NodeBase? node)
+        [NotNullWhen(true)] out NodeBase? node,
+        int rbp = 0)
     {
         var start = context.Sequence.Current();
         node = null;
@@ -1082,7 +1085,7 @@ public static class Parser
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
-            if (!TryParseNud(prefixFork, out var innerNode)) return false;
+            if (!TryParsePrecedence(prefixFork, out var innerNode, rbp)) return false;
 
             switch (op.Operator)
             {
@@ -1117,9 +1120,11 @@ public static class Parser
     private static bool TryParsePostfix(
         ParsingContext context,
         NodeBase inner,
-        [NotNullWhen(true)] out NodeBase? output)
+        out NodeBase output)
     {
-        output = null;
+        //Всегда обязан возвращать результат, даже если ничего не смог распарсить.
+        //False в выводе означает, что мы не делаем следующую итерацию парсинга выражений.
+        output = inner;
 
         if (context.Sequence.Current() is OperatorToken operatorToken)
         {
@@ -1130,7 +1135,7 @@ public static class Parser
                     output = new PostfixIncrementNode(inner);
                     context.TranslationTable.AddSymbol(output, operatorToken.Position);
                     context.Sequence.MoveNextNonWhiteSpace();
-                    return true;
+                    return false;
                 case OperatorEnum.Decrement:
                     if (inner is not MemberNode and not IndexerNode and not FieldAccessNode) return false;
                     output = new PostfixDecrementNode(inner);

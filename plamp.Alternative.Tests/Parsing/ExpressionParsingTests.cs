@@ -21,9 +21,17 @@ public class ExpressionParsingTests
     {
         yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, Builtins.Int))];
         yield return ["++1", new PrefixIncrementNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["++a.b", new PrefixIncrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["--a.b", new PrefixDecrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["++a[1]", new PrefixIncrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["--a[1]", new PrefixDecrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["a++.b", new MemberNode("a")];
+        yield return ["a--.b", new MemberNode("a")];
+        yield return ["a++[1]", new MemberNode("a")];
+        yield return ["a--[1]", new MemberNode("a")];
         yield return ["+1", new LiteralNode(1, Builtins.Int)];
-        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, Builtins.Int))];
         yield return ["!true", new NotNode(new LiteralNode(true, Builtins.Bool))];
+        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, Builtins.Int))];
         yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
         yield return ["(((true)))", new LiteralNode(true, Builtins.Bool)];
         yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [])];
@@ -80,6 +88,10 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
+        yield return ["a.b++", new PostfixIncrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["a.b--", new PostfixDecrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["a[1]++", new PostfixIncrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["a[1]--", new PostfixDecrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
         yield return ["a[1]", new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
         yield return ["a[1][t]", new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)), new MemberNode("t"))];
         yield return ["a.b.c", new FieldAccessNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new FieldNode("c"))];
@@ -167,8 +179,21 @@ public class ExpressionParsingTests
     [Fact]
     public void ParseBinaryExpression_Incorrect()
     {
-        var code = "a + ";
+        const string code = "a + ";
         var ast = new MemberNode("a");
+        var fixture = new Fixture();
+        fixture.Customizations.Add(new ParserContextCustomization(code));
+        var context = fixture.Create<ParsingContext>();
+        var parsed = Parser.TryParsePrecedence(context, out var node);
+        parsed.ShouldBe(true);
+        node.ShouldBeEquivalentTo(ast);
+    }
+
+    [Fact]
+    public void ParseExpression_IncorrectPostfix()
+    {
+        const string code = "a++.b";
+        var ast = new PostfixIncrementNode(new MemberNode("a"));
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();

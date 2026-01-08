@@ -2,7 +2,6 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Alternative.SymbolsBuildingImpl;
 using Shouldly;
 using Xunit;

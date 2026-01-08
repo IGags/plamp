@@ -299,21 +299,11 @@ public static class IlCodeEmitter
     /// <exception cref="InvalidOperationException">Оператор не является инкрементом или декрементом, операнд в который нельзя присвоить значение, тип операнда не число</exception>
     private static void EmitIncrementOrDecrement(BaseUnaryNode unaryBase, EmissionContext context, bool withAssign)
     {
-        const string innerValueExceptionMessage = "Inner value of unary increment must be a variable arg or model property. Compiler error, please report to developer";
         const string invalidOperatorExceptionMessage = "Node must be an increment or an decrement. Compiler error, please report to developer";
         const string exceptionMessage = "Member is not a numeric type. Compiler error, please report to developer";
         
-        Type memberType;
-        switch (unaryBase.Inner)
-        {
-            case MemberNode member:
-                memberType = EmitGetLocalVarOrArg(member, context, true);
-                break;
-            case FieldAccessNode fieldAccess:
-                memberType = EmitGetField(fieldAccess, context, true);
-                break;
-            default: throw new InvalidOperationException(innerValueExceptionMessage);
-        }
+        LoadAssignTarget(unaryBase.Inner, context);
+        var memberType = GetAssignTargetType(unaryBase.Inner, context);
         
         switch (unaryBase)
         {
@@ -340,19 +330,10 @@ public static class IlCodeEmitter
             default: throw new InvalidOperationException(invalidOperatorExceptionMessage);
         }
 
-        switch (unaryBase.Inner)
-        {
-            case MemberNode member:
-                EmitSetLocalVarOrArg(member.MemberName, context);
-                break;
-            case FieldAccessNode fieldAccess:
-                Set(fieldAccess, context, true);
-                break;
-        }
-        
+        SetAssignTarget(unaryBase.Inner, context);
         return;
 
-        //Загрузка операнда инкремента(происходит особым образом для разных типов)
+        //Загрузка операнда инкремента(происходит особым для разных типов)
         void LoadConstant(Type constantType)
         {
             if (constantType == typeof(ulong) || constantType == typeof(long))
@@ -449,132 +430,112 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">В цель присвоения нельзя присвоить значение.</exception>
     private static void EmitAssign(AssignNode assignNode, EmissionContext context)
     {
-        var fldList = new List<FieldInfo?>();
-        var referentialTargets = new List<NodeBase>(); 
         foreach (var (target, source) in assignNode.Targets.Zip(assignNode.Sources))
         {
-            if(TryEmitAssignTargetForStructureType(target, source, context)) continue;
-            PrepareAssignTarget(target, context, out var fld);
-            fldList.Add(fld);
+            LoadAssignTarget(target, context);
             //Генерация кода источника присвоения.
             EmitSingleLineExpression(source, context);
-            referentialTargets.Add(target);
         }
 
-        foreach (var (target, fld) in referentialTargets.AsEnumerable().Reverse().Zip(fldList))
+        foreach (var target in assignNode.Targets.Reverse())
         {
-            EmitAssignTarget(target, context, fld);
+            SetAssignTarget(target, context);
         }
     }
-    
-    private static bool TryEmitAssignTargetForStructureType(NodeBase target, NodeBase source, EmissionContext context)
-    {
-        if (source is not InitTypeNode { Type.TypeInfo: { } info }) return false;
-        
-        var type = info.AsType();
-        if (type is not { IsValueType: true, IsPrimitive: false }) return false;
-        PrepareAssignTarget(target, context, out var fld);
 
+    private static void LoadAssignTarget(NodeBase target, EmissionContext context, bool forAssign, bool byRef)
+    {
         switch (target)
         {
-            case FieldAccessNode:
-                if(fld == null) throw new Exception("Member access must be a field. If you see this exception write to a compiler developer.");
-                context.Generator.Emit(OpCodes.Ldflda, fld);
+            case FieldAccessNode fieldAccess: EmitSingleLineExpression(fieldAccess.From, context); break;
+            case IndexerNode indexer:
+                EmitSingleLineExpression(indexer.From, context);
+                EmitSingleLineExpression(indexer.IndexMember, context);
                 break;
-            case IndexerNode:
-                context.Generator.Emit(OpCodes.Ldelema);
-                break;
-            case MemberNode memberNode:
-                EmitGetLocalVarOrArg(memberNode, context, false);
-                break;
-            case VariableDefinitionNode variableDefinitionNode:
-                foreach (var name in variableDefinitionNode.Names)
-                {
-                    //TODO: костыль, лень второй раз логику писать
-                    EmitGetLocalVarOrArg(new MemberNode(name.Value), context, false);
-                }
-                break;
+            case VariableDefinitionNode varDef: EmitVariableDefinition(varDef, context); break;
+            case MemberNode: break;
             default: throw new Exception();
         }
 
-        if (target is VariableDefinitionNode varDef)
-        {
-            foreach (var _ in varDef.Names)
-            {
-                EmitSingleLineExpression(source, context);
-            }
-        }
-        else
-        {
-            EmitSingleLineExpression(source, context);
-        }
-
-        return true;
-    }
-
-    private static void PrepareAssignTarget(NodeBase target, EmissionContext context, out FieldInfo? emitFld)
-    {
-        emitFld = null;
-        //Подготовка цели присвоения.
+        if (forAssign) return;
+        
         switch (target)
         {
-            case FieldAccessNode accessNode:
-                if (accessNode.Field is not { FieldInfo: { } info })
+            case FieldAccessNode fieldAccess:
+                var fldInfo = fieldAccess.Field.FieldInfo?.AsField();
+                if (fldInfo == null) throw new Exception();
+                var opCode = byRef ? OpCodes.Ldflda : OpCodes.Ldfld;
+                context.Generator.Emit(opCode, fldInfo);
+                break;
+            case IndexerNode indexer:
+                EmitIndexer();
+                break;
+        }
+    }
+
+    private static void SetAssignTarget(NodeBase target, EmissionContext context)
+    {
+        switch (target)
+        {
+            case FieldAccessNode fieldAccess:
+                var fieldInfo = fieldAccess.Field.FieldInfo?.AsField();
+                if (fieldInfo == null)
                 {
-                    throw new Exception("Member access must be a field. If you see this exception write to a compiler developer.");
+                    throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
                 }
-                emitFld = info.AsField();
                 
-                if(accessNode.From is MemberNode member) EmitGetMember(member, context, false);
-                else if (accessNode.From is FieldAccessNode innerAccess) EmitGetField(innerAccess, context, false);
-                else throw new Exception();
+                context.Generator.Emit(OpCodes.Stfld, fieldInfo);
+                break;
+            case IndexerNode indexer:
+                var itemTypeInfo = indexer.ItemType?.AsType();
+                if (itemTypeInfo == null)
+                {
+                    throw new Exception("Item type must has .net representation.  If you see this exception write to a compiler developer.");
+                }
+                EmitSetArrayElemOpcode(itemTypeInfo, context);
+                break;
+            case MemberNode member:
+                EmitSetLocalVarOrArg(member.MemberName, context);
                 break;
             case VariableDefinitionNode varDef:
-                EmitVariableDefinition(varDef, context);
-                break;
-            case MemberNode: break;
-            case IndexerNode indexerNode:
-                EmitSingleLineExpression(indexerNode.From, context);
-                EmitSingleLineExpression(indexerNode.IndexMember, context);
+                foreach (var name in varDef.Names)
+                {
+                    EmitSetLocalVarOrArg(name.Value, context);
+                }
                 break;
             default: throw new Exception();
         }
     }
 
-    private static void EmitAssignTarget(NodeBase target, EmissionContext context, FieldInfo? emitFld)
+    private static Type GetAssignTargetType(NodeBase target, EmissionContext context)
     {
-        //Генерация цели присвоения
-        if (emitFld is not null)
+        switch (target)
         {
-            context.Generator.Emit(OpCodes.Stfld, emitFld);
-        }
-        else if (target is VariableDefinitionNode {Names: { } varNames})
-        {
-            //Делаем дублирование присваивания всем переменным если их больше одной.
-            for (var i = 0; i < varNames.Count - 1; i++)
-            {
-                context.Generator.Emit(OpCodes.Dup);
-            }
-            foreach (var varName in varNames)
-            {
-                EmitSetLocalVarOrArg(varName.Value, context);
-            }
-        }
-        else if(target is MemberNode memberNode)
-        {
-            EmitSetLocalVarOrArg(memberNode.MemberName, context);
-        }
-        else if (target is IndexerNode indexerNode)
-        {
-            var itemType = indexerNode.ItemType?.AsType();
-            if (itemType == null)
-                throw new Exception("Array item type is not set. If you see this exception write to a compiler developer.");
-            EmitSetArrayElemOpcode(itemType, context);
-        }
-        else
-        {
-            throw new Exception(
-                $"Cannot emit assign to target of type {target.GetType().Name}. If you see this exception write to a compiler developer.");
+            case IndexerNode indexer:
+                var type = indexer.ItemType?.AsType();
+                if (type == null)
+                {
+                    throw new Exception("Item type must has .net representation.  If you see this exception write to a compiler developer.");
+                }
+                return type;
+            case FieldAccessNode fieldAccess:
+                var fieldInfo = fieldAccess.Field.FieldInfo?.AsField();
+                if (fieldInfo == null)
+                {
+                    throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
+                }
+                
+                return fieldInfo.FieldType;
+            case MemberNode member:
+                return GetTypeOfLocalMember(member, context);
+            case VariableDefinitionNode varDef:
+                var defType = varDef.Type?.TypeInfo?.AsType();
+                if (defType == null)
+                {
+                    throw new Exception("Variable has no type. If you see this exception write to a compiler developer.");
+                }
+                return defType;
+            default: throw new Exception();
         }
     }
 
@@ -609,7 +570,7 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <param name="byValue">Нужно ли получать поле по значению</param>
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
-    private static Type EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
+    private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
         var fieldInfo = accessNode.Field.FieldInfo?.AsField();
         if (fieldInfo == null)
@@ -630,7 +591,6 @@ public static class IlCodeEmitter
         }
         
         context.Generator.Emit(OpCodes.Ldfld, fieldInfo);
-        return fieldInfo.FieldType;
     }
     
     /// <summary>
@@ -976,14 +936,14 @@ public static class IlCodeEmitter
     /// <param name="byValue">Получать по значению или по ссылке</param>
     /// <returns>Тип переменной или аргумента</returns>
     /// <exception cref="InvalidOperationException">Переменная или аргумент не найдены.</exception>
-    private static Type EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
+    private static void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
     {
         OpCode opcode;
         if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
         {
             opcode = builder.LocalType is { IsValueType: true, IsPrimitive: false } && !byValue ? OpCodes.Ldloca : OpCodes.Ldloc;
             context.Generator.Emit(opcode, builder);
-            return builder.LocalType;
+            return;
         }
 
         ParameterInfo? arg;
@@ -1001,7 +961,18 @@ public static class IlCodeEmitter
         
         ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
         context.Generator.Emit(opcode, ix);
-        return arg.ParameterType;
+    }
+
+    private static Type GetTypeOfLocalMember(MemberNode member, EmissionContext context)
+    {
+        var name = member.MemberName;
+        if (context.LocalVarStack.TryGetValue(name, out var builder))
+        {
+            return builder.LocalType;
+        }
+        
+        ParameterInfo? arg;
+        return (arg = context.Arguments.FirstOrDefault()) == null ? throw new Exception() : arg.ParameterType;
     }
     
     /// <summary>
