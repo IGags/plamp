@@ -3,6 +3,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -378,6 +379,432 @@ public class MathEmissionTests
         var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(int));
         Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();
     }
+
+    public static IEnumerable<object[]> IncrementForFieldSequence_Correct_DataProvider()
+    {
+        var lineFld = typeof(TestLine).GetField(nameof(TestLine.First))!;
+        var pointFld = typeof(TestPoint).GetField(nameof(TestPoint.X))!;
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            1,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            -1,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixIncrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixDecrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixIncrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixDecrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+    } 
+    
+    [Theory]
+    [MemberData(nameof(IncrementForFieldSequence_Correct_DataProvider))]
+    public void IncrementForFieldSequence_Correct(BodyNode body, int ret, int field)
+    {
+        var parameter = new TestParameter(typeof(TestLine), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new TestLine();
+        var res = methodInfo!.Invoke(instance, [testArg]);
+        res.ShouldBe(ret);
+        testArg.First.X.ShouldBe(field);
+    }
+
+    public static IEnumerable<object[]> IncrementForField_Correct_DataProvider()
+    {
+        var pointFld = typeof(TestPoint).GetField(nameof(TestPoint.X))!;
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            1,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            -1,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixIncrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+               new PostfixDecrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixIncrementNode(
+                    new FieldAccessNode(new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixDecrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+    } 
+    
+    [Theory]
+    [MemberData(nameof(IncrementForField_Correct_DataProvider))]
+    public void IncrementForField_Correct(BodyNode body, int ret, int field)
+    {
+        var parameter = new TestParameter(typeof(TestPoint), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new TestPoint();
+        var res = methodInfo!.Invoke(instance, [testArg]);
+        res.ShouldBe(ret);
+        testArg.X.ShouldBe(field);
+    }
+
+    public static IEnumerable<object[]> IncrementForIndexer_Correct_DataProvider()
+    {
+        var intType = new TypeNode(new TypeNameNode("int")) { TypeInfo = Builtins.Int };
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            1,
+            0
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            -1,
+            0
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            1,
+            1
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            -1,
+            -1
+        ];
+    }
+    
+    [Theory]
+    [MemberData(nameof(IncrementForIndexer_Correct_DataProvider))]
+    public void IncrementForIndexer_Correct(BodyNode body, int ixChanged, int valueShould, int retShould)
+    {
+        var parameter = new TestParameter(typeof(int[]), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new int[2];
+        var ret = methodInfo!.Invoke(instance, [testArg]);
+        ret.ShouldBe(retShould);
+        testArg[ixChanged].ShouldBe(valueShould);
+        testArg[(ixChanged + 1) % 2].ShouldBe(0);
+    }
     
     //Возможно следует добавить тесты на арифметику с плавающей точкой, но пока генератор генерирует её без отличий от C#
+}
+
+public class TestLine
+{
+    public TestPoint First = new();
+    public TestPoint Second = new();
+}
+
+public class TestPoint
+{
+    public int X, Y;
 }

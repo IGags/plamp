@@ -116,10 +116,8 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     private static void EmitReturn(ReturnNode returnNode, EmissionContext context)
     {
-        //Возвращаем всё всегда по значению. Ссылочные типы просто скопируют ссылку. А структуры будут анбокшены и помещены на стек.
-        if(returnNode.ReturnValue is MemberNode) EmitGetMember(returnNode.ReturnValue, context, true);
         //ReturnValue может быть null и это легально, значит функция void
-        else if(returnNode.ReturnValue != null) EmitSingleLineExpression(returnNode.ReturnValue, context);
+        if(returnNode.ReturnValue != null) EmitSingleLineExpression(returnNode.ReturnValue, context, true);
         context.Generator.Emit(OpCodes.Br, context.FnReturnLabel);
     }
     
@@ -161,7 +159,7 @@ public static class IlCodeEmitter
          * end-label:
          */
         
-        EmitSingleLineExpression(whileNide.Condition, context);
+        EmitSingleLineExpression(whileNide.Condition, context, true);
         context.Generator.Emit(OpCodes.Brfalse, context.Labels[endLabelName]);
         
         context.EnterCycleContext(startLabelName, endLabelName);
@@ -225,7 +223,7 @@ public static class IlCodeEmitter
         }
         
         //Эмиссия кода предиката
-        EmitSingleLineExpression(conditionNode.Predicate, context);
+        EmitSingleLineExpression(conditionNode.Predicate, context, true);
         //Условный переход в конец if блока
         var ifClauseEndLab = context.DefineLabel();
         context.Generator.Emit(OpCodes.Brfalse, context.Labels[ifClauseEndLab]);
@@ -272,12 +270,12 @@ public static class IlCodeEmitter
         switch (unaryBase)
         {
             case NotNode:
-                EmitSingleLineExpression(unaryBase.Inner, context);
+                EmitSingleLineExpression(unaryBase.Inner, context, true);
                 context.Generator.Emit(OpCodes.Ldc_I4_0);
                 context.Generator.Emit(OpCodes.Ceq);
                 break;
             case UnaryMinusNode:
-                EmitSingleLineExpression(unaryBase.Inner, context);
+                EmitSingleLineExpression(unaryBase.Inner, context, true);
                 context.Generator.Emit(OpCodes.Neg);
                 break;
             case PrefixIncrementNode:
@@ -295,54 +293,59 @@ public static class IlCodeEmitter
     /// </summary>
     /// <param name="unaryBase">Базовый класс AST узла унарного оператора(должен быть инкрементом или декрементом)</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
-    /// <param name="withAssign">Если результат оператора присваивается, то будет сгенерирован другой IL</param>
+    /// <param name="returnValue">Если результат оператора присваивается, то будет сгенерирован другой IL</param>
     /// <exception cref="InvalidOperationException">Оператор не является инкрементом или декрементом, операнд в который нельзя присвоить значение, тип операнда не число</exception>
-    private static void EmitIncrementOrDecrement(BaseUnaryNode unaryBase, EmissionContext context, bool withAssign)
+    private static void EmitIncrementOrDecrement(BaseUnaryNode unaryBase, EmissionContext context, bool returnValue)
     {
         const string invalidOperatorExceptionMessage = "Node must be an increment or an decrement. Compiler error, please report to developer";
         const string exceptionMessage = "Member is not a numeric type. Compiler error, please report to developer";
         
         LoadAssignTarget(unaryBase.Inner, context);
-        if(unaryBase.Inner is not MemberNode) context.Generator.Emit(OpCodes.Dup);
-        GetIdentifier(unaryBase.Inner, context);
         var memberType = GetAssignTargetType(unaryBase.Inner, context);
 
-        var incVar = context.Generator.DeclareLocal(memberType, false);
-        
-        switch (unaryBase)
+        bool targetByRef;
+        switch (unaryBase.Inner)
         {
-            case PrefixIncrementNode:
-                LoadConstant(memberType);
-                context.Generator.Emit(OpCodes.Add);
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Stloc, incVar);
+            case IndexerNode: targetByRef = false; break;
+            case FieldAccessNode fieldAccess:
+                var declaringFieldType = fieldAccess.Field.FieldInfo?.AsField().DeclaringType;
+                if (declaringFieldType == null) throw new Exception();
+                targetByRef = declaringFieldType.IsClass;
                 break;
-            case PrefixDecrementNode:
-                LoadConstant(memberType);
-                context.Generator.Emit(OpCodes.Sub);
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Stloc, incVar);
-                break;
-            case PostfixIncrementNode:
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Stloc, incVar);
-                LoadConstant(memberType);
-                context.Generator.Emit(OpCodes.Add);
-                break;
-            case PostfixDecrementNode:
-                context.Generator.Emit(OpCodes.Dup);
-                context.Generator.Emit(OpCodes.Stloc, incVar);
-                LoadConstant(memberType);
-                context.Generator.Emit(OpCodes.Sub);
-                break;
-            default: throw new InvalidOperationException(invalidOperatorExceptionMessage);
+            case MemberNode:
+            case VariableDefinitionNode: targetByRef = true; break;
+            default: throw new Exception();
+        }
+
+        var arifOpcode = ChooseOpcode(unaryBase);
+        var prefix = IsPrefix(unaryBase);
+
+        if (!targetByRef) GetIdentifier(unaryBase.Inner, false);
+        if(unaryBase.Inner is not MemberNode)context.Generator.Emit(OpCodes.Dup);
+        if (targetByRef) GetIdentifier(unaryBase.Inner, true);
+        else EmitLdInd(memberType);
+
+        var incLoc = context.Generator.DeclareLocal(memberType);
+        if (prefix)
+        {
+            LoadConstant(memberType);
+            context.Generator.Emit(arifOpcode);
+            context.Generator.Emit(OpCodes.Stloc, incLoc);
+            context.Generator.Emit(OpCodes.Ldloc, incLoc);
+        }
+        else
+        {
+            context.Generator.Emit(OpCodes.Stloc, incLoc);
+            context.Generator.Emit(OpCodes.Ldloc, incLoc);
+            LoadConstant(memberType);
+            context.Generator.Emit(arifOpcode);
         }
         
-        SetAssignTarget(unaryBase.Inner, context);
         
-        if(!withAssign) return;
-        context.Generator.Emit(OpCodes.Ldloc, incVar);
-        
+        if(targetByRef) SetAssignTarget(unaryBase.Inner, context);
+        else EmitStInd(memberType);
+
+        if(returnValue) context.Generator.Emit(OpCodes.Ldloc, incLoc);
         return;
 
         //Загрузка операнда инкремента(происходит особым для разных типов)
@@ -362,6 +365,64 @@ public static class IlCodeEmitter
             else if(constantType == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, 1d);
             else throw new InvalidOperationException(exceptionMessage);
         }
+        
+        void GetIdentifier(NodeBase identifier, bool byValue)
+        {
+            switch (identifier)
+            {
+                case MemberNode member:           EmitGetMember(member, context, byValue); break;
+                case FieldAccessNode fieldAccess: EmitFieldAccess(fieldAccess, context, byValue); break;
+                case IndexerNode indexer:
+                    var itemType = indexer.ItemType?.AsType() ?? throw new Exception();
+                    EmitGetArrayElemOpcode(itemType, context, byValue); break;
+                default:                          throw new Exception();
+            }
+        }
+
+        void EmitLdInd(Type constantType)
+        {
+            if (constantType == typeof(ulong) || constantType == typeof(long)) context.Generator.Emit(OpCodes.Ldind_I8);
+            else if (constantType == typeof(int)) context.Generator.Emit(OpCodes.Ldind_I4);
+            else if (constantType == typeof(uint)) context.Generator.Emit(OpCodes.Ldind_U4);
+            else if (constantType == typeof(short)) context.Generator.Emit(OpCodes.Ldind_I2);
+            else if (constantType == typeof(ushort)) context.Generator.Emit(OpCodes.Ldind_U2);
+            else if (constantType == typeof(byte)) context.Generator.Emit(OpCodes.Ldind_U1);
+            else if (constantType == typeof(sbyte)) context.Generator.Emit(OpCodes.Ldind_I1);
+            else if (constantType == typeof(float)) context.Generator.Emit(OpCodes.Ldind_R4);
+            else if (constantType == typeof(double)) context.Generator.Emit(OpCodes.Ldind_R8);
+            else throw new InvalidOperationException(exceptionMessage);
+        }
+
+        void EmitStInd(Type constantType)
+        {
+            if (constantType == typeof(ulong) || constantType == typeof(long)) context.Generator.Emit(OpCodes.Stind_I8);
+            else if (constantType == typeof(int) || constantType == typeof(uint)) context.Generator.Emit(OpCodes.Stind_I4);
+            else if (constantType == typeof(short) || constantType == typeof(ushort)) context.Generator.Emit(OpCodes.Stind_I2);
+            else if (constantType == typeof(byte) || constantType == typeof(sbyte)) context.Generator.Emit(OpCodes.Stind_I1);
+            else if (constantType == typeof(float)) context.Generator.Emit(OpCodes.Stind_R4);
+            else if (constantType == typeof(double)) context.Generator.Emit(OpCodes.Stind_R8);
+            else throw new InvalidOperationException(exceptionMessage);
+        }
+
+        OpCode ChooseOpcode(BaseUnaryNode node)
+        {
+            switch (node)
+            {
+                case PrefixDecrementNode: case PostfixDecrementNode: return OpCodes.Sub;
+                case PrefixIncrementNode: case PostfixIncrementNode: return OpCodes.Add;
+                default: throw new Exception(invalidOperatorExceptionMessage);
+            }
+        }
+
+        bool IsPrefix(BaseUnaryNode node)
+        {
+            switch (node)
+            {
+                case PrefixDecrementNode: case PrefixIncrementNode: return true;
+                case PostfixDecrementNode: case PostfixIncrementNode: return false;
+                default: throw new Exception(invalidOperatorExceptionMessage);
+            }
+        }
     }
 
     #endregion
@@ -376,8 +437,8 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">Бинарный оператор не распознан.</exception>
     private static void EmitBaseBinary(BaseBinaryNode binaryNode, EmissionContext context)
     {
-        EmitSingleLineExpression(binaryNode.Left, context);
-        EmitSingleLineExpression(binaryNode.Right, context);
+        EmitSingleLineExpression(binaryNode.Left, context, true);
+        EmitSingleLineExpression(binaryNode.Right, context, true);
         switch (binaryNode)
         {
             case AddNode:
@@ -446,7 +507,7 @@ public static class IlCodeEmitter
         {
             LoadAssignTarget(target, context);
             //Генерация кода источника присвоения.
-            EmitSingleLineExpression(source, context);
+            EmitSingleLineExpression(source, context, true);
         }
 
         foreach (var target in assignNode.Targets.Reverse())
@@ -459,28 +520,17 @@ public static class IlCodeEmitter
     {
         switch (target)
         {
-            case FieldAccessNode fieldAccess: EmitSingleLineExpression(fieldAccess.From, context); break;
-            case IndexerNode indexer:
-                EmitSingleLineExpression(indexer.From, context);
-                EmitSingleLineExpression(indexer.IndexMember, context);
+            case FieldAccessNode fieldAccess: EmitSingleLineExpression(fieldAccess.From, context, false); break;
+            case IndexerNode indexer: 
+                EmitSingleLineExpression(indexer.From, context, false); 
+                EmitSingleLineExpression(indexer.IndexMember, context, true);
                 break;
             case VariableDefinitionNode varDef: EmitVariableDefinition(varDef, context); break;
             case MemberNode: break;
             default: throw new Exception();
         }
     }
-
-    private static void GetIdentifier(NodeBase identifier, EmissionContext context)
-    {
-        switch (identifier)
-        {
-            case MemberNode member:           EmitGetMember(member, context, true); break;
-            case FieldAccessNode fieldAccess: EmitFieldAccess(fieldAccess, context, true); break;
-            case IndexerNode indexer:         EmitIndexer(indexer, context); break;
-            default:                          throw new Exception();
-        }
-    }
-
+    
     private static void SetAssignTarget(NodeBase target, EmissionContext context)
     {
         switch (target)
@@ -549,20 +599,21 @@ public static class IlCodeEmitter
     /// </summary>
     /// <param name="expression">AST узел выражения</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
+    /// <param name="byValue">Загружать ли структуры на стек вычислений по ссылке. Полезно в случаях, если поле структуры является целью присваивания.</param>
     /// <exception cref="Exception">Выражение не распознано</exception>
-    private static void EmitSingleLineExpression(NodeBase expression, EmissionContext context)
+    private static void EmitSingleLineExpression(NodeBase expression, EmissionContext context, bool byValue)
     {
         switch (expression)
         {
-            case MemberNode          memberNode:          EmitGetLocalVarOrArg(memberNode, context, true);  break;
+            case MemberNode          memberNode:          EmitGetLocalVarOrArg(memberNode, context, byValue);  break;
             case BaseBinaryNode      binaryNode:          EmitBaseBinary(binaryNode, context);              break;
             case BaseUnaryNode       unaryNode:           EmitUnary(unaryNode, context);                    break;
             case CallNode            callNode:            EmitCall(callNode, context, false);               break;
             case CastNode            castNode:            EmitTypeConversion(castNode, context);            break;
             case LiteralNode         literalNode:         EmitLiteral(literalNode, context);                break;
-            case FieldAccessNode     memberAccessNode:    EmitGetField(memberAccessNode, context, true);    break;
+            case FieldAccessNode     memberAccessNode:    EmitGetField(memberAccessNode, context, byValue);    break;
             case InitArrayNode       initArrayNode:       EmitArrayInitialization(initArrayNode, context);  break;
-            case IndexerNode         indexerNode:         EmitGetByIndexer(indexerNode, context);           break;
+            case IndexerNode         indexerNode:         EmitGetByIndexer(indexerNode, context, byValue);     break;
             case InitTypeNode        initTypeNode:        EmitTypeInit(initTypeNode, context);              break;
             default:                                                                                        throw new Exception("Cannot emit expression. If you see this exception write to a compiler developer.");
         }
@@ -575,8 +626,8 @@ public static class IlCodeEmitter
         {
             throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
         }
-        
-        var opcode = byValue ? OpCodes.Ldfld : OpCodes.Ldflda;
+
+        var opcode = byValue || fieldInfo.FieldType.IsClass ? OpCodes.Ldfld : OpCodes.Ldflda;
         context.Generator.Emit(opcode, fieldInfo);
     }
     
@@ -740,7 +791,7 @@ public static class IlCodeEmitter
     /// <exception cref="ArgumentException">Невозможно привести тип.</exception>
     private static void EmitTypeConversion(CastNode node, EmissionContext context)
     {
-        EmitSingleLineExpression(node.Inner, context);
+        EmitSingleLineExpression(node.Inner, context, true);
         var toType = GetTypeFromNode(node.ToType)!;
         var fromType = node.FromType?.AsType();
 
@@ -874,8 +925,7 @@ public static class IlCodeEmitter
         
         foreach (var arg in callNode.Args)
         {
-            if(arg is MemberNode) EmitGetMember(arg, context, true);
-            else EmitSingleLineExpression(arg, context);
+            EmitSingleLineExpression(arg, context, true);
         }
         var returnType = EmitMethodCall(callNode.FnInfo, context);
         
@@ -974,7 +1024,7 @@ public static class IlCodeEmitter
 
         var ix = Array.IndexOf(context.Arguments, arg);
         ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
-        context.Generator.Emit(OpCodes.Starg_S, ix);
+        context.Generator.Emit(OpCodes.Starg, ix);
     }
 
     /// <summary>
@@ -998,26 +1048,32 @@ public static class IlCodeEmitter
     {
         var type = initArrayNode.ArrayItemType.TypeInfo?.AsType();
         if (type == null) throw new Exception();
-        EmitSingleLineExpression(initArrayNode.LengthDefinition, context);
+        EmitSingleLineExpression(initArrayNode.LengthDefinition, context, true);
         context.Generator.Emit(OpCodes.Newarr, type);
     }
 
-    private static void EmitGetByIndexer(IndexerNode indexerNode, EmissionContext context)
+    private static void EmitGetByIndexer(IndexerNode indexerNode, EmissionContext context, bool byValue)
     {
-        EmitSingleLineExpression(indexerNode.From, context);
-        EmitIndexer(indexerNode, context);
+        EmitSingleLineExpression(indexerNode.From, context, byValue);
+        EmitIndexer(indexerNode, context, byValue);
     }
     
-    private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context)
+    private static void EmitIndexer(IndexerNode indexerNode, EmissionContext context, bool byValue)
     {
-        EmitSingleLineExpression(indexerNode.IndexMember, context);
+        EmitSingleLineExpression(indexerNode.IndexMember, context, byValue);
         
         if (indexerNode.ItemType?.AsType() is not {} fromType) throw new Exception();
-        EmitGetArrayElemOpcode(fromType, context);
+        EmitGetArrayElemOpcode(fromType, context, byValue);
     }
 
-    private static void EmitGetArrayElemOpcode(Type itemType, EmissionContext context)
+    private static void EmitGetArrayElemOpcode(Type itemType, EmissionContext context, bool byValue)
     {
+        if (!itemType.IsClass && !byValue)
+        {
+            context.Generator.Emit(OpCodes.Ldelema, itemType); 
+            return;
+        }
+        
         if(itemType == typeof(int))                                    context.Generator.Emit(OpCodes.Ldelem_I4);
         else if(itemType == typeof(uint))                              context.Generator.Emit(OpCodes.Ldelem_U4);
         else if(itemType == typeof(long) || itemType == typeof(ulong)) context.Generator.Emit(OpCodes.Ldelem_I8);
@@ -1026,8 +1082,8 @@ public static class IlCodeEmitter
         else if(itemType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
         else if(itemType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
         else if(itemType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
-        else if (itemType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem,     itemType);
-        else                                                           throw new Exception();
+        else if (itemType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem, itemType);
+        else throw new Exception();
     }
 
     private static void EmitSetArrayElemOpcode(Type? elemType, EmissionContext context)
