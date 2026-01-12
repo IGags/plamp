@@ -1183,51 +1183,32 @@ public static class Parser
         var res = TryParsePrecedence(opFork, out var right, precedence);
         //Access is not binary operator yet
         if (!res || right == null || token.Operator == OperatorEnum.Access) return false;
-        switch (token.Operator)
+        
+        NodeBase? binaryOutput = token.Operator switch
         {
-            case OperatorEnum.Mul:
-                output = new MulNode(left, right);
-                break;
-            case OperatorEnum.Div:
-                output = new DivNode(left, right);
-                break;
-            case OperatorEnum.Add:
-                output = new AddNode(left, right);
-                break;
-            case OperatorEnum.Sub:
-                output = new SubNode(left, right);
-                break;
-            case OperatorEnum.Lesser:
-                output = new LessNode(left, right);
-                break;
-            case OperatorEnum.Greater:
-                output = new GreaterNode(left, right);
-                break;
-            case OperatorEnum.LesserOrEquals:
-                output = new LessOrEqualNode(left, right);
-                break;
-            case OperatorEnum.GreaterOrEquals:
-                output = new GreaterOrEqualNode(left, right);
-                break;
-            case OperatorEnum.Equals:
-                output = new EqualNode(left, right);
-                break;
-            case OperatorEnum.NotEquals:
-                output = new NotEqualNode(left, right);
-                break;
-            case OperatorEnum.And:
-                output = new AndNode(left, right);
-                break;
-            case OperatorEnum.Or:
-                output = new OrNode(left, right);
-                break;
-            case OperatorEnum.Modulo:
-                output = new ModuloNode(left, right);
-                break;
-            default:
-                output = left;
-                return false;
+            OperatorEnum.Mul => new MulNode(left, right),
+            OperatorEnum.Div => new DivNode(left, right),
+            OperatorEnum.Add => new AddNode(left, right),
+            OperatorEnum.Sub => new SubNode(left, right),
+            OperatorEnum.Lesser => new LessNode(left, right),
+            OperatorEnum.Greater => new GreaterNode(left, right),
+            OperatorEnum.LesserOrEquals => new LessOrEqualNode(left, right),
+            OperatorEnum.GreaterOrEquals => new GreaterOrEqualNode(left, right),
+            OperatorEnum.Equals => new EqualNode(left, right),
+            OperatorEnum.NotEquals => new NotEqualNode(left, right),
+            OperatorEnum.And => new AndNode(left, right),
+            OperatorEnum.Or => new OrNode(left, right),
+            OperatorEnum.Modulo => new ModuloNode(left, right),
+            _ => null,
+        };
+        
+        if (binaryOutput == null)
+        {
+            output = left;
+            return false;
         }
+
+        output = binaryOutput;
 
         context.Merge(opFork);
         context.TranslationTable.AddSymbol(output, token.Position);
