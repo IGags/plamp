@@ -1225,7 +1225,8 @@ public static class Parser
                 output = new ModuloNode(left, right);
                 break;
             default:
-                throw new Exception();
+                output = left;
+                return false;
         }
 
         context.Merge(opFork);
