@@ -545,7 +545,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                         continue;
                     }
                     
-                    ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
+                    ValidateAssignmentToDefinition(node, assignment.SourceNode, withPosition.Variable.Type?.TypeInfo, context, assignment.SourceType);
                     ValidateExistingDefinition(leftMember, context, withPosition);
                     continue;
                 default: throw new Exception("Parser exception, invalid ast");

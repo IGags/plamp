@@ -13,6 +13,7 @@ using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Alternative.Visitors.ModulePreCreation.FillReferenceArray;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
@@ -76,6 +77,10 @@ public static class CompilationPipeline
         //Вывод типов.
         var typeInferenceVisitor = new TypeInferenceWeaver();
         typeInferenceVisitor.WeaveDiffs(ast, context);
+
+        //Заполнение массивов ссылочных типов.
+        var fillRefArrayVisitor = new FillReferenceArrayWeaver();
+        fillRefArrayVisitor.WeaveDiffs(ast, context);
         
         return new(ast);
     }

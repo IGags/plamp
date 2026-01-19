@@ -640,18 +640,7 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">Узел AST имеет не валидную конфигурацию или узел не имеет информации о поле, которое требуется получить</exception>
     private static void EmitGetField(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
-        switch (accessNode.From)
-        {
-            case MemberNode member:
-                EmitGetMember(member, context, byValue);
-                break;
-            case FieldAccessNode fieldAccess:
-                EmitGetField(fieldAccess, context, byValue);
-                break;
-            default:
-                throw new Exception("Invalid member access. If you see this exception write to a compiler developer.");
-        }
-
+        EmitSingleLineExpression(accessNode.From, context, byValue);
         EmitFieldAccess(accessNode, context, byValue);
     }
     

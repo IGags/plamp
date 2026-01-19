@@ -8,23 +8,28 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 
 public class EmptyTypeInfo(TypedefNode typedefNode) : ITypeBuilderInfo
 {
-    private readonly int _arrayNesting;
+    private readonly EmptyTypeInfo? _elementType;
     
     private readonly TypedefNode _typedefNode = typedefNode;
 
     private readonly List<IFieldBuilderInfo> _fields = [];
- 
-    private EmptyTypeInfo(TypedefNode typedefNode, int arrayNesting) : this(typedefNode)
+    
+    private EmptyTypeInfo(TypedefNode typedefNode, EmptyTypeInfo elementType) : this(typedefNode)
     {
-        _arrayNesting = arrayNesting;
+        _elementType = elementType;
     }
     
     public Type AsType()
     {
-        Type type = _typedefNode.Type ?? throw new NullReferenceException();
-        for (var i = 0; i < _arrayNesting; i++)
+        Type type;
+        if (_elementType != null)
         {
+            type = _elementType.AsType();
             type = type.MakeArrayType();
+        }
+        else
+        {
+            type = _typedefNode.Type ?? throw new NullReferenceException();
         }
 
         return type;
@@ -34,7 +39,7 @@ public class EmptyTypeInfo(TypedefNode typedefNode) : ITypeBuilderInfo
 
     public string Name => _typedefNode.Name.Value;
 
-    public bool IsArrayType => _arrayNesting > 0;
+    public bool IsArrayType => _elementType != null;
     
     public TypedefNode Definition => _typedefNode;
 
@@ -44,17 +49,23 @@ public class EmptyTypeInfo(TypedefNode typedefNode) : ITypeBuilderInfo
 
     public ITypeInfo MakeArrayType()
     {
-        return new EmptyTypeInfo(_typedefNode, _arrayNesting + 1);
+        return new EmptyTypeInfo(_typedefNode, this);
     }
 
     public ITypeInfo? ElementType()
     {
-        return _arrayNesting == 0 ? null : new EmptyTypeInfo(_typedefNode, _arrayNesting - 1);
+        return _elementType;
     }
 
     public bool Equals(ITypeInfo? other)
     {
         if (other is not EmptyTypeInfo typ) return false;
-        return typ._typedefNode == _typedefNode && typ._arrayNesting == _arrayNesting;
+        if (typ._typedefNode != _typedefNode) return false;
+        if (_elementType == null && typ._elementType != null 
+            || _elementType != null && typ._elementType == null) return false;
+
+        if (_elementType == null && typ._elementType == null) return true;
+        
+        return _elementType!.Equals(typ._elementType);
     }
 }

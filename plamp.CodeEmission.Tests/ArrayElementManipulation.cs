@@ -480,5 +480,73 @@ public class ArrayElementManipulation
         res.ShouldBeOfType<int[]>()[1].ShouldBe(-1);
     }
 
+    public class TestType
+    {
+        public int[] Fld = new int[5];
+    }
+    
+    [Fact]
+    public void GetArrayItemFromField_Correct()
+    {
+        /*
+         * return a.Fld[2];
+         */
+        var fieldInfo = typeof(TestType).GetField(nameof(TestType.Fld))!;
+        var fld = new FieldNode(nameof(TestType.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo)};
+        var access = new FieldAccessNode(new MemberNode("a"), fld);
+        var indexer = new IndexerNode(access, new LiteralNode(2, Builtins.Int)){ ItemType = Builtins.Int };
+        var body = new BodyNode(
+        [
+            new ReturnNode(indexer)
+        ]);
+        var parameter = new TestParameter(typeof(TestType), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var valShould = Random.Shared.Next();
+        var type = new TestType { Fld = { [2] = valShould } };
+
+        var valActual = methodInfo!.Invoke(instance, [type]);
+        
+        valActual.ShouldBeOfType<int>().ShouldBe(valShould);
+    }
+
+    [Fact]
+    public void SetArrayItemFromIntoField_Correct()
+    {
+        var fieldInfo = typeof(TestType).GetField(nameof(TestType.Fld))!;
+        var fld = new FieldNode(nameof(TestType.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo)};
+        var access = new FieldAccessNode(new MemberNode("a"), fld);
+        var indexer = new IndexerNode(access, new LiteralNode(2, Builtins.Int)){ ItemType = Builtins.Int };
+        var valShould = Random.Shared.Next();
+        var assign = new AssignNode([indexer], [new LiteralNode(valShould, Builtins.Int)]);
+        var body = new BodyNode(
+        [
+            assign
+        ]);
+        
+        var parameter = new TestParameter(typeof(TestType), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(void));
+        var type = new TestType();
+        methodInfo!.Invoke(instance, [type]);
+        type.Fld[2].ShouldBe(valShould);
+    }
+
+    public static int[] TestCallbackFunc() => [ 33, 34, 35 ];
+    
+    [Fact]
+    public void GetArrayItemFromFuncCall_Correct()
+    {
+        /*
+         * return fn()[1];
+         */
+        var fnInfo = GetType().GetMethod(nameof(TestCallbackFunc), BindingFlags.Static | BindingFlags.Public)!;
+        var call = EmissionSetupHelper.CreateCallNode(null, EmissionSetupHelper.MakeFuncRef(fnInfo), []);
+        var ix = new IndexerNode(call, new LiteralNode(1, Builtins.Int)){ItemType = Builtins.Int};
+        var body = new BodyNode([new ReturnNode(ix)]);
+
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
+        var res = methodInfo!.Invoke(instance, []);
+        res.ShouldBeOfType<int>().ShouldBe(34);
+    }
+
     #endregion
 }

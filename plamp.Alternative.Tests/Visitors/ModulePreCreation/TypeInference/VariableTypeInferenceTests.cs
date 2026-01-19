@@ -357,6 +357,15 @@ public class VariableTypeInferenceTests
             """,
             new List<string>{PlampExceptionInfo.CannotFindMember().Code, PlampExceptionInfo.CannotFindMember().Code}
         ];
+        yield return
+        [
+            """
+            {
+                a, a := 1, "1";
+            }
+            """,
+            new List<string>{PlampExceptionInfo.CannotAssign().Code}
+        ];
     }
     
     [Theory]

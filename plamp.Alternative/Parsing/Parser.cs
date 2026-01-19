@@ -899,9 +899,12 @@ public static class Parser
                 context.Exceptions.Add(new PlampException(record,
                     context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart)));
             }
+            else
+            {
+                context.Sequence.MoveNextNonWhiteSpace();
+            }
 
             from = indexerSequence = new IndexerNode(from, member);
-            context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(from, context.Sequence.MakeRangeFromPrevNonWhitespace(indexerStart));
         }
 

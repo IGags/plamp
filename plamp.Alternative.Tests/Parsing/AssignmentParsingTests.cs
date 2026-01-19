@@ -150,6 +150,7 @@ public class AssignmentParsingTests
         yield return ["a[1]", new List<string>{ PlampExceptionInfo.ExpectedAssignment().Code }];
         yield return ["a[1] :=", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
         yield return ["a[1] := +", new List<string>{ PlampExceptionInfo.ExpectedAssignmentSource().Code }];
+        yield return ["a[1 := 322", new List<string>{ PlampExceptionInfo.IndexerIsNotClosed().Code }, true];
 
         yield return ["1 := a", new List<string>(0)];
         yield return ["a, := c", new List<string>{PlampExceptionInfo.ExpectedAssignmentTarget().Code}];
@@ -163,13 +164,13 @@ public class AssignmentParsingTests
     
     [Theory]
     [MemberData(nameof(ParseAssignment_Incorrect_DataProvider))]
-    public void ParseAssignment_Incorrect(string code, List<string> errorCodes)
+    public void ParseAssignment_Incorrect(string code, List<string> errorCodes, bool resultShould = false)
     {
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
         var parsed = Parser.TryParseAssignment(context, out _);
-        parsed.ShouldBe(false);
+        parsed.ShouldBe(resultShould);
         context.Exceptions.Select(x => x.Code).ToList().ShouldBeEquivalentTo(errorCodes);
     }
 }

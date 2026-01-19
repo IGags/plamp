@@ -1,3 +1,4 @@
+using System.Reflection;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
@@ -186,5 +187,79 @@ public class FieldAssignEmissionTests
         var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(Line));
         var res = methodInfo!.Invoke(instance, []).ShouldBeOfType<Line>();
         res.First.X.ShouldBe(1);
+    }
+
+    public class FldArrayTest
+    {
+        public int[] Fld = new int[3];
+    }
+    
+    [Fact]
+    public void AssignToFieldFromArrayElement_Correct()
+    {
+        /*
+         * a.Fld[2] := 32;
+         */
+        var fieldInfo = typeof(FldArrayTest).GetField(nameof(FldArrayTest.Fld))!;
+        var field = new FieldNode(nameof(FldArrayTest.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo) };
+        var fieldAccess = new FieldAccessNode(new MemberNode("a"), field);
+        var indexer = new IndexerNode(fieldAccess, new LiteralNode(2, Builtins.Int)){ItemType = Builtins.Int};
+        var valueShould = Random.Shared.Next();
+        var assign = new AssignNode([indexer], [new LiteralNode(valueShould, Builtins.Int)]);
+        var body = new BodyNode(
+        [
+            assign
+        ]);
+
+        var parameter = new TestParameter(typeof(FldArrayTest), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(void));
+        var arg = new FldArrayTest();
+        methodInfo!.Invoke(instance, [arg]);
+        arg.Fld[2].ShouldBe(valueShould);
+    }
+
+    [Fact]
+    public void GetFromFieldFromArrayElement_Correct()
+    {
+        /*
+         * return a.Fld[1];
+         */
+        var fieldInfo = typeof(FldArrayTest).GetField(nameof(FldArrayTest.Fld))!;
+        var field = new FieldNode(nameof(FldArrayTest.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo) };
+        var fieldAccess = new FieldAccessNode(new MemberNode("a"), field);
+        var indexer = new IndexerNode(fieldAccess, new LiteralNode(1, Builtins.Int)){ItemType = Builtins.Int};
+        var ret = new ReturnNode(indexer);
+        var body = new BodyNode([ret]);
+        
+        var parameter = new TestParameter(typeof(FldArrayTest), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var valueShould = Random.Shared.Next();
+        var arg = new FldArrayTest(){Fld = {[1] = valueShould}};
+
+        var res = methodInfo!.Invoke(instance, [arg]);
+        res.ShouldBeOfType<int>().ShouldBe(valueShould);
+    }
+
+    public static Point GetFixedPoint()
+    {
+        return new Point { X = 12 };
+    }
+    
+    [Fact]
+    public void GetFromFieldFromFuncCall_Correct()
+    {
+        /*
+         * return call().Fld;
+         */
+        var fnInfo = GetType().GetMethod(nameof(GetFixedPoint), BindingFlags.Public | BindingFlags.Static, [])!;
+        var call = EmissionSetupHelper.CreateCallNode(null, EmissionSetupHelper.MakeFuncRef(fnInfo), []);
+        var fieldInfo = typeof(Point).GetField(nameof(Point.X))!;
+        var field = new FieldNode(nameof(Point.X)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo) };
+        var fieldAccess = new FieldAccessNode(call, field);
+        var body = new BodyNode([new ReturnNode(fieldAccess)]);
+        
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
+        var res = methodInfo!.Invoke(instance, []);
+        res.ShouldBeOfType<int>().ShouldBe(12);
     }
 }
