@@ -549,5 +549,21 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord IllegalBodyLevelInstruction() =>
+        new()
+        {
+            Message = "Only call, assignment, unary increment, flow control and return are allowed.",
+            Code = "SEM1331",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotUseControlFlowNotInLoop() =>
+        new()
+        {
+            Message = "This instruction allowed in loop only",
+            Code = "SEM1332",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

@@ -11,9 +11,11 @@ using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
+using plamp.Alternative.Visitors;
 using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.FillReferenceArray;
+using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
@@ -77,6 +79,14 @@ public static class CompilationPipeline
         //Вывод типов.
         var typeInferenceVisitor = new TypeInferenceWeaver();
         typeInferenceVisitor.WeaveDiffs(ast, context);
+
+        //Проверка выражений на уровне body(нельзя запихать что попало)
+        var bodyLevelValidator = new BodyLevelExpressionValidator();
+        bodyLevelValidator.Validate(ast, context);
+
+        //Break и continue только в цикле
+        var flowControlInsideLoopValidator = new FlowControlInsideLoopValidator();
+        flowControlInsideLoopValidator.Validate(ast, context);
 
         //Заполнение массивов ссылочных типов.
         var fillRefArrayVisitor = new FillReferenceArrayWeaver();
