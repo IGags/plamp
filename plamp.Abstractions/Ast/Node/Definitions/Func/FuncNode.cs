@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 
@@ -11,12 +12,14 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 /// <param name="funcName">Узел, обозначающий имя объявления функции.</param>
 /// <param name="parameterList">Список объявлений параметров функции</param>
 /// <param name="body">Блок тела функции</param>
-public class FuncNode(TypeNode? returnType, FuncNameNode funcName, List<ParameterNode> parameterList, BodyNode body) : NodeBase
+public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<ParameterNode> parameterList, BodyNode body) : NodeBase
 {
+    public MethodBuilder? Func { get; set; }
+    
     /// <summary>
     /// Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void
     /// </summary>
-    public TypeNode? ReturnType { get; private set; } = returnType;
+    public TypeNode ReturnType { get; private set; } = returnType;
     
     /// <summary>
     /// Узел, обозначающий имя объявления функции.
@@ -36,10 +39,7 @@ public class FuncNode(TypeNode? returnType, FuncNameNode funcName, List<Paramete
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
-        if (ReturnType != null)
-        {
-            yield return ReturnType;
-        }
+        yield return ReturnType;
         yield return FuncName;
         foreach (var parameter in ParameterList)
         {

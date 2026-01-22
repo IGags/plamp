@@ -1,4 +1,7 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System.Collections.Generic;
+using System.Linq;
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
 
@@ -123,15 +126,7 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedArgName()
-    {
-        return new()
-        {
-            Code = "PRS1124",
-            Level = ExceptionLevel.Error,
-            Message = "Expected argument name"
-        };
-    }
+    // PRS1124 - свободный
 
     public static PlampExceptionRecord ExpectedAssignment()
     {
@@ -173,15 +168,7 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord TypesIsNotSupported()
-    {
-        return new()
-        {
-            Code = "PRS1129",
-            Level = ExceptionLevel.Error,
-            Message = "Types is not supported in current version of language",
-        };
-    }
+    // PRS1129 Свободный код ошибки
 
     public static PlampExceptionRecord ExpectedModuleName()
     {
@@ -232,6 +219,46 @@ public static class PlampExceptionInfo
             Message = "The body is expected in curly brackets."
         };
     }
+
+    public static PlampExceptionRecord ExpectedAssignmentTarget()
+    {
+        return new()
+        {
+            Code = "PRS1135",
+            Level = ExceptionLevel.Error,
+            Message = "Expected assignment target"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedFieldName()
+    {
+        return new()
+        {
+            Code = "PRS1136",
+            Level = ExceptionLevel.Error,
+            Message = "Expected field name"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedColon()
+    {
+        return new()
+        {
+            Code = "PRS1137",
+            Level = ExceptionLevel.Error,
+            Message = "Expected colon"
+        };
+    }
+    
+    public static PlampExceptionRecord ExpectedFieldValue()
+    {
+        return new()
+        {
+            Code = "PRS1137",
+            Level = ExceptionLevel.Error,
+            Message = "Expected field value"
+        };
+    }
     
     #endregion
 
@@ -267,13 +294,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord UnknownFunction()
+    public static PlampExceptionRecord DuplicateFunctionDefinition(string funcName)
     {
         return new PlampExceptionRecord()
         {
             Code = "SEM1303",
             Level = ExceptionLevel.Error,
-            Message = "Cannot find function within module with this signature"
+            Message = "This function overload already defined."
         };
     }
 
@@ -405,10 +432,10 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord EmptyIndexer() =>
+    public static PlampExceptionRecord EmptyAssign() =>
         new()
         {
-            Message = "The array indexer is empty",
+            Message = "Assign node is empty",
             Code = "SEM1318",
             Level = ExceptionLevel.Error
         };
@@ -426,6 +453,115 @@ public static class PlampExceptionInfo
         {
             Message = "The indexer value must be of integer type",
             Code = "SEM1320",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AssignSourceAndTargetCountMismatch() =>
+        new()
+        {
+            Message = "Assign target count does not match with the source count",
+            Code = "SEM1321",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotDefineCoreType() =>
+        new()
+        {
+            Message = "Cannot define type with same name as the core type into runtime",
+            Code = "SEM1322",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DuplicateTypeDefinition(string typeName) =>
+        new()
+        {
+            Message = $"Type {typeName} already declared within a module",
+            Code = "SEM1323",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DuplicateFieldDefinition(string fieldName) =>
+        new()
+        {
+            Message = $"Field {fieldName} already declared within a type",
+            Code = "SEM1324",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord TypeIsNotFound(string typeName) =>
+        new()
+        {
+            Message = $"Type {typeName} is not found.",
+            Code = "SEM1325",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AmbigulousTypeName(string typeName, IEnumerable<string> modules) =>
+        new()
+        {
+            Message = $"The type {typeName} is defined in {string.Join(", ", modules)} modules",
+            Code = "SEM1326",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FunctionIsNotFound(
+        string functionName, 
+        IEnumerable<ITypeInfo?> signature) =>
+        new()
+        {
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) not found.",
+            Code = "SEM1327",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord AmbigulousFunctionReference(
+        string functionName,
+        IEnumerable<ITypeInfo?> signature,
+        IEnumerable<string> modules) =>
+        new()
+        {
+            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) defined in {string.Join(", ", modules)} modules",
+            Code = "SEM1327",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldCannotHasSameNameAsEnclosingType() =>
+        new()
+        {
+            Message = "The field cannot has same name as its enclosing type",
+            Code = "SEM1328",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldIsNotFound() =>
+        new()
+        {
+            Message = "Field is not found in declaring type",
+            Code = "SEM1329",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldProduceCircularDependency() =>
+        new()
+        {
+            Message = "Field refers to type that produce circular dependency with current type",
+            Code = "SEM1330",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord IllegalBodyLevelInstruction() =>
+        new()
+        {
+            Message = "Only call, assignment, unary increment, flow control and return are allowed.",
+            Code = "SEM1331",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotUseControlFlowNotInLoop() =>
+        new()
+        {
+            Message = "This instruction allowed in loop only",
+            Code = "SEM1332",
             Level = ExceptionLevel.Error
         };
 

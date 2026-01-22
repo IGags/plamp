@@ -14,7 +14,7 @@ public class ConditionPredicateParsingTests
     public static IEnumerable<object[]> ParseConditionPredicate_Correct_DataProvider()
     {
         yield return ["(a)", new MemberNode("a")];
-        yield return ["(true)", new LiteralNode(true, typeof(bool))];
+        yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
         yield return ["(fn1())", new CallNode(null, new FuncCallNameNode("fn1"), [])];
     }
     

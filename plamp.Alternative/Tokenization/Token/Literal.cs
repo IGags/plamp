@@ -1,17 +1,10 @@
-﻿using System;
-using plamp.Abstractions.Ast;
+﻿using plamp.Abstractions.Ast;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Tokenization.Token;
 
-public class Literal : TokenBase
+public class Literal(string stringValue, FilePosition position, object actualValue, ITypeInfo actualType) : TokenBase(position, stringValue)
 {
-    public object ActualValue { get; }
-    public Type ActualType { get; }
-
-    public Literal(string stringValue, FilePosition start, FilePosition end, object actualValue, Type actualType) 
-        : base(start, end, stringValue)
-    {
-        ActualValue = actualValue;
-        ActualType = actualType;
-    }
+    public object ActualValue { get; } = actualValue;
+    public ITypeInfo ActualType { get; } = actualType;
 }

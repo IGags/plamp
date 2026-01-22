@@ -10,6 +10,8 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 
 namespace plamp.CodeEmission.Tests;
@@ -34,49 +36,52 @@ public class CastEmissionTests
     {
         var inParam = new TestParameter(from, "toCast");
         const string castResName = "castRes";
+        var fromRef = EmissionSetupHelper.MakeTypeRef(from);
+        var toRef = EmissionSetupHelper.MakeTypeRef(to);
+        
         var methodBody = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
-            new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(toRef), new VariableNameNode(castResName)),
+            new AssignNode([new MemberNode(castResName)], [EmissionSetupHelper.CreateCastNode(fromRef, toRef, new MemberNode(inParam.Name))]),
             new ReturnNode(new MemberNode(castResName))
         ]);
 
         var (typeInstance, methodInfo) =
-            EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to);
-        instance ??= Activator.CreateInstance(from);
+            EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, toRef.AsType());
+        instance ??= Activator.CreateInstance(fromRef.AsType());
         var res = methodInfo!.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
-        Assert.Equal(to, res.GetType());
+        Assert.Equal(toRef.AsType(), res.GetType());
     }
 
     //I can't store object of type in object typed variable
     [Fact]
     public void EmitShortIntConversion()
     {
-        var to = typeof(int);
-        var from = typeof(short);
+        var to = Builtins.Int;
+        var from = Builtins.Short;
         const short instance = 31;
         var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
-        Assert.Equal(to, res.GetType());
+        Assert.Equal(to.AsType(), res.GetType());
     }
     
     [Fact]
     public void EmitByteIntConversion()
     {
-        var to = typeof(int);
-        var from = typeof(byte);
+        var to = Builtins.Int;
+        var from = Builtins.Byte;
         const byte instance = 31;
         var (methodInfo, typeInstance) = CreateConversionDelegate(from, to);
         var res = methodInfo.Invoke(typeInstance, [instance]);
         Assert.NotNull(res);
-        Assert.Equal(to, res.GetType());
+        Assert.Equal(to.AsType(), res.GetType());
     }
 
-    private (MethodInfo, object) CreateConversionDelegate(Type from, Type to)
+    private (MethodInfo, object) CreateConversionDelegate(ITypeInfo from, ITypeInfo to)
     {
-        var inParam = new TestParameter(from, "toCast");
+        var inParam = new TestParameter(from.AsType(), "toCast");
 
         const string castResName = "castRes";
         /*
@@ -87,10 +92,10 @@ public class CastEmissionTests
         var methodBody = new BodyNode(
         [
             new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(to), new VariableNameNode(castResName)),
-            new AssignNode(new MemberNode(castResName), EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))),
+            new AssignNode([new MemberNode(castResName)], [EmissionSetupHelper.CreateCastNode(from, to, new MemberNode(inParam.Name))]),
             new ReturnNode(new MemberNode(castResName))
         ]);
-        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to);
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([inParam], methodBody, to.AsType());
         return (methodInfo, instance)!;
     }
 
@@ -132,12 +137,17 @@ public class CastEmissionTests
         /*
          * return (float)43;
          */
-        var to = new TypeNode(new TypeNameNode("float"));
-        to.SetType(typeof(float));
-        const int literal = 43;
-        var cast = new CastNode(to, new LiteralNode(literal, typeof(int)));
-        cast.SetFromType(typeof(int));
+        var to = new TypeNode(new TypeNameNode("float"))
+        {
+            TypeInfo = Builtins.Float
+        };
         
+        const int literal = 43;
+        var cast = new CastNode(to, new LiteralNode(literal, Builtins.Int))
+        {
+            FromType = Builtins.Int
+        };
+
         var methodBody = new BodyNode(
         [
             new ReturnNode(cast)
@@ -157,13 +167,18 @@ public class CastEmissionTests
         /*
          * return (double)Example();
          */
-        var to = new TypeNode(new TypeNameNode("double"));
-        to.SetType(typeof(double));
+        var to = new TypeNode(new TypeNameNode("double"))
+        {
+            TypeInfo = Builtins.Double
+        };
         var call = new CallNode(null, new FuncCallNameNode("Example"), []);
-        call.SetInfo(typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!);
-        var cast = new CastNode(to, call);
-        cast.SetFromType(typeof(int));
-        
+        var info = typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!;
+        call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
+        var cast = new CastNode(to, call)
+        {
+            FromType = Builtins.Int
+        };
+
         var methodBody = new BodyNode(
         [
             new ReturnNode(cast)
@@ -181,11 +196,15 @@ public class CastEmissionTests
         /*
          * return (short)(32768 - 1);
          */
-        var to = new TypeNode(new TypeNameNode("short"));
-        to.SetType(typeof(short));
-        var cast = new CastNode(to, new SubNode(new LiteralNode(32768, typeof(int)), new LiteralNode(1, typeof(int))));
-        cast.SetFromType(typeof(int));
-        
+        var to = new TypeNode(new TypeNameNode("short"))
+        {
+            TypeInfo = Builtins.Short
+        };
+        var cast = new CastNode(to, new SubNode(new LiteralNode(32768, Builtins.Int), new LiteralNode(1, Builtins.Int)))
+        {
+            FromType = Builtins.Int
+        };
+
         var methodBody = new BodyNode(
         [
             new ReturnNode(cast)
@@ -203,11 +222,15 @@ public class CastEmissionTests
         /*
          * return (int)-1.5;
          */
-        var to = new TypeNode(new TypeNameNode("int"));
-        to.SetType(typeof(int));
-        var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, typeof(float))));
-        cast.SetFromType(typeof(float));
-        
+        var to = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
+        var cast = new CastNode(to, new UnaryMinusNode(new LiteralNode(1.5f, Builtins.Float)))
+        {
+            FromType = Builtins.Float
+        };
+
         var methodBody = new BodyNode(
         [
             new ReturnNode(cast)
@@ -225,15 +248,23 @@ public class CastEmissionTests
         /*
          * return (int)1.5;
          */
-        var innerType = new TypeNode(new TypeNameNode("double"));
-        innerType.SetType(typeof(double));
-        var innerCast = new CastNode(innerType, new LiteralNode(1.5f, typeof(float)));
-        innerCast.SetFromType(typeof(float));
-        var to = new TypeNode(new TypeNameNode("int"));
-        to.SetType(typeof(int));
-        var cast = new CastNode(to, innerCast);
-        cast.SetFromType(typeof(double));
-        
+        var innerType = new TypeNode(new TypeNameNode("double"))
+        {
+            TypeInfo = Builtins.Double
+        };
+        var innerCast = new CastNode(innerType, new LiteralNode(1.5f, Builtins.Float))
+        {
+            FromType = Builtins.Float
+        };
+        var to = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
+        var cast = new CastNode(to, innerCast)
+        {
+            FromType = Builtins.Double
+        };
+
         var methodBody = new BodyNode(
         [
             new ReturnNode(cast)
@@ -252,28 +283,36 @@ public class CastEmissionTests
          * a := [5]double;
          * return int(a[1]);
          */
-        var variableType = new TypeNode(new TypeNameNode("double[]"));
-        variableType.SetType(typeof(double[]));
-        var arrayItemType = new TypeNode(new TypeNameNode("double"));
-        arrayItemType.SetType(typeof(double));
+        var variableType = new TypeNode(new TypeNameNode("double[]"))
+        {
+            TypeInfo = Builtins.Double.MakeArrayType()
+        };
+        var arrayItemType = new TypeNode(new TypeNameNode("double"))
+        {
+            TypeInfo = Builtins.Double
+        };
 
-        var castToType = new TypeNode(new TypeNameNode("int"));
-        castToType.SetType(typeof(int));
-        
-        var elemGetter = new ElemGetterNode(
-            new MemberNode("a"),
-            new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
-        elemGetter.SetItemType(typeof(double));
-        
-        var castNode = new CastNode(castToType, elemGetter);
-        castNode.SetFromType(typeof(double));
-        
+        var castToType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
+
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))
+        {
+            ItemType = Builtins.Double
+        };
+
+        var castNode = new CastNode(castToType, elemGetter)
+        {
+            FromType = Builtins.Double
+        };
+
         var body = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(variableType, new VariableNameNode("a")), 
-                new InitArrayNode(arrayItemType, new LiteralNode(5, typeof(int)))
-                ),
+                [new VariableDefinitionNode(variableType, new VariableNameNode("a"))], 
+                [new InitArrayNode(arrayItemType, new LiteralNode(5, Builtins.Int))]
+            ),
             new ReturnNode(castNode)
         ]);
         

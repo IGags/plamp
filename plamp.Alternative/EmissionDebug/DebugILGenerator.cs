@@ -1,0 +1,273 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace plamp.Alternative.EmissionDebug;
+
+// ReSharper disable once InconsistentNaming
+public class DebugILGenerator : ILGenerator
+{
+    private readonly ILGenerator _inner;
+    private int _varScopeCounter;
+
+    //Не билдер так как нужно менять последнюю строку.
+    private readonly StringBuilder _code = new();
+    private readonly List<LocalBuilder> _locals = [];
+    private readonly List<Label> _labels = [];
+    private readonly List<string> _unwrittenLabels = [];
+
+    internal DebugILGenerator(ILGenerator inner)
+    {
+        _inner = inner;
+    }
+    
+    public override void BeginCatchBlock(Type? exceptionType) => _inner.BeginCatchBlock(exceptionType);
+
+    public override void BeginExceptFilterBlock() => _inner.BeginExceptFilterBlock();
+
+    public override Label BeginExceptionBlock() => _inner.BeginExceptionBlock();
+
+    public override void BeginFaultBlock() => _inner.BeginFaultBlock();
+
+    public override void BeginFinallyBlock() => _inner.BeginFinallyBlock();
+
+    public override void BeginScope()
+    {
+        _code.AppendLine($"BEGIN LEXICAL SCOPE {_varScopeCounter++}");
+        _inner.BeginScope();
+    }
+
+    public override LocalBuilder DeclareLocal(Type localType, bool pinned)
+    {
+        _code.AppendLine($"DECLARE LOCAL {_locals.Count} {localType.Name} PINNED: {pinned}");
+        var local = _inner.DeclareLocal(localType, pinned);
+        _locals.Add(local);
+        return local;
+    }
+
+    public override Label DefineLabel()
+    {
+        var label = _inner.DefineLabel();
+        _labels.Add(label);
+        return label;
+    }
+
+    public override void Emit(OpCode opcode)
+    {
+        WritePrefix();
+        _code.AppendLine(opcode.ToString() ?? throw new InvalidOperationException());
+        _inner.Emit(opcode);
+    }
+
+    public override void Emit(OpCode opcode, byte arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, double arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, short arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, int arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, long arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, ConstructorInfo con)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {GetCtorInfoStringDesc(con)}");
+        _inner.Emit(opcode, con);
+    }
+
+    public override void Emit(OpCode opcode, Label label)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} lab_{_labels.IndexOf(label)}");
+        _inner.Emit(opcode, label);
+    }
+
+    public override void Emit(OpCode opcode, Label[] labels)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        var labConcat = string.Join(' ', labels.Select(x => $"lab_{_labels.IndexOf(x)}"));
+        _code.AppendLine($"{code} {labConcat}");
+        _inner.Emit(opcode, labels);
+    }
+
+    public override void Emit(OpCode opcode, LocalBuilder local)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} loc_{_locals.IndexOf(local)}");
+        _inner.Emit(opcode, local);
+    }
+
+    public override void Emit(OpCode opcode, SignatureHelper signature)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {signature}");
+        _inner.Emit(opcode, signature);
+    }
+
+    public override void Emit(OpCode opcode, FieldInfo field)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {field.DeclaringType}.{field.Name}");
+        _inner.Emit(opcode, field);
+    }
+
+    public override void Emit(OpCode opcode, MethodInfo meth)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        var infoStr = GetMethodInfoStringDesc(meth);
+        _code.AppendLine($"{code} {infoStr}");
+        _inner.Emit(opcode, meth);
+    }
+
+    public override void Emit(OpCode opcode, float arg)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {arg}");
+        _inner.Emit(opcode, arg);
+    }
+
+    public override void Emit(OpCode opcode, string str)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} \"{str}\"");
+        _inner.Emit(opcode, str);
+    }
+
+    public override void Emit(OpCode opcode, Type cls)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        _code.AppendLine($"{code} {cls.Name}");
+        _inner.Emit(opcode, cls);
+    }
+
+    public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        var opt = optionalParameterTypes == null ? string.Empty : string.Join(' ', optionalParameterTypes.Select(x => x.Name));
+        var infoString = GetMethodInfoStringDesc(methodInfo);
+        _code.AppendLine($"{code} {infoString}{(opt == string.Empty ? opt : " " + opt)}");
+        _inner.EmitCall(opcode, methodInfo, optionalParameterTypes);
+    }
+
+    public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
+        Type[]? optionalParameterTypes)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        var args = parameterTypes?.Concat(optionalParameterTypes ?? []) ?? optionalParameterTypes;
+        var opt = args == null ? string.Empty : string.Join(' ', args.Select(x => x.Name));
+        var ret = returnType == null ? string.Empty : returnType.Name;
+        _code.AppendLine($"{code} {callingConvention} RET: {ret} ARGS: {(opt == string.Empty ? opt : " " + opt)}");
+        _inner.EmitCalli(opcode, callingConvention, returnType, parameterTypes, optionalParameterTypes);
+    }
+
+    public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
+    {
+        WritePrefix();
+        var code = opcode.ToString() ?? throw new InvalidOperationException();
+        var opt = parameterTypes == null ? string.Empty : string.Join(' ', parameterTypes.Select(x => x.Name));
+        var ret = returnType == null ? string.Empty : returnType.Name;
+        _code.AppendLine($"{code} {unmanagedCallConv} RET: {ret} ARGS: {(opt == string.Empty ? opt : " " + opt)}");
+        _inner.EmitCalli(opcode, unmanagedCallConv, returnType, parameterTypes);
+    }
+
+    public override void EndExceptionBlock() => _inner.EndExceptionBlock();
+
+    public override void EndScope()
+    {
+        _code.AppendLine($"END LEXICAL SCOPE {--_varScopeCounter}");
+        _inner.EndScope();
+    }
+
+    public override void MarkLabel(Label loc)
+    {
+        _inner.MarkLabel(loc);
+        _unwrittenLabels.Add($"lab_{_labels.IndexOf(loc)}:");
+    }
+
+    public override void UsingNamespace(string usingNamespace) => _inner.UsingNamespace(usingNamespace);
+
+    public override int ILOffset => _inner.ILOffset;
+
+    public override string ToString() => _code.ToString();
+
+    private void WritePrefix()
+    {
+        if (_unwrittenLabels.Count != 0)
+        {
+            foreach (var label in _unwrittenLabels)
+            {
+                _code.AppendLine(label);
+            }
+            _unwrittenLabels.Clear();
+        }
+        
+        _code.Append(' ', 6);
+    }
+
+    private string GetMethodInfoStringDesc(MethodInfo meth)
+    {
+        if (meth is MethodBuilder || meth.IsGenericMethod)
+        {
+            return $"{meth.ReturnType} {meth.Name} DYNAMIC BUILDER METHOD";
+        }
+        return $"{meth.ReturnType} {meth.DeclaringType}::{meth.Name}({string.Join(", ", meth.GetParameters().Select(x => x.ParameterType.Name))})";
+    }
+
+    private string GetCtorInfoStringDesc(ConstructorInfo ctor)
+    {
+        var type = ctor.DeclaringType!;
+        if (ctor is ConstructorBuilder bd)
+        {
+            return $"{type.Name}{bd.Name} DYNAMIC BUILDER CONSTRUCTOR";
+        }
+
+        return $"{type.Name}{ctor.Name}({string.Join(", ", ctor.GetParameters().Select(x => x.ParameterType.Name))})";
+    }
+}

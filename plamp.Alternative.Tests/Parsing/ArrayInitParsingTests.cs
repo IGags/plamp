@@ -23,7 +23,7 @@ public class ArrayInitParsingTests
     public void ParseArrayInit_Correct(int length)
     {
         var code = $"[{length}]int";
-        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(length, typeof(int)));
+        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(length, Builtins.Int));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
@@ -35,7 +35,7 @@ public class ArrayInitParsingTests
     public void ParseJaggedArrayInit_Correct()
     {
         const string code = "[3][]long";
-        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("long")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, new LiteralNode(3, typeof(int)));
+        var nodeShould = new InitArrayNode(new TypeNode(new TypeNameNode("long")) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}, new LiteralNode(3, Builtins.Int));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
@@ -121,7 +121,7 @@ public class ArrayInitParsingTests
         const string code = "[t[1]]int";
         var ast = new InitArrayNode(
             new TypeNode(new TypeNameNode("int")), 
-            new ElemGetterNode(new MemberNode("t"), new ArrayIndexerNode(new LiteralNode(1, typeof(int)))));
+            new IndexerNode(new MemberNode("t"), new LiteralNode(1, Builtins.Int)));
         
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();

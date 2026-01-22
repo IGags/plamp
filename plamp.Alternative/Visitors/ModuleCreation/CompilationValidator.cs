@@ -1,0 +1,43 @@
+﻿using System;
+using System.Linq;
+using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
+using plamp.Abstractions.AstManipulation.Validation;
+using plamp.Alternative.EmissionDebug;
+using plamp.ILCodeEmitters;
+
+namespace plamp.Alternative.Visitors.ModuleCreation;
+
+public class CompilationValidator : BaseValidator<CreationContext, CreationContext>
+{
+    protected override VisitResult PreVisitFunction(FuncNode node, CreationContext context, NodeBase? parent)
+    {
+        var builder = node.Func;
+        var parameters = node.ParameterList.Select(x => x.ParamInfo?.AsInfo()).ToArray();
+        if (builder == null || parameters.Any(x => x == null))
+        {
+            throw new Exception();
+        }
+        
+        var dbg = new DebugMethodBuilder(builder);
+        var emissionContext = new CompilerEmissionContext(
+            node.Body,
+            dbg,
+            parameters!, 
+            context.TranslationTable);
+        IlCodeEmitter.EmitMethodBody(emissionContext);
+        Console.WriteLine(dbg.GetIlRepresentation());
+        return VisitResult.SkipChildren;
+    }
+
+    protected override VisitResult PostVisitTypedef(TypedefNode node, CreationContext context, NodeBase? parent)
+    {
+        node.Type?.CreateType();
+        return VisitResult.Continue;
+    }
+
+    protected override CreationContext CreateInnerContext(CreationContext context) => context;
+
+    protected override CreationContext MapInnerToOuter(CreationContext outerContext, CreationContext innerContext) => innerContext;
+}

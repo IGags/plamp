@@ -8,20 +8,21 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 
 namespace plamp.Abstractions.Ast;
 
 /// <summary>
-/// Базовый класс для всех посетителей абстрактных деревьев кода в компилляторе.<br/>
+/// Базовый класс для всех посетителей абстрактных деревьев кода в компиляторе.<br/>
 /// Совершает обход AST в глубину.<br/>
 /// Для каждого типа синтаксического узла есть метод, который вызывается перед посещением потомков.<br/>
 /// Также для каждого типа узла есть метод, который вызывает после посещения его потомков.
 /// </summary>
 /// <typeparam name="TContext">
 /// Тип объекта, который пробрасывается переопределённые методы у классов-наследников.<br/>
-/// Нужен для переноса сотояния между вызовами и хранения глобального состояния обхода AST.<br/>
+/// Нужен для переноса состояния между вызовами и хранения глобального состояния обхода AST.<br/>
 /// </typeparam>
 //TODO: Possible do with stack if will StackOverflow occurs
 public abstract class BaseVisitor<TContext>
@@ -134,8 +135,6 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(callNode, context, parent, PreVisitCall, PostVisitCall);
             case CastNode castNode:
                 return VisitCore(castNode, context, parent, PreVisitCast, PostVisitCast);
-            case ConstructorCallNode constructorNode:
-                return VisitCore(constructorNode, context, parent, PreVisitConstructor, PostVisitConstructor);
             case EmptyNode emptyNode:
                 return VisitCore(emptyNode, context, parent, PreVisitEmpty, PostVisitEmpty);
             case MemberNode memberNode:
@@ -146,8 +145,8 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(typeNode, context, parent, PreVisitType, PostVisitType);
             case VariableDefinitionNode variableDefinitionNode:
                 return VisitCore(variableDefinitionNode, context, parent, PreVisitVariableDefinition, PostVisitVariableDefinition);
-            case MemberAccessNode memberAccessNode:
-                return VisitCore(memberAccessNode, context, parent, PreVisitMemberAccess, PostVisitMemberAccess);
+            case FieldAccessNode memberAccessNode:
+                return VisitCore(memberAccessNode, context, parent, PreVisitFieldAccess, PostVisitFieldAccess);
             case ThisNode thisNode:
                 return VisitCore(thisNode, context, parent, PreVisitThis, PostVisitThis);
             case LiteralNode constNode:
@@ -166,19 +165,29 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(initArray, context, parent, PreVisitInitArray, PostVisitInitArray);
             case ArrayTypeSpecificationNode arrayRank:
                 return VisitCore(arrayRank, context, parent, PreVisitArrayTypeSpecification, PostVisitArrayTypeSpecification);
-            case ElemGetterNode elemGetter:
-                return VisitCore(elemGetter, context, parent, PreVisitElemGetter, PostVisitElemGetter);
-            case ElemSetterNode elemSetter:
-                return VisitCore(elemSetter, context, parent, PreVisitElemSetter, PostVisitElemSetter);
-            case ArrayIndexerNode arrayIndexerNode:
-                return VisitCore(arrayIndexerNode, context, parent, PreVisitArrayIndexer, PostVisitArrayIndexer);
-            case BaseBinaryNode binaryNode:
-                return VisitBinaryExpression(binaryNode, context, parent);
-            case BaseUnaryNode unaryNode:
-                return VisitUnaryNode(unaryNode, context, parent);
+            case IndexerNode arrayIndexer:
+                return VisitCore(arrayIndexer, context, parent, PreVisitArrayIndexer, PostVisitArrayIndexer);
+            case InitTypeNode initType:
+                return VisitCore(initType, context, parent, PreVisitInitType, PostVisitInitType);
+            case InitFieldNode initField:
+                return VisitCore(initField, context, parent, PreVisitInitField, PostVisitInitField);
+            case TypedefNode typedef:
+                return VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef);
+            case FieldDefNode fieldDef:
+                return VisitCore(fieldDef, context, parent, PreVisitFieldDef, PostVisitFieldDef);
+            case TypedefNameNode typedefName:
+                return VisitCore(typedefName, context, parent, PreVisitTypedefName, PostVisitTypedefName);
+            case FieldNameNode fieldName:
+                return VisitCore(fieldName, context, parent, PreVisitFieldName, PostVisitFieldName);
+            case AssignNode assign:
+                return VisitCore(assign, context, parent, PreVisitAssign, PostVisitAssign);
+            case BaseBinaryNode binary:
+                return VisitBinaryExpression(binary, context, parent);
+            case BaseUnaryNode unary:
+                return VisitUnaryNode(unary, context, parent);
+            default:
+                return VisitCore(node, context, parent, PreVisitDefault, PostVisitDefault);
         }
-        
-        return VisitCore(node, context, parent, PreVisitDefault, PostVisitDefault);
     }
 
     /// <summary>
@@ -261,7 +270,6 @@ public abstract class BaseVisitor<TContext>
         {
             visitRes = node switch
             {
-                BaseAssignNode baseAssignNode => VisitBaseAssign(baseAssignNode, context, parent),
                 BitwiseAndNode bitwiseAndNode => VisitCore(bitwiseAndNode, context, parent, PreVisitBitwiseAnd,
                     PostVisitBitwiseAnd),
                 BitwiseOrNode bitwiseOrNode => VisitCore(bitwiseOrNode, context, parent, PreVisitBitwiseOr,
@@ -288,21 +296,6 @@ public abstract class BaseVisitor<TContext>
         }
 
         return visitRes is VisitResult.Break ? VisitResult.Break : PostVisitBinary(node, context, parent);
-    }
-
-    /// <summary>
-    /// Выбор метода для обработки посещения узла-наследника базового оператора присваивания.
-    /// </summary>
-    /// <param name="node">Базовый узел присваивания</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult VisitBaseAssign(BaseAssignNode node, TContext context, NodeBase? parent)
-    {
-        return node switch
-        {
-            AssignNode assignNode => VisitCore(assignNode, context, parent, PreVisitAssign, PostVisitAssign),
-            _ => VisitCore(node, context, parent, PreVisitDefault, PostVisitDefault)
-        };
     }
 
     /// <summary>
@@ -786,22 +779,6 @@ public abstract class BaseVisitor<TContext>
     protected virtual VisitResult PostVisitCast(CastNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
-    /// Вызов перед посещением узла создания объекта
-    /// </summary>
-    /// <param name="node">Узел создания объекта</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitConstructor(ConstructorCallNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов после посещения узла создания объекта
-    /// </summary>
-    /// <param name="node">Узел создания объекта</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitConstructor(ConstructorCallNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
     /// Вызов перед посещением пустого узла 
     /// </summary>
     /// <param name="node">Пустой узел</param>
@@ -887,7 +864,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="accessNode">Узел доступа к члену типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitMemberAccess(MemberAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PreVisitFieldAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов после посещения узла доступа к члену типа
@@ -895,7 +872,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="accessNode">Узел доступа к члену типа</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitMemberAccess(MemberAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PostVisitFieldAccess(FieldAccessNode accessNode, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов перед посещением литерала(строковый, числовой или булев)
@@ -1168,38 +1145,6 @@ public abstract class BaseVisitor<TContext>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
     protected virtual VisitResult PostVisitArrayTypeSpecification(ArrayTypeSpecificationNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов перед посещением узла получения элемента сложного типа
-    /// </summary>
-    /// <param name="node">Узел получения элемента сложного типа</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitElemGetter(ElemGetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов после посещения узла получения элемента сложного типа
-    /// </summary>
-    /// <param name="node">Узел получения элемента сложного типа</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitElemGetter(ElemGetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов перед посещением узла установки значения сложного типа
-    /// </summary>
-    /// <param name="node">Узел установки значения сложного типа</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitElemSetter(ElemSetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
-    
-    /// <summary>
-    /// Вызов после посещения узла установки значения сложного типа
-    /// </summary>
-    /// <param name="node">Узел установки значения сложного типа</param>
-    /// <param name="context">Контекст конкретного посетителя</param>
-    /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitElemSetter(ElemSetterNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
 
     /// <summary>
     /// Вызов перед посещением узла индексации массива
@@ -1207,7 +1152,7 @@ public abstract class BaseVisitor<TContext>
     /// <param name="node">Узел индексации массива</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PreVisitArrayIndexer(ArrayIndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PreVisitArrayIndexer(IndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Вызов после посещения узла индексации массива
@@ -1215,7 +1160,119 @@ public abstract class BaseVisitor<TContext>
     /// <param name="node">Узел индексации массива</param>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
-    protected virtual VisitResult PostVisitArrayIndexer(ArrayIndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    protected virtual VisitResult PostVisitArrayIndexer(IndexerNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    /// <summary>
+    /// Вызов перед посещением узла объявления типа
+    /// </summary>
+    /// <param name="node">Узел объявления типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitTypedef(TypedefNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    /// <summary>
+    /// Вызов после посещения узла объявления типа
+    /// </summary>
+    /// <param name="node">Узел объявления типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitTypedef(TypedefNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла имени типа в его объявлении
+    /// </summary>
+    /// <param name="node">Узел имени объявления типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitTypedefName(TypedefNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла имени типа в его объявлении
+    /// </summary>
+    /// <param name="node">Узел имени объявления типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitTypedefName(TypedefNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла объявления поля типа 
+    /// </summary>
+    /// <param name="defNode">Узел объявления поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitFieldDef(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещением узла объявления поля типа 
+    /// </summary>
+    /// <param name="defNode">Узел объявления поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitFieldDef(FieldDefNode defNode, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла имени поля типа
+    /// </summary>
+    /// <param name="node">Узел имени поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitFieldName(FieldNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла имени поля типа
+    /// </summary>
+    /// <param name="node">Узел имени поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitFieldName(FieldNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла инициализации типа
+    /// </summary>
+    /// <param name="node">Узел инициализации типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitInitType(InitTypeNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла инициализации типа
+    /// </summary>
+    /// <param name="node">Узел инициализации типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitInitType(InitTypeNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла инициализации поля типа
+    /// </summary>
+    /// <param name="node">Узел инициализации поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitInitField(InitFieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла инициализации поля типа
+    /// </summary>
+    /// <param name="node">Узел инициализации поля типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitInitField(InitFieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    /// <summary>
+    /// Вызов перед посещением узла доступа к полю типа
+    /// </summary>
+    /// <param name="node">Узел доступа к полю типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitField(FieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещением узла доступа к полю типа
+    /// </summary>
+    /// <param name="node">Узел доступа к полю типа</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitField(FieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Базовый метод, определяющий логику обхода конкретного узла AST

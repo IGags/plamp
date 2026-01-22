@@ -1,70 +1,55 @@
-﻿using plamp.Abstractions.Ast;
+﻿using System.Diagnostics;
+using System.Text;
+using plamp.Abstractions.Ast;
+using plamp.Alternative;
 
 namespace plamp.Cli;
 
 public static class Program
 {
-    private const string File = 
-"""
-module playground;
-fn array_init() {
-    arr := [100]int;
-    i := 0;
-    while(i < arr.length()) arr[i++] := i * i;
-    
-    res := arr.binary_search(144);
-    
-    if(res >= 0){
-        print("The index of an element is: ");
-        println(res);
-    }
-    else print("Element not found");
-    aaa("hui");
-}
-/*
-    pidor
-    gay
-    faggot
-*/
-fn binary_search([]int array, int num) int {
-    if(array.length() = 0) return -1;
-    
-    left   := 0;
-    right  := array.length() - 1;
-    
-    while(left <= right){
-        center := (left + right) / 2;
-        
-        if(array[center] = num)      return center;
-        else if(array[center] < num) left  := center + 1;
-        else                         right := center - 1;
-    } 
-    
-    return -1;
-}
-
-fn aaa(string str) { print(str); }
-""";
-    
-    public static void Main()
+    public static async Task<int> Main(params string[] args)
     {
-        var rows = File.Split('\n');
-        var res = CompilationDriver.CompileModule("aaa.plp", File);
-        if (res.Exceptions.Count > 0)
+        var sw = Stopwatch.StartNew();
+        if (args.Length != 1)
+        {
+            return -1;
+        }
+
+        var filepath = Path.GetFullPath(args[0]);
+        await using var file = File.OpenRead(filepath);
+        using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen:true);
+        var res = await CompilationPipeline.RunEntirePipelineAsync(reader, filepath);
+
+        var fileText = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
+        
+        Console.WriteLine($"Compilation took {sw.Elapsed}");
+        
+        if (res.Exceptions.Count > 0 || res.Compiled == null)
         {
             PrintRes(res.Exceptions);
-            return;
+            return -1;
         }
-        var method = res.Compiled!.Modules.First().GetMethod("array_init");
+        
+        var method = res.Compiled!.Modules.First().GetMethod("main");
+        sw.Restart();
         method!.Invoke(null, []);
+        Console.WriteLine($"Execution took {sw.Elapsed}");
+        
+        return 0;
 
         void PrintRes(List<PlampException> exList)
         {
             foreach (var ex in exList)
             {
-                var row = rows[ex.StartPosition.Row];
-                var str = $"@@ {ex.StartPosition.Row}, {ex.StartPosition.Column} @@ {ex.Message}" + '\n' + row + '\n';
-                str += new string(' ', ex.StartPosition.Column) + $"^\n@@ {ex.EndPosition.Row}, {ex.EndPosition.Column} @@ {ex.FileName}\n===================================";
+                var start = (int)ex.FilePosition.ByteOffset;
+                var rowStart = fileText.LastIndexOf('\n', start);
+                var rowEnd = fileText.IndexOf('\n', start + 1);
+                rowStart = rowStart == -1 ? 0 : rowStart;
+                
+                var row = fileText[rowStart..rowEnd];
+                var ptrStart = start - rowStart;
+                var len = Math.Min(ex.FilePosition.CharacterLength, rowEnd - ptrStart + 1) - 1;
+                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ',  ptrStart - 1) + '^' + new string('~', len) + '\n';
                 Console.WriteLine(str);
             }
         }

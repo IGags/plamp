@@ -10,6 +10,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 using Shouldly;
 
@@ -37,10 +38,12 @@ public class InitArrayEmissionTests
           /*
            * return [4]type;
            */
-          var itemType = new TypeNode(new TypeNameNode(arrayItemType.Name));
-          itemType.SetType(arrayItemType);
+          var itemType = new TypeNode(new TypeNameNode(arrayItemType.Name))
+          {
+               TypeInfo = EmissionSetupHelper.MakeTypeRef(arrayItemType)
+          };
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, typeof(int)));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(4, Builtins.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var arrayType = arrayItemType.MakeArrayType();
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, arrayType);
@@ -54,10 +57,12 @@ public class InitArrayEmissionTests
      [Fact]
      public void InitArrayOfZeroLiteralLength_ReturnsCorrect()
      {
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, typeof(int)));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(0, Builtins.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           var result = method!.Invoke(instance, []);
@@ -70,10 +75,12 @@ public class InitArrayEmissionTests
      [Fact]
      public void InitArrayOfNegativeLength_ThrowsRuntimeException()
      {
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, typeof(int)));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(-1, Builtins.Int));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
           Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, []))
@@ -88,8 +95,10 @@ public class InitArrayEmissionTests
            */
           var parameter = new TestParameter(typeof(int), "length");
           
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
           var arrayInit = new InitArrayNode(itemType, new MemberNode("length"));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -111,8 +120,10 @@ public class InitArrayEmissionTests
            */
           var parameter = new TestParameter(typeof(int), "length");
           
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
           var arrayInit = new InitArrayNode(itemType, new PostfixIncrementNode(new MemberNode("length")));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
@@ -132,10 +143,12 @@ public class InitArrayEmissionTests
           /*
            * fn mk_arr() []int { return [4 - 3]int; }
            */
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
-          var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, typeof(int)), new LiteralNode(3, typeof(int))));
+          var arrayInit = new InitArrayNode(itemType, new SubNode(new LiteralNode(4, Builtins.Int), new LiteralNode(3, Builtins.Int)));
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
 
@@ -152,12 +165,16 @@ public class InitArrayEmissionTests
           /*
            * fn mk_arr() []int { return [int(4.0)]int; }
            */
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
-          var cast = new CastNode(itemType, new LiteralNode(4.0, typeof(double)));
-          cast.SetFromType(typeof(double));
-          
+          var cast = new CastNode(itemType, new LiteralNode(4.0, Builtins.Double))
+          {
+               FromType = Builtins.Double
+          };
+
           var arrayInit = new InitArrayNode(itemType, cast);
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
@@ -175,11 +192,14 @@ public class InitArrayEmissionTests
           /*
            * fn mk_arr() []int { return [getLength()]int; }
            */
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
           var call = new CallNode(null, new FuncCallNameNode(nameof(GetLength)), []);
-          call.SetInfo(typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!);
+          var info = typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!;
+          call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
           var arrayInit = new InitArrayNode(itemType, call);
           var body = new BodyNode([new ReturnNode(arrayInit)]);
           var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
@@ -203,23 +223,32 @@ public class InitArrayEmissionTests
            *   return [a[0]]int;
            * }
            */
-          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)));
-          itemType.SetType(typeof(int));
+          var itemType = new TypeNode(new TypeNameNode(nameof(Int32)))
+          {
+               TypeInfo = Builtins.Int
+          };
 
-          var arrayType = new TypeNode(new TypeNameNode("[]int"));
-          arrayType.SetType(typeof(int[]));
-          
-          var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, typeof(int)));
-          var assign = new AssignNode(new VariableDefinitionNode(arrayType, new VariableNameNode("a")), arrayInit);
+          var arrayType = new TypeNode(new TypeNameNode("[]int"))
+          {
+               TypeInfo = Builtins.Int.MakeArrayType()
+          };
 
-          var setItem = new ElemSetterNode(
-               new MemberNode("a"), 
-               new ArrayIndexerNode(new LiteralNode(0, typeof(int))),
-               new LiteralNode(5, typeof(int)));
-          setItem.SetItemType(typeof(int));
+          var arrayInit = new InitArrayNode(itemType, new LiteralNode(1, Builtins.Int));
+          var assign = new AssignNode([new VariableDefinitionNode(arrayType, new VariableNameNode("a"))], [arrayInit]);
+
+          var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(0, Builtins.Int))
+          {
+               ItemType = Builtins.Int
+          };
+          var setItem = new AssignNode(
+               [indexer],
+               [new LiteralNode(5, Builtins.Int)]
+          );
           
-          var getter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(0, typeof(int))));
-          getter.SetItemType(typeof(int));
+          var getter = new IndexerNode(new MemberNode("a"), new LiteralNode(0, Builtins.Int))
+          {
+               ItemType = Builtins.Int
+          };
           var returnArrayInit = new InitArrayNode(itemType, getter);
           
           var body = new BodyNode(

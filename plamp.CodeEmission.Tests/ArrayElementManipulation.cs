@@ -10,6 +10,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 using Shouldly;
 
@@ -26,23 +27,33 @@ public class ArrayElementManipulation
          * a[1] := 1;
          * a[2] := 2;
          */
-        var arrayItemType = new TypeNode(new TypeNameNode("int"));
-        arrayItemType.SetType(typeof(int));
+        var arrayItemType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
-        var arrayType = new TypeNode(new TypeNameNode("[]int"));
-        arrayType.SetType(typeof(int[]));
-        
+        var arrayType = new TypeNode(new TypeNameNode("[]int"))
+        {
+            TypeInfo = Builtins.Int.MakeArrayType()
+        };
+
         var assign = new AssignNode(
-            new VariableDefinitionNode(arrayType, new VariableNameNode("a")),
-            new InitArrayNode(arrayItemType, new LiteralNode(3, typeof(int))));
+            [new VariableDefinitionNode(arrayType, new VariableNameNode("a"))],
+            [new InitArrayNode(arrayItemType, new LiteralNode(3, Builtins.Int))]);
 
-        var literal1 = new LiteralNode(1, typeof(int));
-        var setter1 = new ElemSetterNode(new MemberNode("a"), new ArrayIndexerNode(literal1), literal1);
-        setter1.SetItemType(typeof(int));
+        var literal1 = new LiteralNode(1, Builtins.Int);
+        var indexer1 = new IndexerNode(new MemberNode("a"), literal1)
+        {
+            ItemType = Builtins.Int
+        };
+        var setter1 = new AssignNode([indexer1], [literal1]);
         
-        var literal2 = new LiteralNode(2, typeof(int));
-        var setter2 = new ElemSetterNode(new MemberNode("a"), new ArrayIndexerNode(literal2), literal2);
-        setter2.SetItemType(typeof(int));
+        var literal2 = new LiteralNode(2, Builtins.Int);
+        var indexer2 = new IndexerNode(new MemberNode("a"), literal2)
+        {
+            ItemType = Builtins.Int
+        };
+        var setter2 = new AssignNode([indexer2], [literal2]);
         
         return 
         [
@@ -63,8 +74,10 @@ public class ArrayElementManipulation
         /*
          * return a[ix];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(index, typeof(int))));
-        elemGetter.SetItemType(typeof(int));
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(index, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -81,8 +94,10 @@ public class ArrayElementManipulation
         /*
          * return a[-1];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(-1, typeof(int))));
-        elemGetter.SetItemType(typeof(int));
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -99,8 +114,10 @@ public class ArrayElementManipulation
         /*
          * return a[4];
          */
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(4, typeof(int))));
-        elemGetter.SetItemType(typeof(int));
+        var elemGetter = new IndexerNode(new MemberNode("a"), new LiteralNode(4, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
 
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
@@ -118,17 +135,19 @@ public class ArrayElementManipulation
          * i := 0;
          * return a[i++];
          */
-        var variableType = new TypeNode(new TypeNameNode("int"));
-        variableType.SetType(typeof(int));
+        var variableType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
         var definition = new VariableDefinitionNode(variableType, new VariableNameNode("i"));
-        var assign = new AssignNode(definition, new LiteralNode(0, typeof(int)));
+        var assign = new AssignNode([definition], [new LiteralNode(0, Builtins.Int)]);
         
-        var elemGetter = new ElemGetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new PostfixIncrementNode(new MemberNode("i"))));
-        elemGetter.SetItemType(typeof(int));
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), new PostfixIncrementNode(new MemberNode("i")))
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.AddRange([assign, new ReturnNode(elemGetter)]);
         var body = new BodyNode(bodyItems);
@@ -144,11 +163,11 @@ public class ArrayElementManipulation
         /*
          * return a[1 + 1];
          */
-        var elemGetter = new ElemGetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new AddNode(new LiteralNode(1, typeof(int)), new LiteralNode(1, typeof(int)))));
-        elemGetter.SetItemType(typeof(int));
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), new AddNode(new LiteralNode(1, Builtins.Int), new LiteralNode(1, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -164,15 +183,21 @@ public class ArrayElementManipulation
         /*
          * return a[int(1.0)]
          */
-        var castTargetType = new TypeNode(new TypeNameNode("int"));
-        castTargetType.SetType(typeof(int));
+        var castTargetType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
 
-        var cast = new CastNode(castTargetType, new LiteralNode(1.0, typeof(double)));
-        cast.SetFromType(typeof(double));
-        
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(cast));
-        elemGetter.SetItemType(typeof(int));
-        
+        var cast = new CastNode(castTargetType, new LiteralNode(1.0, Builtins.Double))
+        {
+            FromType = Builtins.Double
+        };
+
+        var elemGetter = new IndexerNode(new MemberNode("a"), cast)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -189,11 +214,14 @@ public class ArrayElementManipulation
          * return a[getZero()];
          */
         var call = new CallNode(null, new FuncCallNameNode(nameof(GetZero)), []);
-        call.SetInfo(typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!);
+        var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
+        call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
         
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(call));
-        elemGetter.SetItemType(typeof(int));
-        
+        var elemGetter = new IndexerNode(new MemberNode("a"), call)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -209,12 +237,16 @@ public class ArrayElementManipulation
         /*
          * return a[a[1]];
          */
-        var elemGetterInner = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
-        elemGetterInner.SetItemType(typeof(int));
-        
-        var elemGetter = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(elemGetterInner));
-        elemGetter.SetItemType(typeof(int));
-        
+        var elemGetterInner = new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
+
+        var elemGetter = new IndexerNode(new MemberNode("a"), elemGetterInner)
+        {
+            ItemType = Builtins.Int
+        };
+
         var bodyItems = MakeArrayInitAst();
         bodyItems.Add(new ReturnNode(elemGetter));
         var body = new BodyNode(bodyItems);
@@ -235,14 +267,17 @@ public class ArrayElementManipulation
     public void SetArrayElementByIndex_ReturnsSuccess(int indexer)
     {
         /*
-         * a[ix] = -ix;
+         * a[ix] := -ix;
          * return a;
          */
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new MemberNode("ix")),
-            new UnaryMinusNode(new MemberNode("ix")));
-        setter.SetItemType(typeof(int));
+        var indexerNode = new IndexerNode(new MemberNode("a"), new MemberNode("ix"))
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexerNode],
+            [new UnaryMinusNode(new MemberNode("ix"))]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -261,11 +296,14 @@ public class ArrayElementManipulation
         /*
          * a[-1] := -1;
          */
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new LiteralNode(-1, typeof(int))),
-            new LiteralNode(-1, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var indexerNode = new IndexerNode(new MemberNode("a"), new LiteralNode(-1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexerNode], 
+            [new LiteralNode(-1, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -283,11 +321,14 @@ public class ArrayElementManipulation
         /*
          * a[4] := 0;
          */
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new LiteralNode(4, typeof(int))),
-            new LiteralNode(0, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var indexer = new IndexerNode(new MemberNode("a"), new LiteralNode(4, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(0, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -305,11 +346,14 @@ public class ArrayElementManipulation
         /*
          * a[-(-1)] := 42;
          */
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new UnaryMinusNode(new LiteralNode(-1, typeof(int)))),
-            new LiteralNode(42, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var indexer = new IndexerNode(new MemberNode("a"), new UnaryMinusNode(new LiteralNode(-1, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(42, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -326,11 +370,16 @@ public class ArrayElementManipulation
         /*
          * a[100 - 99] := 98;
          */
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(new SubNode(new LiteralNode(100, typeof(int)), new LiteralNode(99, typeof(int)))),
-            new LiteralNode(98, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var indexer = new IndexerNode(new MemberNode("a"),
+            new SubNode(new LiteralNode(100, Builtins.Int), new LiteralNode(99, Builtins.Int)))
+        {
+            ItemType = Builtins.Int
+        };
+
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(98, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -347,16 +396,23 @@ public class ArrayElementManipulation
         /*
          * a[int(2.0)] := 11;
          */
-        var toType = new TypeNode(new TypeNameNode("int"));
-        toType.SetType(typeof(int));
-        var cast = new CastNode(toType, new LiteralNode(2.0, typeof(double)));
-        cast.SetFromType(typeof(double));
-        
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(cast),
-            new LiteralNode(11, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var toType = new TypeNode(new TypeNameNode("int"))
+        {
+            TypeInfo = Builtins.Int
+        };
+        var cast = new CastNode(toType, new LiteralNode(2.0, Builtins.Double))
+        {
+            FromType = Builtins.Double
+        };
+
+        var indexer = new IndexerNode(new MemberNode("a"), cast)
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(11, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -374,13 +430,17 @@ public class ArrayElementManipulation
          * a[getZero()] := -99;
          */
         var callNode = new CallNode(null, new FuncCallNameNode("getZero"), []);
-        callNode.SetInfo(typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!);
-        
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(callNode),
-            new LiteralNode(-99, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
+        callNode.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
+
+        var indexer = new IndexerNode(new MemberNode("a"), callNode)
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(-99, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -397,14 +457,19 @@ public class ArrayElementManipulation
         /*
          * a[a[1]] := -1;
          */
-        var getterNode = new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))));
-        getterNode.SetItemType(typeof(int));
-        
-        var setter = new ElemSetterNode(
-            new MemberNode("a"), 
-            new ArrayIndexerNode(getterNode),
-            new LiteralNode(-1, typeof(int)));
-        setter.SetItemType(typeof(int));
+        var getterNode = new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))
+        {
+            ItemType = Builtins.Int
+        };
+
+        var indexer = new IndexerNode(new MemberNode("a"), getterNode)
+        {
+            ItemType = Builtins.Int
+        };
+        var setter = new AssignNode(
+            [indexer],
+            [new LiteralNode(-1, Builtins.Int)]
+        );
 
         var instructionList = MakeArrayInitAst();
         instructionList.AddRange([setter, new ReturnNode(new MemberNode("a"))]);
@@ -413,6 +478,74 @@ public class ArrayElementManipulation
         var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int[]));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int[]>()[1].ShouldBe(-1);
+    }
+
+    public class TestType
+    {
+        public int[] Fld = new int[5];
+    }
+    
+    [Fact]
+    public void GetArrayItemFromField_Correct()
+    {
+        /*
+         * return a.Fld[2];
+         */
+        var fieldInfo = typeof(TestType).GetField(nameof(TestType.Fld))!;
+        var fld = new FieldNode(nameof(TestType.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo)};
+        var access = new FieldAccessNode(new MemberNode("a"), fld);
+        var indexer = new IndexerNode(access, new LiteralNode(2, Builtins.Int)){ ItemType = Builtins.Int };
+        var body = new BodyNode(
+        [
+            new ReturnNode(indexer)
+        ]);
+        var parameter = new TestParameter(typeof(TestType), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var valShould = Random.Shared.Next();
+        var type = new TestType { Fld = { [2] = valShould } };
+
+        var valActual = methodInfo!.Invoke(instance, [type]);
+        
+        valActual.ShouldBeOfType<int>().ShouldBe(valShould);
+    }
+
+    [Fact]
+    public void SetArrayItemFromIntoField_Correct()
+    {
+        var fieldInfo = typeof(TestType).GetField(nameof(TestType.Fld))!;
+        var fld = new FieldNode(nameof(TestType.Fld)) { FieldInfo = EmissionSetupHelper.MakeFieldRef(fieldInfo)};
+        var access = new FieldAccessNode(new MemberNode("a"), fld);
+        var indexer = new IndexerNode(access, new LiteralNode(2, Builtins.Int)){ ItemType = Builtins.Int };
+        var valShould = Random.Shared.Next();
+        var assign = new AssignNode([indexer], [new LiteralNode(valShould, Builtins.Int)]);
+        var body = new BodyNode(
+        [
+            assign
+        ]);
+        
+        var parameter = new TestParameter(typeof(TestType), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(void));
+        var type = new TestType();
+        methodInfo!.Invoke(instance, [type]);
+        type.Fld[2].ShouldBe(valShould);
+    }
+
+    public static int[] TestCallbackFunc() => [ 33, 34, 35 ];
+    
+    [Fact]
+    public void GetArrayItemFromFuncCall_Correct()
+    {
+        /*
+         * return fn()[1];
+         */
+        var fnInfo = GetType().GetMethod(nameof(TestCallbackFunc), BindingFlags.Static | BindingFlags.Public)!;
+        var call = EmissionSetupHelper.CreateCallNode(null, EmissionSetupHelper.MakeFuncRef(fnInfo), []);
+        var ix = new IndexerNode(call, new LiteralNode(1, Builtins.Int)){ItemType = Builtins.Int};
+        var body = new BodyNode([new ReturnNode(ix)]);
+
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
+        var res = methodInfo!.Invoke(instance, []);
+        res.ShouldBeOfType<int>().ShouldBe(34);
     }
 
     #endregion

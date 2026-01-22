@@ -2,11 +2,7 @@
 
 namespace plamp.Alternative.Tokenization.Token;
 
-public class CloseSquareBracket : TokenBase
+public class CloseSquareBracket(FilePosition position) : TokenBase(position, "]")
 {
-    public CloseSquareBracket(FilePosition start, FilePosition end) : base(start, end, "]")
-    {
-    }
-
     public override string GetStringRepresentation() => "]";
 }

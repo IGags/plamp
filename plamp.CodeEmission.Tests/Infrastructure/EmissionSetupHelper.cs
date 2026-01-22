@@ -6,18 +6,21 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Alternative.EmissionDebug;
+using plamp.Alternative.SymbolsImpl;
 using plamp.ILCodeEmitters;
+using TypeInfo = plamp.Alternative.SymbolsImpl.TypeInfo;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
 
 public class EmissionSetupHelper
 {
     public static (
-        AssemblyBuilder asmBuilder,
-        TypeBuilder typeBuilder,
-        DebugMethodBuilder methodBuilder,
-        ModuleBuilder moduleBuilder) CreateMethodBuilder(
-            string methodName,
+        TypeBuilder typeBuilder, 
+        DebugMethodBuilder methodBuilder, 
+        ModuleBuilder moduleBuilder)
+        CreateMethodBuilder(string methodName,
             Type returnType,
             Type[] argumentTypes,
             MethodAttributes attributes = MethodAttributes.Public | MethodAttributes.Final)
@@ -41,8 +44,15 @@ public class EmissionSetupHelper
         il.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!);
         il.Emit(OpCodes.Ret);
 
-        return (assembly, type, dbgMeth, module);
+        return (type, dbgMeth, module);
     }
+
+    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info);
+    public static IFnInfo MakeFuncRef(MethodBuilder info, ParameterInfo[] parameters, Type returnType) => new MethodBuilderFnInfo(info, parameters, returnType);
+
+    public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
+
+    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field);
 
     public static (object? instance, MethodInfo? methodInfo) CreateObject(Type builtType, string methodName)
     {
@@ -51,26 +61,39 @@ public class EmissionSetupHelper
         return (instance, createdMethod);
     }
 
-    public static TypeNode CreateTypeNode(Type type) => new ConcreteType(new TypeNameNode(type.Name), type);
+    public static TypeNode CreateTypeNode(ITypeInfo type) => new ConcreteType(new TypeNameNode(type.Name)) {TypeInfo = type};
 
     public static MemberNode CreateMemberNode(MemberInfo memberInfo) => new ConcreteMember(memberInfo.Name, memberInfo);
 
-    public static CallNode CreateCallNode(NodeBase? from, MethodInfo info, List<NodeBase> args) 
-        => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info);
+    public static CallNode CreateCallNode(NodeBase? from, IFnInfo info, List<NodeBase> args) 
+        => new ConcreteCall(from, new FuncCallNameNode(info.Name), args, info) { FnInfo = info };
 
-    public static CastNode CreateCastNode(Type from, Type to, NodeBase inner)
+    public static CastNode CreateCastNode(ITypeInfo from, ITypeInfo to, NodeBase inner)
     {
         var toTyp = CreateTypeNode(to);
-        return new ConcreteCastNode(toTyp, inner, from);
+        return new ConcreteCastNode(toTyp, inner, from) { FromType = from };
     }
 
-    public static ConstructorCallNode CreateConstructorNode(TypeNode type, List<NodeBase> args, ConstructorInfo ctor)
+    internal class MethodBuilderFnInfo(MethodBuilder builder, ParameterInfo[] parameters, Type returnType) : IFnInfo
     {
-        var ctorInfo = new ConstructorCallNode(type, args);
-        ctorInfo.SetConstructorInfo(ctor);
-        return ctorInfo;
-    }
+        private readonly MethodBuilder _builder = builder;
 
+        public bool Equals(IFnInfo? other)
+        {
+            if (other is not MethodBuilderFnInfo info) return false;
+            return info._builder == _builder;
+        }
+
+        public string Name => _builder.Name;
+
+        public IReadOnlyList<IArgInfo> Arguments { get; } =
+            parameters.Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+
+        public ITypeInfo ReturnType { get; } = new TypeInfo(returnType);
+
+        public MethodInfo AsFunc() => _builder;
+    }
+    
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(
         ParameterInfo[] args,
         BodyNode body,
@@ -78,7 +101,7 @@ public class EmissionSetupHelper
     {
         var methodName = $"{Guid.NewGuid()} {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}";
         var argTypes = args.Select(x => x.ParameterType).ToArray();
-        var (_, typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
+        var (typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
         var context = new CompilerEmissionContext(body, methodBuilder, args, null);
         IlCodeEmitter.EmitMethodBody(context);
         var type = typeBuilder.CreateType();
@@ -88,19 +111,13 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCastNode : CastNode
     {
-        public ConcreteCastNode(NodeBase toType, NodeBase inner, Type fromType) : base(toType, inner)
+        public ConcreteCastNode(NodeBase toType, NodeBase inner, ITypeInfo fromType) : base(toType, inner)
         {
             FromType = fromType;
         }
     }
     
-    private sealed class ConcreteType : TypeNode
-    {
-        public ConcreteType(TypeNameNode name, Type symbol) : base(name)
-        {
-            Symbol = symbol;
-        }
-    }
+    private sealed class ConcreteType(TypeNameNode name) : TypeNode(name);
     
     private sealed class ConcreteMember : MemberNode
     {
@@ -112,9 +129,9 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, MethodInfo symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args)
         {
-            Symbol = symbol;
+            FnInfo = symbol;
         }
     }
 }

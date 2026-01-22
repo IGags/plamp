@@ -15,30 +15,11 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class AssignNodeImplicitCastTests
 {
     [Fact]
-    public void AssignIntToDoubleDefinition_ReturnsCorrect()
-    {
-        const string code = "double a := 1i";
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
-        result.ShouldBe(true);
-        var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
-        expression.ShouldBeOfType<AssignNode>()
-            .Right.ShouldBeOfType<CastNode>()
-            .ShouldSatisfyAllConditions(
-                x => x.FromType.ShouldBe(typeof(int)),
-                x => x.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double)));
-        weaveResult.Exceptions.ShouldBeEmpty();
-    }
-
-    [Fact]
     public void AssignIntToDoubleMember_ReturnsCorrect()
     {
         const string code = """
                             {
-                                double a;
+                                a :double;
                                 a := 1i;
                             }
                             """;
@@ -47,50 +28,38 @@ public class AssignNodeImplicitCastTests
         var result = Parser.TryParseBody(context, out var expression);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
         var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
         expression.ShouldBeOfType<BodyNode>()
             .ShouldSatisfyAllConditions(
                 x => x.ExpressionList.Count.ShouldBe(2),
                 x => x.ExpressionList[1]
                     .ShouldBeOfType<AssignNode>()
-                    .Right.ShouldBeOfType<CastNode>()
+                    .Sources.ShouldHaveSingleItem()
+                    .ShouldBeOfType<CastNode>()
                     .ShouldSatisfyAllConditions(
-                        y => y.FromType.ShouldBe(typeof(int)),
-                        y => y.ToType.ShouldBeOfType<TypeNode>().Symbol.ShouldBe(typeof(double))));
+                        y => y.FromType.ShouldBe(Builtins.Int),
+                        y => y.ToType.ShouldBeOfType<TypeNode>().TypeInfo.ShouldBe(Builtins.Double)));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
     [Fact]
     public void AssignDoubleToInt_ReturnsException()
     {
-        const string code = "int a := 1d";
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
-        result.ShouldBe(true);
-        var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
-        weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
-    }
-    
-    [Fact]
-    public void AssignDoubleToIntDefinition_ReturnsException()
-    {
         const string code = """
                             {
-                                int a;
+                                a :int;
                                 a := 1d;
                             }
                             """;
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseBody(context, out var expression);
+        var result = Parser.TryParseMultilineBody(context, out var expressions);
+        expressions.ShouldNotBeNull().ExpressionList.Count.ShouldBe(2);
         result.ShouldBe(true);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.FileName, context.SymbolTable);
-        var weaveResult = visitor.WeaveDiffs(expression!, preCreation);
+        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
+        var weaveResult = visitor.WeaveDiffs(expressions, preCreation);
         weaveResult.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }
 }

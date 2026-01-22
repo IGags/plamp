@@ -1,0 +1,15 @@
+using System;
+using System.Reflection;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Symbols.SymTable;
+
+namespace plamp.Alternative.SymbolsBuildingImpl;
+
+public class EmptyArgInfo(ParameterNode parameterNode) : IArgInfo
+{
+    public string Name => parameterNode.Name.Value;
+
+    public ITypeInfo Type => parameterNode.Type.TypeInfo ?? throw new NullReferenceException();
+    
+    public ParameterInfo AsInfo() => new ParameterInfoImpl(Type.AsType(), Name);
+}

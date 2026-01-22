@@ -1,30 +1,35 @@
-using System;
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Abstractions.AstManipulation;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
-public class TypeInferenceInnerContext(BaseVisitorContext other) : PreCreationContext(other)
+public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationContext(other)
 {
     private int _monotonicScopeCounter;
     private int _currentDepth;
     private readonly Stack<int> _typeInferenceSizeSnapshotStack = [];
     
     private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
-    public Stack<Type?> InnerExpressionTypeStack { get; private set; } = [];
 
-    
+    public Stack<ITypeInfo?> InnerExpressionTypeStack { get; private set; } = [];
+
     public FuncNode? CurrentFunc { get; set; }
 
     public ScopeLocation InstructionInScopePosition { get; private set; } = new(-1, -1, -1);
 
     public Dictionary<string, VariableWithPosition> VariableDefinitions { get; } = [];
+
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
 
-    public void AddVariableWithPosition(VariableDefinitionNode variable, ScopeLocation position) 
-        => VariableDefinitions[variable.Name.Value] = new VariableWithPosition(variable, position);
+    public void AddVariableWithPosition(
+        VariableNameNode name, 
+        VariableDefinitionNode variable, 
+        ScopeLocation position)
+    {
+        VariableDefinitions[name.Value] = new VariableWithPosition(variable, position);
+    }
 
     public void EnterBody()
     {

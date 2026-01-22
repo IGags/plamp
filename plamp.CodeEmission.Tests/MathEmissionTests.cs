@@ -3,12 +3,14 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 using Shouldly;
 
@@ -42,9 +44,9 @@ public class MathEmissionTests
         var instructionList = new List<NodeBase>()
         {
             new VariableDefinitionNode(
-                EmissionSetupHelper.CreateTypeNode(resultTypeShould),
+                EmissionSetupHelper.CreateTypeNode(EmissionSetupHelper.MakeTypeRef(resultTypeShould)),
                 new VariableNameNode("a")),
-            new AssignNode(new MemberNode("a"), operatorAst),
+            new AssignNode([new MemberNode("a")], [operatorAst]),
             new ReturnNode(new MemberNode("a"))
         };
         instructionList.InsertRange(0, definitions);
@@ -58,18 +60,18 @@ public class MathEmissionTests
 
     public static IEnumerable<object[]> SimpleMathDataProvider()
     {
-        var firstLiteral = new LiteralNode(2, typeof(int));
-        var secondLiteral = new LiteralNode(-3, typeof(int));
-        var trueLiteral = new LiteralNode(true, typeof(bool));
-        var falseLiteral = new LiteralNode(false, typeof(bool));
+        var firstLiteral = new LiteralNode(2, Builtins.Int);
+        var secondLiteral = new LiteralNode(-3, Builtins.Int);
+        var trueLiteral = new LiteralNode(true, Builtins.Bool);
+        var falseLiteral = new LiteralNode(false, Builtins.Bool);
         const float fl1 = 3.14f;
         const float fl2 = 6.81f;
-        var firstFloat = new LiteralNode(fl1, typeof(float));
-        var secondFloat = new LiteralNode(fl2, typeof(float));
+        var firstFloat = new LiteralNode(fl1, Builtins.Float);
+        var secondFloat = new LiteralNode(fl2, Builtins.Float);
         const double d1 = 3e-8d;
         const double d2 = 6.81d;
-        var firstDouble = new LiteralNode(d1, typeof(double));
-        var secondDouble = new LiteralNode(d2, typeof(double));
+        var firstDouble = new LiteralNode(d1, Builtins.Double);
+        var secondDouble = new LiteralNode(d2, Builtins.Double);
 
         var firstName = new MemberNode("tempConst1");
         var firstVariableName = new VariableNameNode("tempConst1");
@@ -89,24 +91,24 @@ public class MathEmissionTests
         {
             firstDefInt,
             secondDefInt,
-            new AssignNode(firstName, firstLiteral),
-            new AssignNode(secondName, secondLiteral)
+            new AssignNode([firstName], [firstLiteral]),
+            new AssignNode([secondName], [secondLiteral])
         };
         
         var doubleDefs = new NodeBase[]
         {
             firstDefDouble,
             secondDefDouble,
-            new AssignNode(firstName, firstDouble),
-            new AssignNode(secondName, secondDouble)
+            new AssignNode([firstName], [firstDouble]),
+            new AssignNode([secondName], [secondDouble])
         };
         
         var floatDefs = new NodeBase[]
         {
             firstDefFloat,
             secondDefFloat,
-            new AssignNode(firstName, firstFloat),
-            new AssignNode(secondName, secondFloat)
+            new AssignNode([firstName], [firstFloat]),
+            new AssignNode([secondName], [secondFloat])
         };
         
         var trueName = new MemberNode("tempConst1");
@@ -115,8 +117,8 @@ public class MathEmissionTests
         {
             trueDefBool,
             falseDefBool,
-            new AssignNode(trueName, trueLiteral),
-            new AssignNode(falseName, falseLiteral)
+            new AssignNode([trueName], [trueLiteral]),
+            new AssignNode([falseName], [falseLiteral])
         };
         
         yield return [intDefs, new AddNode(firstName, secondName), -1, typeof(int)];
@@ -187,22 +189,30 @@ public class MathEmissionTests
     public void EmitIncrementDecrement_Success(object inner, TypeNode variableType, Func<NodeBase, NodeBase> createFromInner, object innerShould, object resultShould)
     {
         var objParam = new TestParameter(typeof(CallbackClass), "obj");
-        var toType = new TypeNode(new TypeNameNode(nameof(Object)));
-        toType.SetType(typeof(object));
+        var toType = new TypeNode(new TypeNameNode(nameof(Object)))
+        {
+            TypeInfo = Builtins.Any
+        };
 
-        var firstArg = new CastNode(toType, new MemberNode("a"));
-        firstArg.SetFromType(variableType.Symbol!);
-        
-        var secondArg = new CastNode(toType, new MemberNode("b"));
-        secondArg.SetFromType(variableType.Symbol!);
-        
-        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg]);
-        call.SetInfo(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!);
-        
+        var firstArg = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = variableType.TypeInfo!
+        };
+
+        var secondArg = new CastNode(toType, new MemberNode("b"))
+        {
+            FromType = variableType.TypeInfo!
+        };
+
+        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg])
+        {
+            FnInfo = EmissionSetupHelper.MakeFuncRef(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!)
+        };
+
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(inner, variableType.Symbol!)),
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("b")), createFromInner(new MemberNode("a"))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(inner, variableType.TypeInfo!)]),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("b"))], [createFromInner(new MemberNode("a"))]),
             call,
             new ReturnNode(null)
         ]);
@@ -216,24 +226,36 @@ public class MathEmissionTests
 
     public static IEnumerable<object[]> EmitIncrementDecrementDataProvider()
     {
-        var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)));
-        intTypeNode.SetType(typeof(int));
-        
-        var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)));
-        floatTypeNode.SetType(typeof(float));
-        
-        var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)));
-        uintTypeNode.SetType(typeof(uint));
-        
-        var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)));
-        doubleTypeNode.SetType(typeof(double));
-        
-        var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)));
-        longTypeNode.SetType(typeof(long));
-        
-        var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)));
-        ulongTypeNode.SetType(typeof(ulong));
-        
+        var intTypeNode = new TypeNode(new TypeNameNode(nameof(Int32)))
+        {
+            TypeInfo = Builtins.Int
+        };
+
+        var floatTypeNode = new TypeNode(new TypeNameNode(nameof(Single)))
+        {
+            TypeInfo = Builtins.Float
+        };
+
+        var uintTypeNode = new TypeNode(new TypeNameNode(nameof(UInt32)))
+        {
+            TypeInfo = Builtins.Uint
+        };
+
+        var doubleTypeNode = new TypeNode(new TypeNameNode(nameof(Double)))
+        {
+            TypeInfo = Builtins.Double
+        };
+
+        var longTypeNode = new TypeNode(new TypeNameNode(nameof(Int64)))
+        {
+            TypeInfo = Builtins.Long
+        };
+
+        var ulongTypeNode = new TypeNode(new TypeNameNode(nameof(UInt64)))
+        {
+            TypeInfo = Builtins.Ulong
+        };
+
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixIncrementNode(x)), 2, 2];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PrefixDecrementNode(x)), 0, 0];
         yield return [1, intTypeNode, (Func<NodeBase, NodeBase>)(x => new PostfixIncrementNode(x)), 2, 1];
@@ -269,16 +291,22 @@ public class MathEmissionTests
     [MemberData(nameof(MaxValueOverflowDataProvider))]
     public void MaxValueOverflow_Success(object value, object one, Type actualType, object should)
     {
-        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetType(actualType);
-        var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetType(typeof(object));
-        var castToObj = new CastNode(toType, new MemberNode("a"));
-        castToObj.SetFromType(actualType);
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name))
+        {
+            TypeInfo = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
+        var toType = new TypeNode(new TypeNameNode("object"))
+        {
+            TypeInfo = Builtins.Any
+        };
+        var castToObj = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
-            new AssignNode(new MemberNode("a"), new AddNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, EmissionSetupHelper.MakeTypeRef(actualType))]),
+            new AssignNode([new MemberNode("a")], [new AddNode(new MemberNode("a"), new LiteralNode(one, EmissionSetupHelper.MakeTypeRef(actualType)))]),
             new ReturnNode(castToObj)
         ]);
         
@@ -304,16 +332,22 @@ public class MathEmissionTests
     [MemberData(nameof(MaxValueUnderflowDataProvider))]
     public void MinValueUnderflow_Success(object value, object one, Type actualType, object should)
     {
-        var variableType = new TypeNode(new TypeNameNode(actualType.Name));
-        variableType.SetType(actualType);
-        var toType = new TypeNode(new TypeNameNode("object"));
-        toType.SetType(typeof(object));
-        var castToObj = new CastNode(toType, new MemberNode("a"));
-        castToObj.SetFromType(actualType);
+        var variableType = new TypeNode(new TypeNameNode(actualType.Name))
+        {
+            TypeInfo = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
+        var toType = new TypeNode(new TypeNameNode("object"))
+        {
+            TypeInfo = Builtins.Any
+        };
+        var castToObj = new CastNode(toType, new MemberNode("a"))
+        {
+            FromType = EmissionSetupHelper.MakeTypeRef(actualType)
+        };
         var body = new BodyNode(
         [
-            new AssignNode(new VariableDefinitionNode(variableType, new VariableNameNode("a")), new LiteralNode(value, actualType)),
-            new AssignNode(new MemberNode("a"), new SubNode(new MemberNode("a"), new LiteralNode(one, actualType))),
+            new AssignNode([new VariableDefinitionNode(variableType, new VariableNameNode("a"))], [new LiteralNode(value, EmissionSetupHelper.MakeTypeRef(actualType))]),
+            new AssignNode([new MemberNode("a")], [new SubNode(new MemberNode("a"), new LiteralNode(one, EmissionSetupHelper.MakeTypeRef(actualType)))]),
             new ReturnNode(castToObj)
         ]);
         
@@ -340,11 +374,437 @@ public class MathEmissionTests
     {
         var ast = new BodyNode(
         [
-            new ReturnNode(new DivNode(new LiteralNode(1, typeof(int)), new LiteralNode(0, typeof(int))))
+            new ReturnNode(new DivNode(new LiteralNode(1, Builtins.Int), new LiteralNode(0, Builtins.Int)))
         ]);
         var (instance, method) = EmissionSetupHelper.CreateInstanceWithMethod([], ast, typeof(int));
         Should.Throw<TargetInvocationException>(() => method!.Invoke(instance, [])).InnerException.ShouldBeOfType<DivideByZeroException>();
     }
+
+    public static IEnumerable<object[]> IncrementForFieldSequence_Correct_DataProvider()
+    {
+        var lineFld = typeof(TestLine).GetField(nameof(TestLine.First))!;
+        var pointFld = typeof(TestPoint).GetField(nameof(TestPoint.X))!;
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            1,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new FieldAccessNode(
+                            new FieldAccessNode(new MemberNode("a"),
+                                new FieldNode(nameof(TestLine.First))
+                                    { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            -1,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixIncrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixDecrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixIncrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixDecrementNode(
+                    new FieldAccessNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestLine.First))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(lineFld) }),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+    } 
+    
+    [Theory]
+    [MemberData(nameof(IncrementForFieldSequence_Correct_DataProvider))]
+    public void IncrementForFieldSequence_Correct(BodyNode body, int ret, int field)
+    {
+        var parameter = new TestParameter(typeof(TestLine), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new TestLine();
+        var res = methodInfo!.Invoke(instance, [testArg]);
+        res.ShouldBe(ret);
+        testArg.First.X.ShouldBe(field);
+    }
+
+    public static IEnumerable<object[]> IncrementForField_Correct_DataProvider()
+    {
+        var pointFld = typeof(TestPoint).GetField(nameof(TestPoint.X))!;
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            0,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new FieldAccessNode(new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            1,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new FieldAccessNode(
+                            new MemberNode("a"),
+                            new FieldNode(nameof(TestPoint.X))
+                                { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                        )
+                    )
+                )
+            ]),
+            -1,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PostfixIncrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+               new PostfixDecrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixIncrementNode(
+                    new FieldAccessNode(new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            1
+        ];
+        
+        yield return
+        [
+            new BodyNode(
+            [
+                new PrefixDecrementNode(
+                    new FieldAccessNode(
+                        new MemberNode("a"),
+                        new FieldNode(nameof(TestPoint.X))
+                            { FieldInfo = EmissionSetupHelper.MakeFieldRef(pointFld) }
+                    )
+                ),
+                new ReturnNode(new LiteralNode(69, Builtins.Int))
+            ]),
+            69,
+            -1
+        ];
+    } 
+    
+    [Theory]
+    [MemberData(nameof(IncrementForField_Correct_DataProvider))]
+    public void IncrementForField_Correct(BodyNode body, int ret, int field)
+    {
+        var parameter = new TestParameter(typeof(TestPoint), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new TestPoint();
+        var res = methodInfo!.Invoke(instance, [testArg]);
+        res.ShouldBe(ret);
+        testArg.X.ShouldBe(field);
+    }
+
+    public static IEnumerable<object[]> IncrementForIndexer_Correct_DataProvider()
+    {
+        var intType = new TypeNode(new TypeNameNode("int")) { TypeInfo = Builtins.Int };
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PostfixIncrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            1,
+            0
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PostfixDecrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            -1,
+            0
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PrefixIncrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            1,
+            1
+        ];
+        yield return
+        [
+            new BodyNode([
+                new AssignNode([new VariableDefinitionNode(intType, new VariableNameNode("b"))], [new LiteralNode(0, Builtins.Int)]),
+                new ReturnNode(
+                    new PrefixDecrementNode(
+                        new IndexerNode(
+                            new MemberNode("a"),
+                            new MemberNode("b")
+                        ){ItemType = Builtins.Int}
+                    )
+                )
+            ]),
+            0,
+            -1,
+            -1
+        ];
+    }
+    
+    [Theory]
+    [MemberData(nameof(IncrementForIndexer_Correct_DataProvider))]
+    public void IncrementForIndexer_Correct(BodyNode body, int ixChanged, int valueShould, int retShould)
+    {
+        var parameter = new TestParameter(typeof(int[]), "a");
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([parameter], body, typeof(int));
+        var testArg = new int[2];
+        var ret = methodInfo!.Invoke(instance, [testArg]);
+        ret.ShouldBe(retShould);
+        testArg[ixChanged].ShouldBe(valueShould);
+        testArg[(ixChanged + 1) % 2].ShouldBe(0);
+    }
     
     //Возможно следует добавить тесты на арифметику с плавающей точкой, но пока генератор генерирует её без отличий от C#
+}
+
+public class TestLine
+{
+    public TestPoint First = new();
+    public TestPoint Second = new();
+}
+
+public class TestPoint
+{
+    public int X, Y;
 }

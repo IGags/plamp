@@ -1,0 +1,44 @@
+using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Alternative.SymbolsBuildingImpl;
+using plamp.Alternative.Visitors.SymbolTableBuilding;
+using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
+using Xunit;
+
+namespace plamp.Alternative.Tests.Visitors.SymbolTableBuildingTests;
+
+public class ModuleNameVisitorTests
+{
+    
+    [Fact]
+    public void ModuleExistsInTree_ReturnsNoException()
+    {
+        var translationTable = new TranslationTable();
+        var moduleName = "aaa";
+        var module = new ModuleDefinitionNode(moduleName);
+        translationTable.AddSymbol(module, new FilePosition(0, 3, ""));
+        var tree = new RootNode([], module, [], []);
+        translationTable.AddSymbol(tree, new FilePosition(-1, 0, ""));
+        var context = new SymbolTableBuildingContext(translationTable, [Builtins.SymTable], new SymTableBuilder());
+        var visitor = new ModuleNameValidator();
+        var resultContext = visitor.Validate(tree, context);
+        Assert.Empty(context.Exceptions);
+        Assert.Equal(moduleName, resultContext.SymTableBuilder.ModuleName);
+    }
+
+    [Fact]
+    public void ModuleDoesNotExistsInTree_ReturnsException()
+    {
+        var symbols = new TranslationTable();
+        var tree = new RootNode([], null, [], []);
+        symbols.AddSymbol(tree, new FilePosition(-1, 0, ""));
+        var visitor = new ModuleNameValidator();
+        var builder = new SymTableBuilder();
+        var nameBeforeVisit = builder.ModuleName;
+        var context = new SymbolTableBuildingContext(symbols, [Builtins.SymTable], builder);
+        var resultContext = visitor.Validate(tree, context);
+        Assert.Single(context.Exceptions);
+        Assert.Equal(nameBeforeVisit, resultContext.SymTableBuilder.ModuleName);
+    }
+}

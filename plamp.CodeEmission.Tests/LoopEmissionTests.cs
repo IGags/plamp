@@ -6,7 +6,9 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
+
 // ReSharper disable EntityNameCapturedOnly.Local
 
 namespace plamp.CodeEmission.Tests;
@@ -28,17 +30,21 @@ public class LoopEmissionTests
         var body = new BodyNode(
         [
             new AssignNode(
-                new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(nameof(iter))),
-                new LiteralNode(0, typeof(int))),
+                [new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(nameof(iter)))],
+                [new LiteralNode(0, Builtins.Int)]
+            ),
             new WhileNode(
                 new LessNode(new MemberNode(nameof(iter)), new MemberNode(arg.Name)),
                 new BodyNode(
                 [
                     new AssignNode(
-                        new MemberNode(nameof(iter)),
-                        new AddNode(
-                            new MemberNode(nameof(iter)),
-                            new LiteralNode(1, typeof(int))))
+                        [new MemberNode(nameof(iter))],
+                        [
+                            new AddNode(
+                                new MemberNode(nameof(iter)),
+                                new LiteralNode(1, Builtins.Int))
+                        ]
+                    )
                 ])),
             new ReturnNode(new MemberNode(nameof(iter)))
         ]);
@@ -68,12 +74,13 @@ public class LoopEmissionTests
                 nameof(CancellationToken.IsCancellationRequested),
                 BindingFlags.Instance | BindingFlags.Public)!
             .GetGetMethod()!;
+        var funcRef = EmissionSetupHelper.MakeFuncRef(getter);
         
         var body = new BodyNode(
         [
             new WhileNode(
                 new NotNode(
-                    EmissionSetupHelper.CreateCallNode(new MemberNode(arg.Name), getter, [])),
+                    EmissionSetupHelper.CreateCallNode(new MemberNode(arg.Name), funcRef, [])),
                 new BodyNode(
                 [
                 ])),

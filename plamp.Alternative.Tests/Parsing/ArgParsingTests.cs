@@ -18,9 +18,9 @@ public class ArgParsingTests
     [InlineData("[][]int", "int", "arg", 2)]
     public void ParseArg_Correct(string argType, string typeNameShould, string argName, int arrayDims)
     {
-        var code = $"{argType} {argName}";
+        var code = $"{argName} :{argType}";
         var arrayDefs = Enumerable.Repeat(new ArrayTypeSpecificationNode(), arrayDims).ToList();
-        var ast = new ParameterNode(new TypeNode(new TypeNameNode(typeNameShould)) {ArrayDefinitions = arrayDefs}, new ParameterNameNode(argName));
+        var ast = new List<ParameterNode>{new(new TypeNode(new TypeNameNode(typeNameShould)) {ArrayDefinitions = arrayDefs}, new ParameterNameNode(argName))};
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArg(context, out var arg);
@@ -31,11 +31,17 @@ public class ArgParsingTests
 
     public static IEnumerable<object[]> ParseArg_Incorrect_DataProvider()
     {
+        yield return ["a,:int", new List<string>{PlampExceptionInfo.ExpectedTypeName().Code}];
         yield return ["", new List<string>()];
         yield return ["+", new List<string>()];
-        yield return ["int", new List<string>{ PlampExceptionInfo.ExpectedArgName().Code }];
-        yield return ["int +", new List<string>{ PlampExceptionInfo.ExpectedArgName().Code }];
-        yield return ["int fn", new List<string>{ PlampExceptionInfo.ExpectedArgName().Code }];
+        yield return [":int", new List<string>()];
+        yield return ["+:int", new List<string>()];
+        yield return ["fn:int", new List<string>()];
+        
+        yield return ["a,:", new List<string>{PlampExceptionInfo.ExpectedTypeName().Code}];
+        yield return ["a", new List<string>{PlampExceptionInfo.ExpectedTypeName().Code}];
+        yield return ["a:", new List<string>{PlampExceptionInfo.ExpectedTypeName().Code}];
+        yield return ["a,,b:int", new List<string>{PlampExceptionInfo.ExpectedTypeName().Code}];
     }
     
     [Theory]

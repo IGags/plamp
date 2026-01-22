@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AutoFixture.Xunit2;
 using Moq;
 using plamp.Abstractions.Ast;
@@ -15,48 +14,46 @@ public class LoopTypeInferenceTests
 {
     [Theory, AutoData]
     public void WhileLoopWithCorrectCondition_ReturnNoException(
-        [Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName, 
+        [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(true, typeof(bool)),
+            new LiteralNode(true, Builtins.Bool),
             new BodyNode([]));
-        SetupMocksAndAssertCorrect(ast, symbolTable, fileName, visitor);
+        SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
     [Theory, AutoData]
     public void WhileLoopWithIncorrectConditionType_ReturnsException(
-        [Frozen] Mock<ISymbolTable> symbolTable,
-        string fileName,
+        [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
     {
         var ast = new WhileNode(
-            new LiteralNode(1, typeof(int)),
+            new LiteralNode(1, Builtins.Int),
             new BodyNode([]));
         
-        SetupExceptionGenerationMock(symbolTable, fileName);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        SetupExceptionGenerationMock(translationTable);
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.ShouldSatisfyAllConditions(
             x => x.Exceptions.ShouldHaveSingleItem(),
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.PredicateMustBeBooleanType().Code));
     }
     
-    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ISymbolTable> symbolTable, string fileName, TypeInferenceWeaver visitor)
+    private void SetupMocksAndAssertCorrect(NodeBase ast, Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
-        symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(fileName, symbolTable.Object);
+        var filePosition = new FilePosition();
+        translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
+        var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
         result.Exceptions.ShouldBeEmpty();
     }
     
-    private void SetupExceptionGenerationMock(Mock<ISymbolTable> symbolTable, string fileName)
+    private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)
     {
-        var filePosition = new KeyValuePair<FilePosition, FilePosition>();
+        var filePosition = new FilePosition();
         symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>(), fileName))
-            .Returns<NodeBase, PlampExceptionRecord, string>((_, b, c) => new PlampException(b, default, default, c));
+        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
+            .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
     }
 }

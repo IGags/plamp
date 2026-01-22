@@ -1,48 +1,35 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.AstManipulation;
 
 /// <summary>
 /// Базовый тип контекста, который гарантирует, что посетитель получит некоторые необходимые поля.
 /// </summary>
-/// <param name="fileName">Имя исходного файла, для которого работает посетитель</param>
-/// <param name="symbolTable">Таблица символов, в которой находятся узлы текущего AST.</param>
-public abstract class BaseVisitorContext(string fileName, ISymbolTable symbolTable)
+/// <param name="translationTable">Таблица символов, в которой находятся узлы текущего AST.</param>
+public abstract class BaseVisitorContext(
+    ITranslationTable translationTable,
+    IReadOnlyList<ISymTable> dependencies)
 {
-    /// <summary>
-    /// Имя исходного файла, для которого работает посетитель
-    /// </summary>
-    //TODO: ответственность таблицы символов. Перенести туда.
-    public string FileName { get; init; } = fileName;
-
-    /// <summary>
-    /// Имя кодового модуля, для которого происходит обход.
-    /// </summary>
-    //TODO: ответственность таблицы символов. Перенести туда.
-    public string? ModuleName { get; set; }
-    
     /// <summary>
     /// Таблица символов, в которой находятся узлы текущего AST.
     /// </summary>
-    public ISymbolTable SymbolTable { get; init; } = symbolTable;
-
-    /// <summary>
-    /// Функции, объявленные в кодовом файле.
-    /// </summary>
-    //TODO: ответственность таблицы символов. Перенести туда.
-    public Dictionary<string, FuncNode> Functions { get; init; } = [];
+    public ITranslationTable TranslationTable { get; init; } = translationTable;
 
     /// <summary>
     /// Список ошибок, в который попадают ошибки при обходе.
     /// </summary>
     public List<PlampException> Exceptions { get; init; } = [];
 
-    protected BaseVisitorContext(BaseVisitorContext other) : this(other.FileName, other.SymbolTable)
+    /// <summary>
+    /// Полный список явных зависимостей текущего компилируемого модуля. Включая сам модуль.
+    /// </summary>
+    public IReadOnlyList<ISymTable> Dependencies { get; init; } = dependencies;
+
+    protected BaseVisitorContext(BaseVisitorContext other) 
+        : this(other.TranslationTable, other.Dependencies)
     {
-        ModuleName = other.ModuleName;
         Exceptions = other.Exceptions;
-        Functions = other.Functions;
     }
 }

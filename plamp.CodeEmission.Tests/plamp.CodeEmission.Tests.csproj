@@ -13,7 +13,10 @@
         <PackageReference Include="AutoFixture" Version="5.0.0-preview0012" />
         <PackageReference Include="AutoFixture.AutoMoq" Version="5.0.0-preview0012" />
         <PackageReference Include="AutoFixture.Xunit2" Version="5.0.0-preview0012" />
-        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="Moq" Version="4.20.72" />
         <PackageReference Include="Shouldly" Version="4.3.0" />
@@ -27,6 +30,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
+      <ProjectReference Include="..\plamp.Alternative\plamp.Alternative.csproj" />
       <ProjectReference Include="..\plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" />
     </ItemGroup>
 

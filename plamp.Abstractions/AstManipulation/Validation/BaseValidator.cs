@@ -29,12 +29,6 @@ public abstract class BaseValidator<TOuterContext, TInnerContext>
         return result;
     }
 
-    /// <inheritdoc cref="BaseVisitor{TContext}.VisitNodeBase"/>
-    protected sealed override VisitResult VisitNodeBase(NodeBase node, TInnerContext context, NodeBase? parent)
-    {
-        return base.VisitNodeBase(node, context, parent);
-    }
-
     /// <summary>
     /// Создание внутреннего контекста, с которым будет работать посетитель при обходе.
     /// </summary>
@@ -58,7 +52,7 @@ public abstract class BaseValidator<TOuterContext, TInnerContext>
     /// <param name="context">Контекст обхода.</param>
     protected void SetExceptionToSymbol(NodeBase node, PlampExceptionRecord record, TInnerContext context)
     {
-        var exception = context.SymbolTable.SetExceptionToNode(node, record, context.FileName);
+        var exception = context.TranslationTable.SetExceptionToNode(node, record);
         context.Exceptions.Add(exception);
     }
 }

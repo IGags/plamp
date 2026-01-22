@@ -8,6 +8,7 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using Xunit;
@@ -18,11 +19,11 @@ public class MethodAlwaysReturnsValueTests
 {
     [Theory]
     [MemberData(nameof(AlwaysReturnsValidatorDataProvider))]
-    public void VoidMethod(BodyNode body, string methodName, Type returnType, bool shouldExcept)
+    public void VoidMethod(BodyNode body, string methodName, ITypeInfo returnType, bool shouldExcept)
     {
         var defNode = CreateMethod(returnType, methodName, [], body);
-        var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext("aaa", new MockSymbolTable());
+        var validator = new FuncMustReturnValueValidator();
+        var context = new PreCreationContext(new MockTranslationTable(), SymbolTableInitHelper.CreateDefaultTables());
         
         var res = validator.Validate(defNode, context);
         
@@ -39,101 +40,101 @@ public class MethodAlwaysReturnsValueTests
 
     public static IEnumerable<object[]> AlwaysReturnsValidatorDataProvider()
     {
-        var returnNode = new ReturnNode(new LiteralNode(1, typeof(int))); 
-        yield return [new BodyNode([]), "VoidMethod", typeof(void), false];
-        yield return [new BodyNode([returnNode]), "SimpleReturn", typeof(int), false];
-        yield return [new BodyNode([returnNode, returnNode]), "ReturnTwice", typeof(int), false];
-        yield return [new BodyNode([]), "SimpleDoesNotReturn", typeof(int), true];
-        yield return [new BodyNode([new ReturnNode(null)]), "VoidButReturn", typeof(void), false];
+        var returnNode = new ReturnNode(new LiteralNode(1, Builtins.Int)); 
+        yield return [new BodyNode([]), "VoidMethod", Builtins.Void, false];
+        yield return [new BodyNode([returnNode]), "SimpleReturn", Builtins.Int, false];
+        yield return [new BodyNode([returnNode, returnNode]), "ReturnTwice", Builtins.Int, false];
+        yield return [new BodyNode([]), "SimpleDoesNotReturn", Builtins.Int, true];
+        yield return [new BodyNode([new ReturnNode(null)]), "VoidButReturn", Builtins.Void, false];
 
         var whileBody = new BodyNode(
         [
             new WhileNode(
-                new LiteralNode(true, typeof(bool)),
+                new LiteralNode(true, Builtins.Bool),
                 new BodyNode([returnNode]))
         ]);
 
-        yield return [whileBody, "WhileDoesNotGuaranteeReturn", typeof(int), true];
+        yield return [whileBody, "WhileDoesNotGuaranteeReturn", Builtins.Int, true];
 
         var ifBody = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([returnNode]),
                 null)
         ]);
 
-        yield return [ifBody, "IfDoesNotGuaranteeReturn", typeof(int), true];
+        yield return [ifBody, "IfDoesNotGuaranteeReturn", Builtins.Int, true];
 
         var ifElseBody = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([returnNode]),
                 new BodyNode([returnNode]))
         ]);
 
-        yield return [ifElseBody, "IfElseGuaranteeReturn", typeof(int), false];
+        yield return [ifElseBody, "IfElseGuaranteeReturn", Builtins.Int, false];
 
         var ifElseWithoutIfReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([]),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [ifElseWithoutIfReturn, "IfElseWithoutReturnInIfBranch", typeof(int), true];
+        yield return [ifElseWithoutIfReturn, "IfElseWithoutReturnInIfBranch", Builtins.Int, true];
         
         var ifElseWithoutElseReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([returnNode]),
                 new BodyNode([]))
         ]);
         
-        yield return [ifElseWithoutElseReturn, "IfElseWithoutReturnInElseBranch", typeof(int), true];
+        yield return [ifElseWithoutElseReturn, "IfElseWithoutReturnInElseBranch", Builtins.Int, true];
         
         var notFullIfElseWithBaseReturn = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([returnNode]),
                 new BodyNode([])),
             returnNode
         ]);
         
-        yield return [notFullIfElseWithBaseReturn, "IfElseWithBaseReturn", typeof(int), false];
+        yield return [notFullIfElseWithBaseReturn, "IfElseWithBaseReturn", Builtins.Int, false];
         
         var ifElseWithCompleteReturnAndBase = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new BodyNode([returnNode]),
                 new BodyNode([returnNode])),
             returnNode
         ]);
         
-        yield return [ifElseWithCompleteReturnAndBase, "FullIfElseWithBaseReturn", typeof(int), false];
+        yield return [ifElseWithCompleteReturnAndBase, "FullIfElseWithBaseReturn", Builtins.Int, false];
 
         var nestedFullIfElse = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new ConditionNode(
-                    new LiteralNode(false, typeof(bool)),
+                    new LiteralNode(false, Builtins.Bool),
                     new BodyNode([returnNode]),
                     new BodyNode([returnNode])),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [nestedFullIfElse, "NestedConditionFull", typeof(int), false];
+        yield return [nestedFullIfElse, "NestedConditionFull", Builtins.Int, false];
         
         var nestedNotFull = new BodyNode(
         [
-            new ConditionNode(new LiteralNode(false, typeof(bool)),
+            new ConditionNode(new LiteralNode(false, Builtins.Bool),
                 new ConditionNode(
-                    new LiteralNode(false, typeof(bool)),
+                    new LiteralNode(false, Builtins.Bool),
                     new BodyNode([returnNode]),
                     new BodyNode([])),
                 new BodyNode([returnNode]))
         ]);
         
-        yield return [nestedNotFull, "NestedNotFull", typeof(int), false];
+        yield return [nestedNotFull, "NestedNotFull", Builtins.Int, false];
     }
 
     [Fact]
@@ -141,19 +142,21 @@ public class MethodAlwaysReturnsValueTests
     {
         var node = new RootNode([], null,
             [
-                CreateMethod(typeof(int), "1", [], new BodyNode([])),
-                CreateMethod(typeof(int), "1", [], new BodyNode([]))
-            ]);
+                CreateMethod(Builtins.Int, "1", [], new BodyNode([])),
+                CreateMethod(Builtins.Int, "1", [], new BodyNode([]))
+            ],
+            []);
         
-        var validator = new MethodMustReturnValueValidator();
-        var context = new PreCreationContext("aaa", new MockSymbolTable());
+        var validator = new FuncMustReturnValueValidator();
+        
+        var context = new PreCreationContext(new MockTranslationTable(), SymbolTableInitHelper.CreateDefaultTables());
         
         var res = validator.Validate(node, context);
         Assert.Equal(2, res.Exceptions.Count);
         Assert.All(res.Exceptions, Assert.NotNull);
     }
 
-    private static FuncNode CreateMethod(Type returnType, string name, List<NodeBase> parameters, BodyNode body)
+    private static FuncNode CreateMethod(ITypeInfo returnType, string name, List<NodeBase> parameters, BodyNode body)
     {
         return new FuncNode(
             CreateTypeNode(returnType),
@@ -163,31 +166,38 @@ public class MethodAlwaysReturnsValueTests
         );
     }
     
-    private static TypeNode CreateTypeNode(Type fromType)
+    private static TypeNode CreateTypeNode(ITypeInfo fromType)
     {
-        var type = new TypeNode(new TypeNameNode(""));
-        type.SetType(fromType);
+        var type = new TypeNode(new TypeNameNode(""))
+        {
+            TypeInfo = fromType
+        };
         return type;
     }
 
-    private class MockSymbolTable : ISymbolTable
+    private class MockTranslationTable : ITranslationTable
     {
-        public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord, string fileName)
+        public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord)
         {
-            return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1), new(1, 1), fileName) : throw new ArgumentException();
+            return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1, "aaa")) : throw new ArgumentException();
         }
 
-        public PlampException SetExceptionToNodeRange(List<NodeBase> nodes, PlampExceptionRecord exceptionRecord, string fileName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool TryGetSymbol(NodeBase symbol, out KeyValuePair<FilePosition, FilePosition> pair)
+        public bool TryGetSymbol(NodeBase symbol, out FilePosition position)
         {
             throw new NotImplementedException();
         }
 
-        public void AddSymbol(NodeBase symbol, FilePosition start, FilePosition end)
+        public void AddSymbol(NodeBase symbol, FilePosition position)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ITranslationTable Fork()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Merge(ITranslationTable child)
         {
             throw new NotImplementedException();
         }

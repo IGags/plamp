@@ -11,6 +11,8 @@ namespace plamp.Alternative.Tests.Tokenization;
 
 public class TokenSequenceTests
 {
+    private const int Utf16CharacterByteCount = 2;
+    
     [Fact]
     public void EmptySequenceCreate_ThrowsArgumentException()
     {
@@ -22,7 +24,7 @@ public class TokenSequenceTests
     [InlineData(1)]
     public void SetPositionOutOfSequence_ThrowsArgumentException(int position)
     {
-        var sequence = new TokenSequence([new EndOfFile(new(0, 0), new(0, 0))]);
+        var sequence = new TokenSequence([new EndOfFile(new(0, 0, ""))]);
         Should.Throw<ArgumentException>(() => sequence.Position = position);
     }
 
@@ -34,9 +36,9 @@ public class TokenSequenceTests
     {
         var tokenList = new List<TokenBase>
         {
-            new OperatorToken(">", new(0, 0), new (0, 0), OperatorEnum.Greater),
-            new WhiteSpace(" ", new FilePosition(0, 1), new FilePosition(0, 1), WhiteSpaceKind.WhiteSpace),
-            new EndOfFile(new FilePosition(1, 1), new FilePosition(1, 1))
+            new OperatorToken(">", new(0, 1, ""), OperatorEnum.Greater),
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new EndOfFile(new FilePosition(Utf16CharacterByteCount * 2, 0, ""))
         };
         
         var sequence = new TokenSequence(tokenList)
@@ -50,7 +52,7 @@ public class TokenSequenceTests
     [Fact]
     public void MoveNextInSequenceWithSingleToken_ReturnFalse()
     {
-        var sequence = new TokenSequence([new EndOfFile(new(0, 0), new(0, 0))]);
+        var sequence = new TokenSequence([new EndOfFile(new(0, 0, ""))]);
         var moved = sequence.MoveNext();
         moved.ShouldBe(false);
     }
@@ -59,8 +61,8 @@ public class TokenSequenceTests
     public void MoveNextInSequenceWithMultipleTokens_AdvancesPosition()
     {
         var sequence = new TokenSequence([
-            new WhiteSpace(" ", new FilePosition(0, 0), new FilePosition(0, 0), WhiteSpaceKind.WhiteSpace),
-            new EndOfFile(new(1, 0), new(1, 0))
+            new WhiteSpace(" ", new FilePosition(0, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new EndOfFile(new(Utf16CharacterByteCount, 0, ""))
         ]);
 
         var moved = sequence.MoveNext();
@@ -72,10 +74,10 @@ public class TokenSequenceTests
     public void MoveNextNonWhiteSpace_SkipsWhiteSpaces()
     {
         var sequence = new TokenSequence([
-            new WhiteSpace(" ", new FilePosition(0, 0), new FilePosition(0, 0), WhiteSpaceKind.WhiteSpace),
-            new WhiteSpace(" ", new FilePosition(1, 0), new FilePosition(1, 0), WhiteSpaceKind.WhiteSpace),
-            new WhiteSpace(" ", new FilePosition(2, 0), new FilePosition(2, 0), WhiteSpaceKind.WhiteSpace),
-            new EndOfFile(new(1, 0), new(1, 0))
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount * 0, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount * 1, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount * 2, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new EndOfFile(new(Utf16CharacterByteCount * 3, 0, ""))
         ]);
 
         var moved = sequence.MoveNextNonWhiteSpace();
@@ -87,8 +89,8 @@ public class TokenSequenceTests
     public void MoveNextNonWhiteSpace_DoesNotSkipNonWhiteSpace()
     {
         var sequence = new TokenSequence([
-            new OperatorToken(">", new(0, 0), new (0, 0), OperatorEnum.Greater),
-            new EndOfFile(new(1, 0), new(1, 0))
+            new OperatorToken(">", new(0, 1, ""), OperatorEnum.Greater),
+            new EndOfFile(new(Utf16CharacterByteCount, 0, ""))
         ]);
         
         var moved = sequence.MoveNext();
@@ -100,7 +102,7 @@ public class TokenSequenceTests
     public void MoveNextNonWhiteSpaceAtTheEnd_ReturnsFalse()
     {
         var sequence = new TokenSequence([
-            new EndOfFile(new(1, 0), new(1, 0))
+            new EndOfFile(new(0, 0, ""))
         ]);
         var moved = sequence.MoveNext();
         moved.ShouldBe(false);
@@ -110,10 +112,118 @@ public class TokenSequenceTests
     [Fact]
     public void Fork_CreatesPointerCopy()
     {
-        var tokeList = new List<TokenBase> { new EndOfFile(new(1, 0), new(1, 0)) };
-        var sequence = new TokenSequence(tokeList);
+        var tokenList = new List<TokenBase> { new EndOfFile(new(0, 0, "")) };
+        var sequence = new TokenSequence(tokenList);
         var forked = sequence.Fork();
         forked.Position.ShouldBe(sequence.Position);
         forked.Current().ShouldBe(sequence.Current());
+    }
+
+    [Fact]
+    public void MakeRangeBasedOnPrevious_Correct()
+    {
+        var first = new Comma(new FilePosition(0, 1, ""));
+        var tokenList = new List<TokenBase>
+        {
+            first,
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new Comma(new FilePosition(Utf16CharacterByteCount * 2, 1, "")),
+            new EndOfFile(new FilePosition(Utf16CharacterByteCount * 3, 0, ""))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        sequence.MoveNextNonWhiteSpace();
+        sequence.MoveNext();
+        var range = sequence.MakeRangeFromPrevNonWhitespace(first);
+        var resultShould = new FilePosition(0, 3, "");
+        Assert.Equal(resultShould, range);
+    }
+
+    [Fact]
+    public void MakeRangeToPreviousDifferentFile_Throws()
+    {
+        var pos = new FilePosition(0, 1, "f");
+        var first = new Comma(pos);
+        var incorrectComma = new Comma(pos with { FileName = "" });
+        var tokenList = new List<TokenBase>()
+        {
+            first, new EndOfFile(new FilePosition(Utf16CharacterByteCount, 0, "f"))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        sequence.MoveNext();
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(incorrectComma));
+    }
+
+    [Fact]
+    public void MakeRangeToWhitespace_Throws()
+    {
+        var tokenList = new List<TokenBase>()
+        {
+            new Comma(new FilePosition(0, 1, "f")), new EndOfFile(new FilePosition(Utf16CharacterByteCount, 0, "f"))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        sequence.MoveNext();
+        var whitespace = new WhiteSpace(" ", new FilePosition(0, 1, "nf"), WhiteSpaceKind.WhiteSpace);
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(whitespace));
+    }
+
+    [Fact]
+    public void MakeRangeFromFirstToken_Throws()
+    {
+        var to = new Comma(new FilePosition(0, 1, "f"));
+        var tokenList = new List<TokenBase>()
+        {
+            to, new EndOfFile(new FilePosition(Utf16CharacterByteCount, 0, "f"))
+        };
+        var sequence = new TokenSequence(tokenList);
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(to));
+    }
+
+    [Fact]
+    public void MakeRangeWhiteSpacesBeforeToken_Throws()
+    {
+        var to = new Comma(new FilePosition(0, 1, "f"));
+        var tokenList = new List<TokenBase>()
+        {
+            new WhiteSpace(" ", new FilePosition(0, 1, "f"), WhiteSpaceKind.WhiteSpace),
+            new OpenParen(new FilePosition(Utf16CharacterByteCount, 1, "f")),
+            new EndOfFile(new FilePosition(Utf16CharacterByteCount, 0, "f"))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(to));
+    }
+
+    [Fact]
+    public void MakeRangeTokenAfterOrCurrent_Throws()
+    {
+        var tokenList = new List<TokenBase>()
+        {
+            new Comma(new FilePosition(0, 1, "")),
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new Comma(new FilePosition(Utf16CharacterByteCount * 2, 1, "")),
+            new EndOfFile(new FilePosition(Utf16CharacterByteCount * 3, 0, ""))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(sequence.Current()));
+    }
+
+    [Fact]
+    public void MakeRangeTokenNotFound_Throws()
+    {
+        var tokenList = new List<TokenBase>()
+        {
+            new Comma(new FilePosition(0, 1, "")),
+            new WhiteSpace(" ", new FilePosition(Utf16CharacterByteCount, 1, ""), WhiteSpaceKind.WhiteSpace),
+            new Comma(new FilePosition(Utf16CharacterByteCount * 2, 1, "")),
+            new EndOfFile(new FilePosition(Utf16CharacterByteCount * 3, 0, ""))
+        };
+        var sequence = new TokenSequence(tokenList);
+        sequence.MoveNextNonWhiteSpace();
+        var madeUpToken = new OpenParen(new FilePosition(0, 1, ""));
+        Assert.Throws<InvalidOperationException>(() => sequence.MakeRangeFromPrevNonWhitespace(madeUpToken));
     }
 }

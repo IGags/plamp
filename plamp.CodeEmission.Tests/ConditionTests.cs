@@ -4,6 +4,7 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
+using plamp.Alternative;
 using plamp.CodeEmission.Tests.Infrastructure;
 
 namespace plamp.CodeEmission.Tests;
@@ -37,19 +38,19 @@ public class ConditionTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName4)),
-            new AssignNode(new MemberNode(tempVarName4), new LiteralNode(10, typeof(int))),
-            new AssignNode(new MemberNode(tempVarName), new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName4)),
+            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(10, Builtins.Int)]),
+            new AssignNode([new MemberNode(tempVarName)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))]),
             new ConditionNode(
                 new MemberNode(tempVarName),
                 new BodyNode([
-                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName2)),
-                    new AssignNode(new MemberNode(tempVarName2), new LiteralNode(lesser10, typeof(string))),
+                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName2)),
+                    new AssignNode([new MemberNode(tempVarName2)], [new LiteralNode(lesser10, Builtins.String)]),
                     new ReturnNode(new MemberNode(tempVarName2))
                 ]), null),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName3)),
-            new AssignNode(new MemberNode(tempVarName3), new LiteralNode(greater10, typeof(string))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName3)),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(greater10, Builtins.String)]),
             new ReturnNode(new MemberNode(tempVarName3))
         ]);
 
@@ -100,30 +101,30 @@ public class ConditionTests
         const string falseBranchVal = "Nechet";
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName2)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName3)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName4)),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName5)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName2)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName3)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName4)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName5)),
             
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(2, typeof(int))),
-            new AssignNode(new MemberNode(tempVarName2), new ModuloNode(new MemberNode(arg.Name), new MemberNode(tempVarName))),
-            new AssignNode(new MemberNode(tempVarName3), new LiteralNode(0, typeof(int))),
-            new AssignNode(new MemberNode(tempVarName4), new EqualNode(new MemberNode(tempVarName2), new MemberNode(tempVarName3))),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(2, Builtins.Int)]),
+            new AssignNode([new MemberNode(tempVarName2)], [new ModuloNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(0, Builtins.Int)]),
+            new AssignNode([new MemberNode(tempVarName4)], [new EqualNode(new MemberNode(tempVarName2), new MemberNode(tempVarName3))]),
             
             new ConditionNode(
                     new MemberNode(tempVarName4),
                     new BodyNode(
                         [
-                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName6)),
-                            new AssignNode(new MemberNode(tempVarName6), new LiteralNode(trueBranchVal, typeof(string))),
-                            new AssignNode(new MemberNode(tempVarName5), new MemberNode(tempVarName6))
+                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName6)),
+                            new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(trueBranchVal, Builtins.String)]),
+                            new AssignNode([new MemberNode(tempVarName5)], [new MemberNode(tempVarName6)])
                         ]),
                 new BodyNode(
                     [
-                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
-                        new AssignNode(new MemberNode(tempVarName7), new LiteralNode(falseBranchVal, typeof(string))),
-                        new AssignNode(new MemberNode(tempVarName5), new MemberNode(tempVarName7))
+                        new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName7)),
+                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(falseBranchVal, Builtins.String)]),
+                        new AssignNode([new MemberNode(tempVarName5)], [new MemberNode(tempVarName7)])
                     ])),
             new ReturnNode(new MemberNode(tempVarName5))
         ]);
@@ -180,22 +181,22 @@ public class ConditionTests
         
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(18, typeof(int))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName2)),
-            new AssignNode(new MemberNode(tempVarName2), new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, Builtins.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName2)),
+            new AssignNode([new MemberNode(tempVarName2)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName4)),
-            new AssignNode(new MemberNode(tempVarName4), new LiteralNode(100, typeof(int))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName5)),
-            new AssignNode(new MemberNode(tempVarName5), new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName4)),
+            new AssignNode([new MemberNode(tempVarName4)], [new LiteralNode(100, Builtins.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName5)),
+            new AssignNode([new MemberNode(tempVarName5)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName4))]),
             
             new ConditionNode(
                     new MemberNode(tempVarName2),
                     new BodyNode(
                         [
-                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName3)),
-                            new AssignNode(new MemberNode(tempVarName3), new LiteralNode(ifClause, typeof(string))),
+                            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName3)),
+                            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(ifClause, Builtins.String)]),
                             new ReturnNode(new MemberNode(tempVarName3))
                         ]),
                     new BodyNode(
@@ -204,13 +205,13 @@ public class ConditionTests
                                 new MemberNode(tempVarName5),
                                 new BodyNode(
                                 [
-                                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName6)),
-                                    new AssignNode(new MemberNode(tempVarName6), new LiteralNode(elifClause, typeof(string))),
+                                    new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName6)),
+                                    new AssignNode([new MemberNode(tempVarName6)], [new LiteralNode(elifClause, Builtins.String)]),
                                     new ReturnNode(new MemberNode(tempVarName6))
                                 ]), null)
                         ])),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
-            new AssignNode(new MemberNode(tempVarName7), new LiteralNode(rootScope, typeof(string))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName7)),
+            new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, Builtins.String)]),
             new ReturnNode(new MemberNode(tempVarName7))
         ]);
 
@@ -274,27 +275,27 @@ public class ConditionTests
          */
         var body = new BodyNode(
         [
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName)),
-            new AssignNode(new MemberNode(tempVarName), new LiteralNode(18, typeof(int))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName2)),
-            new AssignNode(new MemberNode(tempVarName2), new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName)),
+            new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(18, Builtins.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName2)),
+            new AssignNode([new MemberNode(tempVarName2)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName3)),
-            new AssignNode(new MemberNode(tempVarName3), new LiteralNode(100, typeof(int))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName4)),
-            new AssignNode(new MemberNode(tempVarName4), new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName3))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName3)),
+            new AssignNode([new MemberNode(tempVarName3)], [new LiteralNode(100, Builtins.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName4)),
+            new AssignNode([new MemberNode(tempVarName4)], [new LessNode(new MemberNode(arg.Name), new MemberNode(tempVarName3))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(int)), new VariableNameNode(tempVarName5)),
-            new AssignNode(new MemberNode(tempVarName5), new LiteralNode(1900, typeof(int))),
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(bool)), new VariableNameNode(tempVarName6)),
-            new AssignNode(new MemberNode(tempVarName6), new EqualNode(new MemberNode(arg.Name), new MemberNode(tempVarName5))),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Int), new VariableNameNode(tempVarName5)),
+            new AssignNode([new MemberNode(tempVarName5)], [new LiteralNode(1900, Builtins.Int)]),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.Bool), new VariableNameNode(tempVarName6)),
+            new AssignNode([new MemberNode(tempVarName6)], [new EqualNode(new MemberNode(arg.Name), new MemberNode(tempVarName5))]),
             
-            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(typeof(string)), new VariableNameNode(tempVarName7)),
+            new VariableDefinitionNode(EmissionSetupHelper.CreateTypeNode(Builtins.String), new VariableNameNode(tempVarName7)),
             new ConditionNode(
                 new MemberNode(tempVarName2),
                 new BodyNode(
                 [
-                    new AssignNode(new MemberNode(tempVarName7), new LiteralNode(ifClause, typeof(string)))
+                    new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(ifClause, Builtins.String)])
                 ]),
                 new BodyNode(
                     [
@@ -302,7 +303,7 @@ public class ConditionTests
                             new MemberNode(tempVarName4),
                             new BodyNode(
                             [
-                                new AssignNode(new MemberNode(tempVarName7), new LiteralNode(elifClause, typeof(string)))
+                                new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(elifClause, Builtins.String)])
                             ]),
                             new BodyNode(
                             [
@@ -310,11 +311,11 @@ public class ConditionTests
                                     new MemberNode(tempVarName6),
                                     new BodyNode(
                                     [
-                                        new AssignNode(new MemberNode(tempVarName7), new LiteralNode(helloClause, typeof(string)))
+                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(helloClause, Builtins.String)])
                                     ]),
                                     new BodyNode(
                                     [
-                                        new AssignNode(new MemberNode(tempVarName7), new LiteralNode(rootScope, typeof(string)))
+                                        new AssignNode([new MemberNode(tempVarName7)], [new LiteralNode(rootScope, Builtins.String)])
                                     ]))
                             ]))
                     ]
@@ -352,14 +353,14 @@ public class ConditionTests
         var body = new BodyNode(
         [
             new ConditionNode(
-                new LessNode(new MemberNode(arg.Name), new LiteralNode(0, typeof(int))),
+                new LessNode(new MemberNode(arg.Name), new LiteralNode(0, Builtins.Int)),
                 new BodyNode(
                 [
-                    new ReturnNode(new LiteralNode(subRes, subRes.GetType()))
+                    new ReturnNode(new LiteralNode(subRes, Builtins.String))
                 ]),
                 new BodyNode(
                 [
-                    new ReturnNode(new LiteralNode(nontRes, nontRes.GetType()))
+                    new ReturnNode(new LiteralNode(nontRes, Builtins.String))
                 ]))
         ]);
 

@@ -15,14 +15,14 @@ public class ArgSequenceParsingTests
     public static IEnumerable<object[]> ParseArgSequence_Correct_DataProvider()
     {
         yield return ["()", new List<ParameterNode>()];
-        yield return ["(int a)", new List<ParameterNode> { new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")) }];
+        yield return ["(a :int)", new List<ParameterNode> { new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")) }];
         yield return
         [
-            "(int a, str b, double c)",
+            "(a :int, b :string, c :double)",
             new List<ParameterNode>
             {
                 new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")),
-                new(new TypeNode(new TypeNameNode("str")), new ParameterNameNode("b")),
+                new(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("b")),
                 new(new TypeNode(new TypeNameNode("double")), new ParameterNameNode("c")),
             }
         ];
@@ -47,14 +47,14 @@ public class ArgSequenceParsingTests
         yield return ["(,", null, false, new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}];
         yield return 
         [
-            "(int a,, int b", 
+            "(a:int,,b:int", 
             new List<ParameterNode>{new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a"))}, 
             false, 
             new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}
         ];
         yield return
         [
-            "(int a",
+            "(a:int",
             new List<ParameterNode>{new(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a"))},
             true,
             new List<string>{PlampExceptionInfo.ExpectedCloseParen().Code}

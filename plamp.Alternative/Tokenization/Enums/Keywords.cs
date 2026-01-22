@@ -16,6 +16,5 @@ public enum Keywords
     Continue,
     As,
     Module,
-    //Reserved
-    Model,
+    Type,
 }

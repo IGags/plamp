@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type;
 
@@ -17,17 +18,8 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     /// Список объявлений массива от внутреннего ко внешнему
     /// </summary>
     public List<ArrayTypeSpecificationNode> ArrayDefinitions { get; init; } = [];
-
-    /// <summary>
-    /// Представление типа внутри .net, на этапе компиляции IL обязано присутствовать.
-    /// </summary>
-    public System.Type? Symbol { get; protected set; }
-
-    /// <summary>
-    /// Установка типа из .net
-    /// </summary>
-    /// <param name="type">Тип внутри .net</param>
-    public void SetType(System.Type type) => Symbol = type;
+    
+    public ITypeInfo? TypeInfo { get; set; }
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

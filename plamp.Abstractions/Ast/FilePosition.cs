@@ -5,45 +5,24 @@ namespace plamp.Abstractions.Ast;
 /// <summary>
 /// Позиция чего-либо в кодовом файле
 /// </summary>
-//TODO: Следует добавить байтовое смещение в файле. Также рассмотрел бы переход на другую структуру с хранением имени файла.
-public readonly record struct FilePosition(int Row, int Column) : IComparable<FilePosition>
+public readonly record struct FilePosition(long ByteOffset, int CharacterLength, string FileName) : IComparable<FilePosition>
 {
     /// <summary>
-    /// Сравнение позиции.(при чтении строк сверху вниз, слева направо)
+    /// Сравнение смещения относительно начала файла. Имя файла не учитывается.
     /// </summary>
     /// <param name="other">Другая позиция, с которой следует сравнивать</param>
-    public int CompareTo(FilePosition other)
-    {
-        if (Row == other.Row && Column == other.Column)
-        {
-            return 0;
-        }
+    public int CompareTo(FilePosition other) => ByteOffset.CompareTo(other.ByteOffset);
 
-        if (Row < other.Row || (Row == other.Row && Column < other.Column))
-        {
-            return -1;
-        }
-
-        return 1;
-    }
     
     public static FilePosition operator +(FilePosition left, FilePosition right)
     {
-        return new(left.Row + right.Row, left.Column + right.Column);
+        if (!left.FileName.Equals(right.FileName)) throw new InvalidOperationException("Cannot sum offsets form the different files.");
+        return left with { ByteOffset = left.ByteOffset + right.ByteOffset };
     }
 
-    public static bool operator <(FilePosition left, FilePosition right)
-    {
-        return left.CompareTo(right) < 0;
-    }
-    
-    public static bool operator >(FilePosition left, FilePosition right)
-    {
-        return left.CompareTo(right) > 0;
-    }
+    public static bool operator <(FilePosition left, FilePosition right) => left.CompareTo(right) < 0;
 
-    public override string ToString()
-    {
-        return $"{Row}:{Column}";
-    }
+    public static bool operator >(FilePosition left, FilePosition right) => left.CompareTo(right) > 0;
+
+    public override string ToString() => $"{FileName}: {ByteOffset} byte offset, {CharacterLength} character length";
 }

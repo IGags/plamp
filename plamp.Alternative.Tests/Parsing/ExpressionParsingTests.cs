@@ -3,7 +3,6 @@ using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -16,19 +15,29 @@ namespace plamp.Alternative.Tests.Parsing;
 
 public class ExpressionParsingTests
 {
+    private const int Utf16CharacterByteCount = 2;
+    
     public static IEnumerable<object[]> ParseSimpleNud_DataProvider()
     {
-        yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, typeof(int)))];
-        yield return ["++1", new PrefixIncrementNode(new LiteralNode(1, typeof(int)))];
-        yield return ["+1", new LiteralNode(1, typeof(int))];
-        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, typeof(int)))];
-        yield return ["!true", new NotNode(new LiteralNode(true, typeof(bool)))];
-        yield return ["(true)", new LiteralNode(true, typeof(bool))];
-        yield return ["(((true)))", new LiteralNode(true, typeof(bool))];
+        yield return ["--1", new PrefixDecrementNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["++1", new PrefixIncrementNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["++a.b", new PrefixIncrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["--a.b", new PrefixDecrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["++a[1]", new PrefixIncrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["--a[1]", new PrefixDecrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["a++.b", new MemberNode("a")];
+        yield return ["a--.b", new MemberNode("a")];
+        yield return ["a++[1]", new MemberNode("a")];
+        yield return ["a--[1]", new MemberNode("a")];
+        yield return ["+1", new LiteralNode(1, Builtins.Int)];
+        yield return ["!true", new NotNode(new LiteralNode(true, Builtins.Bool))];
+        yield return ["-1", new UnaryMinusNode(new LiteralNode(1, Builtins.Int))];
+        yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
+        yield return ["(((true)))", new LiteralNode(true, Builtins.Bool)];
         yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [])];
-        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)), new MemberNode("a")])];
+        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int), new MemberNode("a")])];
         yield return ["a", new MemberNode("a")];
-        yield return ["\"a\"", new LiteralNode("a", typeof(string))];
+        yield return ["\"a\"", new LiteralNode("a", Builtins.String)];
     }
     
     [Theory]
@@ -50,10 +59,7 @@ public class ExpressionParsingTests
         [
             "(true", new List<PlampException>
             {
-                new(
-                    PlampExceptionInfo.ExpectedCloseParen(),
-                    new FilePosition(0, 5), new FilePosition(0, 5),
-                    "any.plp")
+                new(PlampExceptionInfo.ExpectedCloseParen(), new FilePosition(0, 5, "any.plp"))
             },
             true
         ];
@@ -74,7 +80,7 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.EndPosition, x.Level, x.StartPosition }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
         }
     }
 
@@ -82,7 +88,14 @@ public class ExpressionParsingTests
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
         yield return ["a--", new PostfixDecrementNode(new MemberNode("a"))];
-        yield return ["a[1]", new ElemGetterNode(new MemberNode("a"), new ArrayIndexerNode(new LiteralNode(1, typeof(int))))];
+        yield return ["a.b++", new PostfixIncrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["a.b--", new PostfixDecrementNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")))];
+        yield return ["a[1]++", new PostfixIncrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["a[1]--", new PostfixDecrementNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)))];
+        yield return ["a[1]", new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a[1][t]", new IndexerNode(new IndexerNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)), new MemberNode("t"))];
+        yield return ["a.b.c", new FieldAccessNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new FieldNode("c"))];
+        yield return ["a.b[1].c", new FieldAccessNode(new IndexerNode(new FieldAccessNode(new MemberNode("a"), new FieldNode("b")), new LiteralNode(1, Builtins.Int)), new FieldNode("c"))];
     }
     
     [Theory]
@@ -103,10 +116,15 @@ public class ExpressionParsingTests
         [
             "a[1", new List<PlampException>
             {
-                new(
-                    PlampExceptionInfo.IndexerIsNotClosed(),
-                    new FilePosition(0, 3), new FilePosition(0, 3),
-                    "any.plp")
+                new(PlampExceptionInfo.IndexerIsNotClosed(), new FilePosition(Utf16CharacterByteCount, 2, ""))
+            },
+            true
+        ];
+        yield return
+        [
+            "a.b..", new List<PlampException>
+            {
+                new(PlampExceptionInfo.ExpectedFieldName(), new FilePosition(Utf16CharacterByteCount * 4, 1, ""))
             },
             true
         ];
@@ -126,25 +144,24 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.EndPosition, x.Level, x.StartPosition }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
         }
     }
 
     public static IEnumerable<object[]> ParseBinaryExpression_Correct_DataProvider()
     {
-        yield return ["a + 1", new AddNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))];
-        yield return ["a - 1", new SubNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))];
-        yield return ["a * 1", new MulNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))];
-        yield return ["a / 1", new DivNode(new MemberNode("a"), new LiteralNode(1, typeof(int)))];
-        yield return ["true = a", new EqualNode(new LiteralNode(true, typeof(bool)), new MemberNode("a"))];
-        yield return ["a != 5", new NotEqualNode(new MemberNode("a"), new LiteralNode(5, typeof(int)))];
-        yield return ["1 < 2", new LessNode(new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)))];
-        yield return ["1 > 2", new GreaterNode(new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)))];
-        yield return ["1 <= 2", new LessOrEqualNode(new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)))];
-        yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, typeof(int)), new LiteralNode(2, typeof(int)))];
+        yield return ["a + 1", new AddNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a - 1", new SubNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a * 1", new MulNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["a / 1", new DivNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int))];
+        yield return ["true = a", new EqualNode(new LiteralNode(true, Builtins.Bool), new MemberNode("a"))];
+        yield return ["a != 5", new NotEqualNode(new MemberNode("a"), new LiteralNode(5, Builtins.Int))];
+        yield return ["1 < 2", new LessNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 > 2", new GreaterNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 <= 2", new LessOrEqualNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
+        yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
         yield return ["x || y", new OrNode(new MemberNode("x"), new MemberNode("y"))];
         yield return ["a && b", new AndNode(new MemberNode("a"), new MemberNode("b"))];
-        yield return ["x := 3", new AssignNode(new MemberNode("x"), new LiteralNode(3, typeof(int)))];
     }
     
     [Theory]
@@ -162,8 +179,21 @@ public class ExpressionParsingTests
     [Fact]
     public void ParseBinaryExpression_Incorrect()
     {
-        var code = "a + ";
+        const string code = "a + ";
         var ast = new MemberNode("a");
+        var fixture = new Fixture();
+        fixture.Customizations.Add(new ParserContextCustomization(code));
+        var context = fixture.Create<ParsingContext>();
+        var parsed = Parser.TryParsePrecedence(context, out var node);
+        parsed.ShouldBe(true);
+        node.ShouldBeEquivalentTo(ast);
+    }
+
+    [Fact]
+    public void ParseExpression_IncorrectPostfix()
+    {
+        const string code = "a++.b";
+        var ast = new PostfixIncrementNode(new MemberNode("a"));
         var fixture = new Fixture();
         fixture.Customizations.Add(new ParserContextCustomization(code));
         var context = fixture.Create<ParsingContext>();
