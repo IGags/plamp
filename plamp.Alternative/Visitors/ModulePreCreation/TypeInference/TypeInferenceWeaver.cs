@@ -104,7 +104,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (parent is AssignNode) return VisitResult.Continue;
         
         var assign = WeaveAssignmentDefault(node);
-        if(assign != null) Replace(node, assign, context);
+        if(assign != null) Replace(node, _ => assign, context);
         return VisitResult.Continue;
     }
 
@@ -222,35 +222,99 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         ITypeInfo? rightType, 
         TypeInferenceInnerContext context)
     {
-        var record = PlampExceptionInfo.CannotApplyOperator();   
-        if (   (leftType  != null && !SymbolSearchUtility.IsNumeric(leftType)) 
-            || (rightType != null && !SymbolSearchUtility.IsNumeric(rightType)))
+        if (TryValidateStringAddition(node, leftType, rightType, context, out var result, out var resultType))
         {
-            context.InnerExpressionTypeStack.Push(null);
-            SetExceptionToSymbol(node, record, context);
-            return VisitResult.Continue;
+            context.InnerExpressionTypeStack.Push(resultType);
+            return result.Value;
         }
 
+        if (TryValidateNumericBinary(node, leftType, rightType, context, out result, out resultType))
+        {
+            context.InnerExpressionTypeStack.Push(resultType);
+            return result.Value;
+        }
+        
+        var record = PlampExceptionInfo.CannotApplyOperator();
+        SetExceptionToSymbol(node, record, context);
+        context.InnerExpressionTypeStack.Push(null);
+        return VisitResult.Continue;
+    }
+    
+    private bool TryValidateStringAddition(
+        BaseBinaryNode node,
+        ITypeInfo? leftType, 
+        ITypeInfo? rightType, 
+        TypeInferenceInnerContext context,
+        [NotNullWhen(true)]out VisitResult? result,
+        out ITypeInfo? resultType)
+    {
+        result = null;
+        resultType = null;
+        if (node is not AddNode addition
+            || (leftType == null  && rightType == null)
+            || (leftType != null  && !SymbolSearchUtility.IsString(leftType))
+            || (rightType != null && !SymbolSearchUtility.IsString(rightType)))
+        {
+            return false;
+        }
+        
+        result = VisitResult.Continue;
+        resultType = Builtins.String;
+        var callName = new FuncCallNameNode(nameof(Builtins.Concat));
+        
+        if (!context.TranslationTable.TryGetSymbol(node, out var position))
+        {
+            throw new Exception("Compiler exception: symbol position is not set");
+        }
+        
+        context.TranslationTable.AddSymbol(callName, position);
+        if (SymbolSearchUtility.TryGetFuncOrErrorRecord(nameof(Builtins.Concat).ToLower(),
+                [Builtins.String, Builtins.String], [Builtins.SymTable], out var info) != null)
+        {
+            throw new Exception("Compiler exception: cannot find string concat implementation");
+        }
+
+        
+        Replace(addition, ReplaceToConcat, context);
+        return true;
+
+        NodeBase ReplaceToConcat(AddNode addNode)
+        {
+            var concatCall = new CallNode(null, callName, [addition.Left, addition.Right]) { FnInfo = info };
+            return concatCall;
+        }
+    }
+
+    private bool TryValidateNumericBinary(
+        BaseBinaryNode node,
+        ITypeInfo? leftType, 
+        ITypeInfo? rightType, 
+        TypeInferenceInnerContext context,
+        [NotNullWhen(true)]out VisitResult? result,
+        out ITypeInfo? resultType)
+    {
+        result = null;
+        resultType = null;
+        if (   (leftType  != null && !SymbolSearchUtility.IsNumeric(leftType))
+            || (rightType != null && !SymbolSearchUtility.IsNumeric(rightType))
+            || (leftType == null && rightType == null))
+        {
+            return false;
+        }
+
+        result = VisitResult.Continue;
         if (leftType != null 
             && SymbolSearchUtility.IsNumeric(leftType) 
             && rightType != null 
             && SymbolSearchUtility.IsNumeric(rightType) 
             && !leftType.Equals(rightType))
         {
-            if (TryExpandNumericBinary(node.Left, node.Right, leftType, rightType, context, out var resultType))
-            {
-                context.InnerExpressionTypeStack.Push(resultType);
-                return VisitResult.Continue;
-            }
-
-            context.InnerExpressionTypeStack.Push(null);
-            SetExceptionToSymbol(node, record, context);
-            return VisitResult.Continue;
+            return TryExpandNumericBinary(node.Left, node.Right, leftType, rightType, context, out resultType);
         }
         
         var innerType = leftType == null && rightType == null ? null : leftType ?? rightType!;
-        context.InnerExpressionTypeStack.Push(innerType);
-        return VisitResult.Continue;
+        resultType = innerType;
+        return true;
     }
     
     #endregion
@@ -270,7 +334,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         context.TranslationTable.AddSymbol(toTypeNode, default);
         toTypeNode.TypeInfo = toType;
         var expanded = new CastNode(toTypeNode, from) { FromType = fromType };
-        Replace(from, expanded, context);
+        Replace(from, _ => expanded, context);
         return true;
     }
 
@@ -595,7 +659,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var variableName = new VariableNameNode(leftMember.MemberName);
         context.TranslationTable.AddSymbol(variableName, symbol);
         var variableNode = new VariableDefinitionNode(typeNode, variableName);
-        Replace(leftMember, variableNode, context);
+        Replace(leftMember, _ => variableNode, context);
         context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(variableNode, context.InstructionInScopePosition);
     }
 

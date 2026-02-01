@@ -281,11 +281,6 @@ public class ModuleSymbolsCreationValidator : BaseValidator<CreationContext, Cre
         generator.Emit(OpCodes.Stloc, loc);
         return loc;
     }
-    
-    private void OverrideEquals(TypeBuilder builder)
-    {
-        
-    }
 
     private record struct TypeBuildingContext(
         ITypeBuilderInfo TypeBuilderInfo, 

@@ -36,6 +36,13 @@ public interface ITranslationTable
     void AddSymbol(NodeBase symbol, FilePosition position);
 
     /// <summary>
+    /// Удаление узла AST из таблицы трансляции.
+    /// </summary>
+    /// <param name="symbol">Узел AST</param>
+    /// <returns>Признак того находился ли узел при удалении</returns>
+    bool RemoveSymbol(NodeBase symbol);
+
+    /// <summary>
     /// Создаёт копию текущей таблицы трансляции, которою видит все правки родительской, но при этом правки данной таблицы трансляции не видны в родительской.
     /// </summary>
     /// <returns>Копия текущей таблицы трансляции со всей информацией о символах</returns>

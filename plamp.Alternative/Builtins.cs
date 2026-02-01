@@ -33,6 +33,9 @@ public static class Builtins
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Length(Array arr) => arr.Length;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string Concat(string arg1, string arg2) => arg1 + arg2;
 }
 
 internal class BuiltinSymTable : ISymTable
@@ -115,6 +118,12 @@ internal class BuiltinSymTable : ISymTable
             new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!),
             new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!)
         };
+
+        var concatOverloads = new List<FuncInfo>()
+        {
+            new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!),
+            new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!)
+        };
         
         var funcDict = new Dictionary<string, IReadOnlyList<FuncInfo>>()
         {
@@ -122,7 +131,8 @@ internal class BuiltinSymTable : ISymTable
             ["println"] = printlnOverloads,
             ["read"] = [new(typeof(Console).GetMethod(nameof(Console.Read), [])!)],
             ["readln"] = [new (typeof(Console).GetMethod(nameof(Console.ReadLine), [])!)],
-            ["length"] = lengthOverloads
+            ["length"] = lengthOverloads,
+            ["concat"] = concatOverloads 
         };
         _funcs = funcDict.ToFrozenDictionary();
     }

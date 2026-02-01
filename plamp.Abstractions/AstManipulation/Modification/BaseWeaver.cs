@@ -22,7 +22,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     /// Словарь замен, которые выполнил код посетителя. Все замены происходят после окончания обхода AST.
     /// Это значит, что повстречать удел, на который заменили далее при обходе невозможно. 
     /// </summary>
-    protected Dictionary<NodeBase, NodeBase> ReplacementDict { get; } = [];
+    protected Dictionary<NodeBase, Func<NodeBase>> ReplacementDict { get; } = [];
     
     /// <summary>
     /// Запуск процедуры обхода дерева AST с возможностью замены некоторых узлов по ссылке.
@@ -35,7 +35,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
         var innerContext = CreateInnerContext(context);
         VisitNodeBase(ast, innerContext, null);
         var result = MapInnerToOuter(innerContext, context);
-        ProceedNodeReplacement(ast);
+        ProceedNodeReplacement(ast, context);
         return result;
     }
 
@@ -55,23 +55,21 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     protected abstract TOuterContext MapInnerToOuter(TInnerContext innerContext, TOuterContext outerContext);
 
     /// <summary>
-    /// Метод замены узла, который используется внутри классов-наследников
+    /// Метод, заменяющий узел AST, на новый в соответствии с функцией, которая создаёт этот узел
     /// </summary>
     /// <param name="from">Какой узел требуется заменить</param>
-    /// <param name="to">На какой узел требуется заменить</param>
+    /// <param name="toFactory">Функция, которая генерирует новый узел</param>
     /// <param name="context">Контекст обхода AST</param>
+    /// <typeparam name="T">Тип исходного узла, обязан быть наследником <see cref="NodeBase"/></typeparam>
     /// <exception cref="ArgumentException">Происходит, если есть попытка заменить корневой узел(RootNode) или если в таблице символов нет узла из параметра <paramref name="from"/>.</exception>
-    protected virtual void Replace(NodeBase from, NodeBase to, TInnerContext context)
+    protected virtual void Replace<T>(T from, Func<T, NodeBase> toFactory, TInnerContext context) where T : NodeBase
     {
         if(from.GetType() == typeof(RootNode)) throw new ArgumentException("Cannot replace root node, check visitor code");
-        if (!context.TranslationTable.TryGetSymbol(from, out var position))
+        if (!context.TranslationTable.TryGetSymbol(from, out _))
         {
-            throw new ArgumentException("Symbol does not exists in table, please check parser and tree construction logic");
+            throw new ArgumentException("Symbol does not exist in table, please check parser and tree construction logic");
         }
-        
-        //Immediate symbol addition may create a memory leak, possible need create another variation of symbol table with unused nodes cleanup 
-        context.TranslationTable.AddSymbol(to, position);
-        ReplacementDict.Add(from, to);
+        ReplacementDict.Add(from, () => toFactory(from));
     }
 
     /// <summary>
@@ -90,7 +88,8 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     /// Логика, происходящая после основного обхода, которая заменяет узлы из вызовов метода <see cref="Replace"/>
     /// </summary>
     /// <param name="ast">Дерево AST, которое использовалось при обходе.</param>
-    private void ProceedNodeReplacement(NodeBase ast)
+    /// <param name="context">Контекст обхода, помогает находить позиции узлов AST в исходном файле</param>
+    private void ProceedNodeReplacement(NodeBase ast, TOuterContext context)
     {
         var nodeChildren = ast.Visit();
         ProceedRecursive(nodeChildren, ast);
@@ -107,7 +106,15 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
                 //Если нашли узел, который требуется заменить, то меняем его через метод класса NodeBase
                 if (ReplacementDict.TryGetValue(child, out var replacement))
                 {
-                    parent.ReplaceChild(child, replacement);
+                    if (!context.TranslationTable.TryGetSymbol(child, out var position))
+                    {
+                        throw new Exception("Compiler error: symbol position not found");
+                    }
+
+                    var newChild = replacement();
+                    parent.ReplaceChild(child, newChild);
+                    context.TranslationTable.RemoveSymbol(child);
+                    context.TranslationTable.AddSymbol(newChild, position);
                 }
             }
         }

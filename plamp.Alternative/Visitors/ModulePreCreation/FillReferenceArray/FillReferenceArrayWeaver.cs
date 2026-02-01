@@ -108,7 +108,7 @@ public class FillReferenceArrayWeaver : BaseWeaver<PreCreationContext, FillRefer
         if (node.ExpressionList.Count != instructions.Count)
         {
             var newBody = new BodyNode(instructions);
-            Replace(node, newBody, context);
+            Replace(node, _ => newBody, context);
         }
         return VisitResult.Continue;
     }
