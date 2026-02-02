@@ -280,6 +280,11 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         NodeBase ReplaceToConcat(AddNode addNode)
         {
+            if (addNode is { Left: LiteralNode {Value: not null} leftLiteral, Right: LiteralNode {Value: not null} rightLiteral })
+            {
+                return new LiteralNode(leftLiteral.Value.ToString() + rightLiteral.Value, Builtins.String);
+            }
+            
             var concatCall = new CallNode(null, callName, [addition.Left, addition.Right]) { FnInfo = info };
             return concatCall;
         }
