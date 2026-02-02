@@ -192,6 +192,11 @@ public class MethodAlwaysReturnsValueTests
             throw new NotImplementedException();
         }
 
+        public bool RemoveSymbol(NodeBase symbol)
+        {
+            throw new NotImplementedException();
+        }
+
         public ITranslationTable Fork()
         {
             throw new NotImplementedException();

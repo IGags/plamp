@@ -32,6 +32,8 @@ public class TranslationTable : ITranslationTable
         }
     }
 
+    public bool RemoveSymbol(NodeBase symbol) => _symbols.Remove(symbol);
+
     public ITranslationTable Fork() => new TranslationTable(this);
 
     public void Merge(ITranslationTable child)
