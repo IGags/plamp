@@ -13,7 +13,7 @@ public class TypeInfo : ITypeInfo
 
     public Type AsType() => _type;
 
-    public IReadOnlyList<IFieldInfo> Fields { get; }
+    public IReadOnlyList<IFieldInfo> Fields { get; init; }
 
     public string Name { get; }
 

@@ -30,7 +30,8 @@ public class FillReferenceArrayWeaver : BaseWeaver<PreCreationContext, FillRefer
             if (node.Sources[i] is not InitArrayNode initArray || initArray.LengthDefinition is LiteralNode {Value: 0}) continue;
             var info = initArray.ArrayItemType.TypeInfo;
             //Исключительная ситуация.
-            if(info == null) throw new Exception();
+            if(info == null) continue;
+            
             if(SymbolSearchUtility.IsNumeric(info) || SymbolSearchUtility.IsLogical(info)) continue;
             context.ToFill.Add(new(node.Targets[i], info));
         }

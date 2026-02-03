@@ -45,6 +45,7 @@ public class ModuleSymbolsCreationValidator : BaseValidator<CreationContext, Cre
                 if(TryInitAsEmptyString(fieldBuilder, fieldInfo, generator))                           continue;
                 if(TryInitAsCurrentModuleCtor(fieldBuilder, generator, fieldInfo, currentModuleCtors)) continue;
                 if(TryInitAsNonCurrentModuleCtor(fieldBuilder, generator))                             continue;
+                if(TryInitAsHuita(fieldBuilder, generator))                                            continue;
                 throw new InvalidOperationException("Cannot init field with default value. Compilation fault.");
             }
 
@@ -79,6 +80,29 @@ public class ModuleSymbolsCreationValidator : BaseValidator<CreationContext, Cre
         return fieldBuilder;
     }
 
+    private bool TryInitAsHuita(
+        FieldBuilder builder,
+        ILGenerator generator)
+    {
+        if (builder.FieldType == typeof(TimeSpan))
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldsfld, typeof(TimeSpan).GetField(nameof(TimeSpan.Zero))!);
+            generator.Emit(OpCodes.Stfld, builder);
+            return true;
+        }
+
+        if (builder.FieldType == typeof(DateTime))
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldsfld, typeof(DateTime).GetField(nameof(DateTime.MinValue))!);
+            generator.Emit(OpCodes.Stfld, builder);
+            return true;
+        }
+
+        return false;
+    }
+    
     private bool TryInitAsCurrentModuleCtor(
         FieldBuilder builder,
         ILGenerator generator,
