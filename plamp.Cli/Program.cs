@@ -39,9 +39,10 @@ public static class Program
 
         void PrintRes(List<PlampException> exList)
         {
+            var fileBytes = File.ReadAllBytes(filepath);
             foreach (var ex in exList)
             {
-                var start = (int)ex.FilePosition.ByteOffset;
+                var start = Encoding.UTF8.GetString(fileBytes, 0, (int)ex.FilePosition.ByteOffset).Length;
                 var rowStart = fileText.LastIndexOf('\n', start);
                 var rowEnd = fileText.IndexOf('\n', start + 1);
                 rowStart = rowStart == -1 ? 0 : rowStart;
@@ -49,7 +50,9 @@ public static class Program
                 var row = fileText[rowStart..rowEnd];
                 var ptrStart = start - rowStart;
                 var len = Math.Min(ex.FilePosition.CharacterLength, rowEnd - ptrStart + 1) - 1;
-                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ',  ptrStart - 1) + '^' + new string('~', len) + '\n';
+                len = len < 0 ? 0 : len;
+                ptrStart = ptrStart < 1 ? 0 : ptrStart - 1;
+                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ',  ptrStart) + '^' + new string('~', len) + '\n';
                 Console.WriteLine(str);
             }
         }
