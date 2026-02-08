@@ -181,6 +181,10 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(fieldName, context, parent, PreVisitFieldName, PostVisitFieldName);
             case AssignNode assign:
                 return VisitCore(assign, context, parent, PreVisitAssign, PostVisitAssign);
+            case GenericDefinitionNode genericDefinition:
+                return VisitCore(genericDefinition, context, parent, PreVisitGenericDefinition, PostVisitGenericDefinition);
+            case GenericParameterNameNode genericName:
+                return VisitCore(genericName, context, parent, PreVisitGenericParameterName, PostVisitGenericParameterName);
             case BaseBinaryNode binary:
                 return VisitBinaryExpression(binary, context, parent);
             case BaseUnaryNode unary:
@@ -1273,6 +1277,38 @@ public abstract class BaseVisitor<TContext>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
     protected virtual VisitResult PostVisitField(FieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    /// <summary>
+    /// Вызов перед посещением узла объявления дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел объявление дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitGenericDefinition(GenericDefinitionNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла объявления дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел объявление дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitGenericDefinition(GenericDefinitionNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла имени дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел имени дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitGenericParameterName(GenericParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла имени дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел имени дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitGenericParameterName(GenericParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Базовый метод, определяющий логику обхода конкретного узла AST

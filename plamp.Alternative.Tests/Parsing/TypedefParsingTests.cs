@@ -182,4 +182,86 @@ public class TypedefParsingTests
         var ex = context.Exceptions.ShouldHaveSingleItem();
         ex.Code.ShouldBe(PlampExceptionInfo.ExpectedClosingCurlyBracket().Code);
     }
+
+    [Fact]
+    //Тип у которого открыт, но не закрыт дженерик без аргументов
+    public void ParseTypeWithNotClosedEmptyGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[;");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        node.GenericParameters.ShouldBeEmpty();
+        
+        context.Exceptions.Count.ShouldBe(2);
+        var codes = new []{ PlampExceptionInfo.GenericDefinitionIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code};
+        codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
+    }
+
+    [Fact]
+    //Парсинг пустого дженерика - ошибка
+    public void ParseTypeWithEmptyGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[];");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        node.GenericParameters.ShouldBeEmpty();
+
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.EmptyGenericDefinition().Code);
+    }
+
+    [Fact]
+    //Парсинг корректного типа с одним дженериком
+    public void ParseTypeWithSingleGeneric_Correct()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T1] {}");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        node.GenericParameters.ShouldHaveSingleItem().Name.Value.ShouldBe("T1");
+        context.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
+    //Парсинг корректного типа с двумя дженериками
+    public void ParseTypeWithTwoGenerics_Correct()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T1, T2];");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        node.GenericParameters.Count.ShouldBe(2);
+        node.GenericParameters[0].Name.Value.ShouldBe("T1");
+        node.GenericParameters[1].Name.Value.ShouldBe("T2");
+        context.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
+    //Парсин типа с не закрытым заполненным дженериком
+    public void ParseTypeWithNotClosedFilledGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen [T {}");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        var generic = node.GenericParameters.ShouldHaveSingleItem();
+        generic.Name.Value.ShouldBe("T");
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.GenericDefinitionIsNotClosed().Code);
+    }
+
+    [Fact]
+    //Парсинг типа, где пропущен дженерик
+    public void ParseTypeWithSkippedGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T,];");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code);
+    }
 }

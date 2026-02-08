@@ -126,7 +126,15 @@ public static class PlampExceptionInfo
         };
     }
 
-    // PRS1124 - свободный
+    public static PlampExceptionRecord EmptyGenericDefinition()
+    {
+        return new()
+        {
+            Code = "PRS1124",
+            Level = ExceptionLevel.Error,
+            Message = "Generic definition is empty"
+        };
+    }
 
     public static PlampExceptionRecord ExpectedAssignment()
     {
@@ -148,13 +156,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedVarName()
+    public static PlampExceptionRecord GenericDefinitionIsNotClosed()
     {
         return new()
         {
             Code = "PRS1127",
             Level = ExceptionLevel.Error,
-            Message = "Expected var name"
+            Message = "Generic definition is not closed"
         };
     }
 
@@ -168,7 +176,15 @@ public static class PlampExceptionInfo
         };
     }
 
-    // PRS1129 Свободный код ошибки
+    public static PlampExceptionRecord EmptyGenericArgs()
+    {
+        return new()
+        {
+            Code = "PRS1129",
+            Level = ExceptionLevel.Error,
+            Message = "Generic args for type is empty"
+        };
+    }
 
     public static PlampExceptionRecord ExpectedModuleName()
     {
@@ -257,6 +273,56 @@ public static class PlampExceptionInfo
             Code = "PRS1137",
             Level = ExceptionLevel.Error,
             Message = "Expected field value"
+        };
+    }
+
+    public static PlampExceptionRecord GenericArgsIsNotClosed()
+    {
+        return new()
+        {
+            Code = "PRS1138",
+            Level = ExceptionLevel.Error,
+            Message = "Generic args is not closed"
+        };
+    }
+
+    public static PlampExceptionRecord TopLevelExpressionExpected()
+    {
+        return new()
+        {
+            Code = "PRS1139",
+            Level = ExceptionLevel.Error,
+            Message = "Expected fn, type, module, etc..."
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedFieldTypeQualifier()
+    {
+        return new()
+        {
+            Code = "PRS1140",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type qualifier - \":\" after field name"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedGenericTypeArg()
+    {
+        return new()
+        {
+            Code = "PRS1141",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type that will be generic argument for this type."
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedGenericTypeArgumentAlias()
+    {
+        return new()
+        {
+            Code = "PRS1142",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type name that will be alias for generic type fields."
         };
     }
     

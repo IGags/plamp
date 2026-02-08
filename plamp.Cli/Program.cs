@@ -9,7 +9,6 @@ public static class Program
 {
     public static async Task<int> Main(params string[] args)
     {
-        var sw = Stopwatch.StartNew();
         if (args.Length != 1)
         {
             return -1;
@@ -18,6 +17,8 @@ public static class Program
         var filepath = Path.GetFullPath(args[0]);
         await using var file = File.OpenRead(filepath);
         using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen:true);
+     
+        var sw = Stopwatch.StartNew();
         var res = await CompilationPipeline.RunEntirePipelineAsync(reader, filepath);
 
         var fileText = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
