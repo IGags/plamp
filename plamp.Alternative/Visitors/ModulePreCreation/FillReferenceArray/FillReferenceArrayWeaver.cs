@@ -29,8 +29,8 @@ public class FillReferenceArrayWeaver : BaseWeaver<PreCreationContext, FillRefer
             //Если не массив или если он пуст, то не имеет смысла его заполнять
             if (node.Sources[i] is not InitArrayNode initArray || initArray.LengthDefinition is LiteralNode {Value: 0}) continue;
             var info = initArray.ArrayItemType.TypeInfo;
-            //Исключительная ситуация.
-            if(info == null) throw new Exception();
+            //Такое может быть, когда мы не поняли, что за тип перед нами ранее при выводе типов
+            if(info == null) continue;
             if(SymbolSearchUtility.IsNumeric(info) || SymbolSearchUtility.IsLogical(info)) continue;
             context.ToFill.Add(new(node.Targets[i], info));
         }
