@@ -37,7 +37,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PostVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         context.Arguments.Clear();
-        context.VariableDefinitions.Clear();
         context.CurrentFunc = null;
         return VisitResult.Continue;
     }
@@ -74,18 +73,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             exception = true;
         }
         
-        if (context.VariableDefinitions.TryGetValue(node.Value, out var other))
+        if (context.TryGetVariable(node.Value, out var other))
         {
             var record = PlampExceptionInfo.DuplicateVariableDefinition();
             SetExceptionToSymbol(node, record, context);
-            SetExceptionToSymbol(other.Variable, record, context);
+            SetExceptionToSymbol(other, record, context);
             exception = true;
         }
 
         if (!exception && parent is VariableDefinitionNode def)
         {
-            var position = context.InstructionInScopePosition;
-            context.AddVariableWithPosition(node, def, position);
+            context.TryAddVariable(def);
         }
 
         return VisitResult.Continue;
@@ -604,18 +602,22 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                 case VariableDefinitionNode:
                 case IndexerNode:
                 case FieldAccessNode:
-                    ValidateAssignmentToDefinition(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
+                    ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, assignment.TargetType, context, assignment.SourceType);
                     continue;
                 case MemberNode leftMember:
-                    if(context.Arguments.TryGetValue(leftMember.MemberName, out _)) continue;
-                    if (!context.VariableDefinitions.TryGetValue(leftMember.MemberName, out var withPosition))
+                    //Валидация того, что в параметр нельзя присвоить что-то иного типа.
+                    if (context.Arguments.TryGetValue(leftMember.MemberName, out var parameter))
+                    {
+                        ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, parameter.Type.TypeInfo, context, assignment.SourceType);
+                        continue;
+                    }
+                    if (!context.TryGetVariable(leftMember.MemberName, out var variable))
                     {
                         CreateVariableDefinitionFromMember(leftMember, context, assignment.SourceType);
                         continue;
                     }
                     
-                    ValidateAssignmentToDefinition(node, assignment.SourceNode, withPosition.Variable.Type?.TypeInfo, context, assignment.SourceType);
-                    ValidateExistingDefinition(leftMember, context, withPosition);
+                    ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, variable.Type?.TypeInfo, context, assignment.SourceType);
                     continue;
                 default: throw new Exception("Parser exception, invalid ast");
             }
@@ -624,7 +626,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.Continue;
     }
     
-    private void ValidateAssignmentToDefinition(
+    private void ValidateAssignmentTypeCompatibility(
         NodeBase assignNode,
         NodeBase assignmentSource, 
         ITypeInfo? leftType, 
@@ -635,17 +637,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (TryExpandType(assignmentSource, rightType, leftType, context)) return;
         var record = PlampExceptionInfo.CannotAssign();
         SetExceptionToSymbol(assignNode, record, context);
-    }
-
-    private void ValidateExistingDefinition(MemberNode left,
-        TypeInferenceInnerContext context,
-        VariableWithPosition existingVar)
-    {
-        if (context.InstructionInScopePosition.Depth >= existingVar.InScopePositionList.Depth) return;
-        
-        var record = PlampExceptionInfo.DuplicateVariableDefinition();
-        SetExceptionToSymbol(existingVar.Variable, record, context);
-        SetExceptionToSymbol(left, record, context);
     }
 
     private void CreateVariableDefinitionFromMember(MemberNode leftMember, TypeInferenceInnerContext context, ITypeInfo? rightType)
@@ -665,7 +656,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         context.TranslationTable.AddSymbol(variableName, symbol);
         var variableNode = new VariableDefinitionNode(typeNode, variableName);
         Replace(leftMember, _ => variableNode, context);
-        context.VariableDefinitions[leftMember.MemberName] = new VariableWithPosition(variableNode, context.InstructionInScopePosition);
+        if (context.TryAddVariable(variableNode)) return;
+        var record = PlampExceptionInfo.DuplicateVariableDefinition();
+        SetExceptionToSymbol(variableNode, record, context);
+        if (context.TryGetVariable(variableName.Value, out var existing))
+        {
+            SetExceptionToSymbol(existing, record, context);
+        }
+        else
+        {
+            throw new Exception("Программа попыталась создать переменную, но нашла дубликат. При попытке извлечь дубликат программа не смогла его получить");
+        }
     }
 
     //TODO: Может упасть с ошибкой таблицы символов. Нужно добавлять символы.
@@ -775,21 +776,29 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override VisitResult PostVisitMember(MemberNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        ParameterNode? arg = null;
-        var assignmentSource = parent is not AssignNode assign || !assign.Targets.Contains(node);
-        if (!context.VariableDefinitions.TryGetValue(node.MemberName, out var withPosition) 
-            && !context.Arguments.TryGetValue(node.MemberName, out arg)
-            && assignmentSource)
+        var assignmentTarget = parent is AssignNode assign && assign.Targets.Contains(node);
+        if (assignmentTarget)
         {
-            var record = PlampExceptionInfo.CannotFindMember();
-            SetExceptionToSymbol(node, record, context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.SkipChildren;
         }
         
-        var memberType = withPosition?.Variable.Type?.TypeInfo ?? arg?.Type.TypeInfo;
-        context.InnerExpressionTypeStack.Push(memberType);
-        return VisitResult.Continue;
+        if (context.TryGetVariable(node.MemberName, out var variable))
+        {
+            context.InnerExpressionTypeStack.Push(variable.Type?.TypeInfo);
+            return VisitResult.Continue;
+        }
+
+        if (context.Arguments.TryGetValue(node.MemberName, out var arg))
+        {
+            context.InnerExpressionTypeStack.Push(arg.ParamInfo?.Type);
+            return VisitResult.Continue;
+        }
+        
+        var record = PlampExceptionInfo.CannotFindMember();
+        SetExceptionToSymbol(node, record, context);
+        context.InnerExpressionTypeStack.Push(null);
+        return VisitResult.SkipChildren;
     }
     
     protected override VisitResult PostVisitReturn(ReturnNode node, TypeInferenceInnerContext context, NodeBase? parent)

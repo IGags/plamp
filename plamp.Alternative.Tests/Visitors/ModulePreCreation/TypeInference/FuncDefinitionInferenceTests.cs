@@ -14,7 +14,7 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class FuncDefinitionInferenceTests
 {
     [Fact]
-    public void HandleFuncWithDuplicateArgs_Correct()
+    public void HandleFuncWithTwoArgs_Correct()
     {
         const string code = """
                             fn nop(a :int, b :string) {}
@@ -77,5 +77,37 @@ public class FuncDefinitionInferenceTests
         
         f1.ParameterList.ShouldHaveSingleItem().Type.TypeName.Name.ShouldBe("int");
         f2.ParameterList.ShouldHaveSingleItem().Type.TypeName.Name.ShouldBe("string");
+    }
+
+    [Fact]
+    public void AssignToArgIncorrectType_ReturnsIncorrect()
+    {
+        const string code = """
+                            fn faceless(name: string) {
+                                name := 1;
+                            }
+                            """;
+        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var visitor = new TypeInferenceWeaver();
+        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
+        visitor.WeaveDiffs(ast, preCreationContext);
+        var error = preCreationContext.Exceptions.ShouldHaveSingleItem();
+        error.Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
+    }
+
+    [Fact]
+    public void UseArgWithUnknownType_ReturnsExceptionOnArgOnly()
+    {
+        const string code = """
+                            fn faced(name: face) int {
+                                return name.age;
+                            }
+                            """;
+        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var visitor = new TypeInferenceWeaver();
+        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
+        visitor.WeaveDiffs(ast, preCreationContext);
+        var error = preCreationContext.Exceptions.ShouldHaveSingleItem();
+        error.Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound(string.Empty).Code);
     }
 }

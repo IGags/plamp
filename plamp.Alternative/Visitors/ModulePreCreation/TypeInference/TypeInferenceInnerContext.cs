@@ -1,76 +1,69 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
-public class TypeInferenceInnerContext(PreCreationContext other) : PreCreationContext(other)
+public class TypeInferenceInnerContext : PreCreationContext
 {
-    private int _monotonicScopeCounter;
-    private int _currentDepth;
     private readonly Stack<int> _typeInferenceSizeSnapshotStack = [];
-    
-    private readonly Stack<ScopeLocation> _lexicalScopeStack = [];
 
+    #region Variable scope validation handling
+
+    private readonly Stack<List<VariableDefinitionNode>> _scopeDefinitionStack = [];
+
+    private readonly Dictionary<string, VariableDefinitionNode> _variableDefinitions = [];
+
+    #endregion
+    
     public Stack<ITypeInfo?> InnerExpressionTypeStack { get; private set; } = [];
 
     public FuncNode? CurrentFunc { get; set; }
 
-    public ScopeLocation InstructionInScopePosition { get; private set; } = new(-1, -1, -1);
-
-    public Dictionary<string, VariableWithPosition> VariableDefinitions { get; } = [];
-
     public Dictionary<string, ParameterNode> Arguments { get; } = [];
-
-    public void AddVariableWithPosition(
-        VariableNameNode name, 
-        VariableDefinitionNode variable, 
-        ScopeLocation position)
+    
+    public TypeInferenceInnerContext(PreCreationContext other) : base(other)
     {
-        VariableDefinitions[name.Value] = new VariableWithPosition(variable, position);
+        //Защита от дурака и способ корректно работать с тестами, в которых нет body как такового
+        _scopeDefinitionStack.Push([]);
+    }
+
+    public bool TryAddVariable(
+        VariableDefinitionNode variable)
+    {
+        if (!_variableDefinitions.TryAdd(variable.Name.Value, variable)) return false;
+        _scopeDefinitionStack.Peek().Add(variable);
+        return true;
+    }
+
+    public bool TryGetVariable(string variableName, [NotNullWhen(true)]out VariableDefinitionNode? varInfo)
+    {
+        return _variableDefinitions.TryGetValue(variableName, out varInfo);
     }
 
     public void EnterBody()
     {
         InnerExpressionTypeStack = [];
-        _currentDepth++;
-        if (InstructionInScopePosition.ScopeNumber != -1)
-        {
-            _lexicalScopeStack.Push(InstructionInScopePosition);
-        }
-        InstructionInScopePosition = new ScopeLocation(_currentDepth, 0, NextScopeNumber());
+        _scopeDefinitionStack.Push([]);
     }
 
     public void ExitBody()
     {
-        _currentDepth--;
-        InstructionInScopePosition = _lexicalScopeStack.TryPop(out var result) ? result : new (-1, -1, -1);
+        var definedVariables = _scopeDefinitionStack.Pop();
+        foreach (var variable in definedVariables)
+        {
+            _variableDefinitions.Remove(variable.Name.Value);
+        }
     }
 
     public void NextInstruction()
     {
         InnerExpressionTypeStack = [];
-        if (InstructionInScopePosition is not {ScopeNumber: -1})
-        {
-            InstructionInScopePosition = InstructionInScopePosition with
-            {
-                PositionInScope = InstructionInScopePosition.PositionInScope + 1
-            };
-        }
     }
-
-    private int NextScopeNumber() => _monotonicScopeCounter++;
 
     public void SaveInferenceStackSize() => _typeInferenceSizeSnapshotStack.Push(InnerExpressionTypeStack.Count);
 
     public int RestoreInferenceStackSize() => _typeInferenceSizeSnapshotStack.Pop();
 }
-
-/// <summary>
-/// Represents position in lexical scope
-/// </summary>
-/// <param name="Depth">Current lexical scope depth</param>
-/// <param name="PositionInScope">Instruction number in current scope</param>
-/// <param name="ScopeNumber">Unique scope number</param>
-public record struct ScopeLocation(int Depth, int PositionInScope, int ScopeNumber);

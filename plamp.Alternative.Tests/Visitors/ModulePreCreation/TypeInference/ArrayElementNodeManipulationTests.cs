@@ -78,6 +78,9 @@ public class ArrayElementNodeManipulationTests
     [Fact]
     public void InferenceArrayElementGetterCannotImplicitCast_ReturnsError()
     {
+        /*
+         * b := a['a'];
+         */
         const string arrName = "a";
         var array = MakeArrayInitNode(arrName);
         var assign = new AssignNode(

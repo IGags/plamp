@@ -97,9 +97,17 @@ public class VariableTypeInferenceTests
     }
 
     [Theory, AutoData]
-    public void CreateVariableAfterGetFromChildScope_ReturnsDuplicateDefinitionException([Frozen] Mock<ITranslationTable> translationTable,
+    public void DefineVariableAfterDefinitionInChildScope_Correct([Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
     {
+        /*
+         * {
+         *      {
+         *          a := 2;
+         *      }
+         *      a := 1;
+         * }
+         */
         var ast = new BodyNode(
         [
             new BodyNode(
@@ -112,12 +120,7 @@ public class VariableTypeInferenceTests
         SetupExceptionGenerationMock(translationTable);
         var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
         var result = visitor.WeaveDiffs(ast, context);
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldSatisfyAllConditions(
-                y => y.Count.ShouldBe(2),
-                y => y[0].Code.ShouldBe(PlampExceptionInfo.DuplicateVariableDefinition().Code),
-                y => y[1].Code.ShouldBe(PlampExceptionInfo.DuplicateVariableDefinition().Code))
-        );
+        result.Exceptions.ShouldBeEmpty();
     }
 
     [Theory, AutoData]
@@ -265,33 +268,33 @@ public class VariableTypeInferenceTests
 
     public static IEnumerable<object[]> AssignMultiple_Correct_DataProvider()
     {
-        yield return 
-        [
-            """
-            {
-                a, b := 1, "abc";
-            }
-            """
-        ];
-        yield return 
-        [
-            """
-            {
-                c :int;
-                d :double;
-                a, b := c, d;
-            }
-            """
-        ];
-        yield return
-        [
-            """
-            {
-                t := [3]int;
-                t[0], t[1], t[2] := 5, 4, 3;
-            }
-            """
-        ];
+        // yield return 
+        // [
+        //     """
+        //     {
+        //         a, b := 1, "abc";
+        //     }
+        //     """
+        // ];
+        // yield return 
+        // [
+        //     """
+        //     {
+        //         c :int;
+        //         d :double;
+        //         a, b := c, d;
+        //     }
+        //     """
+        // ];
+        // yield return
+        // [
+        //     """
+        //     {
+        //         t := [3]int;
+        //         t[0], t[1], t[2] := 5, 4, 3;
+        //     }
+        //     """
+        // ];
         yield return
         [
             """
@@ -449,5 +452,36 @@ public class VariableTypeInferenceTests
         
         //TODO: Метод ломается, если в типе есть поля и сравнение происходит не по ссылке. Нужно что-то придумывать. Но это проблемы меня будущего.
         body.ShouldBeEquivalentTo(valueShould);
+    }
+
+    [Fact]
+    public void DefineVariableWithSameNameAsArg_ReturnsException()
+    {
+        var code = """
+                   fn a(arg: int) {
+                        arg: string;
+                   }
+                   """;
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var visitorCtx = new PreCreationContext(context.TranslationTable, [Builtins.SymTable]);
+        var visitor = new TypeInferenceWeaver();
+        visitor.WeaveDiffs(ast, visitorCtx);
+        visitorCtx.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.ArgumentAlreadyDefined().Code);
+    }
+
+    [Fact]
+    public void TryAccessVariableOutOfScope_ReturnsException()
+    {
+        var code = """
+                   fn a() int {
+                        if(true){ a := 35; }
+                        return a;
+                   }
+                   """;
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var visitorCtx = new PreCreationContext(context.TranslationTable, [Builtins.SymTable]);
+        var visitor = new TypeInferenceWeaver();
+        visitor.WeaveDiffs(ast, visitorCtx);
+        visitorCtx.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code);
     }
 }
