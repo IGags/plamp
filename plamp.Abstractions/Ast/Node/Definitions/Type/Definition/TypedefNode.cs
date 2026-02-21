@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
@@ -12,8 +11,6 @@ public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields, List<G
     public TypedefNameNode Name { get; private set; } = name;
     
     public IReadOnlyList<GenericDefinitionNode> GenericParameters => genericParameters;
-
-    public TypeBuilder? Type { get; set; }
 
     public IReadOnlyList<FieldDefNode> Fields => fields;
 

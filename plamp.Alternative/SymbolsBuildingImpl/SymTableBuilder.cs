@@ -11,27 +11,27 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
 {
     private readonly List<ITypeBuilderInfo> _types = [];
 
-    private readonly List<IFnInfo> _funcs = [];
+    private readonly List<IFnBuilderInfo> _funcs = [];
 
     public string ModuleName { get; set; } = "";
 
     public ITypeBuilderInfo DefineType(TypedefNode typeNode)
     {
-        var type = new EmptyTypeInfo(typeNode);
+        var type = new TypeBuilder(typeNode);
         _types.Add(type);
         return type;
     }
 
     public List<ITypeBuilderInfo> ListTypes() => _types;
 
-    public IFnInfo DefineFunc(FuncNode fnNode)
+    public IFnBuilderInfo DefineFunc(FuncNode fnNode)
     {
         var func = new EmptyFuncInfo(fnNode);
         _funcs.Add(func);
         return func;
     }
 
-    public List<IFnInfo> ListFuncs() => _funcs;
+    public List<IFnBuilderInfo> ListFuncs() => _funcs;
 
     public ITypeInfo? FindType(string name) => _types.FirstOrDefault(x => x.Name == name);
 

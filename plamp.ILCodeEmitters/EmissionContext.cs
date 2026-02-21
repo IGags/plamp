@@ -10,13 +10,13 @@ namespace plamp.ILCodeEmitters;
 /// <param name="Arguments">Список аргументов текущей функции</param>
 /// <param name="Generator">Генератор il кода.</param>
 /// <param name="Labels">Словарь меток перехода к il инструкциям(необходимо для циклов и условий)</param>
-/// <param name="CurrentMethod">Информация о текущем создающемся методе</param>
+/// <param name="IsStatic">Является ли текущий метод статическим</param>
 internal record EmissionContext(
     LocalVarStack LocalVarStack,
     ParameterInfo[] Arguments,
     ILGenerator Generator,
     Dictionary<string, Label> Labels,
-    MethodInfo CurrentMethod,
+    bool IsStatic,
     Label FnReturnLabel)
 {
     /// <summary>

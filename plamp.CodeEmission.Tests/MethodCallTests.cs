@@ -554,8 +554,7 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(sum)))
         ]);
         
-        var context = new CompilerEmissionContext(body, methodBuilder, [arg], null);
-        IlCodeEmitter.EmitMethodBody(context);
+        IlCodeEmitter.EmitMethodBody(body, methodBuilder, [arg]);
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = EmissionSetupHelper.CreateObject(type, methodName);
         
@@ -641,11 +640,8 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
-        var otherContext = new CompilerEmissionContext(otherBody, otherDebugBuilder, [otherArg], null);
-        var context = new CompilerEmissionContext(body, greetBuilder, [], null);
-
-        IlCodeEmitter.EmitMethodBody(otherContext);
-        IlCodeEmitter.EmitMethodBody(context);
+        IlCodeEmitter.EmitMethodBody(otherBody, otherDebugBuilder, [otherArg]);
+        IlCodeEmitter.EmitMethodBody(body, greetBuilder, []);
         var type = typeBuilder.CreateType();
 
         var (instance, method) = EmissionSetupHelper.CreateObject(type, methodName);
@@ -786,10 +782,8 @@ public class MethodCallTests
             new ReturnNode(new MemberNode(nameof(temp1)))
         ]);
 
-        var context1 = new CompilerEmissionContext(body, methodBuilder, [arg], null);
-        var context2 = new CompilerEmissionContext(body2, method2Dbg, [arg], null);
-        IlCodeEmitter.EmitMethodBody(context2);
-        IlCodeEmitter.EmitMethodBody(context1);
+        IlCodeEmitter.EmitMethodBody(body, methodBuilder, [arg]);
+        IlCodeEmitter.EmitMethodBody(body2, method2Dbg, [arg]);
 
         var type1 = typeBuilder.CreateType();
         var type2 = typ2.CreateType();

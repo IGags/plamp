@@ -102,8 +102,7 @@ public class EmissionSetupHelper
         var methodName = $"{Guid.NewGuid()} {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}";
         var argTypes = args.Select(x => x.ParameterType).ToArray();
         var (typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
-        var context = new CompilerEmissionContext(body, methodBuilder, args, null);
-        IlCodeEmitter.EmitMethodBody(context);
+        IlCodeEmitter.EmitMethodBody(body, methodBuilder, args);
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = CreateObject(type, methodName);
         return (instance, methodInfo);

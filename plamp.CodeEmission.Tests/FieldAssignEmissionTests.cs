@@ -54,7 +54,7 @@ public class FieldAssignEmissionTests
             new ReturnNode(new MemberNode("b"))
         ]);
         var (_, methodInfo, _) = EmissionSetupHelper.CreateMethodBuilder("mth", typeof(int), []);
-        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(new CompilerEmissionContext(ast, methodInfo, [], null)));
+        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(ast, methodInfo, []));
     }
     
     [Fact]
@@ -131,7 +131,7 @@ public class FieldAssignEmissionTests
             new ReturnNode(new MemberNode("b"))
         ]);
         var (_, methodInfo, _) = EmissionSetupHelper.CreateMethodBuilder("mth", typeof(int), []);
-        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(new CompilerEmissionContext(ast, methodInfo, [], null)));
+        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(ast, methodInfo, []));
     }
     
     [Fact]

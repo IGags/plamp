@@ -19,12 +19,6 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     where TInnerContext : BaseVisitorContext
 {
     /// <summary>
-    /// Словарь замен, которые выполнил код посетителя. Все замены происходят после окончания обхода AST.
-    /// Это значит, что повстречать удел, на который заменили далее при обходе невозможно. 
-    /// </summary>
-    protected Dictionary<NodeBase, Func<NodeBase>> ReplacementDict { get; } = [];
-    
-    /// <summary>
     /// Запуск процедуры обхода дерева AST с возможностью замены некоторых узлов по ссылке.
     /// </summary>
     /// <param name="ast">Дерево AST, которое будет обходиться</param>
@@ -32,10 +26,12 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     /// <returns>Объект с пользовательскими данными. Возможна мутация или возврат другого объекта</returns>
     public virtual TOuterContext WeaveDiffs(NodeBase ast, TOuterContext context)
     {
+        //Перестраховка от того, что кто-то не очистил replacements
+        context.WeaveReplacementDict.Clear();
         var innerContext = CreateInnerContext(context);
         VisitNodeBase(ast, innerContext, null);
         var result = MapInnerToOuter(innerContext, context);
-        ProceedNodeReplacement(ast, context);
+        ProceedNodeReplacement(ast, innerContext);
         return result;
     }
 
@@ -69,7 +65,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
         {
             throw new ArgumentException("Symbol does not exist in table, please check parser and tree construction logic");
         }
-        ReplacementDict.Add(from, () => toFactory(from));
+        context.WeaveReplacementDict.Add(from, () => toFactory(from));
     }
 
     /// <summary>
@@ -83,16 +79,17 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
         var exception = context.TranslationTable.SetExceptionToNode(node, record);
         context.Exceptions.Add(exception);
     }
-
+    
     /// <summary>
     /// Логика, происходящая после основного обхода, которая заменяет узлы из вызовов метода <see cref="Replace"/>
     /// </summary>
     /// <param name="ast">Дерево AST, которое использовалось при обходе.</param>
     /// <param name="context">Контекст обхода, помогает находить позиции узлов AST в исходном файле</param>
-    private void ProceedNodeReplacement(NodeBase ast, TOuterContext context)
+    private void ProceedNodeReplacement(NodeBase ast, TInnerContext context)
     {
         var nodeChildren = ast.Visit();
         ProceedRecursive(nodeChildren, ast);
+        context.WeaveReplacementDict.Clear();
         return;
 
         // Рекурсивный обход в глубину.
@@ -104,7 +101,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
                 ProceedRecursive(innerChildren, child);
                 
                 //Если нашли узел, который требуется заменить, то меняем его через метод класса NodeBase
-                if (ReplacementDict.TryGetValue(child, out var replacement))
+                if (context.WeaveReplacementDict.TryGetValue(child, out var replacement))
                 {
                     if (!context.TranslationTable.TryGetSymbol(child, out var position))
                     {

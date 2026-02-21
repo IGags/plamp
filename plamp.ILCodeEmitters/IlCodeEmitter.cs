@@ -26,14 +26,40 @@ public static class IlCodeEmitter
     /// <summary>
     /// Создать IL код для <see cref="T:plamp.Abstractions.Ast.Node.Body.BodyNode"/> с помощью экземпляра <see cref="T:System.Reflection.Emit.MethodBuilder"/>
     /// </summary>
-    /// <param name="context">Одноразовый экземпляр класса контекста для создания кода конкретного метода</param>
-    public static void EmitMethodBody(CompilerEmissionContext context)
+    /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
+    /// <param name="builder">Билдер метода в который будет происходить эмиссия</param>
+    /// <param name="parameters">Список информации о параметрах метода(нельзя получить из билдера)</param>
+    public static void EmitMethodBody(BodyNode body, MethodBuilder builder, ParameterInfo[] parameters)
+    {
+        var generator = builder.GetILGenerator();
+        EmitIlCore(body, generator, parameters, builder.IsStatic);
+    }
+
+    /// <summary>
+    /// Создать IL код для <see cref="T:plamp.Abstractions.Ast.Node.Body.BodyNode"/> с помощью экземпляра <see cref="T:System.Reflection.Emit.ConstructorBuilder"/>
+    /// </summary>
+    /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
+    /// <param name="builder">Билдер конструктора в который будет происходить эмиссия</param>
+    /// <param name="parameters">Список информации о параметрах метода(нельзя получить из билдера)</param>
+    public static void EmitCtorBody(BodyNode body, ConstructorBuilder builder, ParameterInfo[] parameters)
+    {
+        var generator = builder.GetILGenerator();
+        EmitIlCore(body, generator, parameters, builder.IsStatic);
+    }
+
+    /// <summary>
+    /// Обобщённый метод генерации инструкций по AST
+    /// </summary>
+    /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
+    /// <param name="generator">Генератор IL инструкций</param>
+    /// <param name="parameters">Список информации о параметрах метода</param>
+    /// <param name="isStatic">Статическая ли функция, для которой создаются инструкции</param>
+    private static void EmitIlCore(BodyNode body, ILGenerator generator, ParameterInfo[] parameters, bool isStatic)
     {
         var varStack = new LocalVarStack();
-        var generator = context.MethodBuilder.GetILGenerator();
         var returnLabel = generator.DefineLabel();
-        var emissionContext = new EmissionContext(varStack, context.Parameters, generator, [], context.MethodBuilder, returnLabel);
-        EmitExpression(context.MethodBody, emissionContext);
+        var emissionContext = new EmissionContext(varStack, parameters, generator, [], isStatic, returnLabel);
+        EmitExpression(body, emissionContext);
         generator.MarkLabel(returnLabel);
         generator.Emit(OpCodes.Ret);
     }
@@ -978,7 +1004,7 @@ public static class IlCodeEmitter
             ? OpCodes.Ldarga_S
             : OpCodes.Ldarg_S;
         
-        ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
+        ix = context.IsStatic ? ix : ix + 1;
         context.Generator.Emit(opcode, ix);
     }
 
@@ -1012,7 +1038,7 @@ public static class IlCodeEmitter
         if ((arg = context.Arguments.FirstOrDefault()) == null) throw new Exception();
 
         var ix = Array.IndexOf(context.Arguments, arg);
-        ix = context.CurrentMethod.IsStatic ? ix : ix + 1;
+        ix = context.IsStatic ? ix : ix + 1;
         context.Generator.Emit(OpCodes.Starg, ix);
     }
 

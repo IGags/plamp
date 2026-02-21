@@ -1,18 +1,15 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors;
-using plamp.Alternative.Visitors.ModuleCreation;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.FillReferenceArray;
 using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
@@ -20,6 +17,7 @@ using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
+using plamp.Alternative.Visitors.SymbolTableBuilding.DefineTypesConstructors;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
@@ -54,6 +52,10 @@ public static class CompilationPipeline
         //Валидация и добавление типов в таблицу символов
         var typeDefInferenceWeaver = new TypedefInferenceWeaver();
         context = typeDefInferenceWeaver.WeaveDiffs(ast, context);
+
+        //Создание конструкторов для типов, которые объявлены в модуле.
+        var constructorGenerationWeaver = new DefineTypesConstructorsWeaver();
+        context = constructorGenerationWeaver.WeaveDiffs(ast, context);
 
         //Валидация, типизация и добавление полей в таблицу символов.
         var fieldDefInferenceWeaver = new FieldDefInferenceWeaver();
@@ -95,21 +97,7 @@ public static class CompilationPipeline
         return new(ast);
     }
 
-    public static CreationResult RunModuleCreation(NodeBase ast, CreationContext context)
-    {
-        var symbolCreator = new ModuleSymbolsCreationValidator();
-        context = symbolCreator.Validate(ast, context);
-        
-        var fnSignatureVisitor = new FuncCreatorValidator();
-        context = fnSignatureVisitor.Validate(ast, context);
-
-        var compilationVisitor = new CompilationValidator();
-        compilationVisitor.Validate(ast, context);
-        context.ModuleBuilder.CreateGlobalFunctions();
-        return new CreationResult(context.AssemblyBuilder);
-    }
-
-    public static async Task<CompilationRes> RunEntirePipelineAsync(StreamReader fileStream, string fileName)
+    public static async Task<AstParsingRes> RunAstParsing(StreamReader fileStream, string fileName)
     {
         var (ast, context) = await RunParsingAsync(fileStream, fileName);
         
@@ -120,27 +108,14 @@ public static class CompilationPipeline
 
         dependencies.Add(symTableBuilder);
         var preCreationContext = new PreCreationContext(context.TranslationTable, dependencies);
-        ast = RunModulePreCreate(ast, preCreationContext).Ast;
+        _ = RunModulePreCreate(ast, preCreationContext).Ast;
         
-        if (context.Exceptions.Count != 0 
-            || symTableCtx.Exceptions.Count != 0 
-            || preCreationContext.Exceptions.Count != 0)
-        {
-            var unitedExceptions = context.Exceptions
-                .Concat(symTableCtx.Exceptions)
-                .Concat(preCreationContext.Exceptions)
-                .ToList();
-            
-            return new(unitedExceptions, null);
-        }
+        var totalExceptions = context.Exceptions
+            .Concat(symTableCtx.Exceptions)
+            .Concat(preCreationContext.Exceptions)
+            .ToList();
         
-        var assemblyName = new AssemblyName(DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-        var moduleBuilder = assemblyBuilder.DefineDynamicModule(symTableBuilder.ModuleName);
-
-        var compilationContext = new CreationContext(assemblyBuilder, moduleBuilder, symTableBuilder, preCreationContext);
-        var assembly = RunModuleCreation(ast, compilationContext).Compiled;
-        return new CompilationRes([], assembly);
+        return new AstParsingRes(totalExceptions, symTableCtx.SymTableBuilder);
     }
     
     public record struct ParsingResult(NodeBase Ast, ParsingContext Context);
@@ -148,8 +123,6 @@ public static class CompilationPipeline
     public record struct SymTableBuildingResult(NodeBase Ast);
 
     public record struct PreCreationResult(NodeBase Ast);
-
-    public record struct CreationResult(Assembly Compiled);
     
-    public record struct CompilationRes(List<PlampException> Exceptions, Assembly? Compiled);
+    public record struct AstParsingRes(List<PlampException> Exceptions, ISymTableBuilder CurrentModuleBuilder);
 }

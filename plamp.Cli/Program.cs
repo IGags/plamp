@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using plamp.Abstractions.Ast;
 using plamp.Alternative;
+using plamp.ILCodeEmitters;
 
 namespace plamp.Cli;
 
@@ -19,28 +22,40 @@ public static class Program
         using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen:true);
      
         var sw = Stopwatch.StartNew();
-        var res = await CompilationPipeline.RunEntirePipelineAsync(reader, filepath);
-
-        var fileText = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
+        var (exceptions, symTable) = await CompilationPipeline.RunAstParsing(reader, filepath);
         
         Console.WriteLine($"Compilation took {sw.Elapsed}");
         
-        if (res.Exceptions.Count > 0 || res.Compiled == null)
+        if (exceptions.Count > 0)
         {
-            PrintRes(res.Exceptions);
+            await PrintRes(exceptions);
             return -1;
         }
+
+        var assemblyName = new AssemblyName(Guid.NewGuid().ToString("N"));
+        var asm = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+        var module = asm.DefineDynamicModule(assemblyName.Name!);
         
-        var method = res.Compiled!.Modules.First().GetMethod("main");
+        SymTableEmitter.EmitModule(symTable, module);
+
+        module.CreateGlobalFunctions();
+        var method = module.GetMethod("main");
+
+        if (method == null)
+        {
+            throw new Exception("Method main is not defined in the module");
+        }
+        
         sw.Restart();
-        method!.Invoke(null, []);
+        method.Invoke(null, []);
         Console.WriteLine($"Execution took {sw.Elapsed}");
         
         return 0;
 
-        void PrintRes(List<PlampException> exList)
+        async Task PrintRes(List<PlampException> exList)
         {
-            var fileBytes = File.ReadAllBytes(filepath);
+            var fileText = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
+            var fileBytes = await File.ReadAllBytesAsync(filepath);
             foreach (var ex in exList)
             {
                 var start = Encoding.UTF8.GetString(fileBytes, 0, (int)ex.FilePosition.ByteOffset).Length;

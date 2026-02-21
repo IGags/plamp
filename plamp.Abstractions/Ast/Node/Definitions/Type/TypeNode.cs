@@ -14,11 +14,19 @@ public class TypeNode : NodeBase
     /// Узел AST обозначающий использование того или иного типа(ссылка на тип)
     /// </summary>
     /// <param name="typeName">Имя типа</param>
-    /// <param name="genericParameters">Список дженерик параметров для типа</param>
-    public TypeNode(TypeNameNode typeName, List<TypeNode>? genericParameters = null)
+    public TypeNode(TypeNameNode typeName)
     {
-        if(genericParameters != null) _genericParameters = genericParameters;
         TypeName = typeName;
+    }
+
+    /// <summary>
+    /// Узел AST обозначающий использование того или иного типа(ссылка на тип)
+    /// </summary>
+    /// <param name="typeName">Имя типа</param>
+    /// <param name="genericParameters">Список дженерик параметров для типа</param>
+    public TypeNode(TypeNameNode typeName, List<TypeNode> genericParameters) : this(typeName)
+    {
+        _genericParameters = genericParameters;
     }
 
     /// <summary>

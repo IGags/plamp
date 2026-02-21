@@ -123,7 +123,6 @@ public class ConstantEmissionTests
             new AssignNode([new MemberNode(tempVarName)], [new LiteralNode(constantValue!, EmissionSetupHelper.MakeTypeRef(constantType!))]),
             new ReturnNode(new MemberNode(tempVarName))
         ]);
-        var context = new CompilerEmissionContext(ast, methodBuilder, [], null);
-        Assert.Throws(exceptionType, () => IlCodeEmitter.EmitMethodBody(context));
+        Assert.Throws(exceptionType, () => IlCodeEmitter.EmitMethodBody(ast, methodBuilder, []));
     }
 }

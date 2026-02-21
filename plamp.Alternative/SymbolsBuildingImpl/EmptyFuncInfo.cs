@@ -4,14 +4,17 @@ using System.Linq;
 using System.Reflection;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
-public class EmptyFuncInfo(FuncNode funcNode) : IFnInfo
+public class EmptyFuncInfo(FuncNode funcNode) : IFnBuilderInfo
 {
     private readonly FuncNode _funcNode = funcNode;
     
     public string Name => _funcNode.FuncName.Value;
+
+    public FuncNode Function => _funcNode;
     
     public IReadOnlyList<IArgInfo> Arguments { get; } = funcNode.ParameterList.Select(x => new EmptyArgInfo(x)).ToList();
     

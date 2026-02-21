@@ -10,7 +10,7 @@ public class TypeInfo : ITypeInfo
 {
     private readonly Type _type;
     private readonly string? _nameOverride;
-
+    
     public Type AsType() => _type;
 
     public IReadOnlyList<IFieldInfo> Fields { get; }
@@ -18,7 +18,13 @@ public class TypeInfo : ITypeInfo
     public string Name { get; }
 
     public bool IsArrayType => _type.IsArray;
-    
+
+    public bool IsGenericType => _type.IsGenericType;
+
+    public bool IsGenericTypeDefinition => _type.IsGenericTypeDefinition;
+
+    public bool IsGenericTypeParameter => _type.IsGenericMethodParameter;
+
     public TypeInfo(Type type, string? nameOverride = null)
     {
         _type = type;
@@ -41,6 +47,19 @@ public class TypeInfo : ITypeInfo
         if (!_type.IsArray) return null;
         var elemType = _type.GetElementType()!;
         return _nameOverride == null ? new TypeInfo(elemType) : new TypeInfo(elemType, _nameOverride);
+    }
+
+    public IReadOnlyList<ITypeInfo> GetGenericParameters()
+    {
+        if (!IsGenericType) return [];
+        return _type.GetGenericArguments().Select(x => new TypeInfo(x)).ToList();
+    }
+
+    public ITypeInfo? GetGenericTypeDefinition()
+    {
+        if (!IsGenericType) return null;
+        var def = _type.GetGenericTypeDefinition();
+        return new TypeInfo(def);
     }
 
     public bool Equals(ITypeInfo? other)
