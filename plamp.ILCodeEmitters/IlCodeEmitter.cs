@@ -36,18 +36,6 @@ public static class IlCodeEmitter
     }
 
     /// <summary>
-    /// Создать IL код для <see cref="T:plamp.Abstractions.Ast.Node.Body.BodyNode"/> с помощью экземпляра <see cref="T:System.Reflection.Emit.ConstructorBuilder"/>
-    /// </summary>
-    /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
-    /// <param name="builder">Билдер конструктора в который будет происходить эмиссия</param>
-    /// <param name="parameters">Список информации о параметрах метода(нельзя получить из билдера)</param>
-    public static void EmitCtorBody(BodyNode body, ConstructorBuilder builder, ParameterInfo[] parameters)
-    {
-        var generator = builder.GetILGenerator();
-        EmitIlCore(body, generator, parameters, builder.IsStatic);
-    }
-
-    /// <summary>
     /// Обобщённый метод генерации инструкций по AST
     /// </summary>
     /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
@@ -396,7 +384,7 @@ public static class IlCodeEmitter
         {
             switch (identifier)
             {
-                case MemberNode member:           EmitGetMember(member, context, byValue); break;
+                case MemberNode member:           EmitGetLocalVarOrArg(member, context, byValue); break;
                 case FieldAccessNode fieldAccess: EmitFieldAccess(fieldAccess, context, byValue); break;
                 case IndexerNode indexer:
                     var itemType = indexer.ItemType?.AsType() ?? throw new Exception();
@@ -551,7 +539,14 @@ public static class IlCodeEmitter
                 EmitSingleLineExpression(indexer.From, context, false); 
                 EmitSingleLineExpression(indexer.IndexMember, context, true);
                 break;
-            case VariableDefinitionNode varDef: EmitVariableDefinition(varDef, context); break;
+            case VariableDefinitionNode varDef:
+                var type = EmitVariableDefinition(varDef, context);
+                var name = varDef.Name.Value;
+                if (type is { IsValueType: true, IsPrimitive: false })
+                {
+                    EmitGetLocalVarOrArg(name, context, false);
+                }
+                break;
             case MemberNode: break;
             default: throw new Exception();
         }
@@ -582,6 +577,12 @@ public static class IlCodeEmitter
                 EmitSetLocalVarOrArg(member.MemberName, context);
                 break;
             case VariableDefinitionNode varDef:
+                var type = varDef.Type?.TypeInfo?.AsType();
+                if (type == null)
+                {
+                    throw new Exception("Тип не имеет представления внутри .net clr, код компилятора некорректный");
+                }
+                if(type is { IsPrimitive: false, IsValueType: true }) break;
                 EmitSetLocalVarOrArg(varDef.Name.Value, context);
                 break;
             default: throw new Exception();
@@ -904,8 +905,7 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <exception cref="Exception">Узел переменной заполнен некорректно</exception>
     /// <exception cref="ArgumentException">Тип переменной не имеет репрезентации в .net</exception>
-    private static void EmitVariableDefinition(
-        VariableDefinitionNode variableDefinitionNode,
+    private static Type EmitVariableDefinition(VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
         if(variableDefinitionNode.Type?.TypeInfo?.AsType() is not { } type) throw new Exception();
@@ -913,6 +913,7 @@ public static class IlCodeEmitter
         if (type == null) throw new ArgumentException("Cannot emit variable definition with null type");
         var builder = context.Generator.DeclareLocal(type);
         context.LocalVarStack.Add(name.Value, builder);
+        return type;
     }
     
     /// <summary>
@@ -928,8 +929,8 @@ public static class IlCodeEmitter
         
         switch (callNode.From)
         {
-            case MemberNode:
-                EmitGetMember(callNode.From, context, false);
+            case MemberNode memberNode:
+                EmitGetLocalVarOrArg(memberNode, context, false);
                 break;
             case ThisNode:
                 context.Generator.Emit(OpCodes.Ldarg_0);
@@ -972,40 +973,73 @@ public static class IlCodeEmitter
         context.Generator.Emit(opcode, methodInfo);
         return methodInfo.ReturnType;
     }
-
+    
     /// <summary>
-    /// Генерация IL получения локальной переменной или аргумента функции
+    /// Генерация IL получения локальной переменной или аргумента функции.
     /// </summary>
     /// <param name="member">Узел переменной или аргумента</param>
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <param name="byValue">Получать по значению или по ссылке</param>
-    /// <returns>Тип переменной или аргумента</returns>
     /// <exception cref="InvalidOperationException">Переменная или аргумент не найдены.</exception>
     private static void EmitGetLocalVarOrArg(MemberNode member, EmissionContext context, bool byValue)
     {
-        OpCode opcode;
-        if (context.LocalVarStack.TryGetValue(member.MemberName, out var builder))
+        EmitGetLocalVarOrArg(member.MemberName, context, byValue);
+    }
+    
+    /// <summary>
+    /// Генерация IL получения локальной переменной или аргумента функции.
+    /// </summary>
+    /// <param name="member">Имя переменной или аргумента</param>
+    /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
+    /// <param name="byValue">Получать по значению или по ссылке. Если это не представляется возможным, то код сгенерирован не будет. Например, в случае попытки получения ссылочного типа по значению.</param>
+    /// <exception cref="InvalidOperationException">Переменная или аргумент не найдены.</exception>
+    private static void EmitGetLocalVarOrArg(string member, EmissionContext context, bool byValue)
+    {
+        if (context.LocalVarStack.TryGetValue(member, out var builder))
         {
-            opcode = builder.LocalType is { IsValueType: true, IsPrimitive: false } && !byValue ? OpCodes.Ldloca : OpCodes.Ldloc;
-            context.Generator.Emit(opcode, builder);
+            EmitGetLocalVar(builder, context, byValue);
             return;
         }
 
         ParameterInfo? arg;
-        if ((arg = context.Arguments.FirstOrDefault(x => x.Name == member.MemberName)) == null)
+        if ((arg = context.Arguments.FirstOrDefault(x => x.Name == member)) == null)
         {
             throw new InvalidOperationException(
                 "Argument does not exists. Invalid compilation. Report to language developer.");
         }
         
+        EmitGetArg(arg, context, byValue);
+    }
+
+    private static void EmitGetLocalVar(LocalBuilder builder, EmissionContext context, bool byValue)
+    {
+        OpCode opCode;
+        if (byValue)
+        {
+            opCode = OpCodes.Ldloc;
+        }
+        else
+        {
+            opCode = builder.LocalType is { IsValueType: true, IsPrimitive: false } ? OpCodes.Ldloca : OpCodes.Ldloc;
+        }
+        context.Generator.Emit(opCode, builder);
+    }
+
+    private static void EmitGetArg(ParameterInfo arg, EmissionContext context, bool byValue)
+    {
+        OpCode opCode;
         var ix = Array.IndexOf(context.Arguments, arg);
-        
-        opcode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } && !byValue
-            ? OpCodes.Ldarga_S
-            : OpCodes.Ldarg_S;
+        if (byValue)
+        {
+            opCode = OpCodes.Ldarg;
+        }
+        else
+        {
+            opCode = arg.ParameterType is { IsValueType: true, IsPrimitive: false } ? OpCodes.Ldarga : OpCodes.Ldarg;
+        }
         
         ix = context.IsStatic ? ix : ix + 1;
-        context.Generator.Emit(opcode, ix);
+        context.Generator.Emit(opCode, ix);
     }
 
     private static Type GetTypeOfLocalMember(MemberNode member, EmissionContext context)
@@ -1040,19 +1074,6 @@ public static class IlCodeEmitter
         var ix = Array.IndexOf(context.Arguments, arg);
         ix = context.IsStatic ? ix : ix + 1;
         context.Generator.Emit(OpCodes.Starg, ix);
-    }
-
-    /// <summary>
-    /// Получение локального члена функции с проверкой типа и генерация IL кода помещения его значения на стек.
-    /// </summary>
-    /// <param name="node">Узел AST локального члена</param>
-    /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
-    /// <param name="byValue">По значению или ссылке</param>
-    /// <exception cref="Exception">Узел AST не имеет тип MemberNode.</exception>
-    private static void EmitGetMember(NodeBase node, EmissionContext context, bool byValue)
-    {
-        if(node is not MemberNode memberNode) throw new Exception();
-        EmitGetLocalVarOrArg(memberNode, context, byValue);
     }
 
     #endregion
@@ -1129,10 +1150,15 @@ public static class IlCodeEmitter
         {
             context.Generator.Emit(OpCodes.Initobj, type);
         }
+        else if (type.IsArray || type == typeof(string))
+        {
+            context.Generator.Emit(OpCodes.Ldnull);
+        }
         else
         {
             var ctor = node.Type.TypeInfo.AsType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
-            context.Generator.Emit(OpCodes.Newobj, ctor!);
+            if (ctor == null) throw new Exception("Тип не имеет пустого конструктора, ошибка компилятора");
+            context.Generator.Emit(OpCodes.Newobj, ctor);
         }
     }
 

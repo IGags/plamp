@@ -7,9 +7,9 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Symbols.SymTable;
-using plamp.Alternative.EmissionDebug;
 using plamp.Alternative.SymbolsImpl;
 using plamp.ILCodeEmitters;
+using plamp.ILCodeEmitters.EmissionDebug;
 using TypeInfo = plamp.Alternative.SymbolsImpl.TypeInfo;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;

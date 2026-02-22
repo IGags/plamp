@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using plamp.Abstractions.Symbols;
 using plamp.Abstractions.Symbols.SymTableBuilding;
+using plamp.ILCodeEmitters.EmissionDebug;
 
 namespace plamp.ILCodeEmitters;
 
@@ -19,6 +21,12 @@ public static class SymTableEmitter
         {
             EmitFunction(moduleBuilder, func);
         }
+
+        foreach (var type in types)
+        {
+            var typeBuilder = type.Type ?? throw new Exception("В этой точке тип не может быть null, проверьте код компилятора");
+            typeBuilder.CreateType();
+        }
     }
 
     public static void EmitType(ModuleBuilder module, ITypeBuilderInfo type)
@@ -26,16 +34,19 @@ public static class SymTableEmitter
         var typeBuilder = module.DefineType(
             type.Name, 
             TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.Sealed, 
-            typeof(object));
+            typeof(ValueType));
         type.Type = typeBuilder;
 
         var fields = type.FieldBuilders;
+
+        var fieldAttributeCtor = typeof(PlampVisibleAttribute).GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
+        var attribute = new CustomAttributeBuilder(fieldAttributeCtor!, []);
         foreach (var fld in fields)
         {
-            typeBuilder.DefineField(fld.Name, fld.FieldType.AsType(), FieldAttributes.Public);
+            var fldInfo = typeBuilder.DefineField(fld.Name, fld.FieldType.AsType(), FieldAttributes.Public);
+            fldInfo.SetCustomAttribute(attribute);
+            fld.Field = fldInfo;
         }
-        
-        CreateDefaultCtor(typeBuilder, type);
     }
 
     public static void EmitFunction(ModuleBuilder module, IFnBuilderInfo func)
@@ -52,34 +63,9 @@ public static class SymTableEmitter
             CallingConventions.Standard,
             retType, 
             parameterTypes);
-
-        IlCodeEmitter.EmitMethodBody(func.Function.Body, methodBuilder, parameters);
-    }
-    
-    private static void CreateDefaultCtor(TypeBuilder typeBuilder, ITypeBuilderInfo type)
-    {
-        if(type.Constructor == null) throw new Exception("Каждый пользовательский тип обязан иметь конструктор без параметров");
-
-        var ctorFunc = type.Constructor.Function;
-        if (!type.Equals(ctorFunc.ReturnType.TypeInfo)
-            || ctorFunc.ParameterList.Count != 1
-            || !type.Equals(ctorFunc.ParameterList[0].Type.TypeInfo))
-        {
-            throw new Exception("Функция конструктора обязана иметь один аргумент типа создаваемого значения и такой же возвращаемый тип.");
-        }
-
-        var parameter = ctorFunc.ParameterList[0].ParamInfo?.AsInfo();
-
-        if (parameter == null)
-        {
-            throw new Exception("Аргумент создающегося типа - null");
-        }
-
-        var ctorBuilder = typeBuilder.DefineConstructor(
-            MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.HideBySig,
-            CallingConventions.Standard,
-            []);
+        var dbg = new DebugMethodBuilder(methodBuilder);
         
-        IlCodeEmitter.EmitCtorBody(ctorFunc.Body, ctorBuilder, [parameter]);
+        IlCodeEmitter.EmitMethodBody(func.Function.Body, dbg, parameters);
+        Console.WriteLine(dbg.GetIlRepresentation());
     }
 }

@@ -11,13 +11,11 @@ using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors;
 using plamp.Alternative.Visitors.ModulePreCreation;
-using plamp.Alternative.Visitors.ModulePreCreation.FillReferenceArray;
 using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
-using plamp.Alternative.Visitors.SymbolTableBuilding.DefineTypesConstructors;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
@@ -53,10 +51,6 @@ public static class CompilationPipeline
         var typeDefInferenceWeaver = new TypedefInferenceWeaver();
         context = typeDefInferenceWeaver.WeaveDiffs(ast, context);
 
-        //Создание конструкторов для типов, которые объявлены в модуле.
-        var constructorGenerationWeaver = new DefineTypesConstructorsWeaver();
-        context = constructorGenerationWeaver.WeaveDiffs(ast, context);
-
         //Валидация, типизация и добавление полей в таблицу символов.
         var fieldDefInferenceWeaver = new FieldDefInferenceWeaver();
         context = fieldDefInferenceWeaver.WeaveDiffs(ast, context);
@@ -89,10 +83,6 @@ public static class CompilationPipeline
         //Break и continue только в цикле
         var flowControlInsideLoopValidator = new FlowControlInsideLoopValidator();
         flowControlInsideLoopValidator.Validate(ast, context);
-
-        //Заполнение массивов ссылочных типов.
-        var fillRefArrayVisitor = new FillReferenceArrayWeaver();
-        fillRefArrayVisitor.WeaveDiffs(ast, context);
         
         return new(ast);
     }

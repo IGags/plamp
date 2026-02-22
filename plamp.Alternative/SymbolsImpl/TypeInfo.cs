@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using plamp.Abstractions.Symbols;
 using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.SymbolsImpl;
@@ -32,7 +33,7 @@ public class TypeInfo : ITypeInfo
         Name = MakeName(nameOverride ?? type.Name);
         Fields = type.GetFields()
             //TODO: попахивает костылём для ограничения полей из базовых типов .net runtime/
-            .Where(x => x.GetCustomAttribute<PlampFieldGeneratedAttribute>() != null)
+            .Where(x => x.GetCustomAttribute<PlampVisibleAttribute>() != null)
             .Select(x => new FldInfo(x)).ToList();
     }
     
