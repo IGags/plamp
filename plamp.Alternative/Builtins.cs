@@ -29,13 +29,93 @@ public static class Builtins
     public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName)!;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Length(string str) => str.Length;
-    
+    public static int Length(string? str)
+    {
+        return str?.Length ?? 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Length(Array arr) => arr.Length;
+    public static int Length(Array? arr)
+    {
+        return arr?.Length ?? 0;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Concat(string arg1, string arg2) => arg1 + arg2;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool ArrayEquals(Array? arr1, Array? arr2)
+    {
+        var firstEmpty = arr1 == null || arr1.Length == 0;
+        var secondEmpty = arr2 == null || arr2.Length == 0;
+        
+        if (firstEmpty && secondEmpty) return true;
+        if (firstEmpty ^ secondEmpty) return false;
+
+        var fstType = arr1!.GetType().GetElementType()!;
+        var sndType = arr2!.GetType().GetElementType()!;
+        if (fstType != sndType || arr1.Length != arr2.Length) return false;
+        
+        if (fstType == typeof(string))
+        {
+            for (var i = 0; i < arr1.Length; i++)
+            {
+                if (!StringEquals(arr1.GetValue(i) as string, arr2.GetValue(i) as string)) return false;
+            }
+
+            return true;
+        }
+
+        if (fstType.IsArray)
+        {
+            for (var i = 0; i < arr1.Length; i++)
+            {
+                if (!ArrayEquals(arr1.GetValue(i) as Array, arr2.GetValue(i) as Array)) return false;
+            }
+
+            return true;
+        }
+
+        if (!fstType.IsValueType) throw new Exception();
+        
+        for (var i = 0; i < arr1.Length; i++)
+        {
+            if (arr1.GetValue(i)!.Equals(arr2.GetValue(i))) return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool StringEquals(string? str1, string? str2)
+    {
+        var firstEmpty = string.IsNullOrEmpty(str1);
+        var secondEmpty = string.IsNullOrEmpty(str2);
+        
+        if (firstEmpty && secondEmpty) return true;
+        if (firstEmpty ^ secondEmpty) return false;
+
+        return str1!.Equals(str2);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool AnyEquals(object? fst, object? snd)
+    {
+        if (fst == null && snd == null) return true;
+        if (fst == null ^ snd == null) return false;
+
+        var fstType = fst!.GetType();
+        var sndType = snd!.GetType();
+
+        if (fstType != sndType) return false;
+
+        if (fstType.IsArray) return ArrayEquals(fst as Array, snd as Array);
+        if (fstType == typeof(string)) return StringEquals(fst as string, snd as string);
+
+        if (!fstType.IsValueType) throw new Exception();
+        
+        return fst.Equals(snd);
+    }
 }
 
 internal class BuiltinSymTable : ISymTable
@@ -124,6 +204,12 @@ internal class BuiltinSymTable : ISymTable
             new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!),
             new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!)
         };
+
+        var equalsOverloads = new List<FuncInfo>()
+        {
+            new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!),
+            new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!),
+        };
         
         var funcDict = new Dictionary<string, IReadOnlyList<FuncInfo>>()
         {
@@ -132,7 +218,8 @@ internal class BuiltinSymTable : ISymTable
             ["read"] = [new(typeof(Console).GetMethod(nameof(Console.Read), [])!)],
             ["readln"] = [new (typeof(Console).GetMethod(nameof(Console.ReadLine), [])!)],
             ["length"] = lengthOverloads,
-            ["concat"] = concatOverloads 
+            ["concat"] = concatOverloads,
+            ["equals"] = equalsOverloads
         };
         _funcs = funcDict.ToFrozenDictionary();
     }

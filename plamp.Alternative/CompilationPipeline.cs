@@ -9,7 +9,6 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
-using plamp.Alternative.Visitors;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
@@ -72,13 +71,13 @@ public static class CompilationPipeline
         var funcReturnVisitor = new FuncMustReturnValueValidator();
         context = funcReturnVisitor.Validate(ast, context);
         
+        //Проверка выражений на уровне body(нельзя запихать что попало)
+        var bodyLevelValidator = new BodyLevelExpressionValidator();
+        bodyLevelValidator.WeaveDiffs(ast, context);
+        
         //Вывод типов.
         var typeInferenceVisitor = new TypeInferenceWeaver();
         typeInferenceVisitor.WeaveDiffs(ast, context);
-
-        //Проверка выражений на уровне body(нельзя запихать что попало)
-        var bodyLevelValidator = new BodyLevelExpressionValidator();
-        bodyLevelValidator.Validate(ast, context);
 
         //Break и continue только в цикле
         var flowControlInsideLoopValidator = new FlowControlInsideLoopValidator();

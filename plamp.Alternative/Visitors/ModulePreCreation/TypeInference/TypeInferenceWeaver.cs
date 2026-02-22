@@ -481,7 +481,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         argTypes.Reverse();
 
         var errRecord = SymbolSearchUtility.TryGetFuncOrErrorRecord(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
-        if (errRecord != null)
+        if (errRecord != null && argTypes.All(x => x != null))
         {
             SetExceptionToSymbol(node, errRecord, context);
             context.InnerExpressionTypeStack.Push(null);
