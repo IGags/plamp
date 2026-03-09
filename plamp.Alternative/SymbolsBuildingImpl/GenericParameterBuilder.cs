@@ -58,11 +58,15 @@ public class GenericParameterBuilder(GenericDefinitionNode definitionNode) : ITy
     /// <inheritdoc cref="ITypeInfo.MakeArrayType"/>
     public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
 
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
+
     /// <inheritdoc cref="ITypeInfo.ElementType"/>
     public ITypeInfo? ElementType() => null;
 
     /// <inheritdoc cref="ITypeInfo.GetGenericParameters" />
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
 
     /// <inheritdoc cref="ITypeInfo.GetGenericTypeDefinition"/>
     public ITypeInfo? GetGenericTypeDefinition() => null;
@@ -70,6 +74,6 @@ public class GenericParameterBuilder(GenericDefinitionNode definitionNode) : ITy
     public bool Equals(ITypeInfo? other)
     {
         if (other is not GenericParameterBuilder otherBuilder) return false;
-        return _definitionNode != otherBuilder._definitionNode;
+        return _definitionNode == otherBuilder._definitionNode;
     }
 }

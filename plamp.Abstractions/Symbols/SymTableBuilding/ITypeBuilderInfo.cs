@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
 
@@ -16,7 +15,7 @@ public interface ITypeBuilderInfo : ITypeInfo
     /// <summary>
     /// Ссылка на узел AST объявления типа, который изменяется при построении типа.
     /// </summary>
-    public TypedefNode Definition { get; }
+    public TypedefNode DefinitionNode { get; }
     
     /// <summary>
     /// Билдер представления типа внутри .net clr
@@ -34,14 +33,11 @@ public interface ITypeBuilderInfo : ITypeInfo
     /// <param name="defNode">Узел AST объявления поля типа</param>
     /// <exception cref="System.InvalidOperationException">Если такое поле уже объявлено в этом типе</exception>
     public void AddField(FieldDefNode defNode);
-
+    
     /// <summary>
-    /// Объявление дженерик параметра у типа.
-    /// Тип не может иметь коллизии имён не с одним из типов текущего модуля.
-    /// Тип дженерик параметра не отображается в таблице символов модуля, поэтому если он там требуется, то его следует добавить отдельно.
+    /// Если тип является объявлением дженерик типа, то 
     /// </summary>
-    /// <param name="genericParameter">Узел ast дженерик параметра</param>
-    /// <exception cref="System.InvalidOperationException">Если такой дженерик аргумент уже объявлен в типе</exception>
-    /// <returns>Тип дженерик аргумента.</returns>
-    public ITypeInfo AddGenericParameter(GenericDefinitionNode genericParameter);
+    /// <param name="genericArguments"></param>
+    /// <returns></returns>
+    public ITypeInfo MakeGenericType(ITypeInfo[] genericArguments);
 }

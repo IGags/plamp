@@ -631,5 +631,37 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord DuplicateGenericParameterName() =>
+        new()
+        {
+            Message = "This name is used by another generic parameter already",
+            Code = "SEM1333",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterNameSameAsDefiningType() =>
+        new()
+        {
+            Message = "Generic parameter has the same name as defining type",
+            Code = "SEM1334",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterHasSameNameAsBuiltinType() =>
+        new()
+        {
+            Message = "Generic parameter has the same name as defining type",
+            Code = "SEM1335",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldHasSameNameAsBuiltinType() =>
+        new()
+        {
+            Message = "Field has the same name as builtin type",
+            Code = "SEM1336",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

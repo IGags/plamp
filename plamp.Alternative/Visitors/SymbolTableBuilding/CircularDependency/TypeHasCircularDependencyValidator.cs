@@ -21,7 +21,7 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
         SymbolTableBuildingContext context, 
         NodeBase? parent)
     {
-        var typeInfo = context.SymTableBuilder.ListTypes().FirstOrDefault(x => x.Definition == node);
+        var typeInfo = context.SymTableBuilder.ListTypes().FirstOrDefault(x => x.DefinitionNode == node);
         if (typeInfo == null) return VisitResult.SkipChildren;
         var moduleType = context.SymTableBuilder.ListTypes().Cast<ITypeInfo>().ToList();
         

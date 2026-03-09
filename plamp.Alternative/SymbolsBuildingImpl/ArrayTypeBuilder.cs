@@ -21,10 +21,12 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
     public Type AsType() => elementType.AsType().MakeArrayType();
 
     public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
 
     public ITypeInfo ElementType() => elementType;
 
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
 
     public ITypeInfo? GetGenericTypeDefinition() => null;
     

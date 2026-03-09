@@ -1,0 +1,98 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
+
+namespace plamp.Alternative.SymbolsBuildingImpl;
+
+/// <summary>
+/// Тип закрытого дженерика - все параметры типизированы чем-то.
+/// </summary>
+public class GenericTypeBuilder : ITypeInfo
+{
+    private readonly ITypeInfo _definition;
+    private readonly IReadOnlyList<ITypeInfo> _genericArguments;
+    private readonly IFieldInfo[] _fields;
+
+    public GenericTypeBuilder(ITypeInfo definition, IReadOnlyList<ITypeInfo> genericArguments)
+    {
+        if (definition.IsGenericTypeDefinition)
+            throw new InvalidOperationException("У закрытого дженерик типа должно быть дженерик объявление, от которого он строится");
+
+        if (genericArguments.Any(x => x.IsGenericTypeDefinition))
+            throw new Exception("Дженерик тип не может иметь объявление дженерик типа в качестве своего аргумента");
+        
+        if (definition.GetGenericParameters().Count != genericArguments.Count)
+            throw new Exception("Число дженерик аргументов у закрытого дженерика должно соотвествовать числу параметров у объявления дженерик типа");
+        
+        _definition = definition;
+        _genericArguments = genericArguments;
+
+        var definitionFields = _definition.Fields;
+        var definitionParameters = definition.GetGenericParameters();
+        _fields = OverrideGenericFields(definitionFields, definitionParameters);
+    }
+
+    private IFieldInfo[] OverrideGenericFields(IReadOnlyList<IFieldInfo> definitionFields, IReadOnlyList<ITypeInfo> genericArguments)
+    {
+        var parameterIx = 0;
+        var fields = new List<IFieldInfo>();
+        foreach (var fieldInfo in definitionFields)
+        {
+            var fldType = fieldInfo.FieldType;
+            if (fldType.IsGenericTypeParameter && genericArguments.Contains(fldType))
+            {
+                fields.Add(new GenericImplFieldInfo(this, fieldInfo, _genericArguments[parameterIx++]));
+            }
+            else
+            {
+                fields.Add(fieldInfo);
+            }
+        }
+        
+        return fields.ToArray();
+    }
+
+    public IReadOnlyList<IFieldInfo> Fields => _fields;
+    
+    public string Name => _definition.Name;
+
+    public bool IsArrayType => false;
+
+    public bool IsGenericType => true;
+
+    public bool IsGenericTypeDefinition => false;
+
+    public bool IsGenericTypeParameter => false;
+    
+    public TypedefNode DefinitionNode => _definition.DefinitionNode;
+    
+    public Type AsType()
+    {
+        var argTypes = _genericArguments.Select(x => x.AsType()).ToArray();
+        return _definition.AsType().MakeGenericType(argTypes);
+    }
+    
+    public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
+
+    public ITypeInfo? ElementType() => null;
+
+    public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => _genericArguments;
+
+    public ITypeInfo GetGenericTypeDefinition() => _definition;
+
+    public bool Equals(ITypeInfo? other)
+    {
+        if (other is not GenericTypeBuilder genericTypeBuilder) return false;
+        
+        return genericTypeBuilder._definition.Equals(_definition)
+            && StructuralComparisons.StructuralEqualityComparer.Equals(
+                _genericArguments, genericTypeBuilder._genericArguments);
+    }
+}

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using plamp.Abstractions.Symbols;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.SymbolsImpl;
 
@@ -43,6 +44,13 @@ public class TypeInfo : ITypeInfo
         return _nameOverride == null ? new TypeInfo(arrayType) : new TypeInfo(arrayType, _nameOverride);
     }
 
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments)
+    {
+        if (!_type.IsGenericTypeDefinition) return null;
+        
+        return new GenericTypeBuilder(this, genericTypeArguments);
+    }
+
     public ITypeInfo? ElementType()
     {
         if (!_type.IsArray) return null;
@@ -52,7 +60,13 @@ public class TypeInfo : ITypeInfo
 
     public IReadOnlyList<ITypeInfo> GetGenericParameters()
     {
-        if (!IsGenericType) return [];
+        if (!IsGenericTypeDefinition) return [];
+        return _type.GetGenericArguments().Select(x => new TypeInfo(x)).ToList();
+    }
+
+    public IReadOnlyList<ITypeInfo> GetGenericArguments()
+    {
+        if(!IsGenericTypeDefinition) return [];
         return _type.GetGenericArguments().Select(x => new TypeInfo(x)).ToList();
     }
 

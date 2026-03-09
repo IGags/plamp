@@ -79,6 +79,151 @@ public class TypeDefInferenceTests
         res.Exceptions.Select(x => x.Code).ShouldAllBe(x => x == PlampExceptionInfo.DuplicateTypeDefinition("").Code);
         res.SymTableBuilder.ListTypes().ShouldBeEmpty();
     }
+
+    [Fact]
+    //У типа есть 1 дженерик, имя которого не совпадает с именем типа
+    public void TypeHasSingleGeneric_Correct()
+    {
+        var code = """
+                   module test;
+                   type A[T] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        
+        type.IsGenericTypeDefinition.ShouldBeTrue();
+        type.IsGenericType.ShouldBeFalse();
+        type.IsGenericTypeParameter.ShouldBeFalse();
+
+        var param = type.GetGenericParameters().ShouldHaveSingleItem();
+        param.Name.ShouldBe("T");
+
+        param.IsGenericType.ShouldBeFalse();
+        param.IsGenericTypeDefinition.ShouldBeFalse();
+        param.IsGenericTypeParameter.ShouldBeTrue();
+        
+        param.IsArrayType.ShouldBeFalse();
+        
+        param.Fields.ShouldBeEmpty();
+    }
+
+    [Fact]
+    //У типа есть дженерик имя которого совпадает с именем типа.
+    public void GenericParameterHasSameNameAsDefiningType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[A] {}
+                   """;
+        var res = SetupAndAct(code);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.GetGenericParameters().ShouldBeEmpty();
+        
+        var exception = res.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterNameSameAsDefiningType().Code);
+    }
+
+    [Fact]
+    //Дженерик параметр имеет имя совпадающее с именем встроенного типа
+    public void GenericParameterHasSameNameAsBuiltinType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[char] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.GetGenericParameters().ShouldBeEmpty();
+        
+        var exception = res.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType().Code);
+    }
+
+    [Fact]
+    //Два дублирующихся по имени дженерик параметра - ошибка
+    public void TwoDuplicateGenericParameters_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[B, B] {}
+                   """;
+
+        var res = SetupAndAct(code);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.GetGenericParameters().ShouldBeEmpty();
+        
+        res.Exceptions.Count.ShouldBe(2);
+        
+        res.Exceptions.Select(x => x.Code).ShouldAllBe(x => x == PlampExceptionInfo.DuplicateGenericParameterName().Code);
+    }
+
+    [Fact]
+    //Два корректных дженерик параметра в типе
+    public void TwoGenericParameters_Correct()
+    {
+        var code = """
+                   module test;
+                   type A[B, C] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        var generics = type.GetGenericParameters();
+        generics.Count.ShouldBe(2);
+
+        foreach (var generic in generics)
+        {
+            generic.IsGenericTypeParameter.ShouldBeTrue();
+            generic.IsGenericTypeDefinition.ShouldBeFalse();
+            generic.IsGenericType.ShouldBeFalse();
+            
+            generic.Fields.ShouldBeEmpty();
+        }
+        
+        var names = new[] {"B", "C"};
+        var genericNames = generics.Select(x => x.Name).ToArray();
+        names.ShouldAllBe(x => genericNames.Contains(x));
+        
+        res.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
+    //Два параметра имеют одинаковое имя с объявляющим типом
+    public void TwoGenericParamsHasSameNameAsDefiningType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[A, A] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.GetGenericParameters().ShouldBeEmpty();
+
+        res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterNameSameAsDefiningType().Code);
+    }
+
+    [Fact]
+    public void TwoGenericParametersHasSameNameAsBuiltinType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[byte, byte] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.GetGenericParameters().ShouldBeEmpty();
+        
+        res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType().Code);
+    }
     
     private SymbolTableBuildingContext SetupAndAct(string code)
     {

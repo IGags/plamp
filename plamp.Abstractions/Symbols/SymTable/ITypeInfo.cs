@@ -56,16 +56,31 @@ public interface ITypeInfo : IEquatable<ITypeInfo>
     public ITypeInfo MakeArrayType();
 
     /// <summary>
+    /// Собрать из текущего типа закрытый дженерик тип.
+    /// Работает только в случае, если текущий тип - объявление дженерика
+    /// </summary>
+    /// <param name="genericTypeArguments">Список аргументов для дженерик типа</param>
+    /// <exception cref="InvalidOperationException">Число дженерик аргументов не совпадает или некоторые из них - объявления дженерик типов</exception>
+    /// <returns>Новый тип или null, если исходный тип не объявление дженерик типа</returns>
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments);
+
+    /// <summary>
     /// Получить тип элемента, если тип - тип массива
     /// </summary>
     /// <returns>Тип элемента или null, если тип не является типом массива</returns>
     public ITypeInfo? ElementType();
     
     /// <summary>
-    /// Получить список типов - дженерик аргументов текущего типа.
+    /// Получить список типов - дженерик параметров текущего типа.
     /// </summary>
-    /// <returns>Список дженерик аргументов, если тип не дженерик, то возвращается пустой список.</returns>
+    /// <returns>Список дженерик аргументов, если тип не объявление дженерика, то возвращается пустой список.</returns>
     public IReadOnlyList<ITypeInfo> GetGenericParameters();
+    
+    /// <summary>
+    /// Получить список типов, которые являются аргументами дженерик типа.
+    /// </summary>
+    /// <returns>Список дженерик аргументов у текущего типа. Если тип не является закрытым дженерик типом, то пустой список.</returns>
+    public IReadOnlyList<ITypeInfo> GetGenericArguments();
 
     /// <summary>
     /// Получить объявление дженерик типа из его реализации(получить открытый дженерик из закрытого)

@@ -152,6 +152,229 @@ public class FieldDefInferenceTests
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.Fields.ShouldBeEmpty();
     }
+
+    [Fact]
+    // У поля не только неверный тип, но и некорректное имя. Обе ошибки должны быть подсвечены
+    public void InferenceFieldWithUnknownTypeAndSameNameAsDefiningType_ReturnsBothException()
+    {
+        var code = """
+                   module test;
+                   type A {A: IMNOTAVALIDTYPE}
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+     
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.Fields.ShouldBeEmpty();
+        
+        var errorCodesShould = new []
+        {
+            PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType().Code, 
+            PlampExceptionInfo.TypeIsNotFound("").Code
+        };
+        var errorCodesActual = res.Exceptions.Select(x => x.Code);
+        
+        errorCodesShould.ShouldAllBe(x => errorCodesActual.Contains(x));
+    }
+
+    [Fact]
+    // 2 поля имеют одинаковое имя, равное имени объявляющего типа. Вернётся только ошибка о том, что их имя схоже с именем объявляющего типа
+    public void InferenceFieldsWithDuplicateNamesSameAsDefiningType_ReturnsSameAsDefiningTypeException()
+    {
+        var code = """
+                   module test;
+                   type A {A, A: ulong}
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.Fields.ShouldBeEmpty();
+        
+        var errorCodesShould = new []
+        {
+            PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType().Code, 
+            PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType().Code
+        };
+        var errorCodesActual = res.Exceptions.Select(x => x.Code);
+        
+        errorCodesShould.ShouldAllBe(x => errorCodesActual.Contains(x));
+    }
+
+    [Fact]
+    // У поля имя совпадает с одним из встроенных типов.
+    public void FieldHasSameNameAsBuiltinType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A { bool: int }
+                   """;
+        
+        var res = SetupAndAct(code);
+        var ex =  res.Exceptions.ShouldHaveSingleItem();
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.Fields.ShouldBeEmpty();
+        
+        ex.Code.ShouldBe(PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code);
+    }
+
+    [Fact]
+    // У двух полей имя совпадает с именем встроенного типа, будет возвращена только эта ошибка
+    public void DuplicateFieldsWithBuiltinTypeName_ReturnsSameAsBuiltinTypeException()
+    {
+        var code = """
+                   module test;
+                   type A { string, string: ushort }
+                   """;
+
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        type.Fields.ShouldBeEmpty();
+        
+        var errorCodesShould = new []
+        {
+            PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code, 
+            PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code
+        };
+        var errorCodesActual = res.Exceptions.Select(x => x.Code);
+        
+        errorCodesShould.ShouldAllBe(x => errorCodesActual.Contains(x));
+    }
+
+    [Fact]
+    // Корректное поле с типом дженерик параметра
+    public void FieldWithGenericType_Correct()
+    {
+        var code = """
+                   module test;
+                   type A[B] { fld: B }
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        var fld = type.Fields.Single();
+        
+        fld.Name.ShouldBe("fld");
+
+        var fldType = fld.FieldType;
+        
+        fldType.IsGenericTypeParameter.ShouldBeTrue();
+        fldType.Name.ShouldBe("B");
+    }
+
+    [Fact]
+    //Корректное поле с именем равным имени типа дженерик параметра
+    public void FieldHasSameNameAsGenericType_Correct()
+    {
+        var code = """
+                   module test;
+                   type A[B] { B: B }
+                   """;
+
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        var fld = type.Fields.Single();
+        
+        fld.Name.ShouldBe("B");
+        
+        var fldType = fld.FieldType;
+        fldType.IsGenericTypeParameter.ShouldBeTrue();
+        fldType.Name.ShouldBe("B");
+        
+        type.GetGenericParameters().ShouldContain(fldType);
+    }
+
+    [Fact]
+    //У поля массив дженерик параметров
+    public void FieldHasGenericParameterArrayType_Correct()
+    {
+        var code = """
+                   module test;
+                   type A[T] { B: []T }
+                   """;
+
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        
+        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
+        var fld = type.Fields.Single();
+        
+        fld.Name.ShouldBe("B");
+        
+        var fldType = fld.FieldType;
+        fldType.IsArrayType.ShouldBeTrue();
+        
+        var elemType = fldType.ElementType().ShouldNotBeNull();
+        
+        elemType.Name.ShouldBe("T");
+        elemType.IsArrayType.ShouldBeFalse();
+        elemType.IsGenericTypeParameter.ShouldBeTrue();
+        
+        type.GetGenericParameters().ShouldContain(elemType);
+    }
+
+    [Fact]
+    // Параметр используется как аргумент в другом дженерик типе.
+    public void GenericParameterAsArgumentOfAnotherGenericType_Correct()
+    {
+        var code = """
+                   module test;
+                   type T1[G]{}
+                   type T2[T]{ fld: T1[T] }
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.Name == "T2");
+        var fld = type.Fields.ShouldHaveSingleItem();
+        
+        fld.Name.ShouldBe("fld");
+        
+        var fldType = fld.FieldType;
+        fldType.IsGenericType.ShouldBeTrue();
+        var arguments = fldType.GetGenericArguments();
+        var genericArg = arguments.ShouldHaveSingleItem();
+        
+        genericArg.Name.ShouldBe("T");
+        genericArg.IsGenericTypeParameter.ShouldBeTrue();
+        
+        type.GetGenericParameters().ShouldContain(genericArg);
+    }
+
+    [Fact]
+    //Если в типе есть дженерик параметр и в модуле есть одноимённый тип, то для типа поля будет выбран тип параметра
+    public void GenericParameterHasHigherPriorityThanTypeDefinedInModule_Correct()
+    {
+        var code = """
+                   module test;
+                   type T {}
+                   type G[T] { fld: T }
+                   """;
+
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.Name == "G");
+        var fld = type.Fields.Single();
+        
+        fld.Name.ShouldBe("fld");
+        
+        var fldType = fld.FieldType;
+        fldType.IsGenericTypeParameter.ShouldBeTrue();
+        fldType.Name.ShouldBe("T");
+        
+        type.GetGenericParameters().ShouldContain(fldType);
+    }
     
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
