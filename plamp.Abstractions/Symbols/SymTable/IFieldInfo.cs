@@ -1,8 +1,9 @@
+using System;
 using System.Reflection;
 
 namespace plamp.Abstractions.Symbols.SymTable;
 
-public interface IFieldInfo
+public interface IFieldInfo : IEquatable<IFieldInfo>
 {
     public FieldInfo AsField();
     

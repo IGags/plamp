@@ -20,6 +20,8 @@ public interface ITypeInfo : IEquatable<ITypeInfo>
     /// Получение имени типа
     /// </summary>
     public string Name { get; }
+    
+    public string BaseName { get; }
 
     /// <summary>
     /// Признак того, является ли тип массивом

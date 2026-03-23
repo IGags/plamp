@@ -18,6 +18,8 @@ public class TypeInfo : ITypeInfo
     public IReadOnlyList<IFieldInfo> Fields { get; }
 
     public string Name { get; }
+    
+    public string BaseName { get; }
 
     public bool IsArrayType => _type.IsArray;
 
@@ -32,8 +34,9 @@ public class TypeInfo : ITypeInfo
         _type = type;
         _nameOverride = nameOverride;
         Name = MakeName(nameOverride ?? type.Name);
+        BaseName = type.Name;
         Fields = type.GetFields()
-            //TODO: попахивает костылём для ограничения полей из базовых типов .net runtime/
+            //TODO: попахивает костылём для ограничения полей из базовых типов .net runtime
             .Where(x => x.GetCustomAttribute<PlampVisibleAttribute>() != null)
             .Select(x => new FldInfo(x)).ToList();
     }
@@ -93,5 +96,15 @@ public class TypeInfo : ITypeInfo
         }
 
         return baseName;
+    }
+
+    public override int GetHashCode()
+    {
+        return _type.GetHashCode();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return _type.Equals(obj);
     }
 }

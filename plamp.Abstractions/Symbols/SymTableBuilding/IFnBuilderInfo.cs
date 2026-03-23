@@ -1,4 +1,4 @@
-using plamp.Abstractions.Ast.Node.Definitions.Func;
+using System.Reflection.Emit;
 using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.Symbols.SymTableBuilding;
@@ -9,5 +9,8 @@ namespace plamp.Abstractions.Symbols.SymTableBuilding;
 /// </summary>
 public interface IFnBuilderInfo : IFnInfo
 {
-    public FuncNode Function { get; }
+    /// <summary>
+    /// Представление функции в .net
+    /// </summary>
+    public MethodBuilder? MethodBuilder { get; set; }
 }

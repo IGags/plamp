@@ -1,34 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using plamp.Abstractions.Ast.Node.Definitions.Func;
+using System.Reflection.Emit;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
-public class EmptyFuncInfo(FuncNode funcNode) : IFnBuilderInfo
+public class EmptyFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo returnType, ISymTableBuilder definingBuilder) : IFnBuilderInfo
 {
-    private readonly FuncNode _funcNode = funcNode;
+    public string Name => name;
     
-    public string Name => _funcNode.FuncName.Value;
-
-    public FuncNode Function => _funcNode;
+    public IReadOnlyList<IArgInfo> Arguments { get; } = args;
     
-    public IReadOnlyList<IArgInfo> Arguments { get; } = funcNode.ParameterList.Select(x => new EmptyArgInfo(x)).ToList();
-    
-    public ITypeInfo ReturnType => _funcNode.ReturnType.TypeInfo ?? throw new NullReferenceException();
+    public ITypeInfo ReturnType => returnType;
     
     public MethodInfo AsFunc()
     {
-        MethodInfo funcInfo = _funcNode.Func ?? throw new NullReferenceException();
+        MethodInfo funcInfo = MethodBuilder ?? throw new NullReferenceException();
         return funcInfo;
     }
 
     public bool Equals(IFnInfo? other)
     {
         if (other is not EmptyFuncInfo fnInfo) return false;
-        return fnInfo._funcNode == _funcNode;
+        if (!definingBuilder.TryGetDefinition(fnInfo, out var otherDef)) return false;
+        if (!definingBuilder.TryGetDefinition(this, out var thisDef))
+        {
+            throw new InvalidOperationException("По какой-то причине функция находится не в том модуле, который она считает объявляющим.");
+        }
+
+        return thisDef == otherDef;
     }
+
+    public MethodBuilder? MethodBuilder { get; set; }
 }

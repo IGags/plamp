@@ -49,9 +49,10 @@ public class MemberNameUniquenessVisitorTests
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new MemberNameUniquenessValidator();
-        return CompilationPipelineBuilder.RunSymTableVisitors(
+        var (ctx, _) =  CompilationPipelineBuilder.RunSymTableVisitors(
             code,
             [(ast, ctx) => weaver.Validate(ast, ctx)]
         );
+        return ctx;
     }
 }

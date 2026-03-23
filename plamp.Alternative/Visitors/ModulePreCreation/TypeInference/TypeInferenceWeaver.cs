@@ -30,7 +30,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             .Where(x => x.Count() == 1)
             .SelectMany(x => x);
         
-        foreach (var arg in nonDupArgs) context.Arguments.Add(arg.Name.Value, arg);
+        foreach (var arg in nonDupArgs) context.Arguments.Add(arg.Name.Value, arg.Type.TypeInfo);
         return VisitResult.Continue;
     }
 
@@ -606,9 +606,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                     continue;
                 case MemberNode leftMember:
                     //Валидация того, что в параметр нельзя присвоить что-то иного типа.
-                    if (context.Arguments.TryGetValue(leftMember.MemberName, out var parameter))
+                    if (context.Arguments.TryGetValue(leftMember.MemberName, out var argType))
                     {
-                        ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, parameter.Type.TypeInfo, context, assignment.SourceType);
+                        ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, argType, context, assignment.SourceType);
                         continue;
                     }
                     if (!context.TryGetVariable(leftMember.MemberName, out var variable))
@@ -791,7 +791,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         if (context.Arguments.TryGetValue(node.MemberName, out var arg))
         {
-            context.InnerExpressionTypeStack.Push(arg.ParamInfo?.Type);
+            context.InnerExpressionTypeStack.Push(arg);
             return VisitResult.Continue;
         }
         

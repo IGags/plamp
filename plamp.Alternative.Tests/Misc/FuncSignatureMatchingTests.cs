@@ -123,7 +123,7 @@ public class FuncSignatureMatchingTests
             [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [firstBuilder, secondBuilder], out var info);
         info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbigulousFunctionReference("", [], []).Code);
+        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class FuncSignatureMatchingTests
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [firstBuilder, secondBuilder], out var info);
         info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbigulousFunctionReference("", [], []).Code);
+        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
     }
     
     [Fact]

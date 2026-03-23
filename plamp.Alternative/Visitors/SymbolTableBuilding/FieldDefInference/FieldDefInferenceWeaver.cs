@@ -22,8 +22,8 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, FieldInferenceInnerContext context, NodeBase? parent)
     {
-        var generics = context.SymTableBuilder.ListTypes().FirstOrDefault(x => x.DefinitionNode == node);
-        context.TypeGenericList = generics?.GetGenericParameters();
+        if (!context.SymTableBuilder.TryGetInfo(node, out var typedef)) return VisitResult.Continue;
+        context.TypeGenericList = typedef.GetGenericParameters();
         return VisitResult.Continue;
     }
 
@@ -36,8 +36,8 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             
             if(!ValidateFieldNameGroup(groupArray, node, context)) continue;
             
-            var type = context.SymTableBuilder.ListTypes().FirstOrDefault(x => x.DefinitionNode == node);
-            type?.AddField(groupArray[0]);
+            if(!context.SymTableBuilder.TryGetInfo(node, out var type)) continue;
+            type.AddField(groupArray[0]);
         }
         
         context.TypeGenericList = null;

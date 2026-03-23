@@ -380,10 +380,11 @@ public class FieldDefInferenceTests
     {
         var typeDefWeaver = new TypedefInferenceWeaver();
         var fieldDefWeaver = new FieldDefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymTableVisitors(code,
+        var (ctx, _) = CompilationPipelineBuilder.RunSymTableVisitors(code,
         [
             (ast, cxt) => typeDefWeaver.WeaveDiffs(ast, cxt),
             (ast, cxt) => fieldDefWeaver.WeaveDiffs(ast, cxt)
         ]);
+        return ctx;
     }
 }

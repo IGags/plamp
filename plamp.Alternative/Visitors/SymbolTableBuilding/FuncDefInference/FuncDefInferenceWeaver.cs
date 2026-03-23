@@ -6,7 +6,6 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.AstManipulation.Modification;
 using plamp.Abstractions.Symbols.SymTable;
-using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 
@@ -23,7 +22,6 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
     protected override VisitResult PreVisitParameter(ParameterNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
         var typeNode = node.Type;
-        node.ParamInfo = new EmptyArgInfo(node);
         return ResolveTypeOrSetError(typeNode.TypeName.Name, typeNode, context);
     }
 

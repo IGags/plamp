@@ -13,11 +13,6 @@ namespace plamp.Abstractions.Symbols.SymTableBuilding;
 public interface ITypeBuilderInfo : ITypeInfo
 {
     /// <summary>
-    /// Ссылка на узел AST объявления типа, который изменяется при построении типа.
-    /// </summary>
-    public TypedefNode DefinitionNode { get; }
-    
-    /// <summary>
     /// Билдер представления типа внутри .net clr
     /// </summary>
     public TypeBuilder? Type { get; set; }
@@ -27,17 +22,12 @@ public interface ITypeBuilderInfo : ITypeInfo
     /// </summary>
     public IReadOnlyList<IFieldBuilderInfo> FieldBuilders { get; }
 
+    public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders { get; }
+    
     /// <summary>
     /// Метод добавления поля в тип.
     /// </summary>
     /// <param name="defNode">Узел AST объявления поля типа</param>
     /// <exception cref="System.InvalidOperationException">Если такое поле уже объявлено в этом типе</exception>
     public void AddField(FieldDefNode defNode);
-    
-    /// <summary>
-    /// Если тип является объявлением дженерик типа, то 
-    /// </summary>
-    /// <param name="genericArguments"></param>
-    /// <returns></returns>
-    public ITypeInfo MakeGenericType(ITypeInfo[] genericArguments);
 }

@@ -1,24 +1,31 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
-public class EmptyFieldInfo(FieldDefNode fieldDef) : IFieldBuilderInfo
+public class EmptyFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
 {
+    private readonly ITypeInfo _definingType = definingType;
+
     public FieldInfo AsField()
     {
         return Field ?? throw new NullReferenceException();
     }
 
-    public ITypeInfo FieldType => fieldDef.FieldType.TypeInfo ?? throw new NullReferenceException();
+    public ITypeInfo FieldType => typeInfo;
     
-    public string Name => fieldDef.Name.Value;
-
-    public FieldDefNode Definition => fieldDef;
+    public string Name => name;
     
     public FieldBuilder? Field { get; set; }
+
+    public bool Equals(IFieldInfo? obj)
+    {
+        if (obj is not EmptyFieldInfo emptyFld) return false;
+        return Name.Equals(emptyFld.Name)
+               && FieldType.Equals(emptyFld.FieldType)
+               && _definingType.Equals(emptyFld._definingType);
+    }
 }

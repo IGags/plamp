@@ -24,7 +24,7 @@ public static class SymbolSearchUtility
         if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
         if (types.Count > 1)
         {
-            return PlampExceptionInfo.AmbigulousTypeName(name, types.Select(x => x.table.ModuleName));
+            return PlampExceptionInfo.AmbiguousTypeName(name, types.Select(x => x.table.ModuleName));
         }
 
         typeInfo = types[0].typ;
@@ -98,7 +98,7 @@ public static class SymbolSearchUtility
         }
         if (totalCount > 1)
         {
-            return PlampExceptionInfo.AmbigulousFunctionReference(name, argTypes, matchedModules);
+            return PlampExceptionInfo.AmbiguousFunctionReference(name, argTypes, matchedModules);
         }
 
         fnInfo = fullMatch.FirstOrDefault() ?? partialMatch.FirstOrDefault()!;

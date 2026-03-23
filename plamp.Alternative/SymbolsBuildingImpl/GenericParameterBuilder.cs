@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
@@ -10,14 +10,14 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 /// Представление аргумента открытого дженерик типа, тоже является типом так как может служить типом полей типа-определения
 /// Не появляется в таблице символов модуля, в котором объявлен дженерик тип
 /// </summary>
-public class GenericParameterBuilder(GenericDefinitionNode definitionNode) : ITypeInfo
+public class GenericParameterBuilder(string name, ITypeInfo declaringType) : IGenericParameterBuilder
 {
-    private readonly GenericDefinitionNode _definitionNode = definitionNode;
+    private readonly ITypeInfo _declaringType = declaringType;
 
     /// <summary>
     /// Имя типа внутри дженерик объявления
     /// </summary>
-    public string Name { get; } = definitionNode.Name.Value;
+    public string Name { get; } = name;
 
     /// <summary>
     /// Представление внутри системы типов .net, нужно для билдинга в полноценный тип.
@@ -74,6 +74,11 @@ public class GenericParameterBuilder(GenericDefinitionNode definitionNode) : ITy
     public bool Equals(ITypeInfo? other)
     {
         if (other is not GenericParameterBuilder otherBuilder) return false;
-        return _definitionNode == otherBuilder._definitionNode;
+        return Name == otherBuilder.Name && _declaringType.Equals(otherBuilder._declaringType);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_declaringType.GetHashCode(), Name.GetHashCode());
     }
 }

@@ -562,7 +562,7 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord AmbigulousTypeName(string typeName, IEnumerable<string> modules) =>
+    public static PlampExceptionRecord AmbiguousTypeName(string typeName, IEnumerable<string> modules) =>
         new()
         {
             Message = $"The type {typeName} is defined in {string.Join(", ", modules)} modules",
@@ -580,7 +580,7 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord AmbigulousFunctionReference(
+    public static PlampExceptionRecord AmbiguousFunctionReference(
         string functionName,
         IEnumerable<ITypeInfo?> signature,
         IEnumerable<string> modules) =>

@@ -228,9 +228,10 @@ public class TypeDefInferenceTests
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new TypedefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymTableVisitors(
+        var (ctx, _) = CompilationPipelineBuilder.RunSymTableVisitors(
             code,
             [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
         );
+        return ctx;
     }
 }

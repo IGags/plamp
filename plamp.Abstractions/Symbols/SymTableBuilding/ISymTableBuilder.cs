@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
@@ -21,7 +22,7 @@ public interface ISymTableBuilder
     /// Валидация на дубликаты по чему-либо не гарантируется
     /// </summary>
     /// <param name="typeNode">Узел AST объявляющий тип</param>
-    /// <param name="generics">Список параметров у типа. Пустрой массив или null расцениваются так, что тип не является дженериком.</param>
+    /// <param name="generics">Список параметров у типа. Пустой массив или null расцениваются так, что тип не является дженериком.</param>
     /// <returns>Базовый объект - билдер объявленного типа</returns>
     public ITypeBuilderInfo DefineType(TypedefNode typeNode, GenericDefinitionNode[]? generics = null);
     
@@ -44,4 +45,36 @@ public interface ISymTableBuilder
     /// </summary>
     /// <returns>Список явно объявленных функций</returns>
     public IReadOnlyList<IFnBuilderInfo> ListFuncs();
+
+    /// <summary>
+    /// Попытаться получить узел ast объявления типа внутри компилируемого модуля.
+    /// </summary>
+    /// <param name="info">Информация о типе во время компиляции</param>
+    /// <param name="defNode">В случае, если модуль действительно содержит такой тип - будет получено его объявление</param>
+    /// <returns>Флаг успеха поиска</returns>
+    public bool TryGetDefinition(ITypeBuilderInfo info, [NotNullWhen(true)]out TypedefNode? defNode);
+
+    /// <summary>
+    /// Получить информацию о типе по его объявлению.
+    /// </summary>
+    /// <param name="node">Узел в ast объявления типа</param>
+    /// <param name="typeInfo">Информация о типе в контексте компиляции текущего модуля</param>
+    /// <returns>Флаг успеха операции</returns>
+    public bool TryGetInfo(TypedefNode node, [NotNullWhen(true)] out ITypeBuilderInfo? typeInfo);
+
+    /// <summary>
+    /// Попытаться получить узел ast объявления поля внутри компилируемого модуля.
+    /// </summary>
+    /// <param name="info">Информация о поле во время компиляции</param>
+    /// <param name="defNode">В случае, если модуль действительно содержит такое поле - будет получено его объявление</param>
+    /// <returns>Флаг успеха поиска</returns>
+    public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)]out FieldDefNode? defNode);
+
+    /// <summary>
+    /// Попытаться получить узел ast объявления функции внутри компилируемого модуля.
+    /// </summary>
+    /// <param name="info">Информация о функции во время компиляции</param>
+    /// <param name="defNode">В случае, если модуль действительно содержит такую функцию - будет получено её объявление</param>
+    /// <returns>Флаг успеха поиска</returns>
+    public bool TryGetDefinition(IFnBuilderInfo info, [NotNullWhen(true)]out FuncNode? defNode);
 }

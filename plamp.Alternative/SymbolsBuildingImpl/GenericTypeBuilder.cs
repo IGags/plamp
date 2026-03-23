@@ -2,9 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
-using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
@@ -19,7 +17,7 @@ public class GenericTypeBuilder : ITypeInfo
 
     public GenericTypeBuilder(ITypeInfo definition, IReadOnlyList<ITypeInfo> genericArguments)
     {
-        if (definition.IsGenericTypeDefinition)
+        if (!definition.IsGenericTypeDefinition)
             throw new InvalidOperationException("У закрытого дженерик типа должно быть дженерик объявление, от которого он строится");
 
         if (genericArguments.Any(x => x.IsGenericTypeDefinition))
@@ -58,7 +56,13 @@ public class GenericTypeBuilder : ITypeInfo
 
     public IReadOnlyList<IFieldInfo> Fields => _fields;
     
-    public string Name => _definition.Name;
+    public string Name
+    {
+        get
+        {
+            return _definition.BaseName;
+        }
+    }
 
     public bool IsArrayType => false;
 
@@ -67,8 +71,6 @@ public class GenericTypeBuilder : ITypeInfo
     public bool IsGenericTypeDefinition => false;
 
     public bool IsGenericTypeParameter => false;
-    
-    public TypedefNode DefinitionNode => _definition.DefinitionNode;
     
     public Type AsType()
     {
@@ -94,5 +96,23 @@ public class GenericTypeBuilder : ITypeInfo
         return genericTypeBuilder._definition.Equals(_definition)
             && StructuralComparisons.StructuralEqualityComparer.Equals(
                 _genericArguments, genericTypeBuilder._genericArguments);
+    }
+
+    public override int GetHashCode()
+    {
+        var code = new HashCode();
+        code.Add(_definition.GetHashCode());
+        foreach (var arg in _genericArguments)
+        {
+            code.Add(arg.GetHashCode());
+        }
+
+        return code.ToHashCode();
+    }
+    
+    public override bool Equals(object? obj)
+    {
+        if (obj is not ITypeInfo other) return false;
+        return Equals(other);
     }
 }

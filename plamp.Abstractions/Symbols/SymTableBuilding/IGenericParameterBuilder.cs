@@ -3,7 +3,7 @@ using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.Symbols.SymTableBuilding;
 
-public interface IFieldBuilderInfo : IFieldInfo
+public interface IGenericParameterBuilder : ITypeInfo
 {
-    public FieldBuilder? Field { get; set; }
+    public GenericTypeParameterBuilder? TypeBuilder { get; set; }
 }

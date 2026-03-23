@@ -8,7 +8,7 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
 {
     public IReadOnlyList<IFieldInfo> Fields => [];
 
-    public string Name => elementType.Name;
+    public string Name => "[]" + elementType.Name;
 
     public bool IsArrayType => true;
 
@@ -36,5 +36,19 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
         if (!other.IsArrayType) return false;
         if (other is not ArrayTypeBuilder otherBuilder) return false;
         return elementType.Equals(otherBuilder.ElementType());
+    }
+
+    public override int GetHashCode()
+    {
+        var code = new HashCode();
+        code.Add(elementType.GetHashCode());
+        code.Add("[]");
+        return code.ToHashCode();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not ITypeInfo other) return false;
+        return Equals(other);
     }
 }

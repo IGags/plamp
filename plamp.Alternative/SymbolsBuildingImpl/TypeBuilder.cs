@@ -9,20 +9,32 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
 /// <inheritdoc/>
-public class TypeBuilder(TypedefNode typedefNode) : ITypeBuilderInfo
+public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuilderInfo
 {
-    private readonly TypedefNode _typedefNode = typedefNode;
-
     private readonly List<IFieldBuilderInfo> _fields = [];
 
     private readonly List<GenericParameterBuilder> _genericParameterBuilders = [];
-    public IReadOnlyList<GenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
+    
+    internal string BaseName { get; } = name;
+    
+    public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
 
     public IReadOnlyList<ITypeInfo> GenericParams => _genericParameterBuilders;
     
     public IReadOnlyList<IFieldInfo> Fields => _fields;
 
-    public string Name => _typedefNode.Name.Value;
+    public string Name
+    {
+        get
+        {
+            var name = BaseName;
+            if (_genericParameterBuilders.Any())
+            {
+                name += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
+            }
+            return name;
+        }
+    }
 
     public bool IsArrayType => false;
 
@@ -32,7 +44,8 @@ public class TypeBuilder(TypedefNode typedefNode) : ITypeBuilderInfo
 
     public bool IsGenericTypeDefinition => GenericParams.Count > 0;
     
-    public TypeBuilder(TypedefNode type, IReadOnlyList<GenericDefinitionNode> genericParameters) : this(type)
+    public TypeBuilder(string name, IReadOnlyList<GenericDefinitionNode> genericParameters, SymTableBuilder definingTable) 
+        : this(name, definingTable)
     {
         foreach (var parameter in genericParameters)
         {
@@ -42,35 +55,28 @@ public class TypeBuilder(TypedefNode typedefNode) : ITypeBuilderInfo
     
     private void AddGenericParameter(GenericDefinitionNode genericParameter)
     {
-        var genericParameterType = new GenericParameterBuilder(genericParameter);
+        var genericParameterType = new GenericParameterBuilder(genericParameter.Name.Value, this);
         if (GenericParams.Any(x => x.Equals(genericParameterType))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в типе.");
         _genericParameterBuilders.Add(genericParameterType);
     }
 
     public System.Reflection.Emit.TypeBuilder? Type { get; set; }
 
-    public TypedefNode DefinitionNode => _typedefNode;
-
     public IReadOnlyList<IFieldBuilderInfo> FieldBuilders => _fields;
 
     public void AddField(FieldDefNode defNode)
     {
-        if (_fields.Any(x => x.Definition == defNode))
+        var fieldType = defNode.FieldType.TypeInfo;
+        if (fieldType == null) throw new InvalidOperationException("У поля нет корректного типа, ошибка компилятора");
+        var newFld = new EmptyFieldInfo(fieldType, defNode.Name.Value, this);
+        if (_fields.Any(x => x.Equals(newFld)))
         {
             throw new InvalidOperationException("Type already has this field. If you see this, write to a compiler developer");
         }
-        _fields.Add(new EmptyFieldInfo(defNode));
-    }
-
-    public ITypeInfo MakeGenericType(ITypeInfo[] genericArguments)
-    {
-        if (GenericParams.Count == 0)
-            throw new InvalidOperationException(
-                "Нельзя использовать дженерик аргументы для типа, который не является объявлением дженерика");
         
-        return new GenericTypeBuilder(this, genericArguments);
+        definingTable.AddField(newFld, defNode);
+        _fields.Add(newFld);
     }
-
 
     public ITypeInfo MakeArrayType()
     {
@@ -98,6 +104,33 @@ public class TypeBuilder(TypedefNode typedefNode) : ITypeBuilderInfo
     public bool Equals(ITypeInfo? other)
     {
         if (other is not TypeBuilder otherType) return false;
-        return otherType._typedefNode == _typedefNode;
+        if (!definingTable.TryGetDefinition(otherType, out var otherDef)) return false;
+        if (!definingTable.TryGetDefinition(this, out var thisDef))
+        {
+            throw new InvalidOperationException("Тип не находится в модуле, который он считает объявляющим");
+        }
+
+        return otherDef == thisDef;
+    }
+
+    public override int GetHashCode()
+    {
+        var code = new HashCode();
+        code.Add(Name);
+        code.Add(definingTable.ModuleName);
+        foreach (var field in _fields)
+        {
+            code.Add(field.Name);
+        }
+        //Чтобы не создавать циклической зависимости.
+        code.Add(_genericParameterBuilders.Count);
+
+        return code.ToHashCode();
+    }
+    
+    public override bool Equals(object? obj)
+    {
+        if (obj is not ITypeInfo other) return false;
+        return Equals(other);
     }
 }
