@@ -18,8 +18,15 @@ public class TypeInfo : ITypeInfo
     public IReadOnlyList<IFieldInfo> Fields { get; }
 
     public string Name { get; }
-    
-    public string BaseName { get; }
+
+    public string GenericDefinitionName
+    {
+        get
+        {
+            if (!_type.IsGenericTypeDefinition) throw new InvalidOperationException("Тип не является объявлением дженерик типа");
+            return _type.Name.Split('`', StringSplitOptions.RemoveEmptyEntries)[0];
+        }
+    }
 
     public bool IsArrayType => _type.IsArray;
 
@@ -33,8 +40,7 @@ public class TypeInfo : ITypeInfo
     {
         _type = type;
         _nameOverride = nameOverride;
-        Name = MakeName(nameOverride ?? type.Name);
-        BaseName = type.Name;
+        Name = MakeName(type, nameOverride);
         Fields = type.GetFields()
             //TODO: попахивает костылём для ограничения полей из базовых типов .net runtime
             .Where(x => x.GetCustomAttribute<PlampVisibleAttribute>() != null)
@@ -86,16 +92,23 @@ public class TypeInfo : ITypeInfo
         return typ._type == _type;
     }
 
-    private string MakeName(string baseName)
+    private string MakeName(Type type, string? nameOverride = null)
     {
-        var typ = _type;
-        while (typ.IsArray)
+        if (type.IsGenericTypeDefinition || type.IsGenericType)
         {
-            baseName = "[]" + baseName;
-            typ = typ.GetElementType()!;
+            throw new NotSupportedException();
         }
 
-        return baseName;
+        var arrayNesting = 0;
+        while (type.IsArray)
+        {
+            type = type.GetElementType()!;
+            arrayNesting++;
+        }
+
+        var typeName = nameOverride ?? type.Name;
+        typeName = string.Concat(Enumerable.Repeat("[]", arrayNesting)) + typeName;
+        return typeName;
     }
 
     public override int GetHashCode()

@@ -15,8 +15,8 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
 
     private readonly List<GenericParameterBuilder> _genericParameterBuilders = [];
     
-    internal string BaseName { get; } = name;
-    
+    public string GenericDefinitionName => _genericParameterBuilders.Count != 0 ? name : throw new InvalidOperationException("Тип не является объявлением дженерик типа");
+
     public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
 
     public IReadOnlyList<ITypeInfo> GenericParams => _genericParameterBuilders;
@@ -27,12 +27,12 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
     {
         get
         {
-            var name = BaseName;
+            var defName = name;
             if (_genericParameterBuilders.Any())
             {
-                name += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
+                defName += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
             }
-            return name;
+            return defName;
         }
     }
 

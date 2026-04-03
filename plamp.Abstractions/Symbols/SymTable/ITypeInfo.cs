@@ -21,7 +21,10 @@ public interface ITypeInfo : IEquatable<ITypeInfo>
     /// </summary>
     public string Name { get; }
     
-    public string BaseName { get; }
+    /// <summary>
+    /// Если тип дженерик, то возвращает его имя без аргументов иначе возвращает <see cref="InvalidOperationException"/>.
+    /// </summary>
+    public string GenericDefinitionName { get; }
 
     /// <summary>
     /// Признак того, является ли тип массивом

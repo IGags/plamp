@@ -9,6 +9,8 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
     public IReadOnlyList<IFieldInfo> Fields => [];
 
     public string Name => "[]" + elementType.Name;
+    
+    public string GenericDefinitionName => throw new InvalidOperationException("Тип не является объявлением дженерик типа");
 
     public bool IsArrayType => true;
 
