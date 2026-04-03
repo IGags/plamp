@@ -17,13 +17,13 @@ public class FuncInfo : IFnInfo
 
     public MethodInfo AsFunc() => _fnInfo;
 
-    public FuncInfo(MethodInfo fnInfo)
+    public FuncInfo(MethodInfo fnInfo, string moduleName)
     {
         _fnInfo = fnInfo;
         Name = fnInfo.Name;
-        ReturnType = new TypeInfo(fnInfo.ReturnType);
+        ReturnType = TypeInfo.FromType(fnInfo.ReturnType, moduleName);
         Arguments = fnInfo.GetParameters()
-            .Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+            .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, moduleName))).ToList();
     }
 
     public bool Equals(IFnInfo? other)

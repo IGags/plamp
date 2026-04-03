@@ -19,6 +19,10 @@ public class GenericParameterBuilder(string name, ITypeInfo declaringType) : IGe
     /// </summary>
     public string Name { get; } = name;
 
+    public string ModuleName => _declaringType.ModuleName;
+
+    public string DefinitionName => Name;
+
     /// <summary>
     /// Представление внутри системы типов .net, нужно для билдинга в полноценный тип.
     /// </summary>

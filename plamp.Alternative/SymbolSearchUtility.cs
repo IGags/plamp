@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
@@ -9,7 +11,38 @@ namespace plamp.Alternative;
 public static class SymbolSearchUtility
 {
     public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
-        string name,
+        TypeNode typeNode,
+        IEnumerable<ISymTable> symbolTables,
+        out ITypeInfo? typeInfo)
+    {
+        typeInfo = null;
+        var name = typeNode.TypeName.Name;
+        var genericCt = typeNode.GenericParameters.Count;
+        var error = TryGetTypeCore(name, genericCt, symbolTables, out var typeDef);
+        if (error != null) return error;
+
+        typeInfo = typeDef;
+        return null;        
+    }
+
+    public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
+        TypedefNode typedefNode,
+        IEnumerable<ISymTable> symbolTables,
+        out ITypeInfo? typeInfo)
+    {
+        typeInfo = null;
+        var name = typedefNode.Name.Value;
+        var genericCt = typedefNode.GenericParameters.Count;
+        var error = TryGetTypeCore(name, genericCt, symbolTables, out var typeDef);
+        if (error != null) return error;
+
+        typeInfo = typeDef;
+        return null;
+    }
+
+    private static PlampExceptionRecord? TryGetTypeCore(
+        string name, 
+        int genericCount, 
         IEnumerable<ISymTable> symbolTables,
         out ITypeInfo? typeInfo)
     {
@@ -17,7 +50,7 @@ public static class SymbolSearchUtility
         var types = new List<(ITypeInfo typ, ISymTable table)>();
         foreach (var table in symbolTables)
         {
-            var type = table.FindType(name);
+            var type = table.FindTypes(name).FirstOrDefault(x => GenericFilter(x, genericCount));
             if(type != null) types.Add((type, table));
         }
 
@@ -29,6 +62,8 @@ public static class SymbolSearchUtility
 
         typeInfo = types[0].typ;
         return null;
+
+        bool GenericFilter(ITypeInfo info, int count) => info.GetGenericParameters().Count == count;
     }
 
     public static bool IsNumeric(ITypeInfo type)

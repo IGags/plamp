@@ -55,12 +55,16 @@ public class GenericTypeBuilder : ITypeInfo
     }
 
     public IReadOnlyList<IFieldInfo> Fields => _fields;
+
+    public string ModuleName => _definition.ModuleName;
+    public string DefinitionName => _definition.DefinitionName;
     
     public string Name
     {
         get
         {
-            return _definition.BaseName;
+            var argsNames = _genericArguments.Select(x => x.Name);
+            return _definition.DefinitionName + $"[{string.Join(", ", argsNames)}]";
         }
     }
 

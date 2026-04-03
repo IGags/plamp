@@ -32,13 +32,16 @@ public static class Program
             return -1;
         }
 
+        sw.Restart();
         var assemblyName = new AssemblyName(Guid.NewGuid().ToString("N"));
         var asm = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
         var module = asm.DefineDynamicModule(assemblyName.Name!);
         
         SymTableEmitter.EmitModule(symTable, module);
-
-        module.CreateGlobalFunctions();
+        
+        module.CreateGlobalFunctions();        
+        Console.WriteLine($"Emission took {sw.Elapsed}");
+        
         var method = module.GetMethod("main");
 
         if (method == null)

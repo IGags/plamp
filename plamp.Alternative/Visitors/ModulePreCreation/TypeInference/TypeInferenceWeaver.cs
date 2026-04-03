@@ -751,7 +751,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         if(node.TypeInfo != null) return VisitResult.Continue;
-        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node.TypeName.Name, context.Dependencies, out var typeRef);
+        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node, context.Dependencies, out var typeRef);
         
         if (record != null)
         {

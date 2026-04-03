@@ -10,6 +10,10 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
 
     public string Name => "[]" + elementType.Name;
 
+    public string ModuleName => elementType.ModuleName;
+
+    public string DefinitionName => elementType.DefinitionName;
+
     public bool IsArrayType => true;
 
     public bool IsGenericType => false;

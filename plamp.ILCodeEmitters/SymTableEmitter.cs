@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Symbols;
-using plamp.Abstractions.Symbols.SymTable;
 using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.ILCodeEmitters.EmissionDebug;
 
@@ -11,7 +10,7 @@ public static class SymTableEmitter
 {
     public static void EmitModule(ISymTableBuilder builder, ModuleBuilder moduleBuilder)
     {
-        var types = builder.ListTypes();
+        var types = TypeDependencyHelper.OrderTypes(builder.ListTypes());
         foreach (var typ in types)
         {
             EmitType(moduleBuilder, typ);
@@ -22,16 +21,17 @@ public static class SymTableEmitter
             EmitFields(typ);
         }
 
+        foreach (var typ in types)
+        {
+            var typeBuilder = typ.Type;
+            if (typeBuilder == null) throw new Exception();
+            typeBuilder.CreateType();
+        }
+        
         var functions = builder.ListFuncs();
         foreach (var func in functions)
         {
             EmitFunction(moduleBuilder, builder, func);
-        }
-
-        foreach (var type in types)
-        {
-            var typeBuilder = type.Type ?? throw new Exception("В этой точке тип не может быть null, проверьте код компилятора");
-            typeBuilder.CreateType();
         }
     }
 
@@ -55,10 +55,10 @@ public static class SymTableEmitter
     /// <summary>
     /// Создать поля для структуры определённого типа
     /// </summary>
-    /// <param name="typeInfo">Описание структуры</param>
+    /// <param name="typeInfo">Описание типа</param>
     /// <returns>Типы из текущей сборки, от которых зависит данный тип</returns>
     /// <exception cref="Exception">TypeBuilder для данного типа не находится внутри <paramref name="typeInfo"/></exception>
-    private static List<ITypeInfo> EmitFields(ITypeBuilderInfo typeInfo)
+    private static void EmitFields(ITypeBuilderInfo typeInfo)
     {
         var fields = typeInfo.FieldBuilders;
         var typeBuilder = typeInfo.Type;
@@ -69,34 +69,9 @@ public static class SymTableEmitter
         
         foreach (var fld in fields)
         {
-            var fldType = fld.FieldType;
-            
-            
             var fldInfo = typeBuilder.DefineField(fld.Name, fld.FieldType.AsType(), FieldAttributes.Public);
             fldInfo.SetCustomAttribute(attribute);
             fld.Field = fldInfo;
-        }
-
-        return dependencyCount;
-    }
-
-    private static List<ITypeInfo> FindDependenciesFromSameAssembly(ITypeBuilderInfo originalType, ITypeInfo fieldType)
-    {
-        if (fieldType.IsGenericTypeDefinition) throw new Exception();
-        var elem = fieldType;
-        while (elem.IsArrayType)
-        {
-            elem = elem.ElementType();
-            if (elem == null) throw new Exception();
-        }
-
-        var deps = new List<ITypeInfo>();
-
-        if (elem.IsGenericType)
-        {
-            var def = elem.GetGenericTypeDefinition();
-            if (def == null) throw new Exception();
-            var args = elem.GetGenericArguments();
         }
     }
 

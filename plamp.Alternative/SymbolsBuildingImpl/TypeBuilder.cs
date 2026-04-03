@@ -15,24 +15,26 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
 
     private readonly List<GenericParameterBuilder> _genericParameterBuilders = [];
     
-    internal string BaseName { get; } = name;
+    public string ModuleName => definingTable.ModuleName;
     
+    public string DefinitionName => name;
+
     public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
 
     public IReadOnlyList<ITypeInfo> GenericParams => _genericParameterBuilders;
     
     public IReadOnlyList<IFieldInfo> Fields => _fields;
-
+    
     public string Name
     {
         get
         {
-            var name = BaseName;
+            var defName = name;
             if (_genericParameterBuilders.Any())
             {
-                name += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
+                defName += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
             }
-            return name;
+            return defName;
         }
     }
 
@@ -69,7 +71,7 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
         var fieldType = defNode.FieldType.TypeInfo;
         if (fieldType == null) throw new InvalidOperationException("У поля нет корректного типа, ошибка компилятора");
         var newFld = new EmptyFieldInfo(fieldType, defNode.Name.Value, this);
-        if (_fields.Any(x => x.Equals(newFld)))
+        if (_fields.Any(x => x.Name.Equals(newFld.Name)))
         {
             throw new InvalidOperationException("Type already has this field. If you see this, write to a compiler developer");
         }
@@ -103,28 +105,18 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
 
     public bool Equals(ITypeInfo? other)
     {
+        //Нельзя использовать поиск по таблице символов, это повлечёт рекурсию на equality
         if (other is not TypeBuilder otherType) return false;
-        if (!definingTable.TryGetDefinition(otherType, out var otherDef)) return false;
-        if (!definingTable.TryGetDefinition(this, out var thisDef))
-        {
-            throw new InvalidOperationException("Тип не находится в модуле, который он считает объявляющим");
-        }
-
-        return otherDef == thisDef;
+        if (!otherType.ModuleName.Equals(ModuleName)) return false;
+        if(!otherType.Name.Equals(Name)) return false;
+        return true;
     }
 
     public override int GetHashCode()
     {
         var code = new HashCode();
         code.Add(Name);
-        code.Add(definingTable.ModuleName);
-        foreach (var field in _fields)
-        {
-            code.Add(field.Name);
-        }
-        //Чтобы не создавать циклической зависимости.
-        code.Add(_genericParameterBuilders.Count);
-
+        code.Add(ModuleName);
         return code.ToHashCode();
     }
     
