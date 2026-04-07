@@ -43,22 +43,22 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         foreach (var funcOverload in overloadGrouping)
         {
             var overloadList = funcOverload.ToList();
-            var ambigulousIndexes = new HashSet<int>();
+            var ambiguousIndexes = new HashSet<int>();
             
             for (var i = 0       ; i < overloadList.Count; i++)
             for (var j = i + 1; j < overloadList.Count; j++)
             {
                 if (SignatureMatch(overloadList[i].ParameterList, overloadList[j].ParameterList))
                 {
-                    ambigulousIndexes.Add(i);
-                    ambigulousIndexes.Add(j);
+                    ambiguousIndexes.Add(i);
+                    ambiguousIndexes.Add(j);
                 }                               
             }
 
             var record = PlampExceptionInfo.DuplicateFunctionDefinition(funcOverload.Key);
             for (var i = 0; i < overloadList.Count; i++)
             {
-                if (ambigulousIndexes.Contains(i)) SetExceptionToSymbol(overloadList[i], record, context);
+                if (ambiguousIndexes.Contains(i)) SetExceptionToSymbol(overloadList[i], record, context);
                 else AddFuncToSymbols(overloadList[i], context);
             }
         }
@@ -78,7 +78,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         _ = context.SymTableBuilder.DefineFunc(node);
     }
 
-    private void ValidateParameters(List<ParameterNode> parameters, FuncDefInferenceContext context)
+    private void ValidateParameters(IReadOnlyList<ParameterNode> parameters, FuncDefInferenceContext context)
     {
         var dupArgsIndexes = new HashSet<int>();
         for (var i = 0; i < parameters.Count; i++)
@@ -97,7 +97,7 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         }
     }
 
-    private bool SignatureMatch(List<ParameterNode> first, List<ParameterNode> second)
+    private bool SignatureMatch(IReadOnlyList<ParameterNode> first, IReadOnlyList<ParameterNode> second)
     {
         if (first.Count != second.Count) return false;
         for (var i = 0; i < first.Count; i++)

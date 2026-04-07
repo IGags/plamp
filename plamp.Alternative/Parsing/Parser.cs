@@ -453,6 +453,12 @@ public static class Parser
             return false;
         }
 
+        var genericDefFork = context.Fork();
+        if (TryParseGenericDefinitionSequence(genericDefFork, out var generics))
+        {
+            context.Merge(genericDefFork);
+        }
+
         if (!TryParseArgSequence(context, out var list)) return false;
         var typeFork = context.Fork();
         if (TryParseType(typeFork, out var type)) context.Merge(typeFork);
@@ -476,7 +482,7 @@ public static class Parser
             context.TranslationTable.AddSymbol(type, funcName.Position);
         }
         
-        func = new FuncNode(type, funcNameNode, list, body);
+        func = new FuncNode(type, funcNameNode, generics, list, body);
         context.TranslationTable.AddSymbol(func, fnToken.Position);
         return true;
     }
@@ -747,7 +753,6 @@ public static class Parser
                 if (!TryParseWhileLoop(context, out var loop)) return false;
                 expressions = [loop];
                 return true;
-            //TODO: To separate method.
             case KeywordToken { Keyword: Keywords.Break }:
                 var breakExpression = new BreakNode();
                 var current = context.Sequence.Current();
@@ -1066,8 +1071,7 @@ public static class Parser
 
     public static bool TryParseNud(
         ParsingContext context,
-        [NotNullWhen(true)] out NodeBase? node,
-        int rbp = 0)
+        [NotNullWhen(true)] out NodeBase? node)
     {
         var start = context.Sequence.Current();
         node = null;
@@ -1164,6 +1168,7 @@ public static class Parser
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
+            var rbp = op.GetPrecedence(true);
             if (!TryParsePrecedence(prefixFork, out var innerNode, rbp)) return false;
 
             switch (op.Operator)
@@ -1501,7 +1506,7 @@ public static class Parser
         return true;
     }
 
-    public static bool TryParseGenericTypeArgs(ParsingContext context, out List<TypeNode> genericTypes)
+    private static bool TryParseGenericTypeArgs(ParsingContext context, out List<TypeNode> genericTypes)
     {
         genericTypes = [];
         if (context.Sequence.Current() is not OpenSquareBracket openSquareBracket) return false;

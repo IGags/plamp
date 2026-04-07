@@ -8,8 +8,17 @@ namespace plamp.ILCodeEmitters;
 /// </summary>
 public static class TypeDependencyHelper
 {
+    public static IReadOnlyList<ITypeBuilderInfo> OrderTypes(IReadOnlyList<ITypeBuilderInfo> types)
+    {
+        var depsDict = FindSameModuleDependencyForEachType(types);
+        return GetTypeOrder(depsDict);
+    }
+
+    #region Order types
+
     public static IReadOnlyList<ITypeBuilderInfo> GetTypeOrder(Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>> depsDict)
     {
+        if (depsDict.Count == 0) return [];
         var order = new List<ITypeBuilderInfo>();
 
         int prevOrder;
@@ -33,8 +42,13 @@ public static class TypeDependencyHelper
         if (depsDict.Count > 0) throw new Exception("Не удалось создать все типы в сборке, скорее всего сборка имеет циклические зависимости.");
         return order;
     }
-    
-    public static IReadOnlyList<ITypeBuilderInfo> OrderTypes(IReadOnlyList<ITypeBuilderInfo> types)
+
+    #endregion
+
+    #region Build dependencies
+
+    public static Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>> FindSameModuleDependencyForEachType(
+        IReadOnlyList<ITypeBuilderInfo> types)
     {
         var typeDependencies = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>();
 
@@ -51,7 +65,7 @@ public static class TypeDependencyHelper
             typeDependencies[type] = deps;
         }
 
-        return GetTypeOrder(typeDependencies);
+        return typeDependencies;
     }
 
     public static IReadOnlyList<ITypeBuilderInfo> GetFieldDeps(ITypeInfo fieldType, ITypeInfo definingType)
@@ -88,4 +102,6 @@ public static class TypeDependencyHelper
         
         return deps;
     }
+
+    #endregion
 }

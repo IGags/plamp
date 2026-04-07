@@ -28,6 +28,7 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
+            [],
             [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("a", [], [builder], out var info);
@@ -43,7 +44,7 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [builder], out var info);
         record.ShouldBeNull();
@@ -58,7 +59,7 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [], [builder], out var info);
         info.ShouldBeNull();
@@ -73,7 +74,7 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [builder], out var info);
         record.ShouldBeNull();
         info.ShouldBe(fnInfo);
@@ -87,7 +88,7 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [null], [builder], out var info);
         record.ShouldBeNull();
         info.ShouldBe(fnInfo);
@@ -101,8 +102,8 @@ public class FuncSignatureMatchingTests
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
         var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
         var firstFn = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
-        builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"), [], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+        builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"), [], [], new BodyNode([])));
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [builder], out var info);
         record.ShouldBeNull();
         info.ShouldBe(firstFn);
@@ -117,10 +118,10 @@ public class FuncSignatureMatchingTests
         
         var firstBuilder = new SymTableBuilder();
         firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var secondBuilder = new SymTableBuilder();
         firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [firstBuilder, secondBuilder], out var info);
         info.ShouldBeNull();
         record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
@@ -136,10 +137,10 @@ public class FuncSignatureMatchingTests
         
         var firstBuilder = new SymTableBuilder();
         firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         var secondBuilder = new SymTableBuilder();
         firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [firstBuilder, secondBuilder], out var info);
         info.ShouldBeNull();
@@ -156,10 +157,10 @@ public class FuncSignatureMatchingTests
         
         var firstBuilder = new SymTableBuilder();
         var firstFn = firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(shortType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(shortType, new ParameterNameNode("a"))], new BodyNode([])));
         var secondBuilder = new SymTableBuilder();
         firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
+            [], [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
         
         var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [firstBuilder, secondBuilder], out var info);
         record.ShouldBeNull();

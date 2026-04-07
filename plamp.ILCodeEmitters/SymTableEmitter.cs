@@ -15,13 +15,10 @@ public static class SymTableEmitter
         {
             EmitType(moduleBuilder, typ);
         }
-
-        var typeDepsDict = new Dictionary<ITypeBuilderInfo, ISet<ITypeBuilderInfo>>();
         
         foreach (var typ in types)
         {
-            var typeDeps = EmitFields(typ, builder);
-            typeDepsDict.Add(typ, typeDeps);
+            EmitFields(typ);
         }
 
         foreach (var typ in types)
@@ -55,35 +52,6 @@ public static class SymTableEmitter
         type.Type = typeBuilder;
     }
 
-    private static void CreateTypes(Dictionary<ITypeBuilderInfo, ISet<ITypeBuilderInfo>> depsDict)
-    {
-        var createdSet = new HashSet<ITypeBuilderInfo>();
-
-        var iterCreated = 0;
-        do
-        {
-            var keys = depsDict.Keys.ToList();
-            //Знаю, что по словарю можно итерироваться и удалять и так, но это сделано для безопасности.
-            foreach (var type in keys)
-            {
-                var deps = depsDict[type];
-                deps.ExceptWith(createdSet);
-                if(deps.Count != 0) continue;
-
-                var bd = type.Type;
-                if (bd == null) throw new Exception();
-
-                bd.CreateType();
-                depsDict.Remove(type);
-                createdSet.Add(type);
-                iterCreated++;
-            }
-
-        } while (iterCreated != 0);
-
-        if (depsDict.Count != 0) throw new Exception("Не удалось создать все типы в сборке, скорее всего сборка имеет циклические зависимости.");
-    }
-
     /// <summary>
     /// Создать поля для структуры определённого типа
     /// </summary>
@@ -98,16 +66,11 @@ public static class SymTableEmitter
 
         var fieldAttributeCtor = typeof(PlampVisibleAttribute).GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
         var attribute = new CustomAttributeBuilder(fieldAttributeCtor!, []);
-
-        var dependencies = new List<ITypeBuilderInfo>();
-        
         foreach (var fld in fields)
         {
             var fldInfo = typeBuilder.DefineField(fld.Name, fld.FieldType.AsType(), FieldAttributes.Public);
             fldInfo.SetCustomAttribute(attribute);
             fld.Field = fldInfo;
-            
-            dependencies.AddRange(FindDependenciesFromSameAssembly(fld.FieldType, typeInfo, moduleBuilder));
         }
     }
 

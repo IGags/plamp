@@ -38,7 +38,7 @@ public class FuncCallTypeInferenceTests
         {
             TypeInfo = Builtins.Void
         };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>
         {
             ["a"] = def
@@ -60,7 +60,7 @@ public class FuncCallTypeInferenceTests
         {
             TypeInfo = Builtins.Int
         };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
@@ -84,7 +84,8 @@ public class FuncCallTypeInferenceTests
         
         var def = new FuncNode(
             retType, 
-            new FuncNameNode("a"), 
+            new FuncNameNode("a"),
+            [],
             [
                 new ParameterNode(firstArgType, new ParameterNameNode("f")), 
                 new ParameterNode(secondArgType, new ParameterNameNode("s"))
@@ -109,7 +110,7 @@ public class FuncCallTypeInferenceTests
         {
             TypeInfo = Builtins.Void
         };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], new BodyNode([]));
+        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
         var funcDict = new Dictionary<string, FuncNode>()
         {
             ["a"] = def
@@ -147,6 +148,7 @@ public class FuncCallTypeInferenceTests
         SetupExceptionGenerationMock(translationTable);
         var symbolTable = new SymTableBuilder();
         symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("a"),
+            [],
             [new(firstArgType, new("first")), new(secondArgType, new("second"))], new([])));
         
         var context = new PreCreationContext(translationTable.Object, [symbolTable, Builtins.SymTable]);
@@ -177,7 +179,7 @@ public class FuncCallTypeInferenceTests
             TypeInfo = Builtins.Any
         };
         
-        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [new(argType, new("first"))], new([])));
+        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [], [new(argType, new("first"))], new([])));
         var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable, Builtins.SymTable]);
 
         
@@ -207,7 +209,7 @@ public class FuncCallTypeInferenceTests
             TypeInfo = Builtins.Long
         };
 
-        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [new(argType, new("first"))], new ([])));
+        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [], [new(argType, new("first"))], new ([])));
         
         var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable]);
         var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);

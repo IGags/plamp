@@ -2,6 +2,7 @@
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.ILCodeEmitters;
 using Shouldly;
@@ -194,5 +195,149 @@ public class TypeDependencyHelperTests
         deps.Count.ShouldBe(2);
         deps.ShouldContain(genericDef);
         deps.ShouldContain(argDef);
+    }
+
+    [Fact]
+    public void GetOrderSingleType_Correct()
+    {
+        var expectedType = CreateType("A");
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>
+        {
+            [expectedType] = []
+        };
+
+        var order = TypeDependencyHelper.GetTypeOrder(deps);
+        var actualType = order.ShouldHaveSingleItem();
+        actualType.ShouldBe(expectedType);
+    }
+
+    [Fact]
+    public void GetOrderEmpty_Correct()
+    {
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>();
+        var order = TypeDependencyHelper.GetTypeOrder(deps);
+        order.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void SelfReferencingType_ThrowsException()
+    {
+        var type = CreateType("A");
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type] = [type]
+        };
+
+        Should.Throw<Exception>(() => TypeDependencyHelper.GetTypeOrder(deps));
+    }
+
+    [Fact]
+    public void TwoRecursiveTypes_ThrowsException()
+    {
+        var type1 = CreateType("A");
+        var type2 = CreateType("B");
+        
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type1] = [type2],
+            [type2] = [type1]
+        };
+        
+        Should.Throw<Exception>(() => TypeDependencyHelper.GetTypeOrder(deps));
+    }
+
+    [Fact]
+    public void TwoIndependentTypes_Correct()
+    {
+        var type1 = CreateType("A");
+        var type2 = CreateType("B");
+
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type1] = [],
+            [type2] = []
+        };
+
+        var order = TypeDependencyHelper.GetTypeOrder(deps);
+        
+        order.Count.ShouldBe(2);
+        order.ShouldContain(type1);
+        order.ShouldContain(type2);
+    }
+
+    [Fact]
+    public void ThreeTypesLinearDependency_Correct()
+    {
+        var type1 = CreateType("A");
+        var type2 = CreateType("B");
+        var type3 = CreateType("C");
+
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type1] = [type2],
+            [type2] = [type3],
+            [type3] = []
+        };
+        
+        var order = TypeDependencyHelper.GetTypeOrder(deps);
+        order.Count.ShouldBe(3);
+        order[0].ShouldBe(type3);
+        order[1].ShouldBe(type2);
+        order[2].ShouldBe(type1);
+    }
+
+    [Fact]
+    public void TypeIsNotPresentAsKeyInDependencyDict_Throws()
+    {
+        var type1 = CreateType("A");
+        var type2 = CreateType("B");
+        
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type1] = [type2]
+        };
+        
+        Should.Throw<Exception>(() => TypeDependencyHelper.GetTypeOrder(deps));
+    }
+
+    [Fact]
+    public void ComplexTypeTree_Correct()
+    {
+        /*
+         * typ5 |-> typ4 -------------
+         *      |     |              |
+         *      |     v              v
+         *      |-> typ3 -> typ2 - typ1
+         */
+        
+        var type1 = CreateType("A");
+        var type2 = CreateType("B");
+        var type3 = CreateType("C");
+        var type4 = CreateType("D");
+        var type5 = CreateType("E");
+
+        var deps = new Dictionary<ITypeBuilderInfo, HashSet<ITypeBuilderInfo>>()
+        {
+            [type5] = [type4, type3],
+            [type4] = [type3, type1],
+            [type3] = [type2],
+            [type2] = [type1],
+            [type1] = []
+        };
+
+        var order = TypeDependencyHelper.GetTypeOrder(deps);
+        order.Count.ShouldBe(5);
+        order[0].ShouldBe(type1);
+        order[1].ShouldBe(type2);
+        order[2].ShouldBe(type3);
+        order[3].ShouldBe(type4);
+        order[4].ShouldBe(type5);
+    }
+    
+    private static ITypeBuilderInfo CreateType(string name)
+    {
+        var builder = new SymTableBuilder(){ModuleName = "testMod"};
+        var typeNode = new TypedefNode(new TypedefNameNode(name), [], []);
+        return builder.DefineType(typeNode);
     }
 }

@@ -212,6 +212,7 @@ public class ExpressionParsingTests
         [
             "(a + b) * c", new MulNode(new AddNode(new MemberNode("a"), new MemberNode("b")), new MemberNode("c"))
         ];
+        yield return ["++i<=10", new LessOrEqualNode(new PrefixIncrementNode(new MemberNode("i")), new LiteralNode(10, Builtins.Int))];
     }
     
     [Theory]

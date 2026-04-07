@@ -24,7 +24,6 @@ namespace plamp.Abstractions.Ast;
 /// Тип объекта, который пробрасывается переопределённые методы у классов-наследников.<br/>
 /// Нужен для переноса состояния между вызовами и хранения глобального состояния обхода AST.<br/>
 /// </typeparam>
-//TODO: Possible do with stack if will StackOverflow occurs
 public abstract class BaseVisitor<TContext>
 {
     /// <summary>

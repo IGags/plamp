@@ -669,7 +669,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
     }
 
-    //TODO: Может упасть с ошибкой таблицы символов. Нужно добавлять символы.
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
