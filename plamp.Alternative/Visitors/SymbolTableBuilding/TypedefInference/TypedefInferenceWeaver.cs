@@ -24,7 +24,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
     protected override VisitResult PreVisitTypedef(TypedefNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
     {
         //В случае если тип имеет имя, которое равно имени встроенного типа - будет получена ошибка 
-        if (Builtins.SymTable.FindType(node.Name.Value) != null)
+        if (Builtins.SymTable.FindTypes(node.Name.Value).Any())
         {
             var record = PlampExceptionInfo.CannotDefineCoreType();
             SetExceptionToSymbol(node, record, context);
@@ -91,7 +91,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
             var parameterName = groupArray[0].Name.Value;
             PlampExceptionRecord? record = null;
             
-            if (Builtins.SymTable.FindType(parameterName) != null)
+            if (Builtins.SymTable.FindTypes(parameterName).Any())
             {
                 record = PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType();
             }

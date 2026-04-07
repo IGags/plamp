@@ -19,7 +19,9 @@ public class GenericParameterBuilder(string name, ITypeInfo declaringType) : IGe
     /// </summary>
     public string Name { get; } = name;
 
-    public string GenericDefinitionName => throw new InvalidOperationException("Тип не является объявлением дженерик типа");
+    public string ModuleName => _declaringType.ModuleName;
+
+    public string DefinitionName => Name;
 
     /// <summary>
     /// Представление внутри системы типов .net, нужно для билдинга в полноценный тип.

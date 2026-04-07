@@ -12,6 +12,10 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
     
     public string GenericDefinitionName => throw new InvalidOperationException("Тип не является объявлением дженерик типа");
 
+    public string ModuleName => elementType.ModuleName;
+
+    public string DefinitionName => elementType.DefinitionName;
+
     public bool IsArrayType => true;
 
     public bool IsGenericType => false;

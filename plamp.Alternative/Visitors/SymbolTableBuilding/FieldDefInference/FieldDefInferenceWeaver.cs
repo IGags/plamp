@@ -65,7 +65,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         {
             record = PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType();
         }
-        else if (Builtins.SymTable.FindType(fieldNameGroup[0].Name.Value) != null)
+        else if (Builtins.SymTable.FindTypes(fieldNameGroup[0].Name.Value).Any())
         {
             record = PlampExceptionInfo.FieldHasSameNameAsBuiltinType();
         }
@@ -114,7 +114,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         }
 
         var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(
-            node.TypeName.Name,
+            node,
             context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]),
             out var info);
 

@@ -54,7 +54,10 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     public IReadOnlyList<IFnBuilderInfo> ListFuncs() => _funcs.Keys.ToList();
 
     /// <inheritdoc />
-    public ITypeInfo? FindType(string name) => _types.Keys.FirstOrDefault(x => x.Name == name);
+    public IReadOnlyList<ITypeInfo> FindTypes(string name)
+    {
+        return _types.Keys.Where(x => x.DefinitionName == name).ToList();
+    }
 
     /// <inheritdoc />
     public IReadOnlyList<IFnInfo> FindFuncs(string name) => _funcs.Keys.Where(x => x.Name == name).ToList();

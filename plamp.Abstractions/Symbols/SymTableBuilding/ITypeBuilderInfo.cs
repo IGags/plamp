@@ -22,6 +22,9 @@ public interface ITypeBuilderInfo : ITypeInfo
     /// </summary>
     public IReadOnlyList<IFieldBuilderInfo> FieldBuilders { get; }
 
+    /// <summary>
+    /// Список объектов - описывающих дженерик параметры типа
+    /// </summary>
     public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders { get; }
     
     /// <summary>

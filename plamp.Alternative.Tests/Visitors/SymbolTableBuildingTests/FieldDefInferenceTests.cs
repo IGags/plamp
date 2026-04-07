@@ -335,7 +335,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         
-        var type = res.SymTableBuilder.ListTypes().Single(x => x.Name == "T2");
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "T2");
         var fld = type.Fields.ShouldHaveSingleItem();
         
         fld.Name.ShouldBe("fld");
@@ -364,7 +364,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         
-        var type = res.SymTableBuilder.ListTypes().Single(x => x.Name == "G");
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "G");
         var fld = type.Fields.Single();
         
         fld.Name.ShouldBe("fld");

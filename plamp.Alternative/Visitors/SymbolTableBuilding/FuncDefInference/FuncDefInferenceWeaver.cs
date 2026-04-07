@@ -22,13 +22,12 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
     protected override VisitResult PreVisitParameter(ParameterNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
         var typeNode = node.Type;
-        return ResolveTypeOrSetError(typeNode.TypeName.Name, typeNode, context);
+        return ResolveTypeOrSetError(typeNode, context);
     }
 
     protected override VisitResult PreVisitFunction(FuncNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
-        var returnType = node.ReturnType;
-        ResolveTypeOrSetError(returnType.TypeName.Name, node.ReturnType, context);
+        ResolveTypeOrSetError(node.ReturnType, context);
         return VisitResult.Continue;
     }
 
@@ -113,9 +112,9 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         return true;
     }
 
-    private VisitResult ResolveTypeOrSetError(string typeName, TypeNode typeNode, FuncDefInferenceContext context)
+    private VisitResult ResolveTypeOrSetError(TypeNode typeNode, FuncDefInferenceContext context)
     {
-        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(typeName, context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]), out var type);
+        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(typeNode, context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]), out var type);
         if (record != null)
         {
             SetExceptionToSymbol(typeNode, record, context);

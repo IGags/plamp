@@ -17,14 +17,20 @@ public interface ITypeInfo : IEquatable<ITypeInfo>
     public IReadOnlyList<IFieldInfo> Fields { get; }
 
     /// <summary>
-    /// Получение имени типа
+    /// Получение имени типа, уникально в рамках модуля. Это значит, что два объявления типа идентичны, если идентичны их имена и модули, в которых они объявлены.
     /// </summary>
     public string Name { get; }
     
     /// <summary>
-    /// Если тип дженерик, то возвращает его имя без аргументов иначе возвращает <see cref="InvalidOperationException"/>.
+    /// Получить имя модуля типа, модуль должен быть уникален в контексте компиляции.
     /// </summary>
-    public string GenericDefinitionName { get; }
+    public string ModuleName { get; }
+    
+    /// <summary>
+    /// Имя типа без объявлений массивов и дженерик параметров, может быть неуникально.
+    /// Если тип - дженерик параметр, то вернуть имя дженерик параметра
+    /// </summary>
+    public string DefinitionName { get; }
 
     /// <summary>
     /// Признак того, является ли тип массивом

@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Symbols;
-using plamp.Abstractions.Symbols.SymTable;
 using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.ILCodeEmitters.EmissionDebug;
 
@@ -11,7 +10,7 @@ public static class SymTableEmitter
 {
     public static void EmitModule(ISymTableBuilder builder, ModuleBuilder moduleBuilder)
     {
-        var types = builder.ListTypes();
+        var types = TypeDependencyHelper.OrderTypes(builder.ListTypes());
         foreach (var typ in types)
         {
             EmitType(moduleBuilder, typ);
@@ -25,13 +24,18 @@ public static class SymTableEmitter
             typeDepsDict.Add(typ, typeDeps);
         }
 
+        foreach (var typ in types)
+        {
+            var typeBuilder = typ.Type;
+            if (typeBuilder == null) throw new Exception();
+            typeBuilder.CreateType();
+        }
+        
         var functions = builder.ListFuncs();
         foreach (var func in functions)
         {
             EmitFunction(moduleBuilder, builder, func);
         }
-
-        CreateTypes(typeDepsDict);
     }
 
     public static void EmitType(ModuleBuilder module, ITypeBuilderInfo type)
@@ -84,10 +88,9 @@ public static class SymTableEmitter
     /// Создать поля для структуры определённого типа
     /// </summary>
     /// <param name="typeInfo">Описание типа</param>
-    /// <param name="moduleBuilder">Описание символов компилируемого модуля</param>
     /// <returns>Типы из текущей сборки, от которых зависит данный тип</returns>
     /// <exception cref="Exception">TypeBuilder для данного типа не находится внутри <paramref name="typeInfo"/></exception>
-    private static ISet<ITypeBuilderInfo> EmitFields(ITypeBuilderInfo typeInfo, ISymTableBuilder moduleBuilder)
+    private static void EmitFields(ITypeBuilderInfo typeInfo)
     {
         var fields = typeInfo.FieldBuilders;
         var typeBuilder = typeInfo.Type;
@@ -106,43 +109,6 @@ public static class SymTableEmitter
             
             dependencies.AddRange(FindDependenciesFromSameAssembly(fld.FieldType, typeInfo, moduleBuilder));
         }
-
-        return dependencies.ToHashSet();
-    }
-
-    private static ISet<ITypeBuilderInfo> FindDependenciesFromSameAssembly(ITypeInfo fieldType, ITypeInfo definingType, ISymTableBuilder builder)
-    {
-        if (fieldType.IsGenericTypeParameter) return new HashSet<ITypeBuilderInfo>();
-        if (fieldType.IsGenericTypeDefinition) throw new Exception("У поля не может быть тип равный объявлению дженерик типа");
-        var elem = fieldType;
-        while (elem.IsArrayType)
-        {
-            elem = elem.ElementType();
-            if (elem == null) throw new Exception();
-        }
-
-        var deps = new List<ITypeBuilderInfo>();
-
-        if (elem.IsGenericType)
-        {
-            var def = elem.GetGenericTypeDefinition();
-            if (def == null) throw new Exception();
-            var args = elem.GetGenericArguments();
-            var otherDeps = args.SelectMany(x => FindDependenciesFromSameAssembly(x, definingType, builder));
-            deps.AddRange(otherDeps);
-
-            elem = def;
-        }
-
-        if (!definingType.Equals(elem)
-            && elem is ITypeBuilderInfo elemBd
-            && builder.TryGetDefinition(elemBd, out _))
-        {
-            deps.Add(elemBd);
-        }
-        
-
-        return deps.ToHashSet();
     }
 
     private static void SetGenericsForType(TypeBuilder typeBuilder, IReadOnlyList<IGenericParameterBuilder> genericParams)

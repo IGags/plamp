@@ -55,6 +55,9 @@ public class GenericTypeBuilder : ITypeInfo
     }
 
     public IReadOnlyList<IFieldInfo> Fields => _fields;
+
+    public string ModuleName => _definition.ModuleName;
+    public string DefinitionName => _definition.DefinitionName;
     
     public string GenericDefinitionName => throw new InvalidOperationException("Тип не является объявлением дженерик типа");
     
@@ -63,7 +66,7 @@ public class GenericTypeBuilder : ITypeInfo
         get
         {
             var argsNames = _genericArguments.Select(x => x.Name);
-            return _definition.GenericDefinitionName + $"[{string.Join(", ", argsNames)}]";
+            return _definition.DefinitionName + $"[{string.Join(", ", argsNames)}]";
         }
     }
 

@@ -47,12 +47,12 @@ public class EmissionSetupHelper
         return (type, dbgMeth, module);
     }
 
-    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info);
+    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info, "emissionTest");
     public static IFnInfo MakeFuncRef(MethodBuilder info, ParameterInfo[] parameters, Type returnType) => new MethodBuilderFnInfo(info, parameters, returnType);
 
-    public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
+    public static ITypeInfo MakeTypeRef(Type type) => TypeInfo.FromType(type, "emissionTest");
 
-    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field);
+    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field, "emissionTest");
 
     public static (object? instance, MethodInfo? methodInfo) CreateObject(Type builtType, string methodName)
     {
@@ -87,9 +87,9 @@ public class EmissionSetupHelper
         public string Name => _builder.Name;
 
         public IReadOnlyList<IArgInfo> Arguments { get; } =
-            parameters.Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+            parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, "emissionTest"))).ToList();
 
-        public ITypeInfo ReturnType { get; } = new TypeInfo(returnType);
+        public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, "emissionTest");
 
         public MethodInfo AsFunc() => _builder;
     }

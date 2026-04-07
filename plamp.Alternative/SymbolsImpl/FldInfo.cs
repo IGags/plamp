@@ -3,13 +3,13 @@ using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.SymbolsImpl;
 
-public class FldInfo(FieldInfo fld) : IFieldInfo
+public class FldInfo(FieldInfo fld, string moduleName) : IFieldInfo
 {
     private readonly FieldInfo _fld = fld;
     
     public FieldInfo AsField() => _fld;
 
-    public ITypeInfo FieldType => new TypeInfo(_fld.FieldType);
+    public ITypeInfo FieldType => TypeInfo.FromType(_fld.FieldType, moduleName);
     
     public string Name => _fld.Name;
     
