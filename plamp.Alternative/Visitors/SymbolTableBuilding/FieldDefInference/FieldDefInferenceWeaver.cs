@@ -13,6 +13,8 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 /// </summary>
 public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, FieldInferenceInnerContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.TypeDef;
+
     protected override FieldInferenceInnerContext CreateInnerContext(SymbolTableBuildingContext context) => new(context);
 
     protected override SymbolTableBuildingContext MapInnerToOuter(

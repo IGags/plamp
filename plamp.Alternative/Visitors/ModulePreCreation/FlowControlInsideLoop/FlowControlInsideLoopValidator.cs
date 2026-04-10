@@ -7,6 +7,8 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 
 public class FlowControlInsideLoopValidator : BaseValidator<PreCreationContext, FlowControlInsideLoopContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
+
     protected override FlowControlInsideLoopContext CreateInnerContext(PreCreationContext context) => new(context);
 
     protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, FlowControlInsideLoopContext innerContext) => innerContext;

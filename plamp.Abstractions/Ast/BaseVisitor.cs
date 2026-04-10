@@ -44,6 +44,45 @@ public abstract class BaseVisitor<TContext>
         /// </summary>
         SkipChildren
     }
+    
+    /// <summary>
+    /// Перечисление, которое служит 2 целям.
+    /// 1) Определить, что визитор будет обходить
+    /// 2) Исключить полный обход дерева
+    /// </summary>
+    [Flags]
+    protected enum VisitorGuard
+    {
+        /// <summary>
+        /// Обойти только объявление функции, без её тела
+        /// </summary>
+        FuncDef          = 0b00000001,
+        /// <summary>
+        /// Обойти объявления типов
+        /// </summary>
+        TypeDef          = 0b00000010,
+        /// <summary>
+        /// Обойти объявление функции и тела
+        /// </summary>
+        FuncDefWithBody  = 0b00000100 | FuncDef,
+        /// <summary>
+        /// Обойти только объявление модуля
+        /// </summary>
+        ModuleDef        = 0b00001000,
+        /// <summary>
+        /// Обойти все объявления верхнего уровня
+        /// </summary>
+        TopLevel         = ModuleDef | FuncDef | TypeDef,
+        /// <summary>
+        /// Обойти вообще всё
+        /// </summary>
+        All              = ModuleDef | FuncDef | TypeDef | FuncDefWithBody
+    }
+
+    /// <summary>
+    /// Выбранный способ обхода дерева
+    /// </summary>
+    protected virtual VisitorGuard Guard => VisitorGuard.All;
 
     /// <summary>
     /// Метод, способный посетить всех потомков конкретного узла.<br/>
@@ -110,17 +149,17 @@ public abstract class BaseVisitor<TContext>
         {
             case RootNode rootNode:
                 return VisitCore(rootNode, context, parent, PreVisitRoot, PostVisitRoot);
-            case ModuleDefinitionNode moduleDefinition:
+            case ModuleDefinitionNode moduleDefinition when Guard.HasFlag(VisitorGuard.ModuleDef):
                 return VisitCore(moduleDefinition, context, parent, PreVisitModuleDefinition, PostVisitModuleDefinition);
             case ImportNode importNode:
                 return VisitCore(importNode, context, parent, PreVisitImport, PostVisitImport);
             case ImportItemNode importItem:
                 return VisitCore(importItem, context, parent, PreVisitImportItem, PostVisitImportItem);
-            case BodyNode bodyNode:
+            case BodyNode bodyNode when Guard.HasFlag(VisitorGuard.FuncDefWithBody):
                 return VisitCore(bodyNode, context, parent, PreVisitBody, PostVisitBody);
             case ConditionNode conditionNode:
                 return VisitCore(conditionNode, context, parent, PreVisitCondition, PostVisitCondition);
-            case FuncNode defNode:
+            case FuncNode defNode when Guard.HasFlag(VisitorGuard.FuncDef):
                 return VisitCore(defNode, context, parent, PreVisitFunction, PostVisitFunction);
             case WhileNode whileNode:
                 return VisitCore(whileNode, context, parent, PreVisitWhile, PostVisitWhile);
@@ -170,7 +209,7 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(initType, context, parent, PreVisitInitType, PostVisitInitType);
             case InitFieldNode initField:
                 return VisitCore(initField, context, parent, PreVisitInitField, PostVisitInitField);
-            case TypedefNode typedef:
+            case TypedefNode typedef when Guard.HasFlag(VisitorGuard.TypeDef):
                 return VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef);
             case FieldDefNode fieldDef:
                 return VisitCore(fieldDef, context, parent, PreVisitFieldDef, PostVisitFieldDef);

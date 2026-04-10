@@ -20,6 +20,8 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceInnerContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
+
     #region TopLevel
 
     protected override VisitResult PreVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)

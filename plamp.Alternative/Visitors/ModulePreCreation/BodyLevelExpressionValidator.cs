@@ -12,6 +12,8 @@ namespace plamp.Alternative.Visitors.ModulePreCreation;
 
 public class BodyLevelExpressionValidator : BaseWeaver<PreCreationContext, BodyLevelExpressionContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
+
     protected override VisitResult PreVisitInstruction(NodeBase node, BodyLevelExpressionContext context, NodeBase? parent)
     {
         if (node

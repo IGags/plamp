@@ -9,6 +9,8 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
 
 public class MemberNameUniquenessValidator : BaseValidator<SymbolTableBuildingContext, MemberNameUniquenessValidatorInnerContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.TopLevel;
+
     protected override MemberNameUniquenessValidatorInnerContext CreateInnerContext(SymbolTableBuildingContext context) => new(context);
 
     protected override SymbolTableBuildingContext MapInnerToOuter(SymbolTableBuildingContext outerContext,

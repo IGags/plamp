@@ -30,6 +30,8 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
  */
 public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuildingContext, SymbolTableBuildingContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.TypeDef;
+
     protected override SymbolTableBuildingContext CreateInnerContext(SymbolTableBuildingContext context) => context;
 
     protected override SymbolTableBuildingContext MapInnerToOuter(

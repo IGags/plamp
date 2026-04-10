@@ -11,6 +11,8 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 
 public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, FuncDefInferenceContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.FuncDef;
+
     protected override FuncDefInferenceContext CreateInnerContext(SymbolTableBuildingContext context)
         => new(context);
 
