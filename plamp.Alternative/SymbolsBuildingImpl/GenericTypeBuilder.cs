@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Symbols.SymTable;
@@ -59,8 +58,6 @@ public class GenericTypeBuilder : ITypeInfo
     public string ModuleName => _definition.ModuleName;
     public string DefinitionName => _definition.DefinitionName;
     
-    public string GenericDefinitionName => throw new InvalidOperationException("Тип не является объявлением дженерик типа");
-    
     public string Name
     {
         get
@@ -100,8 +97,7 @@ public class GenericTypeBuilder : ITypeInfo
         if (other is not GenericTypeBuilder genericTypeBuilder) return false;
         
         return genericTypeBuilder._definition.Equals(_definition)
-            && StructuralComparisons.StructuralEqualityComparer.Equals(
-                _genericArguments, genericTypeBuilder._genericArguments);
+            && _genericArguments.SequenceEqual(genericTypeBuilder._genericArguments);
     }
 
     public override int GetHashCode()

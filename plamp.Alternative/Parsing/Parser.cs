@@ -453,10 +453,9 @@ public static class Parser
             return false;
         }
 
-        var genericDefFork = context.Fork();
-        if (TryParseGenericDefinitionSequence(genericDefFork, out var generics))
+        if (!TryParseGenericDefinitionSequence(context, out var generics))
         {
-            context.Merge(genericDefFork);
+            generics = [];
         }
 
         if (!TryParseArgSequence(context, out var list)) return false;

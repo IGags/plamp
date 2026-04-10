@@ -375,6 +375,39 @@ public class FieldDefInferenceTests
         
         type.GetGenericParameters().ShouldContain(fldType);
     }
+
+    [Fact]
+    //Дженерик тип со вложенным дженериком
+    public void FieldHasComplexGenericTypeWithNesting_Correct()
+    {
+        var code = """
+                   module test;
+                   type Ls[T] { inner: T }
+                   type Fin[T] { inner: Ls[Ls[Ls[T]]] }
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+
+        var types = res.SymTableBuilder.ListTypes();
+        types.Count.ShouldBe(2);
+
+        var finType = types.Single(x => x.DefinitionName == "Fin");
+        var fld = finType.Fields.ShouldHaveSingleItem();
+        var lsType = types.Single(x => x.DefinitionName == "Ls");
+
+        var genericParam = finType.GenericParameterBuilders.ShouldHaveSingleItem();
+        var typeShould = lsType.MakeGenericType(
+            [
+                lsType.MakeGenericType(
+                    [
+                        lsType.MakeGenericType([genericParam]).ShouldNotBeNull()
+                    ]).ShouldNotBeNull()
+            ]).ShouldNotBeNull();
+        
+        fld.Name.ShouldBe("inner");
+        fld.FieldType.ShouldBe(typeShould);
+    }
     
     private SymbolTableBuildingContext SetupAndAct(string code)
     {

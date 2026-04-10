@@ -89,12 +89,13 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         var field = fieldNameGroup[0];
         return field.FieldType.TypeInfo != null;
     }
-
+    
     protected override VisitResult PostVisitType(TypeNode node, FieldInferenceInnerContext context, NodeBase? parent)
     {
         // Прямой признак того, что мы не находимся внутри типа, такое мы не обходим.
         if (context.TypeGenericList == null) return VisitResult.SkipChildren;
-
+        
+        //Эта штука обходит тип рекурсивно в глубину, поэтому дженерики уже имеют тип, если он известен.
         var genericArgs = node.GenericParameters
             .Select(x => x.TypeInfo)
             .Where(x => x != null)
@@ -103,6 +104,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         
         if (genericArgs.Count != node.GenericParameters.Count) return VisitResult.SkipChildren;
 
+        //Попытка записать в тип дженерик параметр объявляющего типа.
         if (genericArgs.Count == 0)
         {
             var typeInfo = context.TypeGenericList.FirstOrDefault(x => x.Name == node.TypeName.Name);
@@ -113,6 +115,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             }
         }
 
+        //Чёт ищем
         var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(
             node,
             context.Dependencies.Concat([(ISymTable)context.SymTableBuilder]),
@@ -134,8 +137,6 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             
             info = info.MakeGenericType(genericArgs);
         }
-        
-        
 
         node.TypeInfo = MakeArrayTypeInfoFromElem(info!, node);
         return VisitResult.Continue;

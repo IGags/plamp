@@ -747,7 +747,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     #region Misc
     
-    protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PostVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         if(node.TypeInfo != null) return VisitResult.Continue;
         var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node, context.Dependencies, out var typeRef);
@@ -755,15 +755,27 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         if (record != null)
         {
             SetExceptionToSymbol(node, record, context);
+            return VisitResult.SkipChildren;
         }
-        else
+
+        if (node.GenericParameters.Count != 0)
         {
-            for (var i = 0; i < node.ArrayDefinitions.Count; i++)
-            {
-                typeRef = typeRef!.MakeArrayType();
-            }
-            node.TypeInfo = typeRef;
+            var paramTypes = node.GenericParameters
+                .Select(x => x.TypeInfo)
+                .OfType<ITypeInfo>().ToList();
+
+            if (paramTypes.Count != node.GenericParameters.Count) return VisitResult.SkipChildren;
+
+            typeRef = typeRef?.MakeGenericType(paramTypes);
         }
+        
+        for (var i = 0; i < node.ArrayDefinitions.Count; i++)
+        {
+            typeRef = typeRef?.MakeArrayType();
+        }
+        
+        node.TypeInfo = typeRef;
+        
         return VisitResult.SkipChildren;
     }
     

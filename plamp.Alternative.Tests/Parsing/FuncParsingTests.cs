@@ -83,6 +83,46 @@ public class FuncParsingTests
                 [], 
                 new BodyNode([new ReturnNode(new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(1, Builtins.Int)))]))
         ];
+        yield return
+        [
+            """
+            fn add[T] (ls: List[T], val: T) List[T] { return ls; }
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("List"), [new(new TypeNameNode("T"))]){ArrayDefinitions = []},
+                new FuncNameNode("add"),
+                [new GenericDefinitionNode(new GenericParameterNameNode("T"))],
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("List"), [new(new TypeNameNode("T"))]){ArrayDefinitions = []}, new ParameterNameNode("ls")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("T")){ArrayDefinitions = []}, new ParameterNameNode("val")),
+                ],
+                new BodyNode([
+                    new ReturnNode(new MemberNode("ls"))
+                ])
+            )
+        ];
+        yield return
+        [
+            """
+            fn get[TKey, TVal](map: Map[TKey, TVal], key: TKey) { return; }
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode(Builtins.Void.Name)),
+                new FuncNameNode("get"),
+                [
+                    new GenericDefinitionNode(new GenericParameterNameNode("TKey")),
+                    new GenericDefinitionNode(new GenericParameterNameNode("TVal"))
+                ],
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("Map"), [new TypeNode(new TypeNameNode("TKey")), new TypeNode(new TypeNameNode("TVal"))]), new ParameterNameNode("map")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("TKey")), new ParameterNameNode("key"))
+                ],
+                new BodyNode(
+                [
+                    new ReturnNode(null)
+                ])
+            )
+        ];
     }
     
     [Theory]
@@ -105,6 +145,32 @@ public class FuncParsingTests
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
         yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code }, false, null];
         yield return ["fn a(a: int,,b: int)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
+        yield return [
+            "fn a[()", new List<string>
+            {
+                PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code, 
+                PlampExceptionInfo.GenericDefinitionIsNotClosed().Code, 
+                PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+            }, false, null
+        ];
+        yield return [
+            "fn a[](){}", new List<string>{PlampExceptionInfo.EmptyGenericDefinition().Code}, true, 
+            new FuncNode(new TypeNode(new TypeNameNode(Builtins.Void.Name)), new FuncNameNode("a"), [], [], new BodyNode([]))
+        ];
+        yield return [
+            "fn a[T,](){}", new List<string>{PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code}, true, 
+            new FuncNode(new TypeNode(new TypeNameNode(Builtins.Void.Name)), new FuncNameNode("a"), [new GenericDefinitionNode(new GenericParameterNameNode("T"))], [], new BodyNode([]))
+        ];
+        yield return [
+            "fn a[T,,T](){}", new List<string>{PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code}, true, 
+            new FuncNode(
+                new TypeNode(new TypeNameNode(Builtins.Void.Name)), 
+                new FuncNameNode("a"), 
+                [new GenericDefinitionNode(new GenericParameterNameNode("T")), new GenericDefinitionNode(new GenericParameterNameNode("T"))], 
+                [], 
+                new BodyNode([])
+            )
+        ];
     }
 
     [Theory]
