@@ -100,19 +100,17 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
                 var innerChildren = child.Visit();
                 ProceedRecursive(innerChildren, child);
                 
-                //Если нашли узел, который требуется заменить, то меняем его через метод класса NodeBase
-                if (context.WeaveReplacementDict.TryGetValue(child, out var replacement))
+                if (!context.WeaveReplacementDict.TryGetValue(child, out var replacement)) continue;
+                if (!context.TranslationTable.TryGetSymbol(child, out var position))
                 {
-                    if (!context.TranslationTable.TryGetSymbol(child, out var position))
-                    {
-                        throw new Exception("Compiler error: symbol position not found");
-                    }
-
-                    var newChild = replacement();
-                    parent.ReplaceChild(child, newChild);
-                    context.TranslationTable.RemoveSymbol(child);
-                    context.TranslationTable.AddSymbol(newChild, position);
+                    throw new Exception("Compiler error: symbol position not found");
                 }
+
+                //Если нашли узел, который требуется заменить, то меняем его через метод класса NodeBase
+                var newChild = replacement();
+                parent.ReplaceChild(child, newChild);
+                context.TranslationTable.RemoveSymbol(child);
+                context.TranslationTable.AddSymbol(newChild, position);
             }
         }
     }

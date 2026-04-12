@@ -38,7 +38,7 @@ public class TypeBuilderTests
 
         var type = new TypeBuilder("abc", [param], new());
         type.Name.ShouldBe("abc[T]");
-        type.DefinitionName.ShouldBe("abc");
+        type.DefinitionName.ShouldBe("abc`1");
         type.IsGenericTypeDefinition.ShouldBeTrue();
     }
 
@@ -52,7 +52,7 @@ public class TypeBuilderTests
         
         var type = new TypeBuilder("abc", [param1, param2], new());
         type.Name.ShouldBe("abc[T, T2]");
-        type.DefinitionName.ShouldBe("abc");
+        type.DefinitionName.ShouldBe("abc`2");
         type.IsGenericTypeDefinition.ShouldBeTrue();
     }
 

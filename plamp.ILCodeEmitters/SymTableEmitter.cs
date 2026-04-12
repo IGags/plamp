@@ -38,7 +38,7 @@ public static class SymTableEmitter
     public static void EmitType(ModuleBuilder module, ITypeBuilderInfo type)
     {
         var typeBuilder = module.DefineType(
-            type.Name, 
+            type.DefinitionName, 
             TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.Sealed, 
             typeof(ValueType));
         

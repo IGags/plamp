@@ -50,7 +50,7 @@ public static class SymbolSearchUtility
         var types = new List<(ITypeInfo typ, ISymTable table)>();
         foreach (var table in symbolTables)
         {
-            var type = table.FindTypes(name).FirstOrDefault(x => GenericFilter(x, genericCount));
+            var type = table.FindType(name, genericCount);
             if(type != null) types.Add((type, table));
         }
 
@@ -62,8 +62,6 @@ public static class SymbolSearchUtility
 
         typeInfo = types[0].typ;
         return null;
-
-        bool GenericFilter(ITypeInfo info, int count) => info.GetGenericParameters().Count == count;
     }
 
     public static bool IsNumeric(ITypeInfo type)

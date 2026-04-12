@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.SymbolsImpl;
@@ -12,22 +11,22 @@ public static class Builtins
 {
     public static ISymTable SymTable { get; } = new BuiltinSymTable();
 
-    public static ITypeInfo Int => SymTable.FindTypes(BuiltinSymTable.IntName).Single();
-    public static ITypeInfo Uint => SymTable.FindTypes(BuiltinSymTable.UintName).Single();
-    public static ITypeInfo Long => SymTable.FindTypes(BuiltinSymTable.LongName).Single();
-    public static ITypeInfo Ulong => SymTable.FindTypes(BuiltinSymTable.UlongName).Single();
-    public static ITypeInfo Short => SymTable.FindTypes(BuiltinSymTable.ShortName).Single();
-    public static ITypeInfo Ushort => SymTable.FindTypes(BuiltinSymTable.UshortName).Single();
-    public static ITypeInfo Byte => SymTable.FindTypes(BuiltinSymTable.ByteName).Single();
-    public static ITypeInfo Sbyte => SymTable.FindTypes(BuiltinSymTable.SbyteName).Single();
-    public static ITypeInfo Float => SymTable.FindTypes(BuiltinSymTable.FloatName).Single();
-    public static ITypeInfo Double => SymTable.FindTypes(BuiltinSymTable.DoubleName).Single();
-    public static ITypeInfo Bool => SymTable.FindTypes(BuiltinSymTable.BoolName).Single();
-    public static ITypeInfo String => SymTable.FindTypes(BuiltinSymTable.StringName).Single();
-    public static ITypeInfo Char => SymTable.FindTypes(BuiltinSymTable.CharName).Single();
-    public static ITypeInfo Any => SymTable.FindTypes(BuiltinSymTable.AnyName).Single();
-    public static ITypeInfo Array => SymTable.FindTypes(BuiltinSymTable.ArrayName).Single();
-    public static ITypeInfo Void => SymTable.FindTypes(BuiltinSymTable.VoidName).Single();
+    public static ITypeInfo Int => SymTable.FindType(BuiltinSymTable.IntName, 0)!;
+    public static ITypeInfo Uint => SymTable.FindType(BuiltinSymTable.UintName, 0)!;
+    public static ITypeInfo Long => SymTable.FindType(BuiltinSymTable.LongName, 0)!;
+    public static ITypeInfo Ulong => SymTable.FindType(BuiltinSymTable.UlongName, 0)!;
+    public static ITypeInfo Short => SymTable.FindType(BuiltinSymTable.ShortName, 0)!;
+    public static ITypeInfo Ushort => SymTable.FindType(BuiltinSymTable.UshortName, 0)!;
+    public static ITypeInfo Byte => SymTable.FindType(BuiltinSymTable.ByteName, 0)!;
+    public static ITypeInfo Sbyte => SymTable.FindType(BuiltinSymTable.SbyteName, 0)!;
+    public static ITypeInfo Float => SymTable.FindType(BuiltinSymTable.FloatName, 0)!;
+    public static ITypeInfo Double => SymTable.FindType(BuiltinSymTable.DoubleName, 0)!;
+    public static ITypeInfo Bool => SymTable.FindType(BuiltinSymTable.BoolName, 0)!;
+    public static ITypeInfo String => SymTable.FindType(BuiltinSymTable.StringName, 0)!;
+    public static ITypeInfo Char => SymTable.FindType(BuiltinSymTable.CharName, 0)!;
+    public static ITypeInfo Any => SymTable.FindType(BuiltinSymTable.AnyName, 0)!;
+    public static ITypeInfo Array => SymTable.FindType(BuiltinSymTable.ArrayName, 0)!;
+    public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName, 0)!;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Length(string? str)
@@ -225,10 +224,10 @@ internal class BuiltinSymTable : ISymTable
         _funcs = funcDict.ToFrozenDictionary();
     }
 
-    public IReadOnlyList<ITypeInfo> FindTypes(string name)
+    public ITypeInfo? FindType(string name, int genericsCount)
     {
-        if (!_types.TryGetValue(name, out var info)) return [];
-        return [info];
+        ArgumentOutOfRangeException.ThrowIfLessThan(genericsCount, 0);
+        return genericsCount != 0 ? null : _types.GetValueOrDefault(name);
     }
 
     public IReadOnlyList<IFnInfo> FindFuncs(string name) => _funcs.TryGetValue(name, out var list) ? list : [];

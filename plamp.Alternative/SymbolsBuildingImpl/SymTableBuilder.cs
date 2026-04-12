@@ -54,9 +54,12 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     public IReadOnlyList<IFnBuilderInfo> ListFuncs() => _funcs.Keys.ToList();
 
     /// <inheritdoc />
-    public IReadOnlyList<ITypeInfo> FindTypes(string name)
+    public ITypeInfo? FindType(string name, int genericsCount)
     {
-        return _types.Keys.Where(x => x.DefinitionName == name).ToList();
+        ArgumentOutOfRangeException.ThrowIfLessThan(genericsCount, 0);
+        if (name == "") return null;
+        name = genericsCount == 0 ? name : $"{name}`{genericsCount}";
+        return _types.Keys.FirstOrDefault(x => x.DefinitionName == name);
     }
 
     /// <inheritdoc />

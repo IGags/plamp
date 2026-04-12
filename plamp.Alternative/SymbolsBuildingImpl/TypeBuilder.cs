@@ -17,7 +17,7 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
     
     public string ModuleName => definingTable.ModuleName;
     
-    public string DefinitionName => name;
+    public string DefinitionName => _genericParameterBuilders.Count == 0 ? name : $"{name}`{_genericParameterBuilders.Count}";
 
     public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
 
@@ -30,10 +30,12 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
         get
         {
             var defName = name;
-            if (_genericParameterBuilders.Any())
-            {
-                defName += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
-            }
+            if (_genericParameterBuilders.Count == 0) return defName;
+            
+            var ixSep = defName.LastIndexOf('`');
+            ixSep = ixSep == -1 ? defName.Length : ixSep;
+            defName = defName[..ixSep];
+            defName += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
             return defName;
         }
     }
