@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using plamp.Abstractions.Ast.Node;
+﻿using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
@@ -18,11 +17,15 @@ public class MemberNameUniquenessValidator : BaseValidator<SymbolTableBuildingCo
         outerContext;
 
     protected override VisitResult PreVisitFuncName(
-        FuncNameNode node, 
-        MemberNameUniquenessValidatorInnerContext context, 
+        FuncNameNode node,
+        MemberNameUniquenessValidatorInnerContext context,
         NodeBase? parent)
     {
-        context.Funcs.Add(node);
+        if (!context.Members.TryAdd(node.Value, [node]))
+        {
+            context.Members[node.Value].Add(node);
+        }
+        
         return VisitResult.SkipChildren;
     }
 
@@ -31,31 +34,25 @@ public class MemberNameUniquenessValidator : BaseValidator<SymbolTableBuildingCo
         MemberNameUniquenessValidatorInnerContext context,
         NodeBase? parent)
     {
-        context.Types.Add(node);
+        if (!context.Members.TryAdd(node.Value, [node]))
+        {
+            context.Members[node.Value].Add(node);
+        }
+        
         return VisitResult.SkipChildren;
     }
 
 
     protected override VisitResult PostVisitRoot(RootNode node, MemberNameUniquenessValidatorInnerContext context, NodeBase? parent)
     {
-        var typeNames = context.Types.Select(x => x.Value).ToHashSet();
-        typeNames.IntersectWith(context.Funcs.Select(x => x.Value));
-
-        if (typeNames.Count == 0) return VisitResult.Break;
-
         var record = PlampExceptionInfo.DuplicateMemberNameInModule();
-        foreach (var name in typeNames)
+        foreach (var duplicates in context.Members)
         {
-            var matchFuncs = context.Funcs.Where(x => x.Value == name);
-            var matchTypes = context.Types.Where(x => x.Value == name);
-            foreach (var fn in matchFuncs)
+            if (duplicates.Value.Count == 1) continue;
+            
+            foreach (var duplicate in duplicates.Value)
             {
-                SetExceptionToSymbol(fn, record, context);
-            }
-
-            foreach (var typ in matchTypes)
-            {
-                SetExceptionToSymbol(typ, record, context);
+                SetExceptionToSymbol(duplicate, record, context);
             }
         }
 

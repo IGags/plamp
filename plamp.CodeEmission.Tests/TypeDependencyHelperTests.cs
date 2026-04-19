@@ -40,8 +40,9 @@ public class TypeDependencyHelperTests
         var fldType = new TypeNode(new TypeNameNode("T"));
         var fld = new FieldDefNode(fldType, new FieldNameNode("a"));
         var generic = new GenericDefinitionNode(new GenericParameterNameNode("T"));
+        var param = builder.CreateGenericParameter(generic);
         var node = new TypedefNode(new TypedefNameNode("A"), [fld], [generic]);
-        var type = builder.DefineType(node, [generic]);
+        var type = builder.DefineType(node, [param]);
         var genericInfo = fldType.TypeInfo = type.GetGenericParameters().Single();
         
         type.AddField(fld);
@@ -56,8 +57,9 @@ public class TypeDependencyHelperTests
         var builder = new SymTableBuilder();
 
         var gen1 = new GenericDefinitionNode(new GenericParameterNameNode("T"));
+        var genParam1 = builder.CreateGenericParameter(gen1);
         var typeNode1 = new TypedefNode(new TypedefNameNode("A"), [], [gen1]);
-        var type1 = builder.DefineType(typeNode1, [gen1]);
+        var type1 = builder.DefineType(typeNode1, [genParam1]);
 
         var fldType = new TypeNode(new TypeNameNode("A[T]")) { TypeInfo = type1 };
         var fld = new FieldDefNode(fldType, new FieldNameNode("a"));
@@ -123,7 +125,8 @@ public class TypeDependencyHelperTests
         var generic = new GenericDefinitionNode(new GenericParameterNameNode("T"));
         var typeNode1 = new TypedefNode(new TypedefNameNode("A"), [], [generic]);
 
-        var type1 = builder.DefineType(typeNode1, [generic]);
+        var genParam = builder.CreateGenericParameter(generic);
+        var type1 = builder.DefineType(typeNode1, [genParam]);
         var type1Impl = type1.MakeGenericType([foreignType]);
 
         var fldType = new TypeNode(new TypeNameNode("A[Foreign]")){ TypeInfo = type1Impl };
@@ -145,7 +148,8 @@ public class TypeDependencyHelperTests
         var foreignBuilder = new SymTableBuilder() { ModuleName = "test1" };
         var foreignGeneric = new GenericDefinitionNode(new GenericParameterNameNode("T"));
         var foreignTypeNode = new TypedefNode(new TypedefNameNode("Foreign"), [], [foreignGeneric]);
-        var foreignType = foreignBuilder.DefineType(foreignTypeNode, [foreignGeneric]);
+        var foreignGenericParam = foreignBuilder.CreateGenericParameter(foreignGeneric);
+        var foreignType = foreignBuilder.DefineType(foreignTypeNode, [foreignGenericParam]);
         
         var builder = new SymTableBuilder(){ModuleName = "test2"};
         var fieldArgTypeNode = new TypedefNode(new TypedefNameNode("A"), [], []);
@@ -174,8 +178,9 @@ public class TypeDependencyHelperTests
 
         var genericParam = new GenericDefinitionNode(new GenericParameterNameNode("T"));
         var genericDefNode = new TypedefNode(new TypedefNameNode("A"), [], [genericParam]);
-
-        var genericDef = builder.DefineType(genericDefNode, [genericParam]);
+        var genericParamBuilder = builder.CreateGenericParameter(genericParam);
+        
+        var genericDef = builder.DefineType(genericDefNode, [genericParamBuilder]);
 
         var argDefNode = new TypedefNode(new TypedefNameNode("B"), [], []);
         var argDef = builder.DefineType(argDefNode);

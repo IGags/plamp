@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
@@ -33,4 +34,12 @@ public interface ITypeBuilderInfo : ITypeInfo
     /// <param name="defNode">Узел AST объявления поля типа</param>
     /// <exception cref="System.InvalidOperationException">Если такое поле уже объявлено в этом типе</exception>
     public void AddField(FieldDefNode defNode);
+    
+    /// <summary>
+    /// Попытаться получить узел ast объявления поля внутри компилируемого типа.
+    /// </summary>
+    /// <param name="info">Информация о поле во время компиляции</param>
+    /// <param name="defNode">В случае, если тип действительно содержит такое поле - будет получено его объявление</param>
+    /// <returns>Флаг успеха поиска</returns>
+    public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)]out FieldDefNode? defNode);
 }

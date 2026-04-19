@@ -45,6 +45,36 @@ public class MemberNameUniquenessVisitorTests
         res.Exceptions.Select(x => x.Code).All(x => x == PlampExceptionInfo.DuplicateMemberNameInModule().Code)
             .ShouldBeTrue();
     }
+
+    [Fact]
+    public void DuplicateFuncName_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   fn A(f: int) {}
+                   fn A() {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        res.Exceptions.Select(x => x.Code).All(x => x == PlampExceptionInfo.DuplicateMemberNameInModule().Code)
+            .ShouldBeTrue();
+    }
+
+    [Fact]
+    public void DuplicateTypeName_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A;
+                   type A[B];
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        res.Exceptions.Select(x => x.Code).All(x => x == PlampExceptionInfo.DuplicateMemberNameInModule().Code)
+            .ShouldBeTrue();
+    }
     
     private SymbolTableBuildingContext SetupAndAct(string code)
     {

@@ -3,7 +3,7 @@ using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
-public class EmptyArgInfo(string name, ITypeInfo type) : IArgInfo
+public class BlankArgInfo(string name, ITypeInfo type) : IArgInfo
 {
     public string Name { get; } = name;
     

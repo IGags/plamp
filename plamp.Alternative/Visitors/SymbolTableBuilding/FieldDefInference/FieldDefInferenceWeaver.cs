@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.FieldDefInference;
 
@@ -24,7 +25,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, FieldInferenceInnerContext context, NodeBase? parent)
     {
-        if (!context.SymTableBuilder.TryGetInfo(node, out var typedef)) return VisitResult.Continue;
+        if (!context.SymTableBuilder.TryGetInfo(node.Name.Value, out ITypeBuilderInfo? typedef)) return VisitResult.Continue;
         context.TypeGenericList = typedef.GetGenericParameters();
         return VisitResult.Continue;
     }
@@ -38,7 +39,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
             
             if(!ValidateFieldNameGroup(groupArray, node, context)) continue;
             
-            if(!context.SymTableBuilder.TryGetInfo(node, out var type)) continue;
+            if(!context.SymTableBuilder.TryGetInfo(node.Name.Value, out ITypeBuilderInfo? type)) continue;
             type.AddField(groupArray[0]);
         }
         
@@ -67,7 +68,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         {
             record = PlampExceptionInfo.FieldCannotHasSameNameAsEnclosingType();
         }
-        else if (Builtins.SymTable.FindType(fieldNameGroup[0].Name.Value, 0) != null)
+        else if (Builtins.SymTable.FindType(fieldNameGroup[0].Name.Value) != null)
         {
             record = PlampExceptionInfo.FieldHasSameNameAsBuiltinType();
         }

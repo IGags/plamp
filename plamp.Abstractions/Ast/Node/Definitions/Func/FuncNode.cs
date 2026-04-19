@@ -48,12 +48,16 @@ public class FuncNode(
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return ReturnType;
         yield return FuncName;
+        foreach (var argType in GenericArgTypes)
+        {
+            yield return argType;
+        }
         foreach (var parameter in ParameterList)
         {
             yield return parameter;
         }
+        yield return ReturnType;
 
         yield return Body;
     }

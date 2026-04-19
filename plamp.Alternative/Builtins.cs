@@ -11,22 +11,24 @@ public static class Builtins
 {
     public static ISymTable SymTable { get; } = new BuiltinSymTable();
 
-    public static ITypeInfo Int => SymTable.FindType(BuiltinSymTable.IntName, 0)!;
-    public static ITypeInfo Uint => SymTable.FindType(BuiltinSymTable.UintName, 0)!;
-    public static ITypeInfo Long => SymTable.FindType(BuiltinSymTable.LongName, 0)!;
-    public static ITypeInfo Ulong => SymTable.FindType(BuiltinSymTable.UlongName, 0)!;
-    public static ITypeInfo Short => SymTable.FindType(BuiltinSymTable.ShortName, 0)!;
-    public static ITypeInfo Ushort => SymTable.FindType(BuiltinSymTable.UshortName, 0)!;
-    public static ITypeInfo Byte => SymTable.FindType(BuiltinSymTable.ByteName, 0)!;
-    public static ITypeInfo Sbyte => SymTable.FindType(BuiltinSymTable.SbyteName, 0)!;
-    public static ITypeInfo Float => SymTable.FindType(BuiltinSymTable.FloatName, 0)!;
-    public static ITypeInfo Double => SymTable.FindType(BuiltinSymTable.DoubleName, 0)!;
-    public static ITypeInfo Bool => SymTable.FindType(BuiltinSymTable.BoolName, 0)!;
-    public static ITypeInfo String => SymTable.FindType(BuiltinSymTable.StringName, 0)!;
-    public static ITypeInfo Char => SymTable.FindType(BuiltinSymTable.CharName, 0)!;
-    public static ITypeInfo Any => SymTable.FindType(BuiltinSymTable.AnyName, 0)!;
-    public static ITypeInfo Array => SymTable.FindType(BuiltinSymTable.ArrayName, 0)!;
-    public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName, 0)!;
+    public static ITypeInfo Int => SymTable.FindType(BuiltinSymTable.IntName)!;
+    public static ITypeInfo Uint => SymTable.FindType(BuiltinSymTable.UintName)!;
+    public static ITypeInfo Long => SymTable.FindType(BuiltinSymTable.LongName)!;
+    public static ITypeInfo Ulong => SymTable.FindType(BuiltinSymTable.UlongName)!;
+    public static ITypeInfo Short => SymTable.FindType(BuiltinSymTable.ShortName)!;
+    public static ITypeInfo Ushort => SymTable.FindType(BuiltinSymTable.UshortName)!;
+    public static ITypeInfo Byte => SymTable.FindType(BuiltinSymTable.ByteName)!;
+    public static ITypeInfo Sbyte => SymTable.FindType(BuiltinSymTable.SbyteName)!;
+    public static ITypeInfo Float => SymTable.FindType(BuiltinSymTable.FloatName)!;
+    public static ITypeInfo Double => SymTable.FindType(BuiltinSymTable.DoubleName)!;
+    public static ITypeInfo Bool => SymTable.FindType(BuiltinSymTable.BoolName)!;
+    public static ITypeInfo String => SymTable.FindType(BuiltinSymTable.StringName)!;
+    public static ITypeInfo Char => SymTable.FindType(BuiltinSymTable.CharName)!;
+    public static ITypeInfo Any => SymTable.FindType(BuiltinSymTable.AnyName)!;
+    public static ITypeInfo Array => SymTable.FindType(BuiltinSymTable.ArrayName)!;
+    public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName)!;
+
+    public static IFnInfo StrConcat => SymTable.FindFunc(BuiltinSymTable.StrConcatName)!;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Length(string? str)
@@ -136,9 +138,11 @@ internal class BuiltinSymTable : ISymTable
     internal const string DoubleName = "double";
     internal const string AnyName    = "any";
     internal const string ArrayName  = "array";
+
+    internal const string StrConcatName = "strConcat";
     
     private readonly FrozenDictionary<string, ITypeInfo> _types;
-    private readonly FrozenDictionary<string, IReadOnlyList<FuncInfo>> _funcs;
+    private readonly FrozenDictionary<string, FuncInfo> _funcs;
     
     public string ModuleName => "<builtins>";
 
@@ -164,71 +168,28 @@ internal class BuiltinSymTable : ISymTable
             [VoidName] = TypeInfo.FromType(typeof(void), ModuleName, VoidName)
         };
         _types = typeDict.ToFrozenDictionary();
-
-        var printOverloads = new List<FuncInfo>()
-        {
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(int)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(uint)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(long)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(ulong)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(float)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(double)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(string)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(char)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(bool)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName),
-        };
-
-        var printlnOverloads = new List<FuncInfo>()
-        {
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(int)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(uint)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(long)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(ulong)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(float)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(double)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(string)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(char)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(bool)])!, ModuleName),
-            new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName),
-        };
-
-        var lengthOverloads = new List<FuncInfo>()
-        {
-            new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName),
-            new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!, ModuleName)
-        };
-
-        var concatOverloads = new List<FuncInfo>()
-        {
-            new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!, ModuleName),
-            new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName)
-        };
-
-        var equalsOverloads = new List<FuncInfo>()
-        {
-            new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName),
-            new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName),
-        };
         
-        var funcDict = new Dictionary<string, IReadOnlyList<FuncInfo>>()
+        var funcDict = new Dictionary<string, FuncInfo>()
         {
-            ["print"] = printOverloads,
-            ["println"] = printlnOverloads,
-            ["read"] = [new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName)],
-            ["readln"] = [new (typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName)],
-            ["length"] = lengthOverloads,
-            ["concat"] = concatOverloads,
-            ["equals"] = equalsOverloads
+            ["print"] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName),
+            ["println"] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName),
+            ["read"] = new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName),
+            ["readln"] = new(typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName),
+            ["strLen"] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName),
+            ["arrLen"] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!, ModuleName),
+            ["arrConcat"] = new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!, ModuleName),
+            [StrConcatName] = new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName),
+            ["arrEquals"] = new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName),
+            ["strEquals"] = new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName),
         };
         _funcs = funcDict.ToFrozenDictionary();
     }
 
-    public ITypeInfo? FindType(string name, int genericsCount)
+    public ITypeInfo? FindType(string name)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(genericsCount, 0);
-        return genericsCount != 0 ? null : _types.GetValueOrDefault(name);
+        name = name.Equals(string.Empty) ? VoidName : name;
+        return _types.GetValueOrDefault(name);
     }
 
-    public IReadOnlyList<IFnInfo> FindFuncs(string name) => _funcs.TryGetValue(name, out var list) ? list : [];
+    public IFnInfo? FindFunc(string name) => _funcs.GetValueOrDefault(name);
 }

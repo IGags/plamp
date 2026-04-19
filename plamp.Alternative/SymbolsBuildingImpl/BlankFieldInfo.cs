@@ -6,7 +6,7 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
-public class EmptyFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
+public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
 {
     private readonly ITypeInfo _definingType = definingType;
 
@@ -23,7 +23,7 @@ public class EmptyFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
 
     public bool Equals(IFieldInfo? obj)
     {
-        if (obj is not EmptyFieldInfo emptyFld) return false;
+        if (obj is not BlankFieldInfo emptyFld) return false;
         return Name.Equals(emptyFld.Name)
                && FieldType.Equals(emptyFld.FieldType)
                && _definingType.Equals(emptyFld._definingType);

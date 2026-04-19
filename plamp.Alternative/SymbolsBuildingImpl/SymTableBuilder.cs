@@ -13,85 +13,75 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 /// <inheritdoc cref="ISymTableBuilder"/>
 public class SymTableBuilder : ISymTableBuilder, ISymTable
 {
-    private readonly Dictionary<ITypeBuilderInfo, TypedefNode> _types = [];
-
-    private readonly Dictionary<IFnBuilderInfo, FuncNode> _funcs = [];
-
-    private readonly Dictionary<IFieldBuilderInfo, FieldDefNode> _fields = [];
+    private readonly Dictionary<string, ITypeBuilderInfo> _types = [];
+    private readonly Dictionary<ITypeBuilderInfo, TypedefNode> _typeNodeMapping = [];
+    
+    private readonly Dictionary<string, IFnBuilderInfo> _funcs = [];
+    private readonly Dictionary<IFnBuilderInfo, FuncNode> _fnNodeMapping = [];
 
     /// <inheritdoc cref="ISymTableBuilder.ModuleName" />
     public string ModuleName { get; set; } = "";
 
     /// <inheritdoc />
-    public ITypeBuilderInfo DefineType(TypedefNode typeNode, GenericDefinitionNode[]? generics = null)
+    public ITypeBuilderInfo DefineType(TypedefNode typeNode, IGenericParameterBuilder[]? genericParams = null)
     {
-        var type = generics is { Length: > 0 } 
-            ? new TypeBuilder(typeNode.Name.Value, generics, this) 
-            : new TypeBuilder(typeNode.Name.Value, this);
+        var name = typeNode.Name.Value;
+        if (_types.ContainsKey(name)) throw new InvalidOperationException();
         
-        _types.Add(type, typeNode);
+        var type = genericParams is { Length: > 0 } 
+            ? new TypeBuilder(name, genericParams, ModuleName) 
+            : new TypeBuilder(name, ModuleName);
+        
+        _types.Add(name, type);
+        _typeNodeMapping.Add(type, typeNode);
         return type;
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<ITypeBuilderInfo> ListTypes() => _types.Keys.ToList();
+    public IReadOnlyList<ITypeBuilderInfo> ListTypes() => _types.Values.ToList();
 
     /// <inheritdoc />
-    public IFnBuilderInfo DefineFunc(FuncNode fnNode)
+    public IFnBuilderInfo DefineFunc(FuncNode fnNode, IGenericParameterBuilder[]? generics = null)
     {
+        generics ??= [];
+        
         var retType = fnNode.ReturnType.TypeInfo;
         if (retType == null) throw new InvalidOperationException();
         if (fnNode.ParameterList.Any(x => x.Type.TypeInfo == null)) throw new InvalidOperationException();
+        if (_funcs.ContainsKey(fnNode.FuncName.Value)) throw new InvalidOperationException();
 
-        var args = fnNode.ParameterList.Select(x => new EmptyArgInfo(x.Name.Value, x.Type.TypeInfo!));
+        var args = fnNode.ParameterList.Select(x => new BlankArgInfo(x.Name.Value, x.Type.TypeInfo!));
         
-        var func = new EmptyFuncInfo(fnNode.FuncName.Value, args.ToList(), retType, this);
-        _funcs.Add(func, fnNode);
+        var func = generics.Length == 0 
+            ? new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), retType, ModuleName)
+            : new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), retType, generics, ModuleName);
+        _funcs.Add(fnNode.FuncName.Value, func);
+        _fnNodeMapping.Add(func, fnNode);
+        
         return func;
     }
 
-    /// <inheritdoc />
-    public IReadOnlyList<IFnBuilderInfo> ListFuncs() => _funcs.Keys.ToList();
+    public IGenericParameterBuilder CreateGenericParameter(GenericDefinitionNode genericNode) 
+        => new GenericParameterBuilder(genericNode.Name.Value, ModuleName);
 
     /// <inheritdoc />
-    public ITypeInfo? FindType(string name, int genericsCount)
-    {
-        ArgumentOutOfRangeException.ThrowIfLessThan(genericsCount, 0);
-        if (name == "") return null;
-        name = genericsCount == 0 ? name : $"{name}`{genericsCount}";
-        return _types.Keys.FirstOrDefault(x => x.DefinitionName == name);
-    }
+    public IReadOnlyList<IFnBuilderInfo> ListFuncs() => _funcs.Values.ToList();
 
     /// <inheritdoc />
-    public IReadOnlyList<IFnInfo> FindFuncs(string name) => _funcs.Keys.Where(x => x.Name == name).ToList();
-    
-    /// <inheritdoc />
-    public bool TryGetDefinition(ITypeBuilderInfo info, [NotNullWhen(true)] out TypedefNode? defNode)
-    {
-        return _types.TryGetValue(info, out defNode);
-    }
+    public ITypeInfo? FindType(string name) => name == "" ? null : _types.GetValueOrDefault(name);
 
     /// <inheritdoc />
-    public bool TryGetInfo(TypedefNode node, [NotNullWhen(true)] out ITypeBuilderInfo? typeInfo)
-    {
-        typeInfo = _types.FirstOrDefault(x => x.Value == node).Key;
-        return typeInfo != null;
-    }
+    public IFnInfo? FindFunc(string name) => _funcs.GetValueOrDefault(name);
 
     /// <inheritdoc />
-    public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)] out FieldDefNode? defNode)
-    {
-        return _fields.TryGetValue(info, out defNode);
-    }
+    public bool TryGetDefinition(ITypeBuilderInfo info, [NotNullWhen(true)] out TypedefNode? defNode) => _typeNodeMapping.TryGetValue(info, out defNode);
 
     /// <inheritdoc />
-    public bool TryGetDefinition(IFnBuilderInfo info, [NotNullWhen(true)] out FuncNode? defNode)
-    {
-        return _funcs.TryGetValue(info, out defNode);
-    }
+    public bool TryGetInfo(string name, [NotNullWhen(true)] out ITypeBuilderInfo? typeInfo) => _types.TryGetValue(name, out typeInfo);
 
-    internal void AddField(IFieldBuilderInfo fldInfo, FieldDefNode node)
-    {
-        _fields.Add(fldInfo, node);
-    }
+    /// <inheritdoc />
+    public bool TryGetInfo(string name, [NotNullWhen(true)] out IFnBuilderInfo? fnInfo) => _funcs.TryGetValue(name, out fnInfo);
+
+    /// <inheritdoc />
+    public bool TryGetDefinition(IFnBuilderInfo info, [NotNullWhen(true)] out FuncNode? defNode) => _fnNodeMapping.TryGetValue(info, out defNode);
 }

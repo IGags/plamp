@@ -76,6 +76,8 @@ public class EmissionSetupHelper
 
     internal class MethodBuilderFnInfo(MethodBuilder builder, ParameterInfo[] parameters, Type returnType) : IFnInfo
     {
+        private const string ModuleNameInner = "emissionTest";
+        
         private readonly MethodBuilder _builder = builder;
 
         public bool Equals(IFnInfo? other)
@@ -87,11 +89,15 @@ public class EmissionSetupHelper
         public string Name => _builder.Name;
 
         public IReadOnlyList<IArgInfo> Arguments { get; } =
-            parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, "emissionTest"))).ToList();
+            parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, ModuleNameInner))).ToList();
 
-        public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, "emissionTest");
+        public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, ModuleNameInner);
+        
+        public IReadOnlyList<ITypeInfo> GenericParams => [];
 
         public MethodInfo AsFunc() => _builder;
+        
+        public string ModuleName => ModuleNameInner;
     }
     
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(

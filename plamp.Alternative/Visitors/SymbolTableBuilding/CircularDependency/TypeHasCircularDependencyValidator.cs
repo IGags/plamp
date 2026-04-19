@@ -5,6 +5,7 @@ using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Validation;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
 
@@ -44,7 +45,7 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
         SymbolTableBuildingContext context, 
         NodeBase? parent)
     {
-        if (!context.SymTableBuilder.TryGetInfo(node, out var typeInfo)) return VisitResult.SkipChildren;
+        if (!context.SymTableBuilder.TryGetInfo(node.Name.Value, out ITypeBuilderInfo? typeInfo)) return VisitResult.SkipChildren;
         var moduleType = context.SymTableBuilder.ListTypes().Cast<ITypeInfo>().ToList();
         
         foreach (var field in typeInfo.FieldBuilders)
@@ -55,7 +56,7 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
             }
             
             var record = PlampExceptionInfo.FieldProduceCircularDependency();
-            if (!context.SymTableBuilder.TryGetDefinition(field, out var defNode))
+            if (!typeInfo.TryGetDefinition(field, out var defNode))
             {
                 throw new InvalidOperationException("Невозможно найти место объявления поля в файле. Ошибка в коде компилятора.");
             }

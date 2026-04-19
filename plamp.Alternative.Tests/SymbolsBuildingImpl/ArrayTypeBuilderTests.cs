@@ -34,7 +34,7 @@ public class ArrayTypeBuilderTests
     [Fact]
     public void GetElementType_Correct()
     {
-        var elemType = new TypeBuilder("ABC", new());
+        var elemType = new TypeBuilder("ABC", ModName);
         
         var arrType = elemType.MakeArrayType();
         arrType.ElementType().ShouldBe(elemType);
@@ -47,7 +47,7 @@ public class ArrayTypeBuilderTests
         var module = asm.DefineDynamicModule("Module");
         var type = module.DefineType(OrigTypeName, TypeAttributes.Public);
 
-        var builder = new TypeBuilder(OrigTypeName, new()) { Type = type };
+        var builder = new TypeBuilder(OrigTypeName, ModName) { Type = type };
         var array = builder.MakeArrayType();
         
         var asType = array.AsType();
@@ -68,6 +68,6 @@ public class ArrayTypeBuilderTests
     
     private ArrayTypeBuilder CreateInstance()
     {
-        return (ArrayTypeBuilder)new TypeBuilder(OrigTypeName, new() {ModuleName = ModName}).MakeArrayType();
+        return (ArrayTypeBuilder)new TypeBuilder(OrigTypeName, ModName).MakeArrayType();
     }
 }

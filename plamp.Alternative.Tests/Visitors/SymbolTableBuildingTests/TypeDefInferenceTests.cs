@@ -75,8 +75,7 @@ public class TypeDefInferenceTests
                    type A {}
                    """;
         var res = SetupAndAct(code);
-        res.Exceptions.Count.ShouldBe(2);
-        res.Exceptions.Select(x => x.Code).ShouldAllBe(x => x == PlampExceptionInfo.DuplicateTypeDefinition("").Code);
+        res.Exceptions.ShouldBeEmpty();
         res.SymTableBuilder.ListTypes().ShouldBeEmpty();
     }
 
@@ -223,6 +222,20 @@ public class TypeDefInferenceTests
         type.GetGenericParameters().ShouldBeEmpty();
         
         res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType().Code);
+    }
+
+    [Fact]
+    public void TwoTypesWithSameNameAndDifferentGenericCount_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A;
+                   type A[B];
+                   """;
+        
+        var res = SetupAndAct(code);
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
+        res.Exceptions.ShouldBeEmpty();
     }
     
     private SymbolTableBuildingContext SetupAndAct(string code)

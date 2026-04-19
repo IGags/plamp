@@ -360,13 +360,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord DuplicateFunctionDefinition(string funcName)
+    public static PlampExceptionRecord CannotApplyArgument()
     {
         return new PlampExceptionRecord()
         {
             Code = "SEM1303",
             Level = ExceptionLevel.Error,
-            Message = "This function overload already defined."
+            Message = "Cannot apply argument to call this function."
         };
     }
 
@@ -660,6 +660,24 @@ public static class PlampExceptionInfo
         {
             Message = "Field has the same name as builtin type",
             Code = "SEM1336",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FunctionHasDifferentArgCount(int expectedArgCt, int actualArgCt) =>
+        new()
+        {
+            Message = $"Function has {expectedArgCt} but called with {actualArgCt} arguments",
+            Code = "SEM1337", //1337 - YOOOOOO
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericFunctionParameterCannotHasManyImplementations(
+        string genericParamTypeName,
+        IEnumerable<string> implementationTypeNames) =>
+        new()
+        {
+            Message = $"Generic parameter {genericParamTypeName} cannot be {string.Join(", ", implementationTypeNames)} simultaneously",
+            Code = "SEM1338",
             Level = ExceptionLevel.Error
         };
 

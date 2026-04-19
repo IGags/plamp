@@ -25,7 +25,7 @@ public interface ISymTableBuilder
     /// <param name="typeNode">Узел AST объявляющий тип</param>
     /// <param name="generics">Список параметров у типа. Пустой массив или null расцениваются так, что тип не является дженериком.</param>
     /// <returns>Базовый объект - билдер объявленного типа</returns>
-    public ITypeBuilderInfo DefineType(TypedefNode typeNode, GenericDefinitionNode[]? generics = null);
+    public ITypeBuilderInfo DefineType(TypedefNode typeNode, IGenericParameterBuilder[]? generics = null);
     
     /// <summary>
     /// Перечислить все типы, явно объявленные через вызов <see cref="DefineType"/> в текущем билдере 
@@ -38,8 +38,16 @@ public interface ISymTableBuilder
     /// Валидация на дубликаты по чему-либо не гарантируется
     /// </summary>
     /// <param name="fnNode">Узел AST объявляющий функцию</param>
+    /// <param name="generics">Список параметров у функции. Пустой массив или null расцениваются так, что функция не является дженериком.</param>
     /// <returns>Базовый объект - билдер объявленной функции</returns>
-    public IFnBuilderInfo DefineFunc(FuncNode fnNode);
+    public IFnBuilderInfo DefineFunc(FuncNode fnNode, IGenericParameterBuilder[]? generics = null);
+
+    /// <summary>
+    /// Создаёт ни к чему(к таблице символов) не привязанный дженерик параметр
+    /// </summary>
+    /// <param name="genericNode">Узел из которого требуется создать параметр</param>
+    /// <returns>Информация о типе дженерик параметра</returns>
+    public IGenericParameterBuilder CreateGenericParameter(GenericDefinitionNode genericNode);
 
     /// <summary>
     /// Перечислить все функции, явно объявленные через вызов <see cref="DefineFunc"/> в текущем билдере
@@ -56,20 +64,20 @@ public interface ISymTableBuilder
     public bool TryGetDefinition(ITypeBuilderInfo info, [NotNullWhen(true)]out TypedefNode? defNode);
 
     /// <summary>
-    /// Получить информацию о типе по его объявлению.
+    /// Получить информацию о типе по его имени.
     /// </summary>
-    /// <param name="node">Узел в ast объявления типа</param>
+    /// <param name="name">Имя типа</param>
     /// <param name="typeInfo">Информация о типе в контексте компиляции текущего модуля</param>
     /// <returns>Флаг успеха операции</returns>
-    public bool TryGetInfo(TypedefNode node, [NotNullWhen(true)] out ITypeBuilderInfo? typeInfo);
+    public bool TryGetInfo(string name, [NotNullWhen(true)] out ITypeBuilderInfo? typeInfo);
 
     /// <summary>
-    /// Попытаться получить узел ast объявления поля внутри компилируемого модуля.
+    /// Получить информацию о функции по её имени.
     /// </summary>
-    /// <param name="info">Информация о поле во время компиляции</param>
-    /// <param name="defNode">В случае, если модуль действительно содержит такое поле - будет получено его объявление</param>
-    /// <returns>Флаг успеха поиска</returns>
-    public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)]out FieldDefNode? defNode);
+    /// <param name="name">Имя функции</param>
+    /// <param name="fnInfo">Информациц о функции в контексте компиляции текущего модуля.</param>
+    /// <returns>Флаг успеха операции</returns>
+    public bool TryGetInfo(string name, [NotNullWhen(true)] out IFnBuilderInfo? fnInfo);
 
     /// <summary>
     /// Попытаться получить узел ast объявления функции внутри компилируемого модуля.

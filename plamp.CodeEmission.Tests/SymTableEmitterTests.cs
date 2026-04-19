@@ -54,8 +54,11 @@ public class SymTableEmitterTests
             new(new GenericParameterNameNode("T1")),
             new(new GenericParameterNameNode("T2"))
         };
+
+        var genericBuilders = generics.Select(x => builder.CreateGenericParameter(x));
+        
         var typeNode = new TypedefNode(new TypedefNameNode("1A"), [], generics);
-        var typeInfo = builder.DefineType(typeNode, generics.ToArray());
+        var typeInfo = builder.DefineType(typeNode, genericBuilders.ToArray());
         
         SymTableEmitter.EmitType(module, typeInfo);
 
@@ -68,38 +71,6 @@ public class SymTableEmitterTests
         genericArgs.Length.ShouldBe(2);
         genericArgs[0].Name.ShouldBe("T1");
         genericArgs[1].Name.ShouldBe("T2");
-    }
-
-    [Fact]
-    public void EmitType_SeveralGenericOverloads_Correct()
-    {
-        var (_, module) = BootstrapAssembly();
-        var builder = new SymTableBuilder() { ModuleName = "rtest" };
-        
-        var generics1 = new List<GenericDefinitionNode>
-        {
-            new(new GenericParameterNameNode("T1"))
-        };
-        var typeNode1 = new TypedefNode(new TypedefNameNode("F"), [], generics1);
-
-        var generics2 = new List<GenericDefinitionNode>
-        {
-            new(new GenericParameterNameNode("T1")),
-            new(new GenericParameterNameNode("T2"))
-        };
-        var typeNode2 = new TypedefNode(new TypedefNameNode("F"), [], generics2);
-
-        var typeInfo1 = builder.DefineType(typeNode1, generics1.ToArray());
-        var typeInfo2 = builder.DefineType(typeNode2, generics2.ToArray());
-        
-        SymTableEmitter.EmitType(module, typeInfo1);
-        SymTableEmitter.EmitType(module, typeInfo2);
-
-        var typeBuilder1 = typeInfo1.Type.ShouldNotBeNull();
-        typeBuilder1.Name.ShouldBe("F`1");
-        
-        var typeBuilder2 = typeInfo2.Type.ShouldNotBeNull();
-        typeBuilder2.Name.ShouldBe("F`2");
     }
 
     private (AssemblyBuilder, ModuleBuilder) BootstrapAssembly()

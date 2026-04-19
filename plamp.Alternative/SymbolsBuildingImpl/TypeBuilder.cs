@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Abstractions.Symbols.SymTableBuilding;
@@ -9,13 +9,13 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
 /// <inheritdoc/>
-public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuilderInfo
+public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
 {
-    private readonly List<IFieldBuilderInfo> _fields = [];
+    private readonly Dictionary<IFieldBuilderInfo, FieldDefNode> _fields = [];
 
-    private readonly List<GenericParameterBuilder> _genericParameterBuilders = [];
+    private readonly List<IGenericParameterBuilder> _genericParameterBuilders = [];
     
-    public string ModuleName => definingTable.ModuleName;
+    public string ModuleName => moduleName;
     
     public string DefinitionName => _genericParameterBuilders.Count == 0 ? name : $"{name}`{_genericParameterBuilders.Count}";
 
@@ -23,7 +23,7 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
 
     public IReadOnlyList<ITypeInfo> GenericParams => _genericParameterBuilders;
     
-    public IReadOnlyList<IFieldInfo> Fields => _fields;
+    public IReadOnlyList<IFieldInfo> Fields => _fields.Keys.ToList();
     
     public string Name
     {
@@ -48,8 +48,8 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
 
     public bool IsGenericTypeDefinition => GenericParams.Count > 0;
     
-    public TypeBuilder(string name, IReadOnlyList<GenericDefinitionNode> genericParameters, SymTableBuilder definingTable) 
-        : this(name, definingTable)
+    public TypeBuilder(string name, IReadOnlyList<IGenericParameterBuilder> genericParameters, string moduleName) 
+        : this(name, moduleName)
     {
         foreach (var parameter in genericParameters)
         {
@@ -57,29 +57,29 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
         }
     }
     
-    private void AddGenericParameter(GenericDefinitionNode genericParameter)
+    private void AddGenericParameter(IGenericParameterBuilder genericParameter)
     {
-        var genericParameterType = new GenericParameterBuilder(genericParameter.Name.Value, this);
-        if (GenericParams.Any(x => x.Equals(genericParameterType))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в типе.");
-        _genericParameterBuilders.Add(genericParameterType);
+        if (!genericParameter.ModuleName.Equals(ModuleName)) throw new InvalidOperationException();
+        if (!genericParameter.IsGenericTypeParameter) throw new InvalidOperationException();
+        if (GenericParams.Any(x => x.Equals(genericParameter))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в типе.");
+        _genericParameterBuilders.Add(genericParameter);
     }
 
     public System.Reflection.Emit.TypeBuilder? Type { get; set; }
 
-    public IReadOnlyList<IFieldBuilderInfo> FieldBuilders => _fields;
+    public IReadOnlyList<IFieldBuilderInfo> FieldBuilders => _fields.Keys.ToList();
 
     public void AddField(FieldDefNode defNode)
     {
         var fieldType = defNode.FieldType.TypeInfo;
         if (fieldType == null) throw new InvalidOperationException("У поля нет корректного типа, ошибка компилятора");
-        var newFld = new EmptyFieldInfo(fieldType, defNode.Name.Value, this);
-        if (_fields.Any(x => x.Name.Equals(newFld.Name)))
+        var newFld = new BlankFieldInfo(fieldType, defNode.Name.Value, this);
+        if (_fields.Any(x => x.Key.Name.Equals(newFld.Name)))
         {
             throw new InvalidOperationException("Type already has this field. If you see this, write to a compiler developer");
         }
         
-        definingTable.AddField(newFld, defNode);
-        _fields.Add(newFld);
+        _fields.Add(newFld, defNode);
     }
 
     public ITypeInfo MakeArrayType()
@@ -104,6 +104,12 @@ public class TypeBuilder(string name, SymTableBuilder definingTable) : ITypeBuil
     public ITypeInfo? GetGenericTypeDefinition() => null;
     
     public Type AsType() => Type ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
+    
+    /// <inheritdoc />
+    public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)] out FieldDefNode? defNode)
+    {
+        return _fields.TryGetValue(info, out defNode);
+    }
 
     public bool Equals(ITypeInfo? other)
     {

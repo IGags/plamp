@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
-using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.AstManipulation.Modification;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
 
@@ -24,7 +24,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
     protected override VisitResult PreVisitTypedef(TypedefNode node, TypedefInferenceVisitorContext context, NodeBase? parent)
     {
         //В случае если тип имеет имя, которое равно имени встроенного типа - будет получена ошибка 
-        if (Builtins.SymTable.FindType(node.Name.Value, 0) != null)
+        if (Builtins.SymTable.FindType(node.Name.Value) != null)
         {
             var record = PlampExceptionInfo.CannotDefineCoreType();
             SetExceptionToSymbol(node, record, context);
@@ -45,19 +45,11 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
         foreach (var types in typeGroups)
         {
             var typeList = types.ToList();
-            if (typeList.Count == 1)
-            {
-                var type = typeList[0];
-                var generics = TryValidateGenericsIfExists(type, context);
-                context.SymTableBuilder.DefineType(type, generics);
-                continue;
-            }
-
-            var record = PlampExceptionInfo.DuplicateTypeDefinition(typeList[0].Name.Value);
-            foreach (var type in typeList)
-            {
-                SetExceptionToSymbol(type, record, context);
-            }
+            //Валидация дубликатов имён - не ответственность этого вивера.
+            if (typeList.Count != 1) continue;
+            var type = typeList[0];
+            var generics = TryValidateGenericsIfExists(type, context);
+            context.SymTableBuilder.DefineType(type, generics);
         }
 
         return VisitResult.Continue;
@@ -73,7 +65,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
     /// </summary>
     /// <param name="typeDefinition">Объект, описывающий объявление типа в контексте текущего модуля</param>
     /// <param name="context">Контекст обхода текущего модуля</param>
-    private GenericDefinitionNode[] TryValidateGenericsIfExists(
+    private IGenericParameterBuilder[] TryValidateGenericsIfExists(
         TypedefNode typeDefinition, 
         TypedefInferenceVisitorContext context)
     {
@@ -83,7 +75,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
         var nameGrouping = parameters.GroupBy(x => x.Name.Value);
         
         var definingTypeName = typeDefinition.Name.Value;
-        var validGenerics = new List<GenericDefinitionNode>();
+        var validGenerics = new List<IGenericParameterBuilder>();
         
         foreach (var group in nameGrouping)
         {
@@ -91,7 +83,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
             var parameterName = groupArray[0].Name.Value;
             PlampExceptionRecord? record = null;
             
-            if (Builtins.SymTable.FindType(parameterName, 0) != null)
+            if (Builtins.SymTable.FindType(parameterName) != null)
             {
                 record = PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType();
             }
@@ -106,7 +98,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
 
             if (record == null)
             {
-                validGenerics.Add(groupArray[0]);
+                validGenerics.Add(context.SymTableBuilder.CreateGenericParameter(groupArray[0]));
                 continue;
             }
             
