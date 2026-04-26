@@ -533,15 +533,15 @@ public static class PlampExceptionInfo
     public static PlampExceptionRecord CannotDefineCoreType() =>
         new()
         {
-            Message = "Cannot define type with same name as the core type into runtime",
+            Message = "Cannot define type with same name as builtin member",
             Code = "SEM1322",
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord DuplicateTypeDefinition(string typeName) =>
+    public static PlampExceptionRecord CannotDefineCoreFunction() =>
         new()
         {
-            Message = $"Type {typeName} already declared within a module",
+            Message = "Cannot define function with same name as builtin member",
             Code = "SEM1323",
             Level = ExceptionLevel.Error
         };
@@ -647,18 +647,18 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord GenericParameterHasSameNameAsBuiltinType() =>
+    public static PlampExceptionRecord GenericParameterHasSameNameAsBuiltinMember() =>
         new()
         {
-            Message = "Generic parameter has the same name as defining type",
+            Message = "Generic parameter has the same name as builtin member",
             Code = "SEM1335",
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord FieldHasSameNameAsBuiltinType() =>
+    public static PlampExceptionRecord FieldHasSameNameAsBuiltinMember() =>
         new()
         {
-            Message = "Field has the same name as builtin type",
+            Message = "Field has the same name as builtin member",
             Code = "SEM1336",
             Level = ExceptionLevel.Error
         };
@@ -678,6 +678,23 @@ public static class PlampExceptionInfo
         {
             Message = $"Generic parameter {genericParamTypeName} cannot be {string.Join(", ", implementationTypeNames)} simultaneously",
             Code = "SEM1338",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterHasNoImplementationType(
+        string genericParamTypeName) =>
+        new()
+        {
+            Message = $"Generic parameter {genericParamTypeName} has no implementation, please define function explicitly",
+            Code = "SEM1339",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParamSameNameAsDefiningFunction() =>
+        new()
+        {
+            Message = "Genric parameter has same name as difining function",
+            Code = "SEM1340",
             Level = ExceptionLevel.Error
         };
 

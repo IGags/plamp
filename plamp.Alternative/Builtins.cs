@@ -192,4 +192,6 @@ internal class BuiltinSymTable : ISymTable
     }
 
     public IFnInfo? FindFunc(string name) => _funcs.GetValueOrDefault(name);
+    
+    public bool ContainsSymbol(string name) => _funcs.ContainsKey(name) || _types.ContainsKey(name);
 }

@@ -15,4 +15,6 @@ public interface ISymTable
     public ITypeInfo? FindType(string name);
 
     public IFnInfo? FindFunc(string name);
+
+    public bool ContainsSymbol(string name);
 }

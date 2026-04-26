@@ -67,6 +67,20 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
 
     protected override VisitResult PreVisitGenericDefinition(GenericDefinitionNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
+        if (parent is FuncNode parentFn && node.Name.Value.Equals(parentFn.FuncName.Value))
+        {
+            var record = PlampExceptionInfo.GenericParamSameNameAsDefiningFunction();
+            SetExceptionToSymbol(node, record, context);
+            return VisitResult.SkipChildren;
+        }
+
+        if (Builtins.SymTable.ContainsSymbol(node.Name.Value))
+        {
+            var record = PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember();
+            SetExceptionToSymbol(node, record, context);
+            return VisitResult.SkipChildren;
+        }
+        
         var genericParam = context.SymTableBuilder.CreateGenericParameter(node);
         context.CurrentFuncGenerics.Add(genericParam);
         return VisitResult.SkipChildren;
@@ -80,6 +94,12 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
 
     protected override VisitResult PostVisitFunction(FuncNode node, FuncDefInferenceContext context, NodeBase? parent)
     {
+        if (Builtins.SymTable.ContainsSymbol(node.FuncName.Value))
+        {
+            var record = PlampExceptionInfo.CannotDefineCoreFunction();
+            SetExceptionToSymbol(node, record, context);
+        }
+        
         if (context.DuplicateNames.Contains(node.FuncName.Value)) return VisitResult.SkipChildren;
         AddFuncToSymbols(node, context);
         return VisitResult.SkipChildren;

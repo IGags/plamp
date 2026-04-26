@@ -527,9 +527,19 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             correctGenericMapping.Add(group.Key, paramType);
         }
 
+        var earlyExit = false;
         foreach (var genericParam in fnRef.GenericParams)
         {
-            if(correct)
+            if(correctGenericMapping.ContainsKey(genericParam)) continue;
+            var record = PlampExceptionInfo.GenericParameterHasNoImplementationType(genericParam.Name);
+            SetExceptionToSymbol(node, record, context);
+            earlyExit = true;
+        }
+
+        if (earlyExit)
+        {
+            context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.Continue;
         }
 
         if (argTypes.Any(x => x == null))

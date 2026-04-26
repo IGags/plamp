@@ -70,7 +70,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
         }
         else if (Builtins.SymTable.FindType(fieldNameGroup[0].Name.Value) != null)
         {
-            record = PlampExceptionInfo.FieldHasSameNameAsBuiltinType();
+            record = PlampExceptionInfo.FieldHasSameNameAsBuiltinMember();
         }
         else if (fieldNameGroup.Length != 1)
         {

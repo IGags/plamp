@@ -140,7 +140,7 @@ public class TypeDefInferenceTests
         type.GetGenericParameters().ShouldBeEmpty();
         
         var exception = res.Exceptions.ShouldHaveSingleItem();
-        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType().Code);
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class TypeDefInferenceTests
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.GetGenericParameters().ShouldBeEmpty();
         
-        res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinType().Code);
+        res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
     }
 
     [Fact]

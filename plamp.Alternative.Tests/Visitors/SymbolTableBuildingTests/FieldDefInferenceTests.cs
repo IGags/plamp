@@ -218,7 +218,7 @@ public class FieldDefInferenceTests
         var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
         type.Fields.ShouldBeEmpty();
         
-        ex.Code.ShouldBe(PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code);
+        ex.Code.ShouldBe(PlampExceptionInfo.FieldHasSameNameAsBuiltinMember().Code);
     }
 
     [Fact]
@@ -238,8 +238,8 @@ public class FieldDefInferenceTests
         
         var errorCodesShould = new []
         {
-            PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code, 
-            PlampExceptionInfo.FieldHasSameNameAsBuiltinType().Code
+            PlampExceptionInfo.FieldHasSameNameAsBuiltinMember().Code, 
+            PlampExceptionInfo.FieldHasSameNameAsBuiltinMember().Code
         };
         var errorCodesActual = res.Exceptions.Select(x => x.Code);
         

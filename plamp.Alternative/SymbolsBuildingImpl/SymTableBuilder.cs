@@ -73,6 +73,8 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     /// <inheritdoc />
     public IFnInfo? FindFunc(string name) => _funcs.GetValueOrDefault(name);
 
+    public bool ContainsSymbol(string name) => _funcs.ContainsKey(name) || _types.ContainsKey(name);
+
     /// <inheritdoc />
     public bool TryGetDefinition(ITypeBuilderInfo info, [NotNullWhen(true)] out TypedefNode? defNode) => _typeNodeMapping.TryGetValue(info, out defNode);
 
