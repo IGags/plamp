@@ -54,14 +54,18 @@ public static class SymbolSearchUtility
             if(type != null) types.Add((type, table));
         }
 
-        types = types.Where(x => x.typ.GetGenericParameters().Count == genericCount).ToList();
-
-        if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
         if (types.Count > 1)
         {
             return PlampExceptionInfo.AmbiguousTypeName(name, types.Select(x => x.table.ModuleName));
         }
+        if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
 
+        var defParamCount = types[0].typ.GetGenericParameters().Count; 
+        if (defParamCount != genericCount)
+        {
+            return PlampExceptionInfo.GenericTypeDefinitionHasDifferentParameterCount(defParamCount, genericCount);
+        }
+        
         typeInfo = types[0].typ;
         return null;
     }
@@ -91,7 +95,6 @@ public static class SymbolSearchUtility
 
     public static PlampExceptionRecord? TryGetFuncOrErrorRecord(
         string name,
-        IReadOnlyList<ITypeInfo?> argTypes,
         IEnumerable<ISymTable> symbolTables, 
         out IFnInfo? fnInfo)
     {
@@ -107,8 +110,8 @@ public static class SymbolSearchUtility
 
         return funcs.Count switch
         {
-            0 => PlampExceptionInfo.FunctionIsNotFound(name, argTypes),
-            > 1 => PlampExceptionInfo.AmbiguousFunctionReference(name, argTypes, funcs.Select(x => x.modName)),
+            0 => PlampExceptionInfo.FunctionIsNotFound(name),
+            > 1 => PlampExceptionInfo.AmbiguousFunctionReference(name, funcs.Select(x => x.modName)),
             _ => null
         };
     }

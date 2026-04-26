@@ -51,7 +51,7 @@ public static class SymTableEmitter
         
         type.Type = typeBuilder;
     }
-
+    
     /// <summary>
     /// Создать поля для структуры определённого типа
     /// </summary>
@@ -90,6 +90,19 @@ public static class SymTableEmitter
 
     public static void EmitFunction(ModuleBuilder module, ISymTableBuilder symTableBuilder, IFnBuilderInfo func)
     {
+        var methodBuilder = module.DefineGlobalMethod(
+            func.DefinitionName,
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.Final,
+            CallingConventions.Standard,
+            null,
+            null);
+        
+        var genericParams = func.GetGenericParameterBuilders();
+        if (genericParams.Count != 0)
+        {
+            SetGenericsForFunc(methodBuilder, genericParams);
+        }
+        
         var parameters = func.Arguments.Select(x => x.AsInfo()).ToArray();
         var parameterTypes = parameters.Select(x => x.ParameterType).ToArray(); 
         
@@ -99,12 +112,10 @@ public static class SymTableEmitter
             throw new InvalidOperationException("Возвращаемый тип не может быть null на этой стадии, исходный код написан неверно");
         }
         
-        var methodBuilder = module.DefineGlobalMethod(
-            func.Name,
-            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.Final,
-            CallingConventions.Standard,
-            retType, 
-            parameterTypes);
+        methodBuilder.SetParameters(parameterTypes);
+        methodBuilder.SetReturnType(retType);
+        func.MethodBuilder = methodBuilder;
+        
         var dbg = new DebugMethodBuilder(methodBuilder);
 
         if (!symTableBuilder.TryGetDefinition(func, out var node))
@@ -114,5 +125,21 @@ public static class SymTableEmitter
         
         IlCodeEmitter.EmitMethodBody(node.Body, dbg, parameters);
         Console.WriteLine(dbg.GetIlRepresentation());
+    }
+
+    private static void SetGenericsForFunc(MethodBuilder methodBuilder, IReadOnlyList<IGenericParameterBuilder> genericParams)
+    {
+        var genericNames = genericParams.Select(x => x.Name).ToArray();
+        var parameters = methodBuilder.DefineGenericParameters(genericNames);
+        
+        if (parameters.Length != genericNames.Length) throw new Exception();
+        
+        var parameterDict = parameters.ToDictionary(x => x.Name, x => x);
+
+        foreach (var parameter in genericParams)
+        {
+            if (!parameterDict.TryGetValue(parameter.Name, out var builder)) throw new Exception();
+            parameter.TypeBuilder = builder;
+        }
     }
 }

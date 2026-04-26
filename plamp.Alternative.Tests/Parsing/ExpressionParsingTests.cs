@@ -34,8 +34,8 @@ public class ExpressionParsingTests
         yield return ["-1", new UnaryMinusNode(new LiteralNode(1, Builtins.Int))];
         yield return ["(true)", new LiteralNode(true, Builtins.Bool)];
         yield return ["(((true)))", new LiteralNode(true, Builtins.Bool)];
-        yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [])];
-        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int), new MemberNode("a")])];
+        yield return ["greet_you()", new CallNode(null, new FuncCallNameNode("greet_you"), [], [])];
+        yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int), new MemberNode("a")], [])];
         yield return ["a", new MemberNode("a")];
         yield return ["\"a\"", new LiteralNode("a", Builtins.String)];
     }

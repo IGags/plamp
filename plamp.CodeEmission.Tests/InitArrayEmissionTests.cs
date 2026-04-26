@@ -197,7 +197,7 @@ public class InitArrayEmissionTests
                TypeInfo = Builtins.Int
           };
 
-          var call = new CallNode(null, new FuncCallNameNode(nameof(GetLength)), []);
+          var call = new CallNode(null, new FuncCallNameNode(nameof(GetLength)), [], []);
           var info = typeof(InitArrayEmissionTests).GetMethod(nameof(GetLength))!;
           call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
           var arrayInit = new InitArrayNode(itemType, call);

@@ -1117,6 +1117,7 @@ public static class IlCodeEmitter
         else if(itemType == typeof(char))                              context.Generator.Emit(OpCodes.Ldelem_U2);
         else if(itemType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
         else if(itemType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
+        else if(itemType.IsGenericMethodParameter)                     context.Generator.Emit(OpCodes.Ldelem, itemType);
         else if(itemType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
         else if (itemType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem, itemType);
         else throw new Exception();
@@ -1133,8 +1134,9 @@ public static class IlCodeEmitter
         else if (elemType == typeof(char))                              context.Generator.Emit(OpCodes.Stelem_I2);
         else if (elemType == typeof(float))                             context.Generator.Emit(OpCodes.Stelem_R4);
         else if (elemType == typeof(double))                            context.Generator.Emit(OpCodes.Stelem_R8);
+        else if (elemType.IsGenericMethodParameter)                     context.Generator.Emit(OpCodes.Stelem, elemType);
         else if (elemType.IsClass)                                      context.Generator.Emit(OpCodes.Stelem_Ref);
-        else if (elemType is { IsPrimitive: false, IsClass: false })    context.Generator.Emit(OpCodes.Stelem,     elemType);
+        else if (elemType is { IsPrimitive: false, IsClass: false })    context.Generator.Emit(OpCodes.Stelem, elemType);
         else                                                            throw new Exception();
     }
 

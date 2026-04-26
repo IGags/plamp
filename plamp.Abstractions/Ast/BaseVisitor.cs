@@ -149,18 +149,24 @@ public abstract class BaseVisitor<TContext>
         {
             case RootNode rootNode:
                 return VisitCore(rootNode, context, parent, PreVisitRoot, PostVisitRoot);
-            case ModuleDefinitionNode moduleDefinition when Guard.HasFlag(VisitorGuard.ModuleDef):
-                return VisitCore(moduleDefinition, context, parent, PreVisitModuleDefinition, PostVisitModuleDefinition);
+            case ModuleDefinitionNode moduleDefinition:
+                return Guard.HasFlag(VisitorGuard.ModuleDef)
+                    ? VisitCore(moduleDefinition, context, parent, PreVisitModuleDefinition, PostVisitModuleDefinition)
+                    : VisitResult.Continue;
             case ImportNode importNode:
                 return VisitCore(importNode, context, parent, PreVisitImport, PostVisitImport);
             case ImportItemNode importItem:
                 return VisitCore(importItem, context, parent, PreVisitImportItem, PostVisitImportItem);
-            case BodyNode bodyNode when Guard.HasFlag(VisitorGuard.FuncDefWithBody):
-                return VisitCore(bodyNode, context, parent, PreVisitBody, PostVisitBody);
+            case BodyNode bodyNode:
+                return Guard.HasFlag(VisitorGuard.FuncDefWithBody)
+                    ? VisitCore(bodyNode, context, parent, PreVisitBody, PostVisitBody)
+                    : VisitResult.Continue;
             case ConditionNode conditionNode:
                 return VisitCore(conditionNode, context, parent, PreVisitCondition, PostVisitCondition);
-            case FuncNode defNode when Guard.HasFlag(VisitorGuard.FuncDef):
-                return VisitCore(defNode, context, parent, PreVisitFunction, PostVisitFunction);
+            case FuncNode defNode:
+                return Guard.HasFlag(VisitorGuard.FuncDef) 
+                    ? VisitCore(defNode, context, parent, PreVisitFunction, PostVisitFunction) 
+                    : VisitResult.Continue;
             case WhileNode whileNode:
                 return VisitCore(whileNode, context, parent, PreVisitWhile, PostVisitWhile);
             case BreakNode breakNode:
@@ -209,8 +215,10 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(initType, context, parent, PreVisitInitType, PostVisitInitType);
             case InitFieldNode initField:
                 return VisitCore(initField, context, parent, PreVisitInitField, PostVisitInitField);
-            case TypedefNode typedef when Guard.HasFlag(VisitorGuard.TypeDef):
-                return VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef);
+            case TypedefNode typedef:
+                return Guard.HasFlag(VisitorGuard.TypeDef) 
+                    ? VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef)
+                    : VisitResult.Continue;
             case FieldDefNode fieldDef:
                 return VisitCore(fieldDef, context, parent, PreVisitFieldDef, PostVisitFieldDef);
             case TypedefNameNode typedefName:

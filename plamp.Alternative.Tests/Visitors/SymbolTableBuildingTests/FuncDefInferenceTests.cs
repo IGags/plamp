@@ -34,7 +34,7 @@ public class FuncDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         var item = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
-        item.Name.ShouldBe("a");
+        item.Name.ShouldBe("a(int)");
         var argument = item.Arguments.ShouldHaveSingleItem();
         argument.Name.ShouldBe("x");
         argument.Type.ShouldBe(Builtins.Int);
@@ -136,7 +136,7 @@ public class FuncDefInferenceTests
         
         fn.ReturnType.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("V");
         fn.Arguments.ShouldHaveSingleItem().Type.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("T");
-        fn.GenericParams.Count.ShouldBe(2);
+        fn.GetGenericParameters().Count.ShouldBe(2);
     }
 
     [Fact]

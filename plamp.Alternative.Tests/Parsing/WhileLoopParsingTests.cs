@@ -20,12 +20,12 @@ public class WhileLoopParsingTests
         [
             "while(!a) fn1();",
             new WhileNode(new NotNode(new MemberNode("a")),
-                new BodyNode([new CallNode(null, new FuncCallNameNode("fn1"), [])]))
+                new BodyNode([new CallNode(null, new FuncCallNameNode("fn1"), [], [])]))
         ];
         yield return
         [
             "while(fn2()) {}",
-            new WhileNode(new CallNode(null, new FuncCallNameNode("fn2"), []), new BodyNode([]))
+            new WhileNode(new CallNode(null, new FuncCallNameNode("fn2"), [], []), new BodyNode([]))
         ];
         yield return
         [
@@ -38,7 +38,7 @@ public class WhileLoopParsingTests
                 new LiteralNode(false, Builtins.Bool),
                 new BodyNode([
                     new CallNode(null, new FuncCallNameNode("calli"), 
-                        [new MulNode(new LiteralNode(1245, Builtins.Int), new LiteralNode(244, Builtins.Int))])
+                        [new MulNode(new LiteralNode(1245, Builtins.Int), new LiteralNode(244, Builtins.Int))], [])
                 ])
             )
         ];

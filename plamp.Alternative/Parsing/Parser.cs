@@ -1303,6 +1303,14 @@ public static class Parser
         var start = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
 
+        var genericSequenceFork = context.Fork();
+        var genericArgList = new List<TypeNode>();
+        if (context.Sequence.Current() is OpenSquareBracket
+            && TryParseGenericTypeArgs(genericSequenceFork, out genericArgList))
+        {
+            context.Merge(genericSequenceFork);
+        }
+
         if (context.Sequence.Current() is not OpenParen)
         {
             var record = PlampExceptionInfo.ExpectedOpenParen();
@@ -1317,7 +1325,7 @@ public static class Parser
         {
             var funcNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
             context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
-            call = new CallNode(null, funcNameNode, argExpressions);
+            call = new CallNode(null, funcNameNode, argExpressions, genericArgList);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
@@ -1360,7 +1368,7 @@ public static class Parser
 
         var funcCallNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
         context.TranslationTable.AddSymbol(funcCallNameNode, funcName.Position);
-        call = new CallNode(null, funcCallNameNode, argExpressions);
+        call = new CallNode(null, funcCallNameNode, argExpressions, genericArgList);
         context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }

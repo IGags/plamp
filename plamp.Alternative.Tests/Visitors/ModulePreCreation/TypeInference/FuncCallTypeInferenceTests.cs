@@ -31,7 +31,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [])
+            new CallNode(null, new FuncCallNameNode("a"), [], [])
         ]);
         
         var retType = new TypeNode(new TypeNameNode("void"))
@@ -53,7 +53,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [])
+            new CallNode(null, new FuncCallNameNode("a"), [], [])
         ]);
 
         var retType = new TypeNode(new TypeNameNode("int"))
@@ -73,7 +73,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [new LiteralNode(1, Builtins.Int), new LiteralNode("hi", Builtins.String)])
+            new CallNode(null, new FuncCallNameNode("a"), [new LiteralNode(1, Builtins.Int), new LiteralNode("hi", Builtins.String)], [])
         ]);
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));
@@ -103,7 +103,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new AssignNode([new MemberNode("b")], [new CallNode(null, new FuncCallNameNode("a"), [])])
+            new AssignNode([new MemberNode("b")], [new CallNode(null, new FuncCallNameNode("a"), [], [])])
         ]);
         
         var retType = new TypeNode(new TypeNameNode("void"))
@@ -136,7 +136,7 @@ public class FuncCallTypeInferenceTests
     {
         var ast = new BodyNode(
         [
-            new CallNode(null, new FuncCallNameNode("a"), [new MemberNode("c"), new LiteralNode("hi", Builtins.String)])
+            new CallNode(null, new FuncCallNameNode("a"), [new MemberNode("c"), new LiteralNode("hi", Builtins.String)], [])
         ]);
         var retType = new TypeNode(new TypeNameNode("void"));
         var firstArgType = new TypeNode(new TypeNameNode("int"));

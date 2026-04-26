@@ -816,7 +816,7 @@ public class MethodCallTests
             ItemType = Builtins.Int
         };
 
-        var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter])
+        var callNode = new CallNode(null, new FuncCallNameNode("square"), [getter], [])
         {
             FnInfo = EmissionSetupHelper.MakeFuncRef(typeof(MethodCallTests).GetMethod(nameof(Square), [typeof(int)])!)
         };
@@ -850,7 +850,7 @@ public class MethodCallTests
     [Fact]
     public void NonVoidCallWithoutAssign_ReturnsSuccess()
     {
-        var call = new CallNode(new MemberNode("a"), new FuncCallNameNode(nameof(NonVoidCallback.CallbackWithResult)), []);
+        var call = new CallNode(new MemberNode("a"), new FuncCallNameNode(nameof(NonVoidCallback.CallbackWithResult)), [], []);
         var info = EmissionSetupHelper.MakeFuncRef(
             typeof(NonVoidCallback).GetMethod(nameof(NonVoidCallback.CallbackWithResult))!);
         call.FnInfo = info;

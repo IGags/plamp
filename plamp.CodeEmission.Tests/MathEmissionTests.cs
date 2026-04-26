@@ -204,7 +204,7 @@ public class MathEmissionTests
             FromType = variableType.TypeInfo!
         };
 
-        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg])
+        var call = new CallNode(new MemberNode("obj"), new FuncCallNameNode(nameof(CallbackClass.Callback)), [firstArg, secondArg], [])
         {
             FnInfo = EmissionSetupHelper.MakeFuncRef(typeof(CallbackClass).GetMethod(nameof(CallbackClass.Callback))!)
         };

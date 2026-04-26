@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
 
@@ -571,22 +569,20 @@ public static class PlampExceptionInfo
         };
 
     public static PlampExceptionRecord FunctionIsNotFound(
-        string functionName, 
-        IEnumerable<ITypeInfo?> signature) =>
+        string functionName) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) not found.",
+            Message = $"Function {functionName} not found.",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 
     public static PlampExceptionRecord AmbiguousFunctionReference(
         string functionName,
-        IEnumerable<ITypeInfo?> signature,
         IEnumerable<string> modules) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) defined in {string.Join(", ", modules)} modules",
+            Message = $"Function {functionName} defined in {string.Join(", ", modules)} modules",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
@@ -695,6 +691,22 @@ public static class PlampExceptionInfo
         {
             Message = "Genric parameter has same name as difining function",
             Code = "SEM1340",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericTypeDefinitionHasDifferentParameterCount(int expected, int actual) =>
+        new()
+        {
+            Message = $"Generic type definition has {expected} parameter count, but created with {actual} arguments",
+            Code = "SEM1141",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericFuncDefinitionHasDifferentParameterCount(int expected, int actual) =>
+        new()
+        {
+            Message = $"Generic func definition has {expected} generic parameter count, but created with {actual} arguments",
+            Code = "SEM1142",
             Level = ExceptionLevel.Error
         };
 

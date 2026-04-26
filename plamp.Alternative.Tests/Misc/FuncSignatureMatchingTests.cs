@@ -15,9 +15,9 @@ public class FuncSignatureMatchingTests
     //Модулей нет
     public void EmptyModules_ReturnsNotFoundError()
     {
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("a", [], [], out var info);
+        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("a", [], out var info);
         info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.FunctionIsNotFound("", []).Code);
+        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.FunctionIsNotFound("").Code);
     }
     
     [Fact]
@@ -31,9 +31,9 @@ public class FuncSignatureMatchingTests
             [],
             [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("a", [], [builder], out var info);
+        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("a", [builder], out var info);
         info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.FunctionIsNotFound("", []).Code);
+        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.FunctionIsNotFound("").Code);
     }
 
     [Fact]
@@ -46,14 +46,14 @@ public class FuncSignatureMatchingTests
         var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
             [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [builder], out var info);
+        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [builder], out var info);
         record.ShouldBeNull();
         info.ShouldBe(fnInfo);
     }
 
     [Fact]
     //Разное число аргументов
-    public void FuncArgCountDoesNotMatch_ReturnsNotFoundError()
+    public void FuncArgCountDoesNotMatch_OtherwiseReturnsFunction()
     {
         var builder = new SymTableBuilder();
         var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
@@ -61,37 +61,9 @@ public class FuncSignatureMatchingTests
         builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
             [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
         
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [], [builder], out var info);
-        info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.FunctionIsNotFound("", []).Code);
-    }
-    
-    [Fact]
-    //Функция подходит с точностью до неявного каста
-    public void FuncMatchWithCastAccuracy_Correct()
-    {
-        var builder = new SymTableBuilder();
-        var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
-        var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
-        var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [builder], out var info);
+        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [builder], out var info);
+        info.ShouldNotBeNull();
         record.ShouldBeNull();
-        info.ShouldBe(fnInfo);
-    }
-    
-    [Fact]
-    //Функция без части известных типов подходит
-    public void FindFuncWithoutPartOfSignature_Correct()
-    {
-        var builder = new SymTableBuilder();
-        var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
-        var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
-        var fnInfo = builder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [null], [builder], out var info);
-        record.ShouldBeNull();
-        info.ShouldBe(fnInfo);
     }
 
     [Fact]
@@ -107,49 +79,8 @@ public class FuncSignatureMatchingTests
         var secondBuilder = new SymTableBuilder();
         secondBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
             [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Int], [firstBuilder, secondBuilder], out var info);
+        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [firstBuilder, secondBuilder], out var info);
         info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
-    }
-
-    [Fact]
-    //Две функции подходят с точностью до каста.
-    public void TwoFunctionsMatchesWithCastAccuracy_ReturnsException()
-    {
-        var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
-        var intType = new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [], TypeInfo = Builtins.Int };
-        var longType = new TypeNode(new TypeNameNode("long")) { ArrayDefinitions = [], TypeInfo = Builtins.Long };
-        
-        var firstBuilder = new SymTableBuilder();
-        firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(intType, new ParameterNameNode("a"))], new BodyNode([])));
-        var secondBuilder = new SymTableBuilder();
-        secondBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
-        
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [firstBuilder, secondBuilder], out var info);
-        info.ShouldBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
-    }
-    
-    [Fact]
-    //Две функции одна подходит полностью, вторая с точностью до каста.
-    public void TwoFunctionsMatchesOneFullyOtherPartially_ReturnsError()
-    {
-        var emptyRetType = new TypeNode(new TypeNameNode("")) { ArrayDefinitions = [], TypeInfo = Builtins.Void };
-        var shortType = new TypeNode(new TypeNameNode("short")) { ArrayDefinitions = [], TypeInfo = Builtins.Short };
-        var longType = new TypeNode(new TypeNameNode("long")) { ArrayDefinitions = [], TypeInfo = Builtins.Long };
-        
-        var firstBuilder = new SymTableBuilder();
-        firstBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(shortType, new ParameterNameNode("a"))], new BodyNode([])));
-        var secondBuilder = new SymTableBuilder();
-        secondBuilder.DefineFunc(new FuncNode(emptyRetType, new FuncNameNode("abc"),
-            [], [new ParameterNode(longType, new ParameterNameNode("a"))], new BodyNode([])));
-        
-        var record = SymbolSearchUtility.TryGetFuncOrErrorRecord("abc", [Builtins.Short], [firstBuilder, secondBuilder], out var info);
-        record.ShouldNotBeNull();
-        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", [], []).Code);
-        info.ShouldBeNull();
+        record.ShouldNotBeNull().Code.ShouldBe(PlampExceptionInfo.AmbiguousFunctionReference("", []).Code);
     }
 }

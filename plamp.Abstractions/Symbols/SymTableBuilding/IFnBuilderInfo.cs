@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using plamp.Abstractions.Symbols.SymTable;
 
@@ -13,4 +14,10 @@ public interface IFnBuilderInfo : IFnInfo
     /// Представление функции в .net
     /// </summary>
     public MethodBuilder? MethodBuilder { get; set; }
+
+    /// <summary>
+    /// Возвращает список билдеров дженерик параметров (Если есть)
+    /// </summary>
+    /// <returns>Список дженерик параметров или [] если таковых нет</returns>
+    public IReadOnlyList<IGenericParameterBuilder> GetGenericParameterBuilders();
 }

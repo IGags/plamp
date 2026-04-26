@@ -88,12 +88,24 @@ public class EmissionSetupHelper
 
         public string Name => _builder.Name;
 
+        public string DefinitionName => _builder.Name;
+
         public IReadOnlyList<IArgInfo> Arguments { get; } =
             parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, ModuleNameInner))).ToList();
 
         public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, ModuleNameInner);
         
-        public IReadOnlyList<ITypeInfo> GenericParams => [];
+        public bool IsGenericFuncDefinition => _builder.IsGenericMethodDefinition;
+
+        public bool IsGenericFunc => _builder is { IsGenericMethod: true, IsGenericMethodDefinition: false };
+
+        public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+
+        public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
+
+        public IFnInfo? GetGenericFuncDefinition() => null;
+
+        public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
 
         public MethodInfo AsFunc() => _builder;
         
@@ -134,7 +146,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args, [])
         {
             FnInfo = symbol;
         }

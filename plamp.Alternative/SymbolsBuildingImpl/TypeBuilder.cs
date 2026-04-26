@@ -123,6 +123,7 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     public override int GetHashCode()
     {
         var code = new HashCode();
+        code.Add(GetType());
         code.Add(Name);
         code.Add(ModuleName);
         return code.ToHashCode();

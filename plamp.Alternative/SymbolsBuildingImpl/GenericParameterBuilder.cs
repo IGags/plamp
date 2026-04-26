@@ -81,6 +81,6 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
 
     public override int GetHashCode()
     {
-        return Name.GetHashCode();
+        return HashCode.Combine(GetType(), DefinitionName.GetHashCode(), ModuleName.GetHashCode(), Name.GetHashCode());
     }
 }

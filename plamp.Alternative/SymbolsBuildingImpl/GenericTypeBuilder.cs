@@ -20,10 +20,10 @@ public class GenericTypeBuilder : ITypeInfo
             throw new InvalidOperationException("У закрытого дженерик типа должно быть дженерик объявление, от которого он строится");
 
         if (genericArguments.Any(x => x.IsGenericTypeDefinition))
-            throw new Exception("Дженерик тип не может иметь объявление дженерик типа в качестве своего аргумента");
+            throw new InvalidOperationException("Дженерик тип не может иметь объявление дженерик типа в качестве своего аргумента");
         
         if (definition.GetGenericParameters().Count != genericArguments.Count)
-            throw new Exception("Число дженерик аргументов у закрытого дженерика должно соотвествовать числу параметров у объявления дженерик типа");
+            throw new InvalidOperationException("Число дженерик аргументов у закрытого дженерика должно соответствовать числу параметров у объявления дженерик типа");
         
         _definition = definition;
         _genericArguments = genericArguments;

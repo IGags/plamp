@@ -58,7 +58,10 @@ public class BaseVisitorTests
         functions:
         [
             new FuncNode(new TypeNode(new TypeNameNode("123")), new FuncNameNode("fsafsafsa"), [], [],
-                new BodyNode([]))
+                new BodyNode(
+                [
+                    new BodyNode([]) //Был баг, который не проявлялся при непосредственных чилдренах, а возникал в чилдренах второго поколения.
+                ]))
         ],
         types:
         [
@@ -74,7 +77,7 @@ public class BaseVisitorTests
 
         visitor.Visit(_ast, ctx);
         
-        ctx.BodyVisitCt.ShouldBe(1);
+        ctx.BodyVisitCt.ShouldBe(2);
         ctx.ModuleNameVisitCt.ShouldBe(1);
         ctx.FuncDefVisitCt.ShouldBe(1);
         ctx.TypeDefVisitCt.ShouldBe(1);
@@ -150,7 +153,7 @@ public class BaseVisitorTests
         
         visitor.Visit(_ast, ctx);
         
-        ctx.BodyVisitCt.ShouldBe(1);
+        ctx.BodyVisitCt.ShouldBe(2);
         ctx.ModuleNameVisitCt.ShouldBe(0);
         ctx.FuncDefVisitCt.ShouldBe(1);
         ctx.TypeDefVisitCt.ShouldBe(0);

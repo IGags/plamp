@@ -45,6 +45,7 @@ public class ArrayTypeBuilder(ITypeInfo elementType) : ITypeInfo
     public override int GetHashCode()
     {
         var code = new HashCode();
+        code.Add(GetType());
         code.Add(elementType.GetHashCode());
         code.Add("[]");
         return code.ToHashCode();

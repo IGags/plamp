@@ -14,13 +14,32 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
 
     public string ModuleName => moduleName;
     
-    public string Name => name;
-    
+    public string Name
+    {
+        get
+        {
+            var generics = _genericParamBuilders.Count == 0
+                ? ""
+                : $"[{string.Join(", ", _genericParamBuilders.Select(x => x.Name))}]";
+
+            var args = $"({string.Join(", ", Arguments.Select(x => x.Type.Name))})";
+
+            var fullName = name + generics + args;
+            return fullName;
+        }
+    }
+
+    public string DefinitionName => name;
+
     public IReadOnlyList<IArgInfo> Arguments { get; } = args;
     
     public ITypeInfo ReturnType => returnType;
 
-    public IReadOnlyList<ITypeInfo> GenericParams => _genericParamBuilders;
+    public bool IsGenericFuncDefinition => _genericParamBuilders.Count != 0;
+
+    public bool IsGenericFunc => false;
+
+    public MethodBuilder? MethodBuilder { get; set; }
 
     public BlankFuncInfo(
         string name,
@@ -39,7 +58,7 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
     {
         if (!builder.IsGenericTypeParameter) throw new InvalidOperationException();
         if (!ModuleName.Equals(builder.ModuleName)) throw new InvalidOperationException();
-        if (GenericParams.Any(x => x.Equals(builder))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в функции.");
+        if (_genericParamBuilders.Any(x => x.Equals(builder))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в функции.");
         _genericParamBuilders.Add(builder);
     }
     
@@ -48,6 +67,20 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
         MethodInfo funcInfo = MethodBuilder ?? throw new NullReferenceException();
         return funcInfo;
     }
+
+    public IReadOnlyList<ITypeInfo> GetGenericParameters() => _genericParamBuilders;
+
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
+
+    public IFnInfo? GetGenericFuncDefinition() => null;
+
+    public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments)
+    {
+        if (_genericParamBuilders.Count == 0) return null;
+        return new GenericFuncBuilder(this, genericTypeArguments);
+    }
+    
+    public IReadOnlyList<IGenericParameterBuilder> GetGenericParameterBuilders() => _genericParamBuilders;
 
     public bool Equals(IFnInfo? other)
     {
@@ -63,8 +96,6 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Name.GetHashCode(), ModuleName.GetHashCode());
+        return HashCode.Combine(GetType(), Name.GetHashCode(), ModuleName.GetHashCode());
     }
-
-    public MethodBuilder? MethodBuilder { get; set; }
 }
