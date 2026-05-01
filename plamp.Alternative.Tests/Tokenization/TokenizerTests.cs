@@ -33,6 +33,24 @@ public class TokenizerTests
     {
         yield return [";", typeof(EndOfStatement)];
         yield return [" ", typeof(WhiteSpace), new Predicate<TokenBase>(t => ((WhiteSpace)t).Kind == WhiteSpaceKind.WhiteSpace)];
+        yield return ["// comment", typeof(WhiteSpace), new Predicate<TokenBase>(t =>
+        {
+            var whiteSpace = (WhiteSpace)t;
+            return whiteSpace.Kind == WhiteSpaceKind.SingleLineComment
+                   && whiteSpace.GetStringRepresentation() == "// comment";
+        })];
+        yield return ["/*comment*/", typeof(WhiteSpace), new Predicate<TokenBase>(t =>
+        {
+            var whiteSpace = (WhiteSpace)t;
+            return whiteSpace.Kind == WhiteSpaceKind.MultiLineComment
+                   && whiteSpace.GetStringRepresentation() == "/*comment*/";
+        })];
+        yield return ["/*line1\nline2*/", typeof(WhiteSpace), new Predicate<TokenBase>(t =>
+        {
+            var whiteSpace = (WhiteSpace)t;
+            return whiteSpace.Kind == WhiteSpaceKind.MultiLineComment
+                   && whiteSpace.GetStringRepresentation() == "/*line1\nline2*/";
+        })];
         yield return ["abc", typeof(Word)];
         yield return ["a1", typeof(Word)];
         yield return ["A", typeof(Word)];
@@ -194,6 +212,7 @@ public class TokenizerTests
         yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName))}];
         yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
+        yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
@@ -239,5 +258,46 @@ public class TokenizerTests
         var result = await Tokenizer.TokenizeAsync(reader, FileName);
         result.Exceptions.ShouldBeEmpty();
         result.Sequence.Current().ShouldBeOfType<Colon>();
+    }
+
+    /// <summary>
+    /// Проверяет, что однострочный комментарий заканчивается на переводе строки
+    /// и не хавает токены следующей строки
+    /// </summary>
+    [Fact]
+    public async Task Tokenization_SingleLineComment_DoesNotSwallowNextLine()
+    {
+        const string code = """
+                            a // comment
+                            b
+                            """;
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldContain("// comment");
+        result.Sequence.Count(x => x is WhiteSpace { Kind: WhiteSpaceKind.LineBreak }).ShouldBeGreaterThanOrEqualTo(2);
+        result.Sequence.OfType<Word>().Select(x => x.GetStringRepresentation()).ShouldBe(["a", "b"]);
+    }
+
+    /// <summary>
+    /// Проверяет, что многострочный комментарий внутри выражения не ломает разбор соседних токенов
+    /// </summary>
+    [Fact]
+    public async Task Tokenization_MultiLineComment_Inline_DoesNotBreakNextToken()
+    {
+        const string code = "a/*comment*/:=11";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.OfType<WhiteSpace>().ShouldContain(x =>
+            x.Kind == WhiteSpaceKind.MultiLineComment && x.GetStringRepresentation() == "/*comment*/");
+        result.Sequence.OfType<OperatorToken>().ShouldContain(x => x.Operator == OperatorEnum.Assign);
+        result.Sequence.OfType<Literal>().ShouldContain(x => Equals(x.ActualValue, 11));
     }
 }

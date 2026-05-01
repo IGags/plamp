@@ -42,6 +42,17 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    /// <summary>
+    /// Многострочный комментарий не закрыт
+    /// </summary>
+    public static PlampExceptionRecord CommentIsNotClosed() =>
+        new()
+        {
+            Message = "Comment is not closed",
+            Code = "TOK1033",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 
     #region PRSing(1100-1299)

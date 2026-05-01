@@ -32,6 +32,22 @@ public class AssignmentParsingTests
         ];
         yield return
         [
+            "a /*инлайн коммент*/ := 11",
+            new AssignNode(
+                [new MemberNode("a")],
+                [new LiteralNode(11, Builtins.Int)]
+            )
+        ];
+        yield return
+        [
+            "a := /*инлайн коммент*/ 11",
+            new AssignNode(
+                [new MemberNode("a")],
+                [new LiteralNode(11, Builtins.Int)]
+            )
+        ];
+        yield return
+        [
             "a[b] := 5",
             new AssignNode(
                 [new IndexerNode(new MemberNode("a"), new MemberNode("b"))],
