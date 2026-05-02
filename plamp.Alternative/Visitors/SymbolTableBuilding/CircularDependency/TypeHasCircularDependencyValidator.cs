@@ -13,12 +13,11 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
  * Валидация дженериков.
  * Поскольку язык поддерживает только структурные типы(пока) и с другой стороны дженерики. Мы должны статически проверить,
  * что разработчик не создал дженерик тип, полем которого является он сам. При этом валидация должна затрагивать не только поля этого типа, но и поля типов его полей.
- * Не валидный дженерик тип для нас это такой тип, в полях которого или в полях типов полей (и тд...) содержится он сам же хотя бы с одним открытым дженерик параметром.
- * Например:
+ * Дженерик тип проверяется только по типам-объявлениям его полей. Так как дженерик вложенный сам в себя не может вызвать бесконечную рекурсию.
  * 
  * ListTuple[T1, T2]
  * |---left: T1
- * |---right: ListTuple[T1, int] <- Вызовет ошибку так как 1 параметр до сих пор открыт.
+ * |---right: ListTuple[T1, int] <- Вызовет ошибку так как тип-объявление поля вызывает бесконечную рекурсию.
  *
  * Ещё один пример.
  *
@@ -29,12 +28,16 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.CircularDependency;
  * Node[T]
  * |---val: ValueNode[T] <- ошибка
  */
+/// <inheritdoc/>
 public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuildingContext, SymbolTableBuildingContext>
 {
+    /// <inheritdoc/>
     protected override VisitorGuard Guard => VisitorGuard.TypeDef;
 
+    /// <inheritdoc/>
     protected override SymbolTableBuildingContext CreateInnerContext(SymbolTableBuildingContext context) => context;
 
+    /// <inheritdoc/>
     protected override SymbolTableBuildingContext MapInnerToOuter(
         SymbolTableBuildingContext outerContext,
         SymbolTableBuildingContext innerContext) 
@@ -73,8 +76,8 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
         
         if (info.Equals(originalType)) return true;
 
-        if (TypeIsGenericImplWithOpenParams(originalType, info)) return true;
-        if (TypeIsArrayWithOriginalTypeElement(originalType, info)) return true;
+        if (TypeIsGenericImplWithOpenParams(originalType, info, moduleTypes)) return true;
+        if (TypeIsArrayWithOriginalTypeElement(originalType, info, moduleTypes)) return true;
         
         foreach (var fldType in info.Fields.Select(x => x.FieldType))
         {
@@ -89,19 +92,20 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
     /// </summary>
     /// <param name="genericDef">Определение дженерика, который будет базой</param>
     /// <param name="genericImpl">Проверяемый тип</param>
+    /// <param name="moduleTypes">Список типов текущем модуле.</param>
     /// <returns>Флаг указывающий на результат проверки</returns>
-    private bool TypeIsGenericImplWithOpenParams(ITypeInfo genericDef, ITypeInfo genericImpl)
+    private bool TypeIsGenericImplWithOpenParams(ITypeInfo genericDef, ITypeInfo genericImpl, List<ITypeInfo> moduleTypes)
     {
         if (!genericDef.IsGenericTypeDefinition || !genericImpl.IsGenericType) return false;
         
         var implDef = genericImpl.GetGenericTypeDefinition();
-        if (!genericDef.Equals(implDef)) return false;
-        
-        var implArgs = genericImpl.GetGenericArguments();
-        return implArgs.Any(arg => arg.IsGenericTypeParameter);
+        if (genericDef.Equals(implDef)) return true;
+        ArgumentNullException.ThrowIfNull(implDef);
+
+        return VisitRecursive(implDef, genericDef, moduleTypes);
     }
 
-    private bool TypeIsArrayWithOriginalTypeElement(ITypeInfo originalType, ITypeInfo arrayType)
+    private bool TypeIsArrayWithOriginalTypeElement(ITypeInfo originalType, ITypeInfo arrayType, List<ITypeInfo> moduleTypes)
     {
         if (!arrayType.IsArrayType) return false;
         var elem = arrayType;
@@ -111,6 +115,6 @@ public class TypeHasCircularDependencyValidator : BaseValidator<SymbolTableBuild
             if (elem == null) throw new Exception("Тип элемента массива не может быть пустым, обратитесь к разработчику компилятора.");
         }
 
-        return originalType.Equals(elem);
+        return VisitRecursive(elem, originalType, moduleTypes);
     }
 }

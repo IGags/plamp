@@ -6,13 +6,18 @@ using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
+/// <summary>
+/// Объект, описывающий имплементацию дженерик функции.
+/// </summary>
 public class GenericFuncBuilder : IFnInfo
 {
     private readonly IFnInfo _definition;
     private readonly IReadOnlyList<ITypeInfo> _genericArguments;
 
+    /// <inheritdoc/>
     public string ModuleName => _definition.ModuleName;
 
+    /// <inheritdoc/>
     public string Name
     {
         get
@@ -25,16 +30,31 @@ public class GenericFuncBuilder : IFnInfo
         }
     }
 
+    /// <inheritdoc/>
     public string DefinitionName => _definition.DefinitionName;
     
+    /// <inheritdoc/>
     public IReadOnlyList<IArgInfo> Arguments { get; }
     
+    /// <inheritdoc/>
     public ITypeInfo ReturnType { get; }
 
+    /// <inheritdoc/>
     public bool IsGenericFuncDefinition => false;
 
+    /// <inheritdoc/>
     public bool IsGenericFunc => true;
 
+    /// <summary>
+    /// Собирает имплементацию дженерик функции.
+    /// </summary>
+    /// <param name="definition">Объявление дженерик функции, если функция не дженерик функция - ошибка</param>
+    /// <param name="genericArguments">Список дженерик аргументов для реализации функции, если хотя бы один - объявление дженерик типа - ошибка</param>
+    /// <exception cref="InvalidOperationException">
+    /// Базовая функция не является дженерик объявлением,
+    /// или число дженерик аргументов для реализации не равно числу дженерик параметров функции,
+    /// или хотя бы 1 дженерик аргумент имплементации функции является объявлением дженерик типа. 
+    /// </exception>
     public GenericFuncBuilder(IFnInfo definition, IReadOnlyList<ITypeInfo> genericArguments)
     {
         if (!definition.IsGenericFuncDefinition)
@@ -54,7 +74,7 @@ public class GenericFuncBuilder : IFnInfo
             .ToDictionary(x => x.First, x => x.Second);
 
         Arguments = ImplementArgTypes(definition.Arguments, typeMapping);
-        ReturnType = GenericTypeBuilder.ImplementType(definition.ReturnType, typeMapping);
+        ReturnType = GenericImplementationHelper.ImplementType(definition.ReturnType, typeMapping);
     }
 
     private IReadOnlyList<IArgInfo> ImplementArgTypes(
@@ -64,39 +84,47 @@ public class GenericFuncBuilder : IFnInfo
         var newArgs = new List<BlankArgInfo>();
         foreach (var arg in args)
         {
-            var implType = GenericTypeBuilder.ImplementType(arg.Type, typeMapping);
+            var implType = GenericImplementationHelper.ImplementType(arg.Type, typeMapping);
             newArgs.Add(new BlankArgInfo(arg.Name, implType));
         }
 
         return newArgs;
     }
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericArguments() => _genericArguments;
 
+    /// <inheritdoc/>
     public IFnInfo GetGenericFuncDefinition() => _definition;
 
+    /// <inheritdoc/>
     public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
 
+    /// <inheritdoc/>
     public MethodInfo AsFunc()
     {
         var argumentTypes = _genericArguments.Select(x => x.AsType()).ToArray();
         return _definition.AsFunc().MakeGenericMethod(argumentTypes);
     }
     
+    /// <inheritdoc/>
     public bool Equals(IFnInfo? other)
     {
         if (other is not GenericFuncBuilder genericFunc) return false;
         return ModuleName.Equals(genericFunc.ModuleName) && Name.Equals(genericFunc.Name);
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         if (obj is not IFnInfo fnInfo) return false;
         return Equals(fnInfo);
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return HashCode.Combine(GetType(), ModuleName.GetHashCode(), Name.GetHashCode());

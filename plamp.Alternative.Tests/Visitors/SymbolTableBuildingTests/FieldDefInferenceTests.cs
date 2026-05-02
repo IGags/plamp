@@ -335,7 +335,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         
-        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "T2`1");
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "T2");
         var fld = type.Fields.ShouldHaveSingleItem();
         
         fld.Name.ShouldBe("fld");
@@ -364,7 +364,7 @@ public class FieldDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         
-        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "G`1");
+        var type = res.SymTableBuilder.ListTypes().Single(x => x.DefinitionName == "G");
         var fld = type.Fields.Single();
         
         fld.Name.ShouldBe("fld");
@@ -392,9 +392,9 @@ public class FieldDefInferenceTests
         var types = res.SymTableBuilder.ListTypes();
         types.Count.ShouldBe(2);
 
-        var finType = types.Single(x => x.DefinitionName == "Fin`1");
+        var finType = types.Single(x => x.DefinitionName == "Fin");
         var fld = finType.Fields.ShouldHaveSingleItem();
-        var lsType = types.Single(x => x.DefinitionName == "Ls`1");
+        var lsType = types.Single(x => x.DefinitionName == "Ls");
 
         var genericParam = finType.GenericParameterBuilders.ShouldHaveSingleItem();
         var typeShould = lsType.MakeGenericType(

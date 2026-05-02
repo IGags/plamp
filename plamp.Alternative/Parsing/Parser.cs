@@ -24,6 +24,10 @@ public static class Parser
 {
     public static RootNode ParseFile(ParsingContext context)
     {
+        //В парсере есть конвенция, что каждый метод парсинга должен возвращать seqence которая находится на следующем токене после него
+        //Но если парсинг только начался и первый токен пробел - это может вызывать проблемы, поэтому они пропускаются явно.
+        if (context.Sequence.Current() is WhiteSpace) context.Sequence.MoveNextNonWhiteSpace();
+        
         var topLevelList = new List<NodeBase>();
         while (context.Sequence.Current() is not EndOfFile)
         {
@@ -69,7 +73,8 @@ public static class Parser
         TokenBase first;
         var current = first = context.Sequence.Current();
         while ((current is not KeywordToken 
-                || current is KeywordToken keywordToken && !topLevelKeywords.Contains(keywordToken.Keyword))
+                || current is KeywordToken keywordToken 
+                && !topLevelKeywords.Contains(keywordToken.Keyword))
                && context.Sequence.MoveNextNonWhiteSpace())
         {
             current = context.Sequence.Current();
@@ -122,7 +127,11 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
 
-        _ = TryParseGenericDefinitionSequence(context, out var generics);
+        //Особый случай, функция обрабатывает пустой дженерик
+        if (!TryParseGenericDefinitionSequence(context, out var generics))
+        {
+            generics = [];
+        }
 
         if (context.Sequence.Current() is EndOfStatement)
         {
@@ -453,6 +462,7 @@ public static class Parser
             return false;
         }
 
+        //Особый случай, функция обрабатывает пустой дженерик 
         if (!TryParseGenericDefinitionSequence(context, out var generics))
         {
             generics = [];
@@ -1303,13 +1313,7 @@ public static class Parser
         var start = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
 
-        var genericSequenceFork = context.Fork();
-        var genericArgList = new List<TypeNode>();
-        if (context.Sequence.Current() is OpenSquareBracket
-            && TryParseGenericTypeArgs(genericSequenceFork, out genericArgList))
-        {
-            context.Merge(genericSequenceFork);
-        }
+        _ = TryParseGenericTypeArgs(context, out var genericArgList);
 
         if (context.Sequence.Current() is not OpenParen)
         {
@@ -1535,7 +1539,7 @@ public static class Parser
             var genericArgFork = context.Fork();
             if (!TryParseType(genericArgFork, out var genericArg))
             {
-                var error = PlampExceptionInfo.ExpectedGenericTypeArg();
+                var error = PlampExceptionInfo.ExpectedGenericArg();
                 context.Exceptions.Add(new PlampException(error, context.Sequence.CurrentPosition));
                 continue;
             }

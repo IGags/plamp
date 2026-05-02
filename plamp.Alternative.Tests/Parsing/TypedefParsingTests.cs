@@ -171,6 +171,21 @@ public class TypedefParsingTests
     }
 
     [Fact]
+    //Объявлено имя поля, но не объявлено : с типом после - ошибка
+    public void ParseTypeFieldQualifierExpected_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x }");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeTrue();
+        node.ShouldNotBeNull();
+        node.Name.Value.ShouldBe("MyType");
+        node.Fields.ShouldBeEmpty();
+        
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedFieldTypeQualifier().Code);
+    }
+
+    [Fact]
     //Незакрытое тело типа - ошибка
     public void ParseNotClosedBody_ReturnsException()
     {
@@ -264,4 +279,42 @@ public class TypedefParsingTests
         var ex = context.Exceptions.ShouldHaveSingleItem();
         ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code);
     }
+
+    [Fact]
+    //Дженерик параметр имеет формат похожий не на объявление, а на тип реализации
+    public void PassIncorrectGenericParameterFormat_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[[]T];");
+        var res = Parser.TryParseTypedef(context, out _);
+        res.ShouldBeFalse();
+        
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
+    }
+
+    [Fact]
+    //В объявление дженерик типа передали дженерик тип, ошибка
+    public void PassGenericTypeInsideGeneric_ReturnsError()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T[int]];");
+        var res = Parser.TryParseTypedef(context, out _);
+        res.ShouldBeTrue();
+        
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
+    }
+
+    [Fact] 
+    //При парсинге типа с дженериком без открывающей скобки парсер думает, что перед ним тип без тела и не захватывет хвост выражения
+    public void ParseTypeWithoutOpenGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen T];");
+        var res = Parser.TryParseTypedef(context, out var node);
+        res.ShouldBeFalse();
+        node.ShouldBeNull();
+        
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code);
+    }
+    
 }

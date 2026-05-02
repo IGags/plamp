@@ -64,7 +64,7 @@ public class SymTableEmitterTests
         typeBuilder.Module.ShouldBe(module);
         var type = typeBuilder.CreateType();
         type.BaseType.ShouldBe(typeof(ValueType));
-        type.Name.ShouldBe("1A`2");
+        type.Name.ShouldBe("1A");
         var genericArgs = type.GetGenericArguments();
         genericArgs.Length.ShouldBe(2);
         genericArgs[0].Name.ShouldBe("T1");

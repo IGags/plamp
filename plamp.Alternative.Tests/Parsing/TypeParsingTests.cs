@@ -93,7 +93,7 @@ public class TypeParsingTests
         type.ShouldNotBeNull();
 
         context.Exceptions.Count.ShouldBe(2);
-        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArg().Code };
+        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericArg().Code };
         codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
     }
 
@@ -175,7 +175,7 @@ public class TypeParsingTests
         var res = Parser.TryParseType(context, out _);
         res.ShouldBeTrue();
         var ex = context.Exceptions.ShouldHaveSingleItem();
-        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericTypeArg().Code);
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericArg().Code);
     }
 
     [Fact]
@@ -185,7 +185,17 @@ public class TypeParsingTests
         var res = Parser.TryParseType(context, out _);
         res.ShouldBeTrue();
         context.Exceptions.Count.ShouldBe(2);
-        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArg().Code };
+        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericArg().Code };
         codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void NotCompleteInnerGeneric_ReturnsError()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("Map[List[int, int]");
+        var res = Parser.TryParseType(context, out _);
+        res.ShouldBeTrue();
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
     }
 }

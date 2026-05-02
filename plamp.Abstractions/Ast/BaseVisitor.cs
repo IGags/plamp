@@ -80,7 +80,8 @@ public abstract class BaseVisitor<TContext>
     }
 
     /// <summary>
-    /// Выбранный способ обхода дерева
+    /// Выбранный способ обхода дерева, пропускает некоторые узлы в определённых режимах.
+    /// Нужен для оптимизации и защиты логики визиторов от получения лишних данных при обходе.
     /// </summary>
     protected virtual VisitorGuard Guard => VisitorGuard.All;
 

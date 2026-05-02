@@ -171,6 +171,7 @@ public class FuncParsingTests
                 new BodyNode([])
             )
         ];
+        yield return ["fn a]() {}", new List<string> { PlampExceptionInfo.ExpectedOpenParen().Code }, false, null];
     }
 
     [Theory]

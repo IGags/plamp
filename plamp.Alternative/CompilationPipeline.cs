@@ -10,6 +10,7 @@ using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tokenization;
 using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Alternative.Visitors.ModulePreCreation.BodyLevelExpression;
 using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
@@ -73,7 +74,7 @@ public static class CompilationPipeline
         
         //Проверка выражений на уровне body(нельзя запихать что попало)
         var bodyLevelValidator = new BodyLevelExpressionValidator();
-        bodyLevelValidator.WeaveDiffs(ast, context);
+        bodyLevelValidator.Validate(ast, context);
         
         //Вывод типов.
         var typeInferenceVisitor = new TypeInferenceWeaver();
@@ -86,7 +87,7 @@ public static class CompilationPipeline
         return new(ast);
     }
 
-    public static async Task<AstParsingRes> RunAstParsing(StreamReader fileStream, string fileName)
+    public static async Task<AstParsingRes> RunFrontendSteps(StreamReader fileStream, string fileName)
     {
         var (ast, context) = await RunParsingAsync(fileStream, fileName);
         

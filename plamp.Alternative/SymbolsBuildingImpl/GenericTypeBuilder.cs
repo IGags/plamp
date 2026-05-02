@@ -14,6 +14,15 @@ public class GenericTypeBuilder : ITypeInfo
     private readonly IReadOnlyList<ITypeInfo> _genericArguments;
     private readonly IFieldInfo[] _fields;
 
+    /// <summary>
+    /// Создать реализацию дженерик типа.
+    /// </summary>
+    /// <param name="definition">Тип объявления дженерик типа, обязан быть открытым дженериком</param>
+    /// <param name="genericArguments">Список аргументов дженерик типа, ни один не должен быть объявлением дженерик типа.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Происходит если число дженерик аргументов не равно числу дженерик параметров
+    /// или если базовый тип не дженерик объявление или если хотя бы один из дженерик аргументов - объявление дженерик типа.
+    /// </exception>
     public GenericTypeBuilder(ITypeInfo definition, IReadOnlyList<ITypeInfo> genericArguments)
     {
         if (!definition.IsGenericTypeDefinition)
@@ -36,64 +45,34 @@ public class GenericTypeBuilder : ITypeInfo
         _fields = OverrideGenericFields(definitionFields, genericMapping);
     }
 
+    /// <summary>
+    /// Замещает параметры из объявления типа аргументами реализации в полях типа.
+    /// </summary>
+    /// <param name="definitionFields">Список полей типа-объявления</param>
+    /// <param name="genericMapping">Список соответствий параметров из дженерик объявления аргументам из реализации.</param>
+    /// <returns>Массив реализованных полей, число равно базовому типу</returns>
     private IFieldInfo[] OverrideGenericFields(IReadOnlyList<IFieldInfo> definitionFields, IReadOnlyDictionary<ITypeInfo, ITypeInfo> genericMapping)
     {
         var newFields = new List<IFieldInfo>();
         foreach (var field in definitionFields)
         {
-            var implType = ImplementType(field.FieldType, genericMapping);
+            var implType = GenericImplementationHelper.ImplementType(field.FieldType, genericMapping);
             newFields.Add(new GenericImplFieldInfo(this, field, implType));
         }
 
         return newFields.ToArray();
     }
     
-    public static ITypeInfo ImplementType(
-        ITypeInfo openType,
-        IReadOnlyDictionary<ITypeInfo, ITypeInfo> typeMapping)
-    {
-        if (openType.IsGenericTypeDefinition)
-            throw new InvalidOperationException("Нельзя сделать имплементацию для дженерик объявления");
-
-        if (openType.IsGenericTypeParameter)
-        {
-            return typeMapping.GetValueOrDefault(openType) ??
-                   throw new InvalidOperationException("Неполный маппинг типов для имплементации дженериков");
-        }
-
-        if (openType.IsArrayType)
-        {
-            var elemType = openType.ElementType();
-            ArgumentNullException.ThrowIfNull(elemType);
-            var elemImpl = ImplementType(elemType, typeMapping);
-            return elemImpl.MakeArrayType();
-        }
-
-        if (openType.IsGenericType)
-        {
-            var openTypeDef = openType.GetGenericTypeDefinition();
-            ArgumentNullException.ThrowIfNull(openTypeDef);
-            var openTypeArgs = openType.GetGenericArguments();
-            var implArgs = new List<ITypeInfo>();
-            foreach (var argType in openTypeArgs)
-            {
-                implArgs.Add(ImplementType(argType, typeMapping));
-            }
-
-            var implType = openTypeDef.MakeGenericType(implArgs);
-            ArgumentNullException.ThrowIfNull(implType);
-            return implType;
-        }
-
-        return openType;
-    }
-    
-
+    /// <inheritdoc/>
     public IReadOnlyList<IFieldInfo> Fields => _fields;
 
+    /// <inheritdoc/>
     public string ModuleName => _definition.ModuleName;
+
+    /// <inheritdoc/>
     public string DefinitionName => _definition.DefinitionName;
     
+    /// <inheritdoc/>
     public string Name
     {
         get
@@ -106,31 +85,44 @@ public class GenericTypeBuilder : ITypeInfo
         }
     }
 
+    /// <inheritdoc/>
     public bool IsArrayType => false;
 
+    /// <inheritdoc/>
     public bool IsGenericType => true;
 
+    /// <inheritdoc/>
     public bool IsGenericTypeDefinition => false;
 
+    /// <inheritdoc/>
     public bool IsGenericTypeParameter => false;
     
+    /// <inheritdoc/>
     public Type AsType()
     {
         var argTypes = _genericArguments.Select(x => x.AsType()).ToArray();
         return _definition.AsType().MakeGenericType(argTypes);
     }
     
+    /// <inheritdoc/>
     public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
+    
+    /// <inheritdoc/>
     public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
 
+    /// <inheritdoc/>
     public ITypeInfo? ElementType() => null;
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericArguments() => _genericArguments;
 
+    /// <inheritdoc/>
     public ITypeInfo GetGenericTypeDefinition() => _definition;
 
+    /// <inheritdoc/>
     public bool Equals(ITypeInfo? other)
     {
         if (other is not GenericTypeBuilder genericTypeBuilder) return false;
@@ -139,6 +131,7 @@ public class GenericTypeBuilder : ITypeInfo
             && _genericArguments.SequenceEqual(genericTypeBuilder._genericArguments);
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         var code = new HashCode();
@@ -151,6 +144,7 @@ public class GenericTypeBuilder : ITypeInfo
         return code.ToHashCode();
     }
     
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         if (obj is not ITypeInfo other) return false;

@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -19,6 +21,31 @@ public class FunctionCallParsingTests
         [
             "fn3(a, b, c)",
             new CallNode(null, new FuncCallNameNode("fn3"), [new MemberNode("a"), new MemberNode("b"), new MemberNode("c")], [])
+        ];
+        yield return ["fn4[T]()", new CallNode(null, new FuncCallNameNode("fn4"), [], [new TypeNode(new TypeNameNode("T"))])];
+        yield return
+            [
+                "fn5[T, T2]()",
+                new CallNode(null, new FuncCallNameNode("fn5"), [],
+                    [new TypeNode(new TypeNameNode("T")), new TypeNode(new TypeNameNode("T2"))])
+            ];
+        yield return
+        [
+            "fn6[T, T](a, b)",
+            new CallNode(null, new FuncCallNameNode("fn6"), [new MemberNode("a"), new MemberNode("b")],
+                [new TypeNode(new TypeNameNode("T")), new TypeNode(new TypeNameNode("T"))])
+        ];
+        yield return
+        [
+            "fn7(a, a)", new CallNode(null, new FuncCallNameNode("fn7"), [new MemberNode("a"), new MemberNode("a")], [])
+        ];
+        yield return
+        [
+            "fn8[[]int, []List[int]]()",
+            new CallNode(null, new FuncCallNameNode("fn8"), [], [
+                new TypeNode(new TypeNameNode("int")){ArrayDefinitions = [new ArrayTypeSpecificationNode()]},
+                new TypeNode(new TypeNameNode("List"), [new TypeNode(new TypeNameNode("int"))]) {ArrayDefinitions = [new ArrayTypeSpecificationNode()]}
+            ])
         ];
     }
     
@@ -67,6 +94,36 @@ public class FunctionCallParsingTests
         [
             "fn6(a, +", new List<string>() { PlampExceptionInfo.ExpectedExpression().Code }, false,
             null
+        ];
+        yield return
+        [
+            "fn7[]()", new List<string>() { PlampExceptionInfo.EmptyGenericArgs().Code }, true,
+            new CallNode(null, new FuncCallNameNode("fn7"), [], [])
+        ];
+        yield return
+        [
+            "fn8[()", new List<string>()
+            {
+                PlampExceptionInfo.ExpectedGenericArg().Code,
+                PlampExceptionInfo.GenericArgsIsNotClosed().Code
+            }, true,
+            new CallNode(null, new FuncCallNameNode("fn8"), [], [])
+        ];
+        yield return 
+        [
+            "fn9[T,]()", new List<string>() {  
+                PlampExceptionInfo.ExpectedGenericArg().Code
+            }, true,
+            new CallNode(null, new FuncCallNameNode("fn9"), [], [new TypeNode(new TypeNameNode("T"))])
+        ];
+        yield return
+        [
+            "fn10[T[int,]()", new List<string>()
+            {
+                PlampExceptionInfo.ExpectedGenericArg().Code,
+                PlampExceptionInfo.GenericArgsIsNotClosed().Code
+            }, true,
+            new CallNode(null, new FuncCallNameNode("fn10"), [], [new TypeNode(new TypeNameNode("T"), [new TypeNode(new TypeNameNode("int"))])])
         ];
     }
     

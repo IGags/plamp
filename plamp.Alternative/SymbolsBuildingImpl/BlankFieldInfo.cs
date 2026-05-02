@@ -6,18 +6,25 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
+/// <inheritdoc/>
 public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
 {
     private readonly ITypeInfo _definingType = definingType;
+    
     private FieldInfo? _field;
+    
     private FieldBuilder? _fieldBuilder;
 
+    /// <inheritdoc/>
     public FieldInfo AsField() => _fieldBuilder ?? _field ?? throw new NullReferenceException();
 
+    /// <inheritdoc/>
     public ITypeInfo FieldType => typeInfo;
     
+    /// <inheritdoc/>
     public string Name => name;
 
+    /// <inheritdoc/>
     public FieldInfo? Field
     {
         get => _field;
@@ -29,6 +36,7 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
         }
     }
 
+    /// <inheritdoc/>
     public FieldBuilder? Builder
     {
         get
@@ -43,6 +51,7 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
         }
     }
 
+    /// <inheritdoc/>
     public bool Equals(IFieldInfo? obj)
     {
         if (obj is not BlankFieldInfo emptyFld) return false;
@@ -51,6 +60,9 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
                && _definingType.Equals(emptyFld._definingType);
     }
 
+    /// <summary>
+    /// Бросить ошибку, если создание типа завершено
+    /// </summary>
     private void ThrowIfComplete()
     {
         if (_field != null)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
@@ -20,25 +21,25 @@ public interface ISymTableBuilder
 
     /// <summary>
     /// Объявить новый тип в компилируемом модуле.
-    /// Валидация на дубликаты по чему-либо не гарантируется
     /// </summary>
     /// <param name="typeNode">Узел AST объявляющий тип</param>
     /// <param name="generics">Список параметров у типа. Пустой массив или null расцениваются так, что тип не является дженериком.</param>
+    /// <exception cref="InvalidOperationException">Если член с таким именем уже объявлен в модуле. Или внутренние ошибки от логики <see cref="ITypeBuilderInfo"/>.</exception>
     /// <returns>Базовый объект - билдер объявленного типа</returns>
     public ITypeBuilderInfo DefineType(TypedefNode typeNode, IGenericParameterBuilder[]? generics = null);
     
     /// <summary>
     /// Перечислить все типы, явно объявленные через вызов <see cref="DefineType"/> в текущем билдере 
     /// </summary>
-    /// <returns>Список явно объявленных типов</returns>
+    /// <returns>Список явно объявленных типов, в него не попадают дженерик имплементации, массивы и дженерик параметры</returns>
     public IReadOnlyList<ITypeBuilderInfo> ListTypes();
 
     /// <summary>
     /// Объявить новую функцию в компилируемом модуле.
-    /// Валидация на дубликаты по чему-либо не гарантируется
     /// </summary>
     /// <param name="fnNode">Узел AST объявляющий функцию</param>
     /// <param name="generics">Список параметров у функции. Пустой массив или null расцениваются так, что функция не является дженериком.</param>
+    /// <exception cref="InvalidOperationException">Узел AST не имеет возвращаемого типа или хотя бы 1 аргумент не имеет типа или член с таким именем уже объявлен в модуле.</exception>
     /// <returns>Базовый объект - билдер объявленной функции</returns>
     public IFnBuilderInfo DefineFunc(FuncNode fnNode, IGenericParameterBuilder[]? generics = null);
 
@@ -52,7 +53,7 @@ public interface ISymTableBuilder
     /// <summary>
     /// Перечислить все функции, явно объявленные через вызов <see cref="DefineFunc"/> в текущем билдере
     /// </summary>
-    /// <returns>Список явно объявленных функций</returns>
+    /// <returns>Список явно объявленных функций без дженерик имплементаций</returns>
     public IReadOnlyList<IFnBuilderInfo> ListFuncs();
 
     /// <summary>

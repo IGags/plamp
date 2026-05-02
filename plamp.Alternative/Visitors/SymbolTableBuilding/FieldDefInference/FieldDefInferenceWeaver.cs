@@ -19,8 +19,8 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
     protected override FieldInferenceInnerContext CreateInnerContext(SymbolTableBuildingContext context) => new(context);
 
     protected override SymbolTableBuildingContext MapInnerToOuter(
-        FieldInferenceInnerContext innerContext,
-        SymbolTableBuildingContext outerContext) 
+        SymbolTableBuildingContext outerContext,
+        FieldInferenceInnerContext innerContext) 
         => innerContext;
 
     protected override VisitResult PreVisitTypedef(TypedefNode node, FieldInferenceInnerContext context, NodeBase? parent)

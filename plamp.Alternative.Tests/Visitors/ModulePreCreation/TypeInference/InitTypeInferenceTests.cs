@@ -93,7 +93,7 @@ public class InitTypeInferenceTests
         var typeInit = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitTypeNode>();
         
         var info = typeInit.Type.TypeInfo.ShouldNotBeNull();
-        info.DefinitionName.ShouldBe("D`2");
+        info.DefinitionName.ShouldBe("D");
         info.Name.ShouldBe("D[int, string]");
     }
 

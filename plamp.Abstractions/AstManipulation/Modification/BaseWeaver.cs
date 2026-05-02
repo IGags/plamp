@@ -30,7 +30,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
         context.WeaveReplacementDict.Clear();
         var innerContext = CreateInnerContext(context);
         VisitNodeBase(ast, innerContext, null);
-        var result = MapInnerToOuter(innerContext, context);
+        var result = MapInnerToOuter(context, innerContext);
         ProceedNodeReplacement(ast, innerContext);
         return result;
     }
@@ -48,7 +48,7 @@ public abstract class BaseWeaver<TOuterContext, TInnerContext>
     /// <param name="innerContext">Объект внутреннего контекста, который использовался при обходе.</param>
     /// <param name="outerContext">Объект внешнего контекста, который был получен при старте обхода</param>
     /// <returns>Новый объект контекста, который будет возвращён после работы посетителя</returns>
-    protected abstract TOuterContext MapInnerToOuter(TInnerContext innerContext, TOuterContext outerContext);
+    protected abstract TOuterContext MapInnerToOuter(TOuterContext outerContext, TInnerContext innerContext);
 
     /// <summary>
     /// Метод, заменяющий узел AST, на новый в соответствии с функцией, которая создаёт этот узел

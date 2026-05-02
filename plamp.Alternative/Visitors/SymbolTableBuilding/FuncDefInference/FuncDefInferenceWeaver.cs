@@ -18,8 +18,8 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         => new(context);
 
     protected override SymbolTableBuildingContext MapInnerToOuter(
-        FuncDefInferenceContext innerContext,
-        SymbolTableBuildingContext outerContext)
+        SymbolTableBuildingContext outerContext,
+        FuncDefInferenceContext innerContext)
         => innerContext;
 
     protected override VisitResult PostVisitType(TypeNode node, FuncDefInferenceContext context, NodeBase? parent)

@@ -140,17 +140,18 @@ public class CircularDependencyVisitorTests
     }
 
     /// <summary>
-    /// Дженерик тип имеет поле того же типа, только имплементированное - корректно
+    /// Дженерик тип имеет поле того же типа, только имплементированное - ошибка
     /// </summary>
     [Fact]
-    public void GenericTypeHasFieldWithSameTypeImplemented_Correct()
+    public void GenericTypeHasFieldWithSameTypeImplemented_Error()
     {
         const string code = """
                             type A[T] { f : A[int]}
                             """;
         
         var ctx = SetupAndAct(code);
-        ctx.Exceptions.ShouldBeEmpty();
+        var exception = ctx.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.FieldProduceCircularDependency().Code);
     }
 
     /// <summary>
@@ -165,8 +166,8 @@ public class CircularDependencyVisitorTests
                             """;
         var ctx = SetupAndAct(code);
 
-        var exception = ctx.Exceptions.ShouldHaveSingleItem();
-        exception.Code.ShouldBe(PlampExceptionInfo.FieldProduceCircularDependency().Code);
+        ctx.Exceptions.Count.ShouldBe(2);
+        ctx.Exceptions.Select(x => x.Code).ShouldAllBe(x => x.Equals(PlampExceptionInfo.FieldProduceCircularDependency().Code));
     }
 
     /// <summary>
@@ -182,8 +183,8 @@ public class CircularDependencyVisitorTests
         
         var ctx = SetupAndAct(code);
 
-        var exception = ctx.Exceptions.ShouldHaveSingleItem();
-        exception.Code.ShouldBe(PlampExceptionInfo.FieldProduceCircularDependency().Code);
+        ctx.Exceptions.Count.ShouldBe(3);
+        ctx.Exceptions.Select(x => x.Code).ShouldAllBe(x => x.Equals(PlampExceptionInfo.FieldProduceCircularDependency().Code));
     }
 
     /// <summary>
@@ -199,6 +200,48 @@ public class CircularDependencyVisitorTests
         var ctx = SetupAndAct(code);
         var exception = ctx.Exceptions.ShouldHaveSingleItem();
         exception.Code.ShouldBe(PlampExceptionInfo.FieldProduceCircularDependency().Code);
+    }
+
+    /// <summary>
+    /// У второго типа первый как массив, а у первого второй как значение
+    /// </summary>
+    [Fact]
+    public void TypeHasOtherTypeAsArrayRecursiveField_Error()
+    {
+        const string code = """
+                            type A {B: B}
+                            type B {A: []A}
+                            """;
+        var ctx = SetupAndAct(code);
+        ctx.Exceptions.Count.ShouldBe(2);
+        ctx.Exceptions.Select(x => x.Code).ShouldAllBe(x => x.Equals(PlampExceptionInfo.FieldProduceCircularDependency().Code));
+    }
+
+    /// <summary>
+    /// Первый и второй типы имеют ссылки-массивы друг на друга
+    /// </summary>
+    [Fact]
+    public void TypesHasArrayReferenceToEachOther_Error()
+    {
+        const string code = """
+                            type A {B: []B}
+                            type B {A: []A}
+                            """;
+        var ctx = SetupAndAct(code);
+        ctx.Exceptions.Count.ShouldBe(2);
+        ctx.Exceptions.Select(x => x.Code).ShouldAllBe(x => x.Equals(PlampExceptionInfo.FieldProduceCircularDependency().Code));
+    }
+
+    [Fact]
+    public void TypeHasArrayAndReferenceOnOtherGenericThatHasReferenceOnFirstGeneric_Error()
+    {
+        const string code = """
+                            type A[T1] {B: []B[T1]}
+                            type B[T2] {A: []A[T2]}
+                            """;
+        var ctx = SetupAndAct(code);
+        ctx.Exceptions.Count.ShouldBe(2);
+        ctx.Exceptions.Select(x => x.Code).ShouldAllBe(x => x.Equals(PlampExceptionInfo.FieldProduceCircularDependency().Code));
     }
     
     private SymbolTableBuildingContext SetupAndAct(string code)

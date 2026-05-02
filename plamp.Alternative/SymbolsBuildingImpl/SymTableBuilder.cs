@@ -26,7 +26,7 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     public ITypeBuilderInfo DefineType(TypedefNode typeNode, IGenericParameterBuilder[]? genericParams = null)
     {
         var name = typeNode.Name.Value;
-        if (_types.ContainsKey(name)) throw new InvalidOperationException();
+        if (_types.ContainsKey(name) || _funcs.ContainsKey(name)) throw new InvalidOperationException();
         
         var type = genericParams is { Length: > 0 } 
             ? new TypeBuilder(name, genericParams, ModuleName) 
@@ -48,7 +48,7 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
         var retType = fnNode.ReturnType.TypeInfo;
         if (retType == null) throw new InvalidOperationException();
         if (fnNode.ParameterList.Any(x => x.Type.TypeInfo == null)) throw new InvalidOperationException();
-        if (_funcs.ContainsKey(fnNode.FuncName.Value)) throw new InvalidOperationException();
+        if (_funcs.ContainsKey(fnNode.FuncName.Value) || _types.ContainsKey(fnNode.FuncName.Value)) throw new InvalidOperationException();
 
         var args = fnNode.ParameterList.Select(x => new BlankArgInfo(x.Name.Value, x.Type.TypeInfo!));
         

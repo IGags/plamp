@@ -10,7 +10,7 @@ namespace plamp.Abstractions.Symbols.SymTable;
 public interface IFnInfo : IModuleMember, IEquatable<IFnInfo>
 {
     /// <summary>
-    /// Имя функции, должно быть уникально среди всех членов в рамках модуля.
+    /// Имя функции, должно быть уникально среди всех членов в рамках модуля. Должно возвращать дженерик параметры.
     /// </summary>
     public string Name { get; }
     

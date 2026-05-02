@@ -1,7 +1,7 @@
 namespace plamp.Abstractions.Symbols.SymTable;
 
 /// <summary>
-/// Общий интерфейс для всего, что объявлено напрямую в модуле
+/// Общий интерфейс для всех объявлений верхнего уровня внутри модуля.
 /// </summary>
 public interface IModuleMember
 {

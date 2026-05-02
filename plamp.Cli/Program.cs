@@ -22,7 +22,7 @@ public static class Program
         using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen:true);
      
         var sw = Stopwatch.StartNew();
-        var (exceptions, symTable) = await CompilationPipeline.RunAstParsing(reader, filepath);
+        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(reader, filepath);
         
         Console.WriteLine($"Compilation took {sw.Elapsed}");
         

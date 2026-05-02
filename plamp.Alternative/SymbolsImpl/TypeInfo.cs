@@ -8,26 +8,36 @@ using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.SymbolsImpl;
 
+/// <inheritdoc/>
 public class TypeInfo : ITypeInfo
 {
     private readonly Type _type;
     
+    /// <inheritdoc/>
     public Type AsType() => _type;
 
+    /// <inheritdoc/>
     public IReadOnlyList<IFieldInfo> Fields { get; }
     
+    /// <inheritdoc/>
     public string Name { get; }
     
+    /// <inheritdoc/>
     public string ModuleName { get; }
 
+    /// <inheritdoc/>
     public string DefinitionName { get; }
 
+    /// <inheritdoc/>
     public bool IsArrayType => _type.IsArray;
 
+    /// <inheritdoc/>
     public bool IsGenericType => _type is { IsGenericType: true, IsGenericTypeDefinition: false };
 
+    /// <inheritdoc/>
     public bool IsGenericTypeDefinition => _type.IsGenericTypeDefinition;
 
+    /// <inheritdoc/>
     public bool IsGenericTypeParameter => _type.IsGenericMethodParameter;
 
     private TypeInfo(Type type, string moduleName, string? nameOverride = null)
@@ -55,6 +65,13 @@ public class TypeInfo : ITypeInfo
             .Select(x => new FldInfo(x, moduleName)).ToList();
     }
 
+    /// <summary>
+    /// Сборка объекта из типа .net - единственный публичный способ создать тип.
+    /// </summary>
+    /// <param name="type">Тип .net на базе которого построить тип</param>
+    /// <param name="moduleName">Имя модуля, к которому относится тип.</param>
+    /// <param name="nameOverride">Переопределение имени. Не обязательное. Перезаписывает имя для механизмов поиска символов языка.</param>
+    /// <returns>Возвращает готовый к использованию объект данного типа</returns>
     public static ITypeInfo FromType(Type type, string moduleName, string? nameOverride = null)
     {
         var arrayCt = 0;
@@ -87,24 +104,30 @@ public class TypeInfo : ITypeInfo
         return defInfo;
     }
     
+    /// <inheritdoc/>
     public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
 
+    /// <inheritdoc/>
     public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments)
     {
         if (!_type.IsGenericTypeDefinition) return null;
         return new GenericTypeBuilder(this, genericTypeArguments);
     }
 
+    /// <inheritdoc/>
     public ITypeInfo? ElementType() => null;
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericParameters()
     {
         if (!IsGenericTypeDefinition) return [];
         return _type.GetGenericArguments().Select(x => new TypeInfo(x, ModuleName)).ToList();
     }
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
 
+    /// <inheritdoc/>
     public ITypeInfo? GetGenericTypeDefinition()
     {
         if (!IsGenericType) return null;
@@ -112,17 +135,20 @@ public class TypeInfo : ITypeInfo
         return new TypeInfo(def, ModuleName);
     }
 
+    /// <inheritdoc/>
     public bool Equals(ITypeInfo? other)
     {
         if (other is not TypeInfo typ) return false;
         return typ._type == _type;
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return _type.GetHashCode();
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         return _type.Equals(obj);

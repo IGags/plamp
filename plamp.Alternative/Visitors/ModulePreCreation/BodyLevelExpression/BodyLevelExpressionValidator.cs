@@ -1,19 +1,22 @@
-using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Abstractions.AstManipulation.Modification;
-using plamp.Alternative.Visitors.ModulePreCreation.BodyLevelExpression;
+using plamp.Abstractions.AstManipulation.Validation;
 
-namespace plamp.Alternative.Visitors.ModulePreCreation;
+namespace plamp.Alternative.Visitors.ModulePreCreation.BodyLevelExpression;
 
-public class BodyLevelExpressionValidator : BaseWeaver<PreCreationContext, BodyLevelExpressionContext>
+/// <summary>
+/// Валидация разрешённых выражений на уровне body.
+/// </summary>
+public class BodyLevelExpressionValidator : BaseValidator<PreCreationContext, BodyLevelExpressionContext>
 {
+    /// <inheritdoc/>
     protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
 
+    /// <inheritdoc/>
     protected override VisitResult PreVisitInstruction(NodeBase node, BodyLevelExpressionContext context, NodeBase? parent)
     {
         if (node
@@ -36,22 +39,13 @@ public class BodyLevelExpressionValidator : BaseWeaver<PreCreationContext, BodyL
         
         var error = PlampExceptionInfo.IllegalBodyLevelInstruction();
         SetExceptionToSymbol(node, error, context);
-        
-        context.ToRemove.Add(node);
 
         return VisitResult.SkipChildren;
     }
 
-    protected override VisitResult PostVisitBody(BodyNode node, BodyLevelExpressionContext context, NodeBase? parent)
-    {
-        if (parent == null) return VisitResult.SkipChildren;
-        var newInstructions = node.ExpressionList.Except(context.ToRemove).ToList();
-        var newBody = new BodyNode(newInstructions);
-        Replace(node, _ => newBody, context);
-        return VisitResult.SkipChildren;
-    }
-
+    /// <inheritdoc/>
     protected override BodyLevelExpressionContext CreateInnerContext(PreCreationContext context) => new(context);
-
-    protected override PreCreationContext MapInnerToOuter(BodyLevelExpressionContext innerContext, PreCreationContext outerContext) => outerContext;
+    
+    /// <inheritdoc/>
+    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, BodyLevelExpressionContext innerContext) => outerContext;
 }

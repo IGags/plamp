@@ -31,6 +31,7 @@ public class CallNode(NodeBase? from, FuncCallNameNode name, List<NodeBase> args
     /// <summary>
     /// Список типов дженерик аргументов с которыми вызвана функция. Появляется только при явной их передаче.
     /// В остальных случаях [].
+    /// Если не передан, а функция имеет дженерик аргументы, то они должны быть выведены из типов аргументов, с которыми она вызывается.
     /// </summary>
     public IReadOnlyList<TypeNode> GenericArguments => genericArguments;
 

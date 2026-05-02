@@ -7,28 +7,43 @@ using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.SymbolsImpl;
 
+/// <inheritdoc/>
 public class FuncInfo : IFnInfo
 {
     private readonly MethodInfo _fnInfo;
     private readonly string _moduleName;
     private readonly List<ITypeInfo> _genericParams;
 
+    /// <inheritdoc/>
     public string Name { get; }
     
+    /// <inheritdoc/>
     public string DefinitionName { get; }
 
+    /// <inheritdoc/>
     public IReadOnlyList<IArgInfo> Arguments { get; }
 
+    /// <inheritdoc/>
     public string ModuleName => _moduleName;
 
+    /// <inheritdoc/>
     public ITypeInfo ReturnType { get; }
 
+    /// <inheritdoc/>
     public bool IsGenericFuncDefinition => _fnInfo.IsGenericMethodDefinition;
 
+    /// <inheritdoc/>
     public bool IsGenericFunc => _fnInfo is { IsGenericMethod: true, IsGenericMethodDefinition: false };
 
+    /// <inheritdoc/>
     public MethodInfo AsFunc() => _fnInfo;
 
+    /// <summary>
+    /// Создание экземпляра класса
+    /// </summary>
+    /// <param name="fnInfo">Информация о методе .net, который надо обернуть в этот класс, не может быть имплементацией дженерик метода</param>
+    /// <param name="moduleName"></param>
+    /// <exception cref="InvalidOperationException">Метод, по которому строится информация о функции реализация дженерик метода</exception>
     public FuncInfo(MethodInfo fnInfo, string moduleName)
     {
         if (fnInfo is { IsGenericMethod: true, IsGenericMethodDefinition: false })
@@ -58,21 +73,39 @@ public class FuncInfo : IFnInfo
             .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, _moduleName))).ToList();
     }
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => _genericParams;
 
+    /// <inheritdoc/>
     public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
 
+    /// <inheritdoc/>
     public IFnInfo? GetGenericFuncDefinition() => null;
 
+    /// <inheritdoc/>
     public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments)
     {
         if (!_fnInfo.IsGenericMethodDefinition) return null;
         return new GenericFuncBuilder(this, genericTypeArguments);
     }
 
+    /// <inheritdoc/>
     public bool Equals(IFnInfo? other)
     {
         if (other is not FuncInfo fnInfo) return false;
         return fnInfo._fnInfo == _fnInfo;
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return _fnInfo.GetHashCode();
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        if (obj is not FuncInfo fnInfo) return false;
+        return Equals(fnInfo);
     }
 } 

@@ -477,7 +477,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         argTypes.Reverse();
 
         var errRecord = SymbolSearchUtility.TryGetFuncOrErrorRecord(node.Name.Value, context.Dependencies, out var fnRef);
-        if (errRecord != null && argTypes.All(x => x != null))
+        if (errRecord != null)
         {
             SetExceptionToSymbol(node, errRecord, context);
             context.InnerExpressionTypeStack.Push(null);
@@ -491,7 +491,16 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         {
             var record = PlampExceptionInfo.FunctionHasDifferentArgCount(fnParams.Count, argTypes.Count);
             SetExceptionToSymbol(node, record, context);
-            context.InnerExpressionTypeStack.Push(null);
+            
+            if (fnRef.ReturnType.IsGenericType || fnRef.ReturnType.IsGenericTypeParameter)
+            {
+                context.InnerExpressionTypeStack.Push(null);
+            }
+            else
+            {
+                context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
+            }
+            
             return VisitResult.SkipChildren;
         }
 
@@ -517,11 +526,16 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             }
         }
         
-        if (argTypes.Any(x => x == null)) return VisitResult.Continue;
 
         if (fnRef == null)
         {
             context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.Continue;
+        }
+        
+        if(argTypes.Any(x => x == null))
+        {
+            context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
             return VisitResult.Continue;
         }
         
@@ -562,7 +576,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         var implArgs = fnImpl.Arguments;
         //Валидируется выше по стеку
-        if (argTypes.Count != implArgs.Count) throw new InvalidOperationException();
+        if (argTypes.Count != implArgs.Count) return null;
         
         for (var i = 0; i < argTypes.Count; i++)
         {
@@ -1005,5 +1019,5 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override TypeInferenceInnerContext CreateInnerContext(PreCreationContext context) => new(context);
 
-    protected override PreCreationContext MapInnerToOuter(TypeInferenceInnerContext innerContext, PreCreationContext outerContext) => new(innerContext);
+    protected override PreCreationContext MapInnerToOuter(PreCreationContext outerContext, TypeInferenceInnerContext innerContext) => new(innerContext);
 }

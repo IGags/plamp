@@ -304,13 +304,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedGenericTypeArg()
+    public static PlampExceptionRecord ExpectedGenericArg()
     {
         return new()
         {
             Code = "PRS1141",
             Level = ExceptionLevel.Error,
-            Message = "Expected type that will be generic argument for this type."
+            Message = "Expected type that will be generic argument."
         };
     }
 

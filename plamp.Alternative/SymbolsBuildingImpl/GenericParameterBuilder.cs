@@ -19,9 +19,11 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
     /// Имя типа внутри дженерик объявления
     /// </summary>
     public string Name { get; } = name;
-
+    
+    /// <inheritdoc/>
     public string ModuleName => moduleName;
 
+    /// <inheritdoc/>
     public string DefinitionName => Name;
 
     /// <inheritdoc/>
@@ -98,18 +100,23 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
     /// <inheritdoc cref="ITypeInfo.GetGenericTypeDefinition"/>
     public ITypeInfo? GetGenericTypeDefinition() => null;
     
+    /// <inheritdoc/>
     public bool Equals(ITypeInfo? other)
     {
         if (other is not GenericParameterBuilder otherBuilder) return false;
         return Name == otherBuilder.Name;
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return HashCode.Combine(GetType(), DefinitionName.GetHashCode(), ModuleName.GetHashCode(), Name.GetHashCode());
     }
 
-    public void ThrowIfComplete()
+    /// <summary>
+    /// Бросает исключение, если создание параметра закончено
+    /// </summary>
+    private void ThrowIfComplete()
     {
         if (_genericParameterType != null)
             throw new InvalidOperationException("Создание параметра завершено, дополнительная модификация запрещена.");
