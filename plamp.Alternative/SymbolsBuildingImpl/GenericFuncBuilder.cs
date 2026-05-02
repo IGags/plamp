@@ -54,7 +54,7 @@ public class GenericFuncBuilder : IFnInfo
             .ToDictionary(x => x.First, x => x.Second);
 
         Arguments = ImplementArgTypes(definition.Arguments, typeMapping);
-        ReturnType = ImplementType(definition.ReturnType, typeMapping);
+        ReturnType = GenericTypeBuilder.ImplementType(definition.ReturnType, typeMapping);
     }
 
     private IReadOnlyList<IArgInfo> ImplementArgTypes(
@@ -64,51 +64,11 @@ public class GenericFuncBuilder : IFnInfo
         var newArgs = new List<BlankArgInfo>();
         foreach (var arg in args)
         {
-            var implType = ImplementType(arg.Type, typeMapping);
+            var implType = GenericTypeBuilder.ImplementType(arg.Type, typeMapping);
             newArgs.Add(new BlankArgInfo(arg.Name, implType));
         }
 
         return newArgs;
-    }
-
-    private ITypeInfo ImplementType(
-        ITypeInfo openType,
-        IReadOnlyDictionary<ITypeInfo, ITypeInfo> typeMapping)
-    {
-        if (openType.IsGenericTypeDefinition)
-            throw new InvalidOperationException("Нельзя сделать имплементацию для дженерик объявления");
-
-        if (openType.IsGenericTypeParameter)
-        {
-            return typeMapping.GetValueOrDefault(openType) ??
-                   throw new InvalidOperationException("Неполный маппинг типов для имплементации дженериков");
-        }
-
-        if (openType.IsArrayType)
-        {
-            var elemType = openType.ElementType();
-            ArgumentNullException.ThrowIfNull(elemType);
-            var elemImpl = ImplementType(elemType, typeMapping);
-            return elemImpl.MakeArrayType();
-        }
-
-        if (openType.IsGenericType)
-        {
-            var openTypeDef = openType.GetGenericTypeDefinition();
-            ArgumentNullException.ThrowIfNull(openTypeDef);
-            var openTypeArgs = openType.GetGenericArguments();
-            var implArgs = new List<ITypeInfo>();
-            foreach (var argType in openTypeArgs)
-            {
-                implArgs.Add(ImplementType(argType, typeMapping));
-            }
-
-            var implType = openTypeDef.MakeGenericType(implArgs);
-            ArgumentNullException.ThrowIfNull(implType);
-            return implType;
-        }
-
-        return openType;
     }
 
     public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];

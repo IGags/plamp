@@ -12,6 +12,9 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 /// </summary>
 public class GenericParameterBuilder(string name, string moduleName) : IGenericParameterBuilder
 {
+    private Type? _genericParameterType;
+    private GenericTypeParameterBuilder? _parameterBuilder;
+
     /// <summary>
     /// Имя типа внутри дженерик объявления
     /// </summary>
@@ -21,11 +24,33 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
 
     public string DefinitionName => Name;
 
-    /// <summary>
-    /// Представление внутри системы типов .net, нужно для билдинга в полноценный тип.
-    /// </summary>
-    public GenericTypeParameterBuilder? TypeBuilder { get; set; }
-    
+    /// <inheritdoc/>
+    public Type? GenericParameterType
+    {
+        get => _genericParameterType;
+        set
+        {
+            ThrowIfComplete();
+            _parameterBuilder = null;
+            _genericParameterType = value;
+        }
+    }
+
+    /// <inheritdoc/>
+    public GenericTypeParameterBuilder? ParameterBuilder
+    {
+        get
+        {
+            ThrowIfComplete();
+            return _parameterBuilder;
+        }
+        set
+        {
+            ThrowIfComplete();
+            _parameterBuilder = value;
+        }
+    }
+
     /// <summary>
     /// У дженерик параметра не может быть полей
     /// </summary>
@@ -54,7 +79,7 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
     /// <inheritdoc cref="ITypeInfo.AsType"/>
     public Type AsType()
     {
-        return TypeBuilder ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
+        return _parameterBuilder ?? _genericParameterType ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
     }
 
     /// <inheritdoc cref="ITypeInfo.MakeArrayType"/>
@@ -82,5 +107,11 @@ public class GenericParameterBuilder(string name, string moduleName) : IGenericP
     public override int GetHashCode()
     {
         return HashCode.Combine(GetType(), DefinitionName.GetHashCode(), ModuleName.GetHashCode(), Name.GetHashCode());
+    }
+
+    public void ThrowIfComplete()
+    {
+        if (_genericParameterType != null)
+            throw new InvalidOperationException("Создание параметра завершено, дополнительная модификация запрещена.");
     }
 }

@@ -328,7 +328,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         if(fromType.Equals(toType)) return true;
         if (!SymbolSearchUtility.ImplicitlyConvertable(fromType, toType)) return false;
-        if (!SymbolSearchUtility.NeedToCreateCast(fromType, toType)) return true;
+        if (!SymbolSearchUtility.NeedToCast(fromType, toType)) return true;
         var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
         context.TranslationTable.AddSymbol(toTypeNode, default);
         toTypeNode.TypeInfo = toType;
@@ -500,6 +500,21 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             fnRef = node.GenericArguments.Any() 
                 ? InferenceExplicitGenericFuncCall(node, fnRef, argTypes, context) 
                 : InferenceImplicitGenericFuncCall(node, fnRef, argTypes, context);
+        }
+        else
+        {
+            for (var i = 0; i < fnRef.Arguments.Count; i++)
+            {
+                var actualType = argTypes[i];
+                if(actualType == null) continue;
+                
+                var expectedType = fnRef.Arguments[i].Type;
+                
+                if(actualType.Equals(expectedType) || SymbolSearchUtility.ImplicitlyConvertable(actualType, expectedType)) continue;
+                
+                var record = PlampExceptionInfo.CannotApplyArgument();
+                SetExceptionToSymbol(node.Args[i], record, context);
+            }
         }
         
         if (argTypes.Any(x => x == null)) return VisitResult.Continue;

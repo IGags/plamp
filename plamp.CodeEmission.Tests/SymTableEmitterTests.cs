@@ -34,9 +34,8 @@ public class SymTableEmitterTests
         var typeNode = new TypedefNode(new TypedefNameNode("Typee"), [], []);
         var typeInfo = builder.DefineType(typeNode);
         
-        SymTableEmitter.EmitType(module, typeInfo);
+        var typeBuilder = SymTableEmitter.EmitType(module, typeInfo);
         
-        var typeBuilder = typeInfo.Type.ShouldNotBeNull();
         typeBuilder.Module.ShouldBe(module);
         var type = typeBuilder.CreateType();
         type.BaseType.ShouldBe(typeof(ValueType));
@@ -60,9 +59,8 @@ public class SymTableEmitterTests
         var typeNode = new TypedefNode(new TypedefNameNode("1A"), [], generics);
         var typeInfo = builder.DefineType(typeNode, genericBuilders.ToArray());
         
-        SymTableEmitter.EmitType(module, typeInfo);
+        var typeBuilder = SymTableEmitter.EmitType(module, typeInfo);
 
-        var typeBuilder = typeInfo.Type.ShouldNotBeNull();
         typeBuilder.Module.ShouldBe(module);
         var type = typeBuilder.CreateType();
         type.BaseType.ShouldBe(typeof(ValueType));

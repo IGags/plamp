@@ -171,8 +171,8 @@ internal class BuiltinSymTable : ISymTable
         
         var funcDict = new Dictionary<string, FuncInfo>()
         {
-            ["print"] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName),
-            ["println"] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName),
+            ["print"] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName),
+            ["println"] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName),
             ["read"] = new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName),
             ["readln"] = new(typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName),
             ["strLen"] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName),

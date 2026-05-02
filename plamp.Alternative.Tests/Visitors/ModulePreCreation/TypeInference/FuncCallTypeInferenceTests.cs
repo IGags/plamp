@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
@@ -11,11 +10,14 @@ using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 using Shouldly;
 using Xunit;
 
@@ -130,33 +132,23 @@ public class FuncCallTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotAssignNone().Code));
     }
 
-    [Theory, AutoData]
-    public void CallNotFullArgs_ReturnExceptionFuncFunc([Frozen] Mock<ITranslationTable> translationTable,
-        TypeInferenceWeaver visitor)
+    [Fact]
+    public void CallNotFullArgs_ReturnExceptionFuncFunc()
     {
-        var ast = new BodyNode(
-        [
-            new CallNode(null, new FuncCallNameNode("a"), [new MemberNode("c"), new LiteralNode("hi", Builtins.String)], [])
-        ]);
-        var retType = new TypeNode(new TypeNameNode("void"));
-        var firstArgType = new TypeNode(new TypeNameNode("int"));
-        var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.TypeInfo = Builtins.Void;
-        firstArgType.TypeInfo = Builtins.Int;
-        secondArgType.TypeInfo = Builtins.String;
-        
-        SetupExceptionGenerationMock(translationTable);
-        var symbolTable = new SymTableBuilder();
-        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("a"),
-            [],
-            [new(firstArgType, new("first")), new(secondArgType, new("second"))], new([])));
-        
-        var context = new PreCreationContext(translationTable.Object, [symbolTable, Builtins.SymTable]);
-        
-        var result = visitor.WeaveDiffs(ast, context);
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.Count.ShouldBe(1),
-            x => x.Exceptions.Select(y => y.Code).ShouldContain(PlampExceptionInfo.CannotFindMember().Code));
+        const string code = """
+                            fn a(first: int, second: string){}
+                            
+                            fn main(){
+                                a(c, "hi");
+                            }
+                            """;
+
+        var (ast, ctx) = Setup(code);
+
+        var visitor = new TypeInferenceWeaver();
+        var result = visitor.WeaveDiffs(ast, ctx);
+        var ex = result.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code);
     }
 
     [Fact]
@@ -214,6 +206,43 @@ public class FuncCallTypeInferenceTests
         var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable]);
         var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);
         weaveResult.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void CallWithIncompatibleType_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn Ex(str: string) string {
+                                return str;
+                            }
+
+                            fn main() {
+                                Ex(1);
+                            }
+                            """;
+
+
+        var (ast, context) = Setup(code);
+
+        var visitor = new TypeInferenceWeaver();
+        context = visitor.WeaveDiffs(ast, context);
+
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+    }
+
+    private (NodeBase ast, PreCreationContext context) Setup(string code)
+    {
+        var (ctx, ast) = CompilationPipelineBuilder.RunSymTableVisitors(code,
+        [
+            (ast, ctx) => new ModuleNameValidator().Validate(ast, ctx),
+            (ast, ctx) => new FuncDefInferenceWeaver().WeaveDiffs(ast, ctx)
+        ]);
+
+        var deps = new List<ISymTable>(ctx.Dependencies) { (SymTableBuilder)ctx.SymTableBuilder };
+        var context = new PreCreationContext(ctx.TranslationTable, deps);
+        return (ast, context);
     }
     
     private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)

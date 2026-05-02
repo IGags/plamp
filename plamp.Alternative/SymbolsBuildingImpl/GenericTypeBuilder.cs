@@ -29,29 +29,65 @@ public class GenericTypeBuilder : ITypeInfo
         _genericArguments = genericArguments;
 
         var definitionFields = _definition.Fields;
-        var definitionParameters = definition.GetGenericParameters();
-        _fields = OverrideGenericFields(definitionFields, definitionParameters);
+        var genericMapping = definition.GetGenericParameters()
+            .Zip(genericArguments)
+            .ToDictionary(x => x.First, y => y.Second);
+        
+        _fields = OverrideGenericFields(definitionFields, genericMapping);
     }
 
-    private IFieldInfo[] OverrideGenericFields(IReadOnlyList<IFieldInfo> definitionFields, IReadOnlyList<ITypeInfo> genericArguments)
+    private IFieldInfo[] OverrideGenericFields(IReadOnlyList<IFieldInfo> definitionFields, IReadOnlyDictionary<ITypeInfo, ITypeInfo> genericMapping)
     {
-        var parameterIx = 0;
-        var fields = new List<IFieldInfo>();
-        foreach (var fieldInfo in definitionFields)
+        var newFields = new List<IFieldInfo>();
+        foreach (var field in definitionFields)
         {
-            var fldType = fieldInfo.FieldType;
-            if (fldType.IsGenericTypeParameter && genericArguments.Contains(fldType))
-            {
-                fields.Add(new GenericImplFieldInfo(this, fieldInfo, _genericArguments[parameterIx++]));
-            }
-            else
-            {
-                fields.Add(fieldInfo);
-            }
+            var implType = ImplementType(field.FieldType, genericMapping);
+            newFields.Add(new GenericImplFieldInfo(this, field, implType));
         }
-        
-        return fields.ToArray();
+
+        return newFields.ToArray();
     }
+    
+    public static ITypeInfo ImplementType(
+        ITypeInfo openType,
+        IReadOnlyDictionary<ITypeInfo, ITypeInfo> typeMapping)
+    {
+        if (openType.IsGenericTypeDefinition)
+            throw new InvalidOperationException("Нельзя сделать имплементацию для дженерик объявления");
+
+        if (openType.IsGenericTypeParameter)
+        {
+            return typeMapping.GetValueOrDefault(openType) ??
+                   throw new InvalidOperationException("Неполный маппинг типов для имплементации дженериков");
+        }
+
+        if (openType.IsArrayType)
+        {
+            var elemType = openType.ElementType();
+            ArgumentNullException.ThrowIfNull(elemType);
+            var elemImpl = ImplementType(elemType, typeMapping);
+            return elemImpl.MakeArrayType();
+        }
+
+        if (openType.IsGenericType)
+        {
+            var openTypeDef = openType.GetGenericTypeDefinition();
+            ArgumentNullException.ThrowIfNull(openTypeDef);
+            var openTypeArgs = openType.GetGenericArguments();
+            var implArgs = new List<ITypeInfo>();
+            foreach (var argType in openTypeArgs)
+            {
+                implArgs.Add(ImplementType(argType, typeMapping));
+            }
+
+            var implType = openTypeDef.MakeGenericType(implArgs);
+            ArgumentNullException.ThrowIfNull(implType);
+            return implType;
+        }
+
+        return openType;
+    }
+    
 
     public IReadOnlyList<IFieldInfo> Fields => _fields;
 

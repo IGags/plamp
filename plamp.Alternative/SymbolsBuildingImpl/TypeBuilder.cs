@@ -14,7 +14,11 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     private readonly Dictionary<IFieldBuilderInfo, FieldDefNode> _fields = [];
 
     private readonly List<IGenericParameterBuilder> _genericParameterBuilders = [];
+
+    private Type? _type;
     
+    private System.Reflection.Emit.TypeBuilder? _typeBuilder;
+
     public string ModuleName => moduleName;
     
     public string DefinitionName => _genericParameterBuilders.Count == 0 ? name : $"{name}`{_genericParameterBuilders.Count}";
@@ -59,18 +63,44 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     
     private void AddGenericParameter(IGenericParameterBuilder genericParameter)
     {
+        ThrowIfComplete();
         if (!genericParameter.ModuleName.Equals(ModuleName)) throw new InvalidOperationException();
         if (!genericParameter.IsGenericTypeParameter) throw new InvalidOperationException();
         if (GenericParams.Any(x => x.Equals(genericParameter))) throw new InvalidOperationException("Такой дженерик параметр уже объявлен в типе.");
         _genericParameterBuilders.Add(genericParameter);
     }
 
-    public System.Reflection.Emit.TypeBuilder? Type { get; set; }
+    public Type? Type
+    {
+        get => _type;
+        set
+        {
+            ThrowIfComplete();
+            _typeBuilder = null;
+            _type = value;
+        }
+    }
+
+    public System.Reflection.Emit.TypeBuilder? Builder
+    {
+        get
+        {
+            ThrowIfComplete();
+            return _typeBuilder;
+        }
+        set
+        {
+            ThrowIfComplete();
+            _typeBuilder = value;
+        }
+    }
+
 
     public IReadOnlyList<IFieldBuilderInfo> FieldBuilders => _fields.Keys.ToList();
 
     public void AddField(FieldDefNode defNode)
     {
+        ThrowIfComplete();
         var fieldType = defNode.FieldType.TypeInfo;
         if (fieldType == null) throw new InvalidOperationException("У поля нет корректного типа, ошибка компилятора");
         var newFld = new BlankFieldInfo(fieldType, defNode.Name.Value, this);
@@ -103,7 +133,7 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
 
     public ITypeInfo? GetGenericTypeDefinition() => null;
     
-    public Type AsType() => Type ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
+    public Type AsType() => _typeBuilder ?? _type ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
     
     /// <inheritdoc />
     public bool TryGetDefinition(IFieldBuilderInfo info, [NotNullWhen(true)] out FieldDefNode? defNode)
@@ -133,5 +163,10 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     {
         if (obj is not ITypeInfo other) return false;
         return Equals(other);
+    }
+
+    private void ThrowIfComplete()
+    {
+        if (_type != null) throw new InvalidOperationException("Создание типа завершено, дальнейшая модификация запрещена");
     }
 }

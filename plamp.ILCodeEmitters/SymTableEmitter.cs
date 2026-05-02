@@ -11,21 +11,22 @@ public static class SymTableEmitter
     public static void EmitModule(ISymTableBuilder builder, ModuleBuilder moduleBuilder)
     {
         var types = TypeDependencyHelper.OrderTypes(builder.ListTypes());
+        var builderParis = new List<TypeInfoBuilderPair>();
         foreach (var typ in types)
         {
-            EmitType(moduleBuilder, typ);
+            var typeBuilder = EmitType(moduleBuilder, typ);
+            typ.Builder = typeBuilder;
+            builderParis.Add(new(typ, typeBuilder));
         }
         
-        foreach (var typ in types)
+        foreach (var pair in builderParis)
         {
-            EmitFields(typ);
+            EmitFields(pair);
         }
 
-        foreach (var typ in types)
+        foreach (var pair in builderParis)
         {
-            var typeBuilder = typ.Type;
-            if (typeBuilder == null) throw new Exception();
-            typeBuilder.CreateType();
+            SetTypeMembers(pair);
         }
         
         var functions = builder.ListFuncs();
@@ -35,7 +36,7 @@ public static class SymTableEmitter
         }
     }
 
-    public static void EmitType(ModuleBuilder module, ITypeBuilderInfo type)
+    public static TypeBuilder EmitType(ModuleBuilder module, ITypeBuilderInfo type)
     {
         var typeBuilder = module.DefineType(
             type.DefinitionName, 
@@ -49,20 +50,52 @@ public static class SymTableEmitter
            SetGenericsForType(typeBuilder, genericParams);
         }
         
-        type.Type = typeBuilder;
+        return typeBuilder;
     }
-    
+
+    /// <summary>
+    /// Устанавливает <see cref="ITypeBuilderInfo"/> его поля, дженерики и в конце концов сам тип.
+    /// Завершает создание типа.
+    /// </summary>
+    /// <param name="pair">Пара информация о типе и его билдер.</param>
+    private static void SetTypeMembers(TypeInfoBuilderPair pair)
+    {
+        var (info, builder) = pair;
+
+        var type = info.Type = builder.CreateType();
+
+        var fields = type.GetFields()
+            .Where(x => x.GetCustomAttribute<PlampVisibleAttribute>() != null)
+            .ToDictionary(x => x.Name, x => x);
+
+        foreach (var field in info.FieldBuilders)
+        {
+            if (!fields.TryGetValue(field.Name, out var value))
+                throw new Exception("Не удалось найти поле после создания типа внутри сборки");
+
+            field.Field = value;
+        }
+
+        var generics = type.GetGenericArguments().ToDictionary(x => x.Name, x => x);
+
+        foreach (var generic in info.GenericParameterBuilders)
+        {
+            if (!generics.TryGetValue(generic.Name, out var value))
+                throw new Exception("Не удалось найти объявление дженерик параметра после создания типа внутри сборки");
+
+            generic.GenericParameterType = value;
+        }
+    }
+
     /// <summary>
     /// Создать поля для структуры определённого типа
     /// </summary>
-    /// <param name="typeInfo">Описание типа</param>
+    /// <param name="pair">Пара - информация о собираемом типе, объект - билдер Reflection.Emit</param>
     /// <returns>Типы из текущей сборки, от которых зависит данный тип</returns>
-    /// <exception cref="Exception">TypeBuilder для данного типа не находится внутри <paramref name="typeInfo"/></exception>
-    private static void EmitFields(ITypeBuilderInfo typeInfo)
+    private static void EmitFields(TypeInfoBuilderPair pair)
     {
-        var fields = typeInfo.FieldBuilders;
-        var typeBuilder = typeInfo.Type;
-        if (typeBuilder == null) throw new Exception();
+        var fields = pair.Info.FieldBuilders;
+        var typeBuilder = pair.Builder;
 
         var fieldAttributeCtor = typeof(PlampVisibleAttribute).GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
         var attribute = new CustomAttributeBuilder(fieldAttributeCtor!, []);
@@ -70,7 +103,7 @@ public static class SymTableEmitter
         {
             var fldInfo = typeBuilder.DefineField(fld.Name, fld.FieldType.AsType(), FieldAttributes.Public);
             fldInfo.SetCustomAttribute(attribute);
-            fld.Field = fldInfo;
+            fld.Builder = fldInfo;
         }
     }
 
@@ -84,7 +117,7 @@ public static class SymTableEmitter
         foreach (var parameter in genericParams)
         {
             if (!parameterDict.TryGetValue(parameter.Name, out var builder)) throw new Exception();
-            parameter.TypeBuilder = builder;
+            parameter.ParameterBuilder = builder;
         }
     }
 
@@ -139,7 +172,9 @@ public static class SymTableEmitter
         foreach (var parameter in genericParams)
         {
             if (!parameterDict.TryGetValue(parameter.Name, out var builder)) throw new Exception();
-            parameter.TypeBuilder = builder;
+            parameter.GenericParameterType = builder;
         }
     }
+
+    private record struct TypeInfoBuilderPair(ITypeBuilderInfo Info, TypeBuilder Builder);
 }

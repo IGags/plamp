@@ -181,15 +181,18 @@ public static class SymbolSearchUtility
     {
         return ImplicitlyNumericConvertable(from, to)
                || ArrayImplicitlyConvertable(from, to)
-               || AnyImplicitlyConvertable(from, to);
+               || AnyImplicitlyConvertable(from, to)
+               || GenericParamToAnyConvertable(from, to);
     }
 
-    public static bool NeedToCreateCast(ITypeInfo from, ITypeInfo to)
+    public static bool NeedToCast(ITypeInfo from, ITypeInfo to)
     {
-        return !ArrayImplicitlyConvertable(from, to)
-               && !AnyImplicitlyConvertable(from, to);
+        return !ArrayImplicitlyConvertable(from, to);
     }
-    
+
+    private static bool GenericParamToAnyConvertable(ITypeInfo from, ITypeInfo to) 
+        => from.IsGenericTypeParameter && IsAny(to);
+
     private static bool ImplicitlyNumericConvertable(ITypeInfo from, ITypeInfo to)
     {
         if (!IsNumeric(from) || !IsNumeric(to)) return false;

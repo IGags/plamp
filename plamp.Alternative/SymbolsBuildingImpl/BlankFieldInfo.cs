@@ -9,17 +9,39 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
 {
     private readonly ITypeInfo _definingType = definingType;
+    private FieldInfo? _field;
+    private FieldBuilder? _fieldBuilder;
 
-    public FieldInfo AsField()
-    {
-        return Field ?? throw new NullReferenceException();
-    }
+    public FieldInfo AsField() => _fieldBuilder ?? _field ?? throw new NullReferenceException();
 
     public ITypeInfo FieldType => typeInfo;
     
     public string Name => name;
-    
-    public FieldBuilder? Field { get; set; }
+
+    public FieldInfo? Field
+    {
+        get => _field;
+        set
+        {
+            ThrowIfComplete();
+            _fieldBuilder = null;
+            _field = value;
+        }
+    }
+
+    public FieldBuilder? Builder
+    {
+        get
+        {
+            ThrowIfComplete();
+            return _fieldBuilder;
+        }
+        set
+        {
+            ThrowIfComplete();
+            _fieldBuilder = value;
+        }
+    }
 
     public bool Equals(IFieldInfo? obj)
     {
@@ -27,5 +49,11 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
         return Name.Equals(emptyFld.Name)
                && FieldType.Equals(emptyFld.FieldType)
                && _definingType.Equals(emptyFld._definingType);
+    }
+
+    private void ThrowIfComplete()
+    {
+        if (_field != null)
+            throw new InvalidOperationException("Создание поля завершено, дальнейшая модификация запрещена");
     }
 }

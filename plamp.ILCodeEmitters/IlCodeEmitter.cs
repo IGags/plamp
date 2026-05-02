@@ -322,7 +322,7 @@ public static class IlCodeEmitter
         {
             case IndexerNode: targetByRef = false; break;
             case FieldAccessNode fieldAccess:
-                var declaringFieldType = fieldAccess.Field.FieldInfo?.AsField().DeclaringType;
+                var declaringFieldType = fieldAccess.Field.FieldInfo?.FieldType.AsType();
                 if (declaringFieldType == null) throw new Exception();
                 targetByRef = declaringFieldType.IsClass;
                 break;
@@ -536,7 +536,7 @@ public static class IlCodeEmitter
         {
             case FieldAccessNode fieldAccess: EmitSingleLineExpression(fieldAccess.From, context, false); break;
             case IndexerNode indexer: 
-                EmitSingleLineExpression(indexer.From, context, false); 
+                EmitSingleLineExpression(indexer.From, context, true); 
                 EmitSingleLineExpression(indexer.IndexMember, context, true);
                 break;
             case VariableDefinitionNode varDef:
@@ -557,8 +557,10 @@ public static class IlCodeEmitter
         switch (target)
         {
             case FieldAccessNode fieldAccess:
+                var fieldType = fieldAccess.Field.FieldInfo?.FieldType.AsType();
+                //Гружу 2 вещи так как в рантайме при имплементации дженерик метода через дженерик параметры функции тип полей больше получать нельзя.
                 var fieldInfo = fieldAccess.Field.FieldInfo?.AsField();
-                if (fieldInfo == null)
+                if (fieldType == null || fieldInfo == null)
                 {
                     throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
                 }
@@ -601,13 +603,13 @@ public static class IlCodeEmitter
                 }
                 return type;
             case FieldAccessNode fieldAccess:
-                var fieldInfo = fieldAccess.Field.FieldInfo?.AsField();
-                if (fieldInfo == null)
+                var fieldType = fieldAccess.Field.FieldInfo?.FieldType.AsType();
+                if (fieldType == null)
                 {
                     throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
                 }
                 
-                return fieldInfo.FieldType;
+                return fieldType;
             case MemberNode member:
                 return GetTypeOfLocalMember(member, context);
             case VariableDefinitionNode varDef:
@@ -648,13 +650,15 @@ public static class IlCodeEmitter
 
     private static void EmitFieldAccess(FieldAccessNode accessNode, EmissionContext context, bool byValue)
     {
+        var fieldType = accessNode.Field.FieldInfo?.FieldType.AsType();
+        //Гружу 2 вещи так как в рантайме при имплементации дженерик метода через дженерик параметры функции тип полей больше получать нельзя.
         var fieldInfo = accessNode.Field.FieldInfo?.AsField();
-        if (fieldInfo == null)
+        if (fieldType == null || fieldInfo == null)
         {
             throw new Exception("Member access must has .net member representation. If you see this exception write to a compiler developer.");
         }
 
-        var opcode = byValue || fieldInfo.FieldType.IsClass ? OpCodes.Ldfld : OpCodes.Ldflda;
+        var opcode = byValue || fieldType.IsClass ? OpCodes.Ldfld : OpCodes.Ldflda;
         context.Generator.Emit(opcode, fieldInfo);
     }
     
@@ -812,7 +816,10 @@ public static class IlCodeEmitter
         var fromType = node.FromType?.AsType();
 
         if (fromType == null) throw new ArgumentException("From type cannot be null semantics exception");
-        if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
+        if(fromType.IsAssignableTo(toType) && !fromType.IsValueType) return;
+
+        if (fromType.IsGenericTypeParameter && toType == typeof(object)) EmitBox(fromType, context);
+        else if(!fromType.IsValueType && !toType.IsValueType) EmitCast(toType, context);
         else if(fromType.IsValueType && !toType.IsValueType) EmitBox(fromType, context);
         else if(!fromType.IsValueType && toType.IsValueType) EmitUnbox(toType, context);
         //We can convert i4 -> i8 or any other
@@ -1117,7 +1124,7 @@ public static class IlCodeEmitter
         else if(itemType == typeof(char))                              context.Generator.Emit(OpCodes.Ldelem_U2);
         else if(itemType == typeof(float))                             context.Generator.Emit(OpCodes.Ldelem_R4);
         else if(itemType == typeof(double))                            context.Generator.Emit(OpCodes.Ldelem_R8);
-        else if(itemType.IsGenericMethodParameter)                     context.Generator.Emit(OpCodes.Ldelem, itemType);
+        else if(itemType.IsGenericParameter)                           context.Generator.Emit(OpCodes.Ldelem, itemType);
         else if(itemType.IsClass)                                      context.Generator.Emit(OpCodes.Ldelem_Ref);
         else if (itemType is { IsPrimitive: false, IsClass: false })   context.Generator.Emit(OpCodes.Ldelem, itemType);
         else throw new Exception();
@@ -1134,7 +1141,7 @@ public static class IlCodeEmitter
         else if (elemType == typeof(char))                              context.Generator.Emit(OpCodes.Stelem_I2);
         else if (elemType == typeof(float))                             context.Generator.Emit(OpCodes.Stelem_R4);
         else if (elemType == typeof(double))                            context.Generator.Emit(OpCodes.Stelem_R8);
-        else if (elemType.IsGenericMethodParameter)                     context.Generator.Emit(OpCodes.Stelem, elemType);
+        else if (elemType.IsGenericParameter)                           context.Generator.Emit(OpCodes.Stelem, elemType);
         else if (elemType.IsClass)                                      context.Generator.Emit(OpCodes.Stelem_Ref);
         else if (elemType is { IsPrimitive: false, IsClass: false })    context.Generator.Emit(OpCodes.Stelem, elemType);
         else                                                            throw new Exception();

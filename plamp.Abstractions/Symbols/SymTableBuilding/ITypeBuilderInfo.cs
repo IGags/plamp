@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
@@ -14,9 +15,17 @@ namespace plamp.Abstractions.Symbols.SymTableBuilding;
 public interface ITypeBuilderInfo : ITypeInfo
 {
     /// <summary>
-    /// Билдер представления типа внутри .net clr
+    /// Представление типа внутри .net clr
+    /// После того, как здесь появляется значение, тип становится неизменяемым.
+    /// Любые попытки вызвать методы, которые изменяют его состояние должны завершаться с <see cref="InvalidOperationException"/>
     /// </summary>
-    public TypeBuilder? Type { get; set; }
+    public Type? Type { get; set; }
+    
+    /// <summary>
+    /// Билдер типа, служит для вывода типов полей. После установки <see cref="Type"/> становится null
+    /// А обращение к нему запрещается через <see cref="InvalidOperationException"/>
+    /// </summary>
+    public TypeBuilder? Builder { get; set; }
     
     /// <summary>
     /// Список объектов - строителей полей типа
