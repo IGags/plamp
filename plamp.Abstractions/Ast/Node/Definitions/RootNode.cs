@@ -72,7 +72,7 @@ public class RootNode(
         {
             imports[ix] = importChild;
         }
-        else if (newChild is ModuleDefinitionNode moduleDefChild && moduleDefChild == ModuleName)
+        else if (newChild is ModuleDefinitionNode moduleDefChild && child == ModuleName)
         {
             ModuleName = moduleDefChild;
         }
@@ -82,11 +82,11 @@ public class RootNode(
         {
             functions[ix] = defChild;
         }
-        else if (newChild is TypedefNode typedefOld
-                 && child is TypedefNode typedefNew
-                 && (ix = types.IndexOf(typedefNew)) != -1)
+        else if (newChild is TypedefNode typedefNew
+                 && child is TypedefNode typedefOld
+                 && (ix = types.IndexOf(typedefOld)) != -1)
         {
-            types[ix] = typedefOld;
+            types[ix] = typedefNew;
         }
     }
 }
