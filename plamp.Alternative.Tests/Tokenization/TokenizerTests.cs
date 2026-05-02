@@ -51,6 +51,18 @@ public class TokenizerTests
             return whiteSpace.Kind == WhiteSpaceKind.MultiLineComment
                    && whiteSpace.GetStringRepresentation() == "/*line1\nline2*/";
         })];
+        yield return ["\"//\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "//";
+        })];
+        yield return ["\"/*not comment*/\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "/*not comment*/";
+        })];
         yield return ["abc", typeof(Word)];
         yield return ["a1", typeof(Word)];
         yield return ["A", typeof(Word)];
@@ -213,6 +225,8 @@ public class TokenizerTests
         yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
+        yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
@@ -299,5 +313,59 @@ public class TokenizerTests
             x.Kind == WhiteSpaceKind.MultiLineComment && x.GetStringRepresentation() == "/*comment*/");
         result.Sequence.OfType<OperatorToken>().ShouldContain(x => x.Operator == OperatorEnum.Assign);
         result.Sequence.OfType<Literal>().ShouldContain(x => Equals(x.ActualValue, 11));
+    }
+
+    /// <summary>
+    /// Проверяет, что открывающий маркер многострочного комментария внутри однострочного
+    /// не запускает многострочный парсинг
+    /// </summary>
+    [Fact]
+    public async Task Tokenization_SingleLineComment_CanContainMultiLineCommentMarker()
+    {
+        const string code = "// comment with /* marker";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.OfType<WhiteSpace>().ShouldContain(x =>
+            x.Kind == WhiteSpaceKind.SingleLineComment && x.GetStringRepresentation() == code);
+    }
+
+    /// <summary>
+    /// Проверяет, что маркер однострочного комментария внутри многострочного
+    /// остаётся частью текста этого комментария
+    /// </summary>
+    [Fact]
+    public async Task Tokenization_MultiLineComment_CanContainSingleLineCommentMarker()
+    {
+        const string code = "/* comment with // marker */";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.OfType<WhiteSpace>().ShouldContain(x =>
+            x.Kind == WhiteSpaceKind.MultiLineComment && x.GetStringRepresentation() == code);
+    }
+
+    /// <summary>
+    /// Проверяет, что вложенный открывающий маркер многострочного комментария
+    /// не создаёт второй комментарий и остаётся частью текста первого
+    /// </summary>
+    [Fact]
+    public async Task Tokenization_MultiLineComment_CanContainMultiLineCommentMarker()
+    {
+        const string code = "/* outer /* inner */";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        result.Exceptions.ShouldBeEmpty();
+        result.Sequence.OfType<WhiteSpace>().ShouldContain(x =>
+            x.Kind == WhiteSpaceKind.MultiLineComment && x.GetStringRepresentation() == code);
     }
 }

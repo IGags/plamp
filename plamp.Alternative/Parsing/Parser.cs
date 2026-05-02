@@ -27,16 +27,6 @@ public static class Parser
         var topLevelList = new List<NodeBase>();
         while (context.Sequence.Current() is not EndOfFile)
         {
-            if (context.Sequence.Current() is WhiteSpace)
-            {
-                if (!context.Sequence.MoveNextNonWhiteSpace())
-                {
-                    break;
-                }
-
-                continue;
-            }
-
             if (TryParseTopLevel(context, out var topLevel)) topLevelList.Add(topLevel);
         }
 
@@ -64,7 +54,7 @@ public static class Parser
         }
 
         var moduleDef = modules?.FirstOrDefault();
-        var node = new RootNode(imports, moduleDef, functions, types, GetComments(context));
+        var node = new RootNode(imports, moduleDef, functions, types);
         context.TranslationTable.AddSymbol(node, default);
         return node;
     }
@@ -73,32 +63,6 @@ public static class Parser
     /// Извлекает комментарии из токенизированного файла
     /// </summary>
     /// <param name="context">Контекст парсинга файла</param>
-    private static List<SourceComment> GetComments(ParsingContext context)
-    {
-        var comments = new List<SourceComment>();
-        foreach (var token in context.Sequence)
-        {
-            if (token is not WhiteSpace whiteSpace)
-            {
-                continue;
-            }
-
-            var kind = whiteSpace.Kind switch
-            {
-                WhiteSpaceKind.SingleLineComment => CommentKind.SingleLine,
-                WhiteSpaceKind.MultiLineComment => CommentKind.MultiLine,
-                _ => (CommentKind?)null
-            };
-
-            if (kind.HasValue)
-            {
-                comments.Add(new SourceComment(whiteSpace.GetStringRepresentation(), whiteSpace.Position, kind.Value));
-            }
-        }
-
-        return comments;
-    }
-
     public static bool TryParseTopLevel(
         ParsingContext context,
         [NotNullWhen(true)] out NodeBase? topLevel)

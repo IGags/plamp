@@ -6,7 +6,9 @@ using Xunit;
 namespace plamp.Alternative.Tests.Parsing;
 
 /// <summary>
-/// Проверяет корректную обработку комментариев парсером
+/// Проверяет комментарии.
+/// Здесь тестируется только то, что комментарии не ломают разбор файла
+/// и сохраняются в таблице трансляции
 /// </summary>
 public class CommentParsingTests
 {
@@ -33,14 +35,14 @@ public class CommentParsingTests
         context.Exceptions.ShouldBeEmpty();
         result.ModuleName.ShouldNotBeNull();
         result.Functions.Count.ShouldBe(1);
-        result.Comments.Count.ShouldBe(4);
+        context.TranslationTable.Comments.Count.ShouldBe(4);
     }
 
     /// <summary>
-    /// Парсер должен сохранять комментарии в корневом узле AST вместе с исходным текстом
+    /// Парсер должен сохранять комментарии в таблице трансляции вместе с исходным текстом
     /// </summary>
     [Fact]
-    public void ParseFile_StoresCommentsInRootNode()
+    public void ParseFile_StoresCommentsInTranslationTable()
     {
         const string code = """
                             // заголовок
@@ -50,14 +52,14 @@ public class CommentParsingTests
         var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
 
-        var result = Parser.ParseFile(context);
+        Parser.ParseFile(context);
 
         context.Exceptions.ShouldBeEmpty();
-        result.Comments.Count.ShouldBe(2);
-        result.Comments[0].Text.ShouldBe("// заголовок");
-        result.Comments[1].Text.ShouldBe("/* тело */");
-        result.Comments[0].Position.ByteOffset.ShouldBe(0);
-        result.Comments[1].Position.ByteOffset.ShouldBeGreaterThan(result.Comments[0].Position.ByteOffset);
+        context.TranslationTable.Comments.Count.ShouldBe(2);
+        context.TranslationTable.Comments[0].Text.ShouldBe("// заголовок");
+        context.TranslationTable.Comments[1].Text.ShouldBe("/* тело */");
+        context.TranslationTable.Comments[0].Position.ByteOffset.ShouldBe(0);
+        context.TranslationTable.Comments[1].Position.ByteOffset.ShouldBeGreaterThan(context.TranslationTable.Comments[0].Position.ByteOffset);
     }
 
     /// <summary>
@@ -80,6 +82,32 @@ public class CommentParsingTests
         result.Functions.ShouldBeEmpty();
         result.Types.ShouldBeEmpty();
         result.ModuleName.ShouldBeNull();
-        result.Comments.Count.ShouldBe(2);
+        context.TranslationTable.Comments.Count.ShouldBe(2);
+    }
+
+    /// <summary>
+    /// Незакрытый многострочный комментарий не должен ломать уже разобранный код
+    /// и должен скрывать всё, что идёт после него, до конца файла
+    /// </summary>
+    [Fact]
+    public void ParseFile_UnclosedMultiLineComment_DoesNotBreakCodeBeforeComment()
+    {
+        const string code = """
+                            module math;
+
+                            fn first() {}
+                            /* сломанный комментарий
+                            fn second() {}
+                            """;
+        var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+
+        var result = Parser.ParseFile(context);
+
+        result.Functions.Count.ShouldBe(1);
+        result.Functions[0].FuncName.Value.ShouldBe("first");
+        context.Exceptions.ShouldContain(x => x.Code == PlampExceptionInfo.CommentIsNotClosed().Code);
+        context.TranslationTable.Comments.Count.ShouldBe(1);
+        context.TranslationTable.Comments[0].Text.ShouldContain("fn second()");
     }
 }
