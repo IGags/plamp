@@ -25,6 +25,8 @@ using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.MemberNameUniqueness;
 using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 using plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
+using plamp.Alternative.Tokenization.Enums;
+using plamp.Alternative.Tokenization.Token;
 
 namespace plamp.Alternative;
 
@@ -34,9 +36,51 @@ public static class CompilationPipeline
     {
         var tokenizationResult = await Tokenizer.TokenizeAsync(fileStream, fileName);
         var translationTable = new TranslationTable();
+        AddCommentsToTranslationTable(tokenizationResult.Sequence, translationTable);
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, translationTable);
+        SkipLeadingTrivia(parsingContext.Sequence);
         var ast = Parser.ParseFile(parsingContext);
         return new ParsingResult(ast, parsingContext);
+    }
+
+    /// <summary>
+    /// Переносит комментарии из потока токенов в таблицу трансляции
+    /// </summary>
+    /// <param name="sequence">Последовательность токенов исходного файла</param>
+    /// <param name="translationTable">Таблица трансляции текущего файла</param>
+    private static void AddCommentsToTranslationTable(TokenSequence sequence, ITranslationTable translationTable)
+    {
+        foreach (var token in sequence)
+        {
+            if (token is not WhiteSpace whiteSpace)
+            {
+                continue;
+            }
+
+            var kind = whiteSpace.Kind switch
+            {
+                WhiteSpaceKind.SingleLineComment => CommentKind.SingleLine,
+                WhiteSpaceKind.MultiLineComment => CommentKind.MultiLine,
+                _ => (CommentKind?)null
+            };
+
+            if (kind.HasValue)
+            {
+                translationTable.AddComment(new SourceComment(whiteSpace.GetStringRepresentation(), whiteSpace.Position, kind.Value));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Перед началом парсинга переводит текущую позицию последовательности на первый значимый токен
+    /// </summary>
+    /// <param name="sequence">Последовательность токенов файла</param>
+    private static void SkipLeadingTrivia(TokenSequence sequence)
+    {
+        if (sequence.Current() is WhiteSpace)
+        {
+            sequence.MoveNextNonWhiteSpace();
+        }
     }
 
     public static SymTableBuildingResult RunSymTableBuilding(

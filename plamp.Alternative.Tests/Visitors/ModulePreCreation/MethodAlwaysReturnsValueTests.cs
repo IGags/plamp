@@ -177,6 +177,8 @@ public class MethodAlwaysReturnsValueTests
 
     private class MockTranslationTable : ITranslationTable
     {
+        public IReadOnlyList<SourceComment> Comments => [];
+
         public PlampException SetExceptionToNode(NodeBase node, PlampExceptionRecord exceptionRecord)
         {
             return node is FuncNode ? new PlampException(exceptionRecord, new(1, 1, "aaa")) : throw new ArgumentException();
@@ -188,6 +190,11 @@ public class MethodAlwaysReturnsValueTests
         }
 
         public void AddSymbol(NodeBase symbol, FilePosition position)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddComment(SourceComment comment)
         {
             throw new NotImplementedException();
         }

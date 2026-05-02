@@ -12,25 +12,16 @@ namespace plamp.Abstractions.Ast.Node.Definitions;
 /// <param name="moduleName">Имя текущего модуля</param>
 /// <param name="functions">Список объявлений функций текущего модуля</param>
 /// <param name="types">Список объявленных типов текущего модуля</param>
-/// <param name="comments">Комментарии</param>
 public class RootNode(
     List<ImportNode> imports,
     ModuleDefinitionNode? moduleName,
     List<FuncNode> functions,
-    List<TypedefNode> types,
-    List<SourceComment>? comments = null) : NodeBase
+    List<TypedefNode> types) : NodeBase
 {
-    private readonly List<SourceComment> _comments = comments ?? [];
-
     /// <summary>
     /// Список объявленных типов.
     /// </summary>
     public IReadOnlyList<TypedefNode> Types => types;
-
-    /// <summary>
-    /// Комментарии кода
-    /// </summary>
-    public IReadOnlyList<SourceComment> Comments => _comments;
 
     /// <summary>
     /// Список импортов других модулей
@@ -55,7 +46,10 @@ public class RootNode(
             yield return import;
         }
 
-        if(ModuleName != null) yield return ModuleName;
+        if (ModuleName != null)
+        {
+            yield return ModuleName;
+        }
 
         foreach (var type in types)
         {
