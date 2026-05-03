@@ -33,7 +33,7 @@ public class TypedefParsingTests
     //Парсинг кейворда + некорректное далее - ошибка
     public void ParseOnlyKeyword_ReturnsError()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type +");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data +");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeFalse();
         node.ShouldBeNull();
@@ -45,7 +45,7 @@ public class TypedefParsingTests
     //Парсинг кейворда + имени типа - ошибка
     public void ParseKeywordAndName_ReturnsError()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType +");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType +");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeFalse();
         node.ShouldBeNull();
@@ -57,7 +57,7 @@ public class TypedefParsingTests
     //Парсинг кейворда + имени типа + ; - корректно
     public void ParseEmptyType_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType;");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType;");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -68,7 +68,7 @@ public class TypedefParsingTests
     //Парсинг кейворда + имени типа + открывающая скорбка некорректно
     public void ParseTypeMissingCloseBracket_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType {");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType {");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeFalse();
         node.ShouldBeNull();
@@ -80,7 +80,7 @@ public class TypedefParsingTests
     //Парсинг кейворда + имени типа(далее префикс типа) + {} - корректно
     public void ParseAnotherEmptyType_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType {}");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType {}");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -91,7 +91,7 @@ public class TypedefParsingTests
     //Префикс типа плюс одно поле - корректно
     public void ParseTypeWithField_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { y: int }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { y: int }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -105,7 +105,7 @@ public class TypedefParsingTests
     //Префикс типа плюс несколько полей одного типа - корректно
     public void ParseTypeWithManySameTypedFields_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x, y: int }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { x, y: int }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -120,7 +120,7 @@ public class TypedefParsingTests
     //Префикс типа плюс несколько полей разных типов - корректно
     public void ParseTypeWithManyFieldsDifferentTypes_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x: int; y: float }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { x: int; y: float }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -138,7 +138,7 @@ public class TypedefParsingTests
     //Префикс типа плюс несколько сложных полей - корректно
     public void ParseTypeComplexCase_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType {x, y: string; z: MyType }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType {x, y: string; z: MyType }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -159,7 +159,7 @@ public class TypedefParsingTests
     //Незаконченное объявление поля - ошибка
     public void ParseTypeNotCompleteField_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x: }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { x: }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -174,7 +174,7 @@ public class TypedefParsingTests
     //Незакрытое тело типа - ошибка
     public void ParseNotClosedBody_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x: float ");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { x: float ");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeFalse();
         node.ShouldBeNull();

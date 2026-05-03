@@ -16,5 +16,5 @@ public enum Keywords
     Continue,
     As,
     Module,
-    Type,
+    Data,
 }

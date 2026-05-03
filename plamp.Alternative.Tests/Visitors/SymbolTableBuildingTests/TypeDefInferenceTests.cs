@@ -25,7 +25,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {}
+                   data A {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -41,7 +41,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type int {}
+                   data int {}
                    """;
         var res = SetupAndAct(code);
         var ex = res.Exceptions.ShouldHaveSingleItem();
@@ -54,8 +54,8 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {}
-                   type B {}
+                   data A {}
+                   data B {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -71,8 +71,8 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {}
-                   type A {}
+                   data A {}
+                   data A {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);

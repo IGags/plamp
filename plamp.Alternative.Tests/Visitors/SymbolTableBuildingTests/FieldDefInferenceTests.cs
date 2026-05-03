@@ -15,7 +15,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {}
+                   data A {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -29,7 +29,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x: int}
+                   data A {x: int}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -45,8 +45,8 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x: B}
-                   type B {}
+                   data A {x: B}
+                   data B {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -67,7 +67,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x: A}
+                   data A {x: A}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -84,8 +84,8 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x: []B}
-                   type B {}
+                   data A {x: []B}
+                   data B {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -108,7 +108,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x: B}
+                   data A {x: B}
                    """;
         var res = SetupAndAct(code);
         var ex = res.Exceptions.ShouldHaveSingleItem();
@@ -124,7 +124,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {x, x: int}
+                   data A {x, x: int}
                    """;
         var res = SetupAndAct(code);
         
@@ -143,7 +143,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {A: int}
+                   data A {A: int}
                    """;
         var res = SetupAndAct(code);
         var ex = res.Exceptions.ShouldHaveSingleItem();

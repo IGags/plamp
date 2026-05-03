@@ -18,8 +18,8 @@ public class FieldAccessInferenceTests
 {
     private const string ModuleDefinitionsCode = """
                                                  module test;
-                                                 type Complex{ Re, Im: float }
-                                                 type Point { X, Y, Z: Complex }
+                                                 data Complex{ Re, Im: float }
+                                                 data Point { X, Y, Z: Complex }
                                                  """;
     
      [Fact]
