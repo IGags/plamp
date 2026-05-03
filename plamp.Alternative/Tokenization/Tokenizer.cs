@@ -34,21 +34,30 @@ public static class Tokenizer
         var context = new TokenizationContext(tokenList, exceptionList);
         var byteOffset = 0;
         var encoding = fileReader.CurrentEncoding;
+        var isInsideMultiLineComment = false;
+        var multiLineCommentStartOffset = 0;
+        var multiLineCommentLength = 0;
 
         while (await fileReader.ReadLineAsync(token) is { } line)
         {
-            if (context.ShouldAppendLineBreakBeforeContinuingComment)
-            {
-                context.MultiLineCommentBuilder.Append('\n');
-                byteOffset += encoding.GetByteCount("\n");
-                context.ShouldAppendLineBreakBeforeContinuingComment = false;
-            }
+            ProcessLine(
+                line,
+                fileName,
+                encoding,
+                context,
+                ref byteOffset,
+                ref isInsideMultiLineComment,
+                ref multiLineCommentStartOffset,
+                ref multiLineCommentLength);
 
-            ProcessLine(line, fileName, encoding, context, ref byteOffset);
-
-            if (context.IsInsideMultiLineComment)
+            if (isInsideMultiLineComment)
             {
-                context.ShouldAppendLineBreakBeforeContinuingComment = true;
+                if (fileReader.Peek() >= 0)
+                {
+                    multiLineCommentLength++;
+                    byteOffset += encoding.GetByteCount("\n");
+                }
+
                 continue;
             }
 
@@ -56,13 +65,19 @@ public static class Tokenizer
             byteOffset += encoding.GetByteCount("\n");
         }
 
-        if (context.IsInsideMultiLineComment)
+        if (isInsideMultiLineComment)
         {
-            CompleteUnclosedMultiLineComment(context);
+            HandleUnclosedMultiLineComment(context, multiLineCommentStartOffset, multiLineCommentLength, fileName);
         }
 
         context.Tokens.Add(new EndOfFile(new FilePosition(byteOffset, 0, fileName)));
-        return new TokenizationResult(new TokenSequence(context.Tokens), context.Exceptions);
+        var sequence = new TokenSequence(context.Tokens);
+        if (sequence.Current() is WhiteSpace)
+        {
+            sequence.MoveNextNonWhiteSpace();
+        }
+
+        return new TokenizationResult(sequence, context.Exceptions);
     }
 
     /// <summary>
@@ -73,20 +88,26 @@ public static class Tokenizer
     /// <param name="encoding">Кодировка файла</param>
     /// <param name="context">Контекст токенизации</param>
     /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
+    /// <param name="isInsideMultiLineComment">Признак активного многострочного комментария</param>
+    /// <param name="multiLineCommentStartOffset">Смещение начала многострочного комментария в байтах</param>
+    /// <param name="multiLineCommentLength">Длина многострочного комментария в символах</param>
     private static void ProcessLine(
         string line,
         string fileName,
         Encoding encoding,
         TokenizationContext context,
-        ref int byteOffset)
+        ref int byteOffset,
+        ref bool isInsideMultiLineComment,
+        ref int multiLineCommentStartOffset,
+        ref int multiLineCommentLength)
     {
         for (var i = 0; i < line.Length;)
         {
             var prevIx = i;
 
-            if (context.IsInsideMultiLineComment)
+            if (isInsideMultiLineComment)
             {
-                ContinueParsingMultiLineComment(line, ref i, context, fileName, byteOffset);
+                ContinueParsingMultiLineComment(line, ref i, ref isInsideMultiLineComment, ref multiLineCommentLength);
             }
             else if (char.IsLetter(line[i]))
             {
@@ -100,9 +121,29 @@ public static class Tokenizer
             {
                 context.Tokens.Add(ParseStringLiteral(line, ref i, byteOffset, fileName, encoding, context));
             }
+            else if (IsSingleLineCommentStart(line, i))
+            {
+                SkipSingleLineComment(line, ref i);
+            }
+            else if (IsMultiLineCommentStart(line, i))
+            {
+                BeginMultiLineComment(
+                    ref isInsideMultiLineComment,
+                    ref multiLineCommentStartOffset,
+                    ref multiLineCommentLength,
+                    byteOffset);
+                i += 2;
+                ContinueParsingMultiLineComment(line, ref i, ref isInsideMultiLineComment, ref multiLineCommentLength);
+            }
             else
             {
-                if (TryParseCustom(line, ref i, byteOffset, fileName, out var result, context))
+                if (TryParseCustom(
+                        line,
+                        ref i,
+                        byteOffset,
+                        fileName,
+                        out var result,
+                        context))
                 {
                     if (result != null)
                     {
@@ -114,6 +155,26 @@ public static class Tokenizer
             byteOffset += encoding.GetByteCount(line.AsSpan().Slice(prevIx, i - prevIx));
         }
     }
+
+    /// <summary>
+    /// Проверяет, начинается ли в текущей позиции однострочный комментарий.
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла.</param>
+    /// <param name="position">Проверяемая позиция.</param>
+    private static bool IsSingleLineCommentStart(string text, int position) =>
+        position + 1 < text.Length
+        && text[position] == '/'
+        && text[position + 1] == '/';
+
+    /// <summary>
+    /// Проверяет, начинается ли в текущей позиции многострочный комментарий.
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла.</param>
+    /// <param name="position">Проверяемая позиция.</param>
+    private static bool IsMultiLineCommentStart(string text, int position) =>
+        position + 1 < text.Length
+        && text[position] == '/'
+        && text[position + 1] == '*';
 
     #region Words
 
@@ -398,7 +459,7 @@ public static class Tokenizer
     /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после разобранного токена</param>
     /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
     /// <param name="fileName">Имя файла</param>
-    /// <param name="result">Разобранный токен. Для незакрытого многострочного комментария возвращает <see langword="null"/> до его завершения</param>
+    /// <param name="result">Разобранный токен</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
     /// <returns><see langword="true"/>, если токен был распознан; иначе <see langword="false"/></returns>
     private static bool TryParseCustom(
@@ -447,6 +508,7 @@ public static class Tokenizer
                 position++;
                 return true;
             case ' ':
+            case '\r':
                 result = new WhiteSpace(" ", filePosition, WhiteSpaceKind.WhiteSpace);
                 position++;
                 return true;
@@ -454,27 +516,18 @@ public static class Tokenizer
                 result = new WhiteSpace("\t", filePosition, WhiteSpaceKind.WhiteSpace);
                 position++;
                 return true;
-            case ':':
-                if (next != '=')
-                {
-                    result = new Colon(filePosition);
-                    position++;
-                    return true;
-                }
-
-                break;
-            case '/':
+            case ':' when next != '=':
+                result = new Colon(filePosition);
+                position++;
+                return true;
+            case '*':
                 if (next == '/')
                 {
-                    result = ParseSingleLineComment(text, ref position, byteOffset, fileName);
-                    return true;
-                }
-
-                if (next == '*')
-                {
-                    BeginMultiLineComment(context, byteOffset, fileName);
+                    context.Exceptions.Add(
+                        new PlampException(
+                            PlampExceptionInfo.UnexpectedToken("*/"),
+                            new FilePosition(byteOffset, 2, fileName)));
                     position += 2;
-                    ContinueParsingMultiLineComment(text, ref position, context, fileName, byteOffset);
                     return true;
                 }
 
@@ -493,34 +546,28 @@ public static class Tokenizer
     }
 
     /// <summary>
-    /// Разбирает однострочный комментарий до конца текущей строки.
+    /// Пропускает однострочный комментарий до конца текущей строки
     /// </summary>
     /// <param name="text">Текущая строка исходного файла.</param>
     /// <param name="position">Текущая позиция чтения. После вызова указывает на конец строки.</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла.</param>
-    /// <param name="fileName">Имя файла.</param>
-    /// <returns>Токен trivia для однострочного комментария.</returns>
-    private static WhiteSpace ParseSingleLineComment(string text, ref int position, int byteOffset, string fileName)
-    {
-        var start = position;
-        position = text.Length;
-        var comment = text[start..position];
-        return new WhiteSpace(comment, new FilePosition(byteOffset, comment.Length, fileName), WhiteSpaceKind.SingleLineComment);
-    }
+    private static void SkipSingleLineComment(string text, ref int position) => position = text.Length;
 
     /// <summary>
-    /// Инициализирует состояние разбора многострочного комментария
+    /// Начинает состояние разбора многострочного комментария
     /// </summary>
-    /// <param name="context">Контекст токенизации</param>
+    /// <param name="isInsideMultiLineComment">Признак активного многострочного комментария</param>
+    /// <param name="multiLineCommentStartOffset">Смещение начала комментария в байтах</param>
+    /// <param name="multiLineCommentLength">Длина комментария в символах</param>
     /// <param name="byteOffset">Смещение начала комментария в байтах</param>
-    /// <param name="fileName">Имя файла</param>
-    private static void BeginMultiLineComment(TokenizationContext context, int byteOffset, string fileName)
+    private static void BeginMultiLineComment(
+        ref bool isInsideMultiLineComment,
+        ref int multiLineCommentStartOffset,
+        ref int multiLineCommentLength,
+        int byteOffset)
     {
-        context.IsInsideMultiLineComment = true;
-        context.MultiLineCommentBuilder.Clear();
-        context.MultiLineCommentBuilder.Append("/*");
-        context.MultiLineCommentStartOffset = byteOffset;
-        context.MultiLineCommentFileName = fileName;
+        isInsideMultiLineComment = true;
+        multiLineCommentStartOffset = byteOffset;
+        multiLineCommentLength = 2;
     }
 
     /// <summary>
@@ -528,15 +575,13 @@ public static class Tokenizer
     /// </summary>
     /// <param name="text">Текущая строка исходного файла</param>
     /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после комментария или на конец строки</param>
-    /// <param name="context">Контекст токенизации</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
+    /// <param name="isInsideMultiLineComment">Признак активного многострочного комментария</param>
+    /// <param name="multiLineCommentLength">Длина комментария в символах</param>
     private static void ContinueParsingMultiLineComment(
         string text,
         ref int position,
-        TokenizationContext context,
-        string fileName,
-        int byteOffset)
+        ref bool isInsideMultiLineComment,
+        ref int multiLineCommentLength)
     {
         while (position < text.Length)
         {
@@ -544,42 +589,34 @@ public static class Tokenizer
                 && text[position] == '*'
                 && text[position + 1] == '/')
             {
-                context.MultiLineCommentBuilder.Append("*/");
                 position += 2;
-                var commentText = context.MultiLineCommentBuilder.ToString();
-                context.Tokens.Add(
-                    new WhiteSpace(
-                        commentText,
-                        new FilePosition(context.MultiLineCommentStartOffset, commentText.Length, context.MultiLineCommentFileName),
-                        WhiteSpaceKind.MultiLineComment));
-                context.MultiLineCommentBuilder.Clear();
-                context.IsInsideMultiLineComment = false;
+                multiLineCommentLength += 2;
+                isInsideMultiLineComment = false;
                 return;
             }
 
-            context.MultiLineCommentBuilder.Append(text[position]);
+            multiLineCommentLength++;
             position++;
         }
     }
 
     /// <summary>
-    /// Завершает незакрытый многострочный комментарий на конце файла и формирует ошибку.
+    /// Обработать незакрытый многострочный комментарий на конце файла
     /// </summary>
     /// <param name="context">Контекст токенизации.</param>
-    private static void CompleteUnclosedMultiLineComment(TokenizationContext context)
+    /// <param name="multiLineCommentStartOffset">Смещение начала комментария в байтах</param>
+    /// <param name="multiLineCommentLength">Длина комментария в символах</param>
+    /// <param name="fileName">Имя файла, в котором начался комментарий</param>
+    private static void HandleUnclosedMultiLineComment(
+        TokenizationContext context,
+        int multiLineCommentStartOffset,
+        int multiLineCommentLength,
+        string fileName)
     {
-        var commentText = context.MultiLineCommentBuilder.ToString();
         context.Exceptions.Add(
             new PlampException(
                 PlampExceptionInfo.CommentIsNotClosed(),
-                new FilePosition(context.MultiLineCommentStartOffset, commentText.Length, context.MultiLineCommentFileName)));
-        context.Tokens.Add(
-            new WhiteSpace(
-                commentText,
-                new FilePosition(context.MultiLineCommentStartOffset, commentText.Length, context.MultiLineCommentFileName),
-                WhiteSpaceKind.MultiLineComment));
-        context.MultiLineCommentBuilder.Clear();
-        context.IsInsideMultiLineComment = false;
+                new FilePosition(multiLineCommentStartOffset, multiLineCommentLength, fileName)));
     }
 
     /// <summary>

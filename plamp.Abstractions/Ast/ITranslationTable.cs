@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node;
 
 namespace plamp.Abstractions.Ast;
@@ -11,11 +10,6 @@ namespace plamp.Abstractions.Ast;
 /// </summary>
 public interface ITranslationTable
 {
-    /// <summary>
-    /// Комментарии исходного кода, связанные с текущей единицей трансляции
-    /// </summary>
-    IReadOnlyList<SourceComment> Comments { get; }
-
     /// <summary>
     /// Создаёт объект ошибки с перезаписанной позицией в исходном файле на основании узла AST. Если узла AST нет - поднимает исключение 
     /// </summary>
@@ -40,12 +34,6 @@ public interface ITranslationTable
     /// <exception cref="T:System.ArgumentException">Ошибка, если стартовая узла позиция больше конечной.</exception>
     /// <exception cref="T:System.ArgumentException">Узел уже присутствует в таблице.</exception>
     void AddSymbol(NodeBase symbol, FilePosition position);
-
-    /// <summary>
-    /// Добавляет комментарий в таблицу трансляции.
-    /// </summary>
-    /// <param name="comment">Комментарий</param>
-    void AddComment(SourceComment comment);
 
     /// <summary>
     /// Удаление узла AST из таблицы трансляции.
