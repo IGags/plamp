@@ -78,7 +78,7 @@ public static class Parser
                 if (!TryParseFunc(context, out var fn)) return false;
                 topLevel = fn;
                 return true;
-            case KeywordToken { Keyword: Keywords.Type }:
+            case KeywordToken { Keyword: Keywords.Data }:
                 if (!TryParseTypedef(context, out var typ)) return false;
                 topLevel = typ;
                 return true;
@@ -94,7 +94,7 @@ public static class Parser
     public static bool TryParseTypedef(ParsingContext context, [NotNullWhen(true)] out TypedefNode? typedef)
     {
         typedef = null;
-        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Type } typeKeyword) return false;
+        if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Data } typeKeyword) return false;
         context.Sequence.MoveNextNonWhiteSpace();
 
         if (context.Sequence.Current() is not Word typeName)
