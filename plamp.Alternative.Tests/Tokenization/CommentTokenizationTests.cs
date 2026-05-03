@@ -31,8 +31,7 @@ public class CommentTokenizationTests
         var result = await TokenizeAsync(code);
 
         result.Exceptions.ShouldBeEmpty();
-        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldNotContain("// comment");
-        result.Sequence.Count(x => x is WhiteSpace { Kind: WhiteSpaceKind.LineBreak }).ShouldBeGreaterThanOrEqualTo(2);
+        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldContain("// comment");
         result.Sequence.OfType<Word>().Select(x => x.GetStringRepresentation()).ShouldBe(["a", "b"]);
     }
 
@@ -47,7 +46,7 @@ public class CommentTokenizationTests
         var result = await TokenizeAsync(code);
 
         result.Exceptions.ShouldBeEmpty();
-        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldNotContain("/*comment*/");
+        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldContain("/*comment*/");
         result.Sequence.OfType<OperatorToken>().ShouldContain(x => x.Operator == OperatorEnum.Assign);
         result.Sequence.OfType<Literal>().ShouldContain(x => Equals(x.ActualValue, 11));
     }
@@ -63,8 +62,7 @@ public class CommentTokenizationTests
         var result = await TokenizeAsync(code);
 
         result.Exceptions.ShouldBeEmpty();
-        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldNotContain(code);
-        result.Sequence.OfType<WhiteSpace>().ShouldNotContain(x => x.GetStringRepresentation().Contains("comment"));
+        result.Sequence.OfType<WhiteSpace>().Where(x => x.Kind != WhiteSpaceKind.SingleLineComment).ShouldNotContain(x => x.GetStringRepresentation().Contains("maker"));
     }
 
     /// <summary>
@@ -78,8 +76,9 @@ public class CommentTokenizationTests
         var result = await TokenizeAsync(code);
 
         result.Exceptions.ShouldBeEmpty();
-        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldNotContain(code);
-        result.Sequence.OfType<WhiteSpace>().ShouldNotContain(x => x.GetStringRepresentation().Contains("comment"));
+        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldContain(code);
+        result.Sequence.OfType<WhiteSpace>()
+            .Where(x => x.Kind != WhiteSpaceKind.MultiLineComment).ShouldNotContain(x => x.GetStringRepresentation().Contains("maker"));
     }
 
     /// <summary>
@@ -93,8 +92,10 @@ public class CommentTokenizationTests
         var result = await TokenizeAsync(code);
 
         result.Exceptions.ShouldBeEmpty();
-        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldNotContain(code);
-        result.Sequence.OfType<WhiteSpace>().ShouldNotContain(x => x.GetStringRepresentation().Contains("outer"));
+        result.Sequence.Select(x => x.GetStringRepresentation()).ShouldContain(code);
+        result.Sequence.OfType<WhiteSpace>()
+            .Where(x => x.Kind != WhiteSpaceKind.MultiLineComment)
+            .ShouldNotContain(x => x.GetStringRepresentation().Contains("outer"));
     }
 
     /// <summary>
@@ -118,19 +119,16 @@ public class CommentTokenizationTests
     }
 
     /// <summary>
-    /// Закрывающий маркер без открытого многострочного комментария должен создавать исключение
+    /// Закрывающий маркер без открытого многострочного комментария расценивается корректно, обрабатывается на этапе парсера.
     /// </summary>
     [Fact]
-    public async Task Tokenization_ClosingMultiLineCommentWithoutOpening_ReturnsUnexpectedToken()
+    public async Task Tokenization_ClosingMultiLineCommentWithoutOpening_Correct()
     {
         const string code = "/* comment */ */";
 
         var result = await TokenizeAsync(code);
 
-        result.Exceptions.Count.ShouldBe(1);
-        result.Exceptions.Single().Code.ShouldBe(PlampExceptionInfo.UnexpectedToken("*/").Code);
-        result.Exceptions.Single().Message.ShouldBe(PlampExceptionInfo.UnexpectedToken("*/").Message);
-        result.Sequence.OfType<OperatorToken>().ShouldBeEmpty();
+        result.Exceptions.ShouldBeEmpty();
     }
 
     /// <summary>
