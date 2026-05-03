@@ -58,11 +58,7 @@ public static class Parser
         context.TranslationTable.AddSymbol(node, default);
         return node;
     }
-
-    /// <summary>
-    /// Извлекает комментарии из токенизированного файла
-    /// </summary>
-    /// <param name="context">Контекст парсинга файла</param>
+    
     public static bool TryParseTopLevel(
         ParsingContext context,
         [NotNullWhen(true)] out NodeBase? topLevel)

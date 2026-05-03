@@ -3,7 +3,5 @@
 public enum WhiteSpaceKind
 {
     WhiteSpace,
-    LineBreak,
-    SingleLineComment,
-    MultiLineComment
+    LineBreak
 }
