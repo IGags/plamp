@@ -58,7 +58,7 @@ public static class Parser
         context.TranslationTable.AddSymbol(node, default);
         return node;
     }
-
+    
     public static bool TryParseTopLevel(
         ParsingContext context,
         [NotNullWhen(true)] out NodeBase? topLevel)

@@ -11,13 +11,18 @@ namespace plamp.Abstractions.Ast.Node.Definitions;
 /// <param name="imports">Список импортов других модулей</param>
 /// <param name="moduleName">Имя текущего модуля</param>
 /// <param name="functions">Список объявлений функций текущего модуля</param>
-public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName, List<FuncNode> functions, List<TypedefNode> types) : NodeBase
+/// <param name="types">Список объявленных типов текущего модуля</param>
+public class RootNode(
+    List<ImportNode> imports,
+    ModuleDefinitionNode? moduleName,
+    List<FuncNode> functions,
+    List<TypedefNode> types) : NodeBase
 {
     /// <summary>
     /// Список объявленных типов.
     /// </summary>
     public IReadOnlyList<TypedefNode> Types => types;
-    
+
     /// <summary>
     /// Список импортов других модулей
     /// </summary>
@@ -41,7 +46,10 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
             yield return import;
         }
 
-        if(ModuleName != null) yield return ModuleName;
+        if (ModuleName != null)
+        {
+            yield return ModuleName;
+        }
 
         foreach (var type in types)
         {
@@ -64,7 +72,7 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         {
             imports[ix] = importChild;
         }
-        else if (newChild is ModuleDefinitionNode moduleDefChild && moduleDefChild == ModuleName)
+        else if (newChild is ModuleDefinitionNode moduleDefChild && child == ModuleName)
         {
             ModuleName = moduleDefChild;
         }
@@ -74,11 +82,11 @@ public class RootNode(List<ImportNode> imports, ModuleDefinitionNode? moduleName
         {
             functions[ix] = defChild;
         }
-        else if (newChild is TypedefNode typedefOld
-                 && child is TypedefNode typedefNew
-                 && (ix = types.IndexOf(typedefNew)) != -1)
+        else if (newChild is TypedefNode typedefNew
+                 && child is TypedefNode typedefOld
+                 && (ix = types.IndexOf(typedefOld)) != -1)
         {
-            types[ix] = typedefOld;
+            types[ix] = typedefNew;
         }
     }
 }

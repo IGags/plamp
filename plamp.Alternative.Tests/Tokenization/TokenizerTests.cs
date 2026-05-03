@@ -33,6 +33,18 @@ public class TokenizerTests
     {
         yield return [";", typeof(EndOfStatement)];
         yield return [" ", typeof(WhiteSpace), new Predicate<TokenBase>(t => ((WhiteSpace)t).Kind == WhiteSpaceKind.WhiteSpace)];
+        yield return ["\"//\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "//";
+        })];
+        yield return ["\"/*not comment*/\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "/*not comment*/";
+        })];
         yield return ["abc", typeof(Word)];
         yield return ["a1", typeof(Word)];
         yield return ["A", typeof(Word)];
@@ -194,6 +206,9 @@ public class TokenizerTests
         yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName))}];
         yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
+        yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
+        yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
@@ -240,4 +255,5 @@ public class TokenizerTests
         result.Exceptions.ShouldBeEmpty();
         result.Sequence.Current().ShouldBeOfType<Colon>();
     }
+
 }

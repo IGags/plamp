@@ -17,7 +17,8 @@ public class ParserContextCustomization(string toParse) : ISpecimenBuilder
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(toParse));
         using var reader = new StreamReader(stream, Encoding.Unicode);
         var tokenizationResult = Tokenizer.TokenizeAsync(reader, fileName).Result;
-        var result = new ParsingContext(tokenizationResult.Sequence, [], new TranslationTable());
+        var translationTable = new TranslationTable();
+        var result = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, translationTable);
         return result;
     }
 }
