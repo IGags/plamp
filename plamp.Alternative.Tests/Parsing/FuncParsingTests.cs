@@ -149,7 +149,6 @@ public class FuncParsingTests
             "fn a[()", new List<string>
             {
                 PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code, 
-                PlampExceptionInfo.GenericDefinitionIsNotClosed().Code, 
                 PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
             }, false, null
         ];

@@ -15,22 +15,23 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class InitTypeInferenceTests
 {
-    [Fact]
-    public void InferenceSimpleType_Correct()
+    [Theory]
+    [InlineData("int")]
+    [InlineData("array")]
+    [InlineData("any")]
+    public void InferenceBuiltinType_ReturnsError(string typeName)
     {
-        const string code = """
-                            fn a() {
-                                c := int{};
-                            }
-                            """;
+        var code = $$"""
+                    fn a() {
+                        c := {{typeName}}{};
+                    }
+                    """;
         var (ast, ctx) = SetupAndAct(code);
 
-        ctx.Exceptions.ShouldBeEmpty();
-        var fn = ast.ShouldBeOfType<RootNode>().Functions.ShouldHaveSingleItem();
-        var assign = fn.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
-        var typeInit = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<InitTypeNode>();
-        var info = typeInit.Type.TypeInfo.ShouldNotBeNull();
-        info.ShouldBe(Builtins.Int);
+        var ex = ctx.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.CannotInitBuiltinType().Code);
+        
+        ast.ShouldBeOfType<RootNode>().Functions.ShouldHaveSingleItem();
     }
 
     [Fact]

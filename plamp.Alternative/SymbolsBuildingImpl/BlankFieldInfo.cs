@@ -60,6 +60,19 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
                && _definingType.Equals(emptyFld._definingType);
     }
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        if (obj is not IFieldInfo info) return false;
+        return Equals(info);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(name, _definingType.GetHashCode(), typeInfo.GetHashCode());
+    }
+
     /// <summary>
     /// Бросить ошибку, если создание типа завершено
     /// </summary>

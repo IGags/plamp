@@ -217,6 +217,7 @@ public static class Parser
         var current = context.Sequence.Current();
         if (current is not CloseSquareBracket)
         {
+            if (genericDefinitions.Count == 0) return false;
             var error = PlampExceptionInfo.GenericDefinitionIsNotClosed();
             context.Exceptions.Add(new PlampException(error, current.Position));
         }

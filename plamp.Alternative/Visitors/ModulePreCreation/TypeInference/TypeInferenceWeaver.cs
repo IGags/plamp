@@ -881,6 +881,14 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
     protected override VisitResult PostVisitInitType(InitTypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
+        if (Builtins.SymTable.ModuleName.Equals(node.Type.TypeInfo?.ModuleName))
+        {
+            var error = PlampExceptionInfo.CannotInitBuiltinType();
+            SetExceptionToSymbol(node, error, context);
+            context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+        
         context.InnerExpressionTypeStack.Push(node.Type.TypeInfo);
         return VisitResult.SkipChildren;
     }

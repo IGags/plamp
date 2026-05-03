@@ -1153,11 +1153,16 @@ public static class IlCodeEmitter
 
     private static void EmitTypeInit(InitTypeNode node, EmissionContext context)
     {
-        if (node.Type.TypeInfo?.AsType() is not { } type)
-            throw new Exception("Compiler exception, if you see this - write to the compiler developer");
+        if (node.Type.TypeInfo?.AsType() is not { } type) throw new Exception("Compiler exception, if you see this - write to the compiler developer");
+        if (type.IsPrimitive) throw new Exception("Нельзя создать примитивный тип через конструктор, используйте создание через литерал");
+        if (type == typeof(void)) throw new Exception("Нельзя создать void через конструктор");
         if (type.IsValueType)
         {
+            //Структура не может существовать без связки с переменной на стеке, поэтому создаём через временную переменную, возможна оптимизация.
+            var loc = context.Generator.DeclareLocal(type);
+            context.Generator.Emit(OpCodes.Ldloca, loc);
             context.Generator.Emit(OpCodes.Initobj, type);
+            context.Generator.Emit(OpCodes.Ldloc, loc);
         }
         else if (type.IsArray || type == typeof(string))
         {

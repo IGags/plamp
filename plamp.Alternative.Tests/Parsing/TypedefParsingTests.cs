@@ -208,9 +208,8 @@ public class TypedefParsingTests
         node.ShouldNotBeNull();
         node.GenericParameters.ShouldBeEmpty();
         
-        context.Exceptions.Count.ShouldBe(2);
-        var codes = new []{ PlampExceptionInfo.GenericDefinitionIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code};
-        codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code);
     }
 
     [Fact]
@@ -288,8 +287,15 @@ public class TypedefParsingTests
         var res = Parser.TryParseTypedef(context, out _);
         res.ShouldBeFalse();
         
-        var ex = context.Exceptions.ShouldHaveSingleItem();
-        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
+        var exceptionCodes = new[]
+        {
+            PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code,
+            PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+        };
+        
+        context.Exceptions.Count.ShouldBe(2);
+        var actualCodes = context.Exceptions.Select(x => x.Code).ToHashSet();
+        exceptionCodes.ShouldAllBe(x => actualCodes.Contains(x));
     }
 
     [Fact]
@@ -298,10 +304,17 @@ public class TypedefParsingTests
     {
         var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T[int]];");
         var res = Parser.TryParseTypedef(context, out _);
-        res.ShouldBeTrue();
+        res.ShouldBeFalse();
+
+        var exceptionCodes = new[]
+        {
+            PlampExceptionInfo.GenericDefinitionIsNotClosed().Code,
+            PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+        };
         
-        var ex = context.Exceptions.ShouldHaveSingleItem();
-        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
+        context.Exceptions.Count.ShouldBe(2);
+        var actualCodes = context.Exceptions.Select(x => x.Code).ToHashSet();
+        exceptionCodes.ShouldAllBe(x => actualCodes.Contains(x));
     }
 
     [Fact] 

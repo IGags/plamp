@@ -320,7 +320,7 @@ public static class PlampExceptionInfo
         {
             Code = "PRS1142",
             Level = ExceptionLevel.Error,
-            Message = "Expected type name that will be alias for generic type fields."
+            Message = "Expected type name that will be name for generic argument."
         };
     }
     
@@ -707,6 +707,14 @@ public static class PlampExceptionInfo
         {
             Message = $"Generic func definition has {expected} generic parameter count, but created with {actual} arguments",
             Code = "SEM1142",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotInitBuiltinType() =>
+        new()
+        {
+            Message = "This type is builtin and cannot be initialized directly, use type literal instead.",
+            Code = "SEM1143",
             Level = ExceptionLevel.Error
         };
 
