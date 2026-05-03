@@ -24,6 +24,8 @@ public static class Parser
 {
     public static RootNode ParseFile(ParsingContext context)
     {
+        if (context.Sequence.Current() is WhiteSpace) context.Sequence.MoveNextNonWhiteSpace();
+        
         var topLevelList = new List<NodeBase>();
         while (context.Sequence.Current() is not EndOfFile)
         {
