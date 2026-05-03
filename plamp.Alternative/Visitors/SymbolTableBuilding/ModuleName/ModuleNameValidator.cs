@@ -8,6 +8,8 @@ namespace plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
 
 public class ModuleNameValidator : BaseValidator<SymbolTableBuildingContext, ModuleNameValidatorContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.TopLevel;
+
     protected override ModuleNameValidatorContext CreateInnerContext(
         SymbolTableBuildingContext context) => new(context);
 

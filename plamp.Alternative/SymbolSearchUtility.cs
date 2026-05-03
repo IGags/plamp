@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using plamp.Abstractions.Ast;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
@@ -9,7 +11,38 @@ namespace plamp.Alternative;
 public static class SymbolSearchUtility
 {
     public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
-        string name,
+        TypeNode typeNode,
+        IEnumerable<ISymTable> symbolTables,
+        out ITypeInfo? typeInfo)
+    {
+        typeInfo = null;
+        var name = typeNode.TypeName.Name;
+        var genericCt = typeNode.GenericParameters.Count;
+        var error = TryGetTypeCore(name, genericCt, symbolTables, out var typeDef);
+        if (error != null) return error;
+
+        typeInfo = typeDef;
+        return null;        
+    }
+
+    public static PlampExceptionRecord? TryGetTypeOrErrorRecord(
+        TypedefNode typedefNode,
+        IEnumerable<ISymTable> symbolTables,
+        out ITypeInfo? typeInfo)
+    {
+        typeInfo = null;
+        var name = typedefNode.Name.Value;
+        var genericCt = typedefNode.GenericParameters.Count;
+        var error = TryGetTypeCore(name, genericCt, symbolTables, out var typeDef);
+        if (error != null) return error;
+
+        typeInfo = typeDef;
+        return null;
+    }
+
+    private static PlampExceptionRecord? TryGetTypeCore(
+        string name, 
+        int genericCount, 
         IEnumerable<ISymTable> symbolTables,
         out ITypeInfo? typeInfo)
     {
@@ -21,12 +54,18 @@ public static class SymbolSearchUtility
             if(type != null) types.Add((type, table));
         }
 
-        if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
         if (types.Count > 1)
         {
-            return PlampExceptionInfo.AmbigulousTypeName(name, types.Select(x => x.table.ModuleName));
+            return PlampExceptionInfo.AmbiguousTypeName(name, types.Select(x => x.table.ModuleName));
         }
+        if (types.Count == 0) return PlampExceptionInfo.TypeIsNotFound(name);
 
+        var defParamCount = types[0].typ.GetGenericParameters().Count; 
+        if (defParamCount != genericCount)
+        {
+            return PlampExceptionInfo.GenericTypeDefinitionHasDifferentParameterCount(defParamCount, genericCount);
+        }
+        
         typeInfo = types[0].typ;
         return null;
     }
@@ -56,7 +95,6 @@ public static class SymbolSearchUtility
 
     public static PlampExceptionRecord? TryGetFuncOrErrorRecord(
         string name,
-        IReadOnlyList<ITypeInfo?> argTypes,
         IEnumerable<ISymTable> symbolTables, 
         out IFnInfo? fnInfo)
     {
@@ -64,86 +102,97 @@ public static class SymbolSearchUtility
         var funcs = new List<(string modName, IFnInfo fnInfo)>();
         foreach (var symbolTable in symbolTables)
         {
-            var found = symbolTable.FindFuncs(name).Select(x => (symbolTable.ModuleName, x)).ToList();
-            if(found.Count != 0) funcs.AddRange(found);
+            var found = symbolTable.FindFunc(name);
+            if(found != null) funcs.Add((symbolTable.ModuleName, found));
         }
 
-        var fullMatch = new List<IFnInfo>();
-        var partialMatch = new List<IFnInfo>();
-        var matchedModules = new HashSet<string>();
+        if (funcs.Count == 1) fnInfo = funcs[0].fnInfo;
 
-        foreach (var (modName, func) in funcs)
+        return funcs.Count switch
         {
-            matchedModules.Add(modName);
-            switch (SignatureMatches(func.Arguments, argTypes))
-            {
-                case MatchResult.NotMatch: continue;
-                case MatchResult.PartialMatch: partialMatch.Add(func); break;
-                case MatchResult.FullMatch: fullMatch.Add(func); break;
-                default: throw new ArgumentOutOfRangeException();
-            }
+            0 => PlampExceptionInfo.FunctionIsNotFound(name),
+            > 1 => PlampExceptionInfo.AmbiguousFunctionReference(name, funcs.Select(x => x.modName)),
+            _ => null
+        };
+    }
+
+    public static PlampExceptionRecord? MatchArgumentOrGetError(
+        ITypeInfo fnParameterType,
+        ITypeInfo fnArgType,
+        List<KeyValuePair<ITypeInfo, ITypeInfo>> genericMapping)
+    {
+        if (fnParameterType.IsGenericTypeDefinition)
+        {
+            throw new InvalidOperationException("В аргументе объявления функции не может быть объявления дженерик типа");
         }
 
-        if (fullMatch.Count == 1)
+        if (fnArgType.IsGenericTypeDefinition)
         {
-            fnInfo = fullMatch.First();
+            throw new InvalidOperationException("В аргументе функции не может быть объявления дженерик типа");
+        }
+        
+        if (fnParameterType.IsGenericTypeParameter)
+        {
+            genericMapping.Add(new(fnParameterType, fnArgType));
             return null;
         }
-        
-        var totalCount = fullMatch.Count + partialMatch.Count;
-        
-        if (totalCount == 0)
-        {
-            return PlampExceptionInfo.FunctionIsNotFound(name, argTypes);
-        }
-        if (totalCount > 1)
-        {
-            return PlampExceptionInfo.AmbigulousFunctionReference(name, argTypes, matchedModules);
-        }
 
-        fnInfo = fullMatch.FirstOrDefault() ?? partialMatch.FirstOrDefault()!;
-        return null;
-    }
-
-    private enum MatchResult
-    {
-        NotMatch = 0,
-        PartialMatch = 1,
-        FullMatch = 2
-    }
-    
-    private static MatchResult SignatureMatches(IReadOnlyList<IArgInfo> expected, IReadOnlyList<ITypeInfo?> actual)
-    {
-        if (expected.Count != actual.Count) return MatchResult.NotMatch;
-        var matchType = MatchResult.FullMatch;
-        
-        for (var i = 0; i < expected.Count; i++)
+        if (fnParameterType.IsArrayType)
         {
-            var actualType = actual[i];
-            var expectedType = expected[i].Type;
+            if (!fnArgType.IsArrayType) return PlampExceptionInfo.CannotApplyArgument();
             
-            if (actualType == null) { matchType = MatchResult.PartialMatch; continue; }
-            if (expectedType.Equals(actualType)) continue;
-            if (!ImplicitlyConvertable(actualType, expectedType)) return MatchResult.NotMatch;
-            matchType = MatchResult.PartialMatch;
+            var fnParamElem = fnParameterType.ElementType();
+            ArgumentNullException.ThrowIfNull(fnParamElem);
+            var fnArgElem = fnArgType.ElementType();
+            ArgumentNullException.ThrowIfNull(fnArgElem);
+
+            return MatchArgumentOrGetError(fnParamElem, fnArgElem, genericMapping);
+        }
+        
+        if (fnParameterType.IsGenericType)
+        {
+            if (!fnArgType.IsGenericType) return PlampExceptionInfo.CannotApplyArgument();
+            
+            var fnParamDef = fnParameterType.GetGenericTypeDefinition();
+            ArgumentNullException.ThrowIfNull(fnParamDef);
+            var fnArgDef = fnArgType.GetGenericTypeDefinition();
+            ArgumentNullException.ThrowIfNull(fnArgDef);
+            
+            if (!fnArgDef.Equals(fnParamDef)) return PlampExceptionInfo.CannotApplyArgument();
+            
+            var fnParamArgs = fnParamDef.GetGenericArguments();
+            var fnArgArgs = fnArgDef.GetGenericArguments();
+
+            if (fnParamArgs.Count != fnArgArgs.Count) return PlampExceptionInfo.CannotApplyArgument();
+
+            PlampExceptionRecord? record = null; 
+            foreach (var (paramArg, argArg) in fnParamArgs.Zip(fnArgArgs))
+            {
+                record ??= MatchArgumentOrGetError(paramArg, argArg, genericMapping);
+            }
+
+            return record;
         }
 
-        return matchType;
+        return ImplicitlyConvertable(fnParameterType, fnArgType) ? null : PlampExceptionInfo.CannotApplyArgument();
     }
 
     public static bool ImplicitlyConvertable(ITypeInfo from, ITypeInfo to)
     {
         return ImplicitlyNumericConvertable(from, to)
                || ArrayImplicitlyConvertable(from, to)
-               || AnyImplicitlyConvertable(from, to);
+               || AnyImplicitlyConvertable(from, to)
+               || GenericParamToAnyConvertable(from, to);
     }
 
-    public static bool NeedToCreateCast(ITypeInfo from, ITypeInfo to)
+    public static bool NeedToCast(ITypeInfo from, ITypeInfo to)
     {
-        return !ArrayImplicitlyConvertable(from, to)
-               && !AnyImplicitlyConvertable(from, to);
+        return !ArrayImplicitlyConvertable(from, to);
     }
-    
+
+    private static bool GenericParamToAnyConvertable(ITypeInfo from, ITypeInfo to) 
+        => from.IsGenericTypeParameter && IsAny(to);
+
     private static bool ImplicitlyNumericConvertable(ITypeInfo from, ITypeInfo to)
     {
         if (!IsNumeric(from) || !IsNumeric(to)) return false;

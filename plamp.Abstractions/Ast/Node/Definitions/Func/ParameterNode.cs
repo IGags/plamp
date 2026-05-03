@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
-using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 
@@ -20,8 +19,6 @@ public class ParameterNode(TypeNode type, ParameterNameNode name) : NodeBase
     /// Обозначение имени параметра
     /// </summary>
     public ParameterNameNode Name { get; private set; } = name;
-
-    public IArgInfo? ParamInfo { get; set; }
 
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()

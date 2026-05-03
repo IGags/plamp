@@ -213,7 +213,7 @@ public class ArrayElementManipulation
         /*
          * return a[getZero()];
          */
-        var call = new CallNode(null, new FuncCallNameNode(nameof(GetZero)), []);
+        var call = new CallNode(null, new FuncCallNameNode(nameof(GetZero)), [], []);
         var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
         call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
         
@@ -429,7 +429,7 @@ public class ArrayElementManipulation
         /*
          * a[getZero()] := -99;
          */
-        var callNode = new CallNode(null, new FuncCallNameNode("getZero"), []);
+        var callNode = new CallNode(null, new FuncCallNameNode("getZero"), [], []);
         var info = typeof(ArrayElementManipulation).GetMethod(nameof(GetZero))!;
         callNode.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
 

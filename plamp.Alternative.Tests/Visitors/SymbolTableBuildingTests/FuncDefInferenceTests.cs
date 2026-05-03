@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using Shouldly;
@@ -33,32 +34,14 @@ public class FuncDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
         var item = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
-        item.Name.ShouldBe("a");
+        item.Name.ShouldBe("a(int)");
         var argument = item.Arguments.ShouldHaveSingleItem();
         argument.Name.ShouldBe("x");
         argument.Type.ShouldBe(Builtins.Int);
     }
 
     [Fact]
-    //В модуле 2 перегрузки одной функции
-    public void InferenceFunctionsOverloads_Correct()
-    {
-        var code = """
-                   module test;
-                   fn a(x: int) int {}
-                   fn a(x: string) int {}
-                   """;
-        var res = SetupAndAct(code);
-        res.Exceptions.ShouldBeEmpty();
-        var funcs = res.SymTableBuilder.ListFuncs();
-        funcs.Count.ShouldBe(2);
-        funcs.Select(x => x.Name).ShouldAllBe(x => x == "a");
-        funcs.Select(x => x.Arguments[0].Type).ShouldContain(Builtins.Int);
-        funcs.Select(x => x.Arguments[0].Type).ShouldContain(Builtins.String);
-    }
-
-    [Fact]
-    //Два одинаковых объявления, возвращает ошибку
+    //Две одинаковых функции ничего не будет добавлено в модуль, ошибка выведена НЕ будет
     public void InferenceTwoIdenticalSignatures_ReturnsErrors()
     {
         var code = """
@@ -67,7 +50,22 @@ public class FuncDefInferenceTests
                    fn a(x: int) string {}
                    """;
         var res = SetupAndAct(code);
-        res.Exceptions.Count.ShouldBe(2);
+        res.Exceptions.Count.ShouldBe(0);
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
+    }
+    
+    [Fact]
+    //Две одинаковых функции по имени ничего не будет добавлено в модуль, ошибка выведена НЕ будет
+    public void InferenceTwoIdenticalNames_ReturnsErrors()
+    {
+        var code = """
+                   module test;
+                   fn a(x: int) int {}
+                   fn a() string {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(0);
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
     [Fact]
@@ -111,8 +109,8 @@ public class FuncDefInferenceTests
     }
 
     [Fact]
-    //У функции 2 аргумента с одинаковым именем, однако функция будет добавлена в таблицу символов
-    public void InferenceDuplicateArgNameFunction_AddsToSymbols()
+    //У функции 2 аргумента с одинаковым именем, функции не будет в таблице символов
+    public void InferenceDuplicateArgNameFunction_SkipAdding()
     {
         var code = """
                    module test;
@@ -121,15 +119,46 @@ public class FuncDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);
         res.Exceptions.All(x => x.Code == PlampExceptionInfo.DuplicateParameterName().Code).ShouldBe(true);
-        res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
+    }
+
+    [Fact]
+    //Фнкция с дженериком, корректно
+    public void InferenceFuncWithGenericParams_Correct()
+    {
+        var code = """
+                   module test;
+                   fn a[T, V](f: T) V {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.ShouldBeEmpty();
+        var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        
+        fn.ReturnType.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("V");
+        fn.Arguments.ShouldHaveSingleItem().Type.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("T");
+        fn.GetGenericParameters().Count.ShouldBe(2);
+    }
+
+    [Fact]
+    //Функция с дублирующимся именем дженерика, не добавляется в таблицу, возвращает ошибки
+    public void InferenceFuncWithDupGenericArgName_ReturnsExceptionSkipAdding()
+    {
+        var code = """
+                   module test;
+                   fn a[T, T]() {}
+                   """;
+        var res = SetupAndAct(code);
+        res.Exceptions.Count.ShouldBe(2);
+        res.Exceptions.All(x => x.Code == PlampExceptionInfo.DuplicateGenericParameterName().Code).ShouldBe(true);
     }
 
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new FuncDefInferenceWeaver();
-        return CompilationPipelineBuilder.RunSymTableVisitors(
+        var (ctx, _) = CompilationPipelineBuilder.RunSymTableVisitors(
                 code,
                 [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
             );
+        return ctx;
     }
 }

@@ -1,11 +1,11 @@
 ﻿using System.Linq;
-using AutoFixture;
+using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
-using plamp.Alternative.Parsing;
-using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
+using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using Shouldly;
 using Xunit;
 
@@ -19,13 +19,10 @@ public class FuncDefinitionInferenceTests
         const string code = """
                             fn nop(a :int, b :string) {}
                             """;
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseTopLevel(context, out var expression);
-        result.ShouldBe(true);
+        
+        var (context, ast) = Setup(code);
         var visitor = new TypeInferenceWeaver();
-        var preCreation = new PreCreationContext(context.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
-        var weaveResult = Should.NotThrow(() => visitor.WeaveDiffs(expression!, preCreation));
+        var weaveResult = Should.NotThrow(() => visitor.WeaveDiffs(ast, context));
         weaveResult.Exceptions.ShouldBeEmpty();
     }
 
@@ -45,13 +42,13 @@ public class FuncDefinitionInferenceTests
                                 return a;
                             }
                             """;
-        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var (context, ast) = Setup(code);
         var visitor = new TypeInferenceWeaver();
-        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
-        visitor.WeaveDiffs(ast, preCreationContext);
+        visitor.WeaveDiffs(ast, context);
         
-        preCreationContext.Exceptions.ShouldBeEmpty();
-        var assignExpressions = ast.Functions.Select(x => x.Body.ExpressionList[0]).Cast<AssignNode>();
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var assignExpressions = root.Functions.Select(x => x.Body.ExpressionList[0]).Cast<AssignNode>();
         foreach (var assignNode in assignExpressions)
         {
             assignNode.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>();
@@ -66,14 +63,14 @@ public class FuncDefinitionInferenceTests
                             fn f2(a: string) string { return a; }
                             """;
         
-        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var (context, ast) = Setup(code);
         var visitor = new TypeInferenceWeaver();
-        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
-        visitor.WeaveDiffs(ast, preCreationContext);
+        visitor.WeaveDiffs(ast, context);
         
-        preCreationContext.Exceptions.ShouldBeEmpty();
-        var f1 = ast.Functions.Single(x => x.FuncName.Value == "f1");
-        var f2 = ast.Functions.Single(x => x.FuncName.Value == "f2");
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var f1 = root.Functions.Single(x => x.FuncName.Value == "f1");
+        var f2 = root.Functions.Single(x => x.FuncName.Value == "f2");
         
         f1.ParameterList.ShouldHaveSingleItem().Type.TypeName.Name.ShouldBe("int");
         f2.ParameterList.ShouldHaveSingleItem().Type.TypeName.Name.ShouldBe("string");
@@ -87,11 +84,10 @@ public class FuncDefinitionInferenceTests
                                 name := 1;
                             }
                             """;
-        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var (context, ast) = Setup(code);
         var visitor = new TypeInferenceWeaver();
-        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
-        visitor.WeaveDiffs(ast, preCreationContext);
-        var error = preCreationContext.Exceptions.ShouldHaveSingleItem();
+        visitor.WeaveDiffs(ast, context);
+        var error = context.Exceptions.ShouldHaveSingleItem();
         error.Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
     }
 
@@ -103,11 +99,22 @@ public class FuncDefinitionInferenceTests
                                 return name.age;
                             }
                             """;
-        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var (context, ast) = Setup(code);
         var visitor = new TypeInferenceWeaver();
-        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
-        visitor.WeaveDiffs(ast, preCreationContext);
-        var error = preCreationContext.Exceptions.ShouldHaveSingleItem();
+        visitor.WeaveDiffs(ast, context);
+        var error = context.Exceptions.ShouldHaveSingleItem();
         error.Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound(string.Empty).Code);
+    }
+
+    private (PreCreationContext, NodeBase) Setup(string code)
+    {
+        var funcDefWeaver = new FuncDefInferenceWeaver();
+        var (context, ast) = CompilationPipelineBuilder.RunSymTableVisitors(code,
+        [
+            (ast, cxt) => funcDefWeaver.WeaveDiffs(ast, cxt)
+        ]);
+        
+        var preCreationContext = new PreCreationContext(context.TranslationTable, context.Dependencies.ToList());
+        return (preCreationContext, ast);
     }
 }

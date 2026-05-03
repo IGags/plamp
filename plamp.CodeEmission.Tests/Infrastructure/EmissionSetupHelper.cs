@@ -7,9 +7,9 @@ using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Symbols.SymTable;
-using plamp.Alternative.EmissionDebug;
 using plamp.Alternative.SymbolsImpl;
 using plamp.ILCodeEmitters;
+using plamp.ILCodeEmitters.EmissionDebug;
 using TypeInfo = plamp.Alternative.SymbolsImpl.TypeInfo;
 
 namespace plamp.CodeEmission.Tests.Infrastructure;
@@ -47,12 +47,12 @@ public class EmissionSetupHelper
         return (type, dbgMeth, module);
     }
 
-    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info);
+    public static IFnInfo MakeFuncRef(MethodInfo info) => new FuncInfo(info, "emissionTest");
     public static IFnInfo MakeFuncRef(MethodBuilder info, ParameterInfo[] parameters, Type returnType) => new MethodBuilderFnInfo(info, parameters, returnType);
 
-    public static ITypeInfo MakeTypeRef(Type type) => new TypeInfo(type);
+    public static ITypeInfo MakeTypeRef(Type type) => TypeInfo.FromType(type, "emissionTest");
 
-    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field);
+    public static IFieldInfo MakeFieldRef(FieldInfo field) => new FldInfo(field, "emissionTest");
 
     public static (object? instance, MethodInfo? methodInfo) CreateObject(Type builtType, string methodName)
     {
@@ -76,6 +76,8 @@ public class EmissionSetupHelper
 
     internal class MethodBuilderFnInfo(MethodBuilder builder, ParameterInfo[] parameters, Type returnType) : IFnInfo
     {
+        private const string ModuleNameInner = "emissionTest";
+        
         private readonly MethodBuilder _builder = builder;
 
         public bool Equals(IFnInfo? other)
@@ -86,12 +88,28 @@ public class EmissionSetupHelper
 
         public string Name => _builder.Name;
 
-        public IReadOnlyList<IArgInfo> Arguments { get; } =
-            parameters.Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+        public string DefinitionName => _builder.Name;
 
-        public ITypeInfo ReturnType { get; } = new TypeInfo(returnType);
+        public IReadOnlyList<IArgInfo> Arguments { get; } =
+            parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, ModuleNameInner))).ToList();
+
+        public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, ModuleNameInner);
+        
+        public bool IsGenericFuncDefinition => _builder.IsGenericMethodDefinition;
+
+        public bool IsGenericFunc => _builder is { IsGenericMethod: true, IsGenericMethodDefinition: false };
+
+        public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+
+        public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
+
+        public IFnInfo? GetGenericFuncDefinition() => null;
+
+        public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
 
         public MethodInfo AsFunc() => _builder;
+        
+        public string ModuleName => ModuleNameInner;
     }
     
     public static (object? instance, MethodInfo? methodInfo) CreateInstanceWithMethod(
@@ -102,8 +120,7 @@ public class EmissionSetupHelper
         var methodName = $"{Guid.NewGuid()} {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}";
         var argTypes = args.Select(x => x.ParameterType).ToArray();
         var (typeBuilder, methodBuilder, _) = CreateMethodBuilder(methodName, returnType, argTypes);
-        var context = new CompilerEmissionContext(body, methodBuilder, args, null);
-        IlCodeEmitter.EmitMethodBody(context);
+        IlCodeEmitter.EmitMethodBody(body, methodBuilder, args);
         var type = typeBuilder.CreateType();
         var (instance, methodInfo) = CreateObject(type, methodName);
         return (instance, methodInfo);
@@ -129,7 +146,7 @@ public class EmissionSetupHelper
     
     private sealed class ConcreteCall : CallNode
     {
-        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args)
+        public ConcreteCall(NodeBase? from, FuncCallNameNode name, List<NodeBase> args, IFnInfo symbol) : base(from, name, args, [])
         {
             FnInfo = symbol;
         }

@@ -7,7 +7,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
-      <ProjectReference Include="..\plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" />
     </ItemGroup>
 
 </Project>

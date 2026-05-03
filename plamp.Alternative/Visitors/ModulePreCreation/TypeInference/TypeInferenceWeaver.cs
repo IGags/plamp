@@ -15,12 +15,15 @@ using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.AstManipulation.Modification;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 
 public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceInnerContext>
 {
-    #region TopLevel
+    protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
+
+     #region TopLevel
 
     protected override VisitResult PreVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
@@ -30,7 +33,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             .Where(x => x.Count() == 1)
             .SelectMany(x => x);
         
-        foreach (var arg in nonDupArgs) context.Arguments.Add(arg.Name.Value, arg);
+        foreach (var arg in nonDupArgs) context.Arguments.Add(arg.Name.Value, arg.Type.TypeInfo);
         return VisitResult.Continue;
     }
 
@@ -258,7 +261,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
         result = VisitResult.Continue;
         resultType = Builtins.String;
-        var callName = new FuncCallNameNode(nameof(Builtins.Concat));
+        var callName = new FuncCallNameNode(nameof(Builtins.StrConcat.Name));
         
         if (!context.TranslationTable.TryGetSymbol(node, out var position))
         {
@@ -266,13 +269,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
         
         context.TranslationTable.AddSymbol(callName, position);
-        if (SymbolSearchUtility.TryGetFuncOrErrorRecord(nameof(Builtins.Concat).ToLower(),
-                [Builtins.String, Builtins.String], [Builtins.SymTable], out var info) != null)
-        {
-            throw new Exception("Compiler exception: cannot find string concat implementation");
-        }
-
-        
         Replace(addition, ReplaceToConcat, context);
         return true;
 
@@ -283,7 +279,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                 return new LiteralNode(leftLiteral.Value.ToString() + rightLiteral.Value, Builtins.String);
             }
             
-            var concatCall = new CallNode(null, callName, [addition.Left, addition.Right]) { FnInfo = info };
+            var concatCall = new CallNode(null, callName, [addition.Left, addition.Right], []) { FnInfo = Builtins.StrConcat };
             return concatCall;
         }
     }
@@ -332,7 +328,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         if(fromType.Equals(toType)) return true;
         if (!SymbolSearchUtility.ImplicitlyConvertable(fromType, toType)) return false;
-        if (!SymbolSearchUtility.NeedToCreateCast(fromType, toType)) return true;
+        if (!SymbolSearchUtility.NeedToCast(fromType, toType)) return true;
         var toTypeNode = new TypeNode(new TypeNameNode(toType.Name));
         context.TranslationTable.AddSymbol(toTypeNode, default);
         toTypeNode.TypeInfo = toType;
@@ -480,28 +476,160 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
         argTypes.Reverse();
 
-        var errRecord = SymbolSearchUtility.TryGetFuncOrErrorRecord(node.Name.Value, argTypes, context.Dependencies, out var fnRef);
-        if (errRecord != null)
+        var errRecord = SymbolSearchUtility.TryGetFuncOrErrorRecord(node.Name.Value, context.Dependencies, out var fnRef);
+        if (errRecord != null && argTypes.All(x => x != null))
         {
             SetExceptionToSymbol(node, errRecord, context);
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.SkipChildren;
         }
-
-        if (argTypes.Any(x => x == null))
+        
+        ArgumentNullException.ThrowIfNull(fnRef);
+        var fnParams = fnRef.Arguments;
+        //Если то, что нашлось - содержит другое число аргументов в объявлении.
+        if (fnParams.Count != argTypes.Count)
         {
-            context.InnerExpressionTypeStack.Push(fnRef?.ReturnType);
+            var record = PlampExceptionInfo.FunctionHasDifferentArgCount(fnParams.Count, argTypes.Count);
+            SetExceptionToSymbol(node, record, context);
+            context.InnerExpressionTypeStack.Push(null);
+            return VisitResult.SkipChildren;
+        }
+
+        if (fnRef.IsGenericFuncDefinition)
+        {
+            fnRef = node.GenericArguments.Any() 
+                ? InferenceExplicitGenericFuncCall(node, fnRef, argTypes, context) 
+                : InferenceImplicitGenericFuncCall(node, fnRef, argTypes, context);
+        }
+        else
+        {
+            for (var i = 0; i < fnRef.Arguments.Count; i++)
+            {
+                var actualType = argTypes[i];
+                if(actualType == null) continue;
+                
+                var expectedType = fnRef.Arguments[i].Type;
+                
+                if(actualType.Equals(expectedType) || SymbolSearchUtility.ImplicitlyConvertable(actualType, expectedType)) continue;
+                
+                var record = PlampExceptionInfo.CannotApplyArgument();
+                SetExceptionToSymbol(node.Args[i], record, context);
+            }
+        }
+        
+        if (argTypes.Any(x => x == null)) return VisitResult.Continue;
+
+        if (fnRef == null)
+        {
+            context.InnerExpressionTypeStack.Push(null);
             return VisitResult.Continue;
         }
         
         for (var i = 0; i < argTypes.Count; i++)
         {
+            var argType = argTypes[i];
+            ArgumentNullException.ThrowIfNull(argType);
             //Так как сигнатура была определена, то правильный каст типов гарантирован.
-            TryExpandType(node.Args[i], argTypes[i]!, fnRef!.Arguments[i].Type, context);
+            TryExpandType(node.Args[i], argType, fnRef.Arguments[i].Type, context);
         }
+        
         node.FnInfo = fnRef;
-        context.InnerExpressionTypeStack.Push(fnRef?.ReturnType);
+        context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
         return VisitResult.Continue;
+    }
+
+    private IFnInfo? InferenceExplicitGenericFuncCall(
+        CallNode node,
+        IFnInfo definitionFn,
+        IReadOnlyList<ITypeInfo?> argTypes,
+        TypeInferenceInnerContext context)
+    {
+        var genericArguments = node.GenericArguments;
+        var expectedCt = definitionFn.GetGenericParameters().Count; 
+        if (genericArguments.Count != expectedCt)
+        {
+            var record = PlampExceptionInfo.GenericFuncDefinitionHasDifferentParameterCount(expectedCt, genericArguments.Count);
+            SetExceptionToSymbol(node, record, context);
+            return null;
+        }
+
+        var genericArgTypes = node.GenericArguments.Select(x => x.TypeInfo).ToList();
+        var notNullGenerics = genericArgTypes.OfType<ITypeInfo>().ToList();
+        if (notNullGenerics.Count != expectedCt) return null;
+
+        var fnImpl = definitionFn.MakeGenericFunc(notNullGenerics);
+        if (fnImpl == null) return null;
+
+        var implArgs = fnImpl.Arguments;
+        //Валидируется выше по стеку
+        if (argTypes.Count != implArgs.Count) throw new InvalidOperationException();
+        
+        for (var i = 0; i < argTypes.Count; i++)
+        {
+            var expectedType = implArgs[i].Type;
+            var actualType = argTypes[i];
+            
+            if(actualType == null) continue;
+            if(expectedType.Equals(actualType)) continue;
+            if (SymbolSearchUtility.ImplicitlyConvertable(expectedType, actualType)) continue;
+
+            var record = PlampExceptionInfo.CannotApplyArgument();
+            SetExceptionToSymbol(node.Args[i], record, context);
+        }
+        
+        return fnImpl;
+    }
+    
+    private IFnInfo? InferenceImplicitGenericFuncCall(
+        CallNode node,
+        IFnInfo definitionFn,
+        IReadOnlyList<ITypeInfo?> argTypes,
+        TypeInferenceInnerContext context)
+    {
+        var fnParams = definitionFn.Arguments;
+        
+        //Проверяем на соответствие типов аргументов типам параметров(аргументы - то с чем используют, параметры - то, что написано в объявлении)
+        var genericMapping = new List<KeyValuePair<ITypeInfo, ITypeInfo>>();
+        for (var i = 0; i < argTypes.Count; i++)
+        {
+            var argType = argTypes[i];
+            var parameterType = fnParams[i].Type;
+            
+            if (argType == null) continue;
+            var error = SymbolSearchUtility.MatchArgumentOrGetError(parameterType, argType, genericMapping);
+            if (error == null) continue;
+
+            var argNode = node.Args[i];
+            SetExceptionToSymbol(argNode, error, context);
+        }
+
+        var parameterGrouping = genericMapping.GroupBy(x => x.Key, x => x.Value);
+
+        var correctGenericMapping = new Dictionary<ITypeInfo, ITypeInfo>();
+        foreach (var group in parameterGrouping)
+        {
+            if (group.Count() > 1)
+            {
+                var implementationNames = group.Select(x => x.Name);
+                var record = PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations(group.Key.Name, implementationNames);
+                SetExceptionToSymbol(node, record, context);
+                continue;
+            }
+
+            var paramType = group.Single();
+            correctGenericMapping.Add(group.Key, paramType);
+        }
+
+        var invalid = false;
+        foreach (var genericParam in definitionFn.GetGenericParameters())
+        {
+            if(correctGenericMapping.ContainsKey(genericParam)) continue;
+            var record = PlampExceptionInfo.GenericParameterHasNoImplementationType(genericParam.Name);
+            SetExceptionToSymbol(node, record, context);
+            invalid = true;
+        }
+
+        return invalid || !correctGenericMapping.Any() ? null : definitionFn.MakeGenericFunc(correctGenericMapping.Values.ToList());
     }
 
     #endregion
@@ -606,9 +734,9 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                     continue;
                 case MemberNode leftMember:
                     //Валидация того, что в параметр нельзя присвоить что-то иного типа.
-                    if (context.Arguments.TryGetValue(leftMember.MemberName, out var parameter))
+                    if (context.Arguments.TryGetValue(leftMember.MemberName, out var argType))
                     {
-                        ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, parameter.Type.TypeInfo, context, assignment.SourceType);
+                        ValidateAssignmentTypeCompatibility(node, assignment.SourceNode, argType, context, assignment.SourceType);
                         continue;
                     }
                     if (!context.TryGetVariable(leftMember.MemberName, out var variable))
@@ -669,7 +797,6 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
     }
 
-    //TODO: Может упасть с ошибкой таблицы символов. Нужно добавлять символы.
     private AssignNode? WeaveAssignmentDefault(VariableDefinitionNode variableDefinition)
     {
         if (variableDefinition.Type is null) throw new Exception("Syntax analyzer exception");
@@ -748,23 +875,51 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     
     #region Misc
     
-    protected override VisitResult PreVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PostVisitType(TypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
         if(node.TypeInfo != null) return VisitResult.Continue;
-        var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node.TypeName.Name, context.Dependencies, out var typeRef);
-        
-        if (record != null)
+        ITypeInfo? typeRef = null;
+
+        if (node.GenericParameters.Count == 0 && context.CurrentFunc != null)
         {
-            SetExceptionToSymbol(node, record, context);
-        }
-        else
-        {
-            for (var i = 0; i < node.ArrayDefinitions.Count; i++)
+            var currentModule = context.Dependencies.OfType<ISymTableBuilder>().FirstOrDefault();
+            if (currentModule != null && currentModule.TryGetInfo(context.CurrentFunc.FuncName.Value, out IFnBuilderInfo? info))
             {
-                typeRef = typeRef!.MakeArrayType();
+                var generics = info.GetGenericParameters();
+                var type = generics.FirstOrDefault(x => x.Name.Equals(node.TypeName.Name));
+                if (type != null) typeRef = type;
             }
-            node.TypeInfo = typeRef;
         }
+
+        if (typeRef == null)
+        {
+            var record = SymbolSearchUtility.TryGetTypeOrErrorRecord(node, context.Dependencies, out typeRef);
+            
+            if (record != null)
+            {
+                SetExceptionToSymbol(node, record, context);
+                return VisitResult.SkipChildren;
+            }
+        }
+
+        if (node.GenericParameters.Count != 0)
+        {
+            var paramTypes = node.GenericParameters
+                .Select(x => x.TypeInfo)
+                .OfType<ITypeInfo>().ToList();
+
+            if (paramTypes.Count != node.GenericParameters.Count) return VisitResult.SkipChildren;
+
+            typeRef = typeRef?.MakeGenericType(paramTypes);
+        }
+        
+        for (var i = 0; i < node.ArrayDefinitions.Count; i++)
+        {
+            typeRef = typeRef?.MakeArrayType();
+        }
+        
+        node.TypeInfo = typeRef;
+        
         return VisitResult.SkipChildren;
     }
     
@@ -791,7 +946,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         if (context.Arguments.TryGetValue(node.MemberName, out var arg))
         {
-            context.InnerExpressionTypeStack.Push(arg.ParamInfo?.Type);
+            context.InnerExpressionTypeStack.Push(arg);
             return VisitResult.Continue;
         }
         

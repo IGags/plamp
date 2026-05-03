@@ -107,7 +107,7 @@ public class ArrayInitParsingTests
     public void ParseArrayInitWithFuncCallLength_Correct()
     {
         const string code = "[funcCall()]int";
-        var ast = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new CallNode(null, new FuncCallNameNode("funcCall"), []));
+        var ast = new InitArrayNode(new TypeNode(new TypeNameNode("int")), new CallNode(null, new FuncCallNameNode("funcCall"), [], []));
         var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
         var context = fixture.Create<ParsingContext>();
         var result = Parser.TryParseArrayInitialization(context, out var node);

@@ -25,7 +25,7 @@ public static class CompilationPipelineBuilder
         return (ast, parserContext);
     }
 
-    public static SymbolTableBuildingContext RunSymTableVisitors(
+    public static (SymbolTableBuildingContext, NodeBase) RunSymTableVisitors(
         string code, 
         Func<NodeBase, SymbolTableBuildingContext, SymbolTableBuildingContext>[] visitors)
     {
@@ -38,6 +38,6 @@ public static class CompilationPipelineBuilder
             symbolTableBuildingContext = visitor(ast, symbolTableBuildingContext);
         }
 
-        return symbolTableBuildingContext;
+        return (symbolTableBuildingContext, ast);
     }
 }

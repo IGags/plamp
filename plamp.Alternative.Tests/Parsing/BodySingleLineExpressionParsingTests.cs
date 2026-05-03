@@ -16,7 +16,7 @@ public class BodySingleLineExpressionParsingTests
     public static IEnumerable<object[]> ParseBodySingleLineExpression_Correct_DataProvider()
     {
         yield return ["a++", new PostfixIncrementNode(new MemberNode("a"))];
-        yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [])];
+        yield return ["a()", new CallNode(null, new FuncCallNameNode("a"), [], [])];
         yield return ["a := 41", new AssignNode([new MemberNode("a")], [new LiteralNode(41, Builtins.Int)])];
         yield return ["!a", new NotNode(new MemberNode("a"))];
     }

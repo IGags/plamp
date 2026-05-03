@@ -189,7 +189,7 @@ public class ArrayElementNodeManipulationTests
         ]);
         
         var visitor = new TypeInferenceWeaver();
-        var fixture = new Fixture() { Customizations = { new ModulePreCreateCustomization() } };
+        var fixture = new Fixture { Customizations = { new ModulePreCreateCustomization() } };
         var context = fixture.Create<PreCreationContext>();
         _ = visitor.WeaveDiffs(ast, context);
         

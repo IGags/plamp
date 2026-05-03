@@ -82,4 +82,110 @@ public class TypeParsingTests
         parsed.ShouldBe(false);
         context.Exceptions.Select(x => x.Code).ToList().ShouldBeEquivalentTo(exceptionCodes);
     }
+
+    [Fact]
+    //Парсинг типа с незакрытым пустым дженериком - ошибка
+    public void ParseNotClosedEmptyGeneric_ReturnsError()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("List[");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+
+        context.Exceptions.Count.ShouldBe(2);
+        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArg().Code };
+        codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ParseEmptyGenericArgs_ReturnsError()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("List[]");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.EmptyGenericArgs().Code);
+    }
+
+    [Fact]
+    public void ParseTypeWithSimpleGeneric_Correct()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("List[int]");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+        context.Exceptions.ShouldBeEmpty();
+        var genericArg = type.GenericParameters.ShouldHaveSingleItem();
+        genericArg.GenericParameters.ShouldBeEmpty();
+        genericArg.ArrayDefinitions.ShouldBeEmpty();
+        genericArg.TypeName.Name.ShouldBe("int");
+    }
+
+    [Fact]
+    public void ParseNestedGeneric_Correct()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("List[List[int]]");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+        context.Exceptions.ShouldBeEmpty();
+
+        var genericArg = type.GenericParameters.ShouldHaveSingleItem();
+        genericArg.TypeName.Name.ShouldBe("List");
+        genericArg.ArrayDefinitions.ShouldBeEmpty();
+
+        genericArg = genericArg.GenericParameters.ShouldHaveSingleItem();
+        genericArg.GenericParameters.ShouldBeEmpty();
+        genericArg.ArrayDefinitions.ShouldBeEmpty();
+        genericArg.TypeName.Name.ShouldBe("int");
+    }
+
+    [Fact]
+    public void ParseTwoGenericArgs_Correct()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("Map[string, int]");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+        context.Exceptions.ShouldBeEmpty();
+        
+        type.GenericParameters.Count.ShouldBe(2);
+        type.GenericParameters[0].TypeName.Name.ShouldBe("string");
+        type.GenericParameters[1].TypeName.Name.ShouldBe("int");
+    }
+
+    [Fact]
+    public void ParseNotClosedGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("List[string");
+        var res = Parser.TryParseType(context, out var type);
+        res.ShouldBeTrue();
+        type.ShouldNotBeNull();
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.GenericArgsIsNotClosed().Code);
+        type.GenericParameters.ShouldHaveSingleItem();
+    }
+
+    [Fact]
+    public void ParseNotCompletedGeneric_ReturnsException()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("Map[string,]");
+        var res = Parser.TryParseType(context, out _);
+        res.ShouldBeTrue();
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedGenericTypeArg().Code);
+    }
+
+    [Fact]
+    public void NotClosedNotCompletedGeneric_Incorrect()
+    {
+        var context = CompilationPipelineBuilder.CreateParsingContext("Map[string,");
+        var res = Parser.TryParseType(context, out _);
+        res.ShouldBeTrue();
+        context.Exceptions.Count.ShouldBe(2);
+        var codes = new[] { PlampExceptionInfo.GenericArgsIsNotClosed().Code, PlampExceptionInfo.ExpectedGenericTypeArg().Code };
+        codes.All(x => context.Exceptions.Any(y => y.Code == x)).ShouldBeTrue();
+    }
 }

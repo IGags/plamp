@@ -1,9 +1,8 @@
-using System;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace plamp.Alternative.EmissionDebug;
+namespace plamp.ILCodeEmitters.EmissionDebug;
 
 public class DebugMethodBuilder : MethodBuilder
 {
@@ -32,7 +31,7 @@ public class DebugMethodBuilder : MethodBuilder
     public override MethodInfo GetBaseDefinition() => _inner.GetBaseDefinition();
 
     public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) 
-        => _inner.Invoke(obj, invokeAttr, binder, parameters, culture);
+        => _inner.Invoke(obj!, invokeAttr, binder!, parameters, culture!);
 
     public override MethodImplAttributes GetMethodImplementationFlags() => _inner.GetMethodImplementationFlags();
 
@@ -88,7 +87,7 @@ public class DebugMethodBuilder : MethodBuilder
         Type[][]? parameterTypeOptionalCustomModifiers)
     {
         _inner.SetSignature(
-            returnType, 
+            returnType!, 
             returnTypeRequiredCustomModifiers, 
             returnTypeOptionalCustomModifiers,
             parameterTypes, 

@@ -7,8 +7,8 @@ using plamp.Abstractions.Ast.Node.ControlFlow;
 using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
+using plamp.Abstractions.Symbols;
 using plamp.Alternative;
-using plamp.Alternative.SymbolsImpl;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 using Shouldly;
@@ -19,9 +19,9 @@ public class FieldAssignEmissionTests
 {
     public class Point
     {
-        [PlampFieldGenerated]
+        [PlampVisible]
         public int X = 933;
-        [PlampFieldGenerated]
+        [PlampVisible]
         public int Y = 934;
     }
     
@@ -54,7 +54,7 @@ public class FieldAssignEmissionTests
             new ReturnNode(new MemberNode("b"))
         ]);
         var (_, methodInfo, _) = EmissionSetupHelper.CreateMethodBuilder("mth", typeof(int), []);
-        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(new CompilerEmissionContext(ast, methodInfo, [], null)));
+        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(ast, methodInfo, []));
     }
     
     [Fact]
@@ -131,7 +131,7 @@ public class FieldAssignEmissionTests
             new ReturnNode(new MemberNode("b"))
         ]);
         var (_, methodInfo, _) = EmissionSetupHelper.CreateMethodBuilder("mth", typeof(int), []);
-        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(new CompilerEmissionContext(ast, methodInfo, [], null)));
+        Should.Throw<Exception>(() => IlCodeEmitter.EmitMethodBody(ast, methodInfo, []));
     }
     
     [Fact]

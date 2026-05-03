@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Func;
@@ -11,10 +11,19 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 /// <param name="returnType">Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void</param>
 /// <param name="funcName">Узел, обозначающий имя объявления функции.</param>
 /// <param name="parameterList">Список объявлений параметров функции</param>
+/// <param name="genericArgTypes">Список дженерик аргументов, которые используются в функции как тип параметров или возвращаемый тип</param>
 /// <param name="body">Блок тела функции</param>
-public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<ParameterNode> parameterList, BodyNode body) : NodeBase
+public class FuncNode(
+    TypeNode returnType, 
+    FuncNameNode funcName, 
+    List<GenericDefinitionNode> genericArgTypes,
+    List<ParameterNode> parameterList, 
+    BodyNode body) : NodeBase
 {
-    public MethodBuilder? Func { get; set; }
+    /// <summary>
+    /// Список дженерик аргументов, которые используются в функции как тип параметров или возвращаемый тип
+    /// </summary>
+    public IReadOnlyList<GenericDefinitionNode> GenericArgTypes => genericArgTypes; 
     
     /// <summary>
     /// Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void
@@ -25,11 +34,11 @@ public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<Parameter
     /// Узел, обозначающий имя объявления функции.
     /// </summary>
     public FuncNameNode FuncName { get; private set; } = funcName;
-    
+
     /// <summary>
     /// Список объявлений параметров функции
     /// </summary>
-    public List<ParameterNode> ParameterList => parameterList;
+    public IReadOnlyList<ParameterNode> ParameterList => parameterList;
     
     /// <summary>
     /// Блок тела функции
@@ -39,12 +48,16 @@ public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<Parameter
     /// <inheritdoc cref="NodeBase"/>
     public override IEnumerable<NodeBase> Visit()
     {
-        yield return ReturnType;
         yield return FuncName;
+        foreach (var argType in GenericArgTypes)
+        {
+            yield return argType;
+        }
         foreach (var parameter in ParameterList)
         {
             yield return parameter;
         }
+        yield return ReturnType;
 
         yield return Body;
     }
@@ -53,6 +66,7 @@ public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<Parameter
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         int parameterIndex;
+        int genericIndex;
         if (ReturnType == child && newChild is TypeNode returnType)
         {
             ReturnType = returnType;
@@ -60,6 +74,12 @@ public class FuncNode(TypeNode returnType, FuncNameNode funcName, List<Parameter
         else if (FuncName == child && newChild is FuncNameNode member)
         {
             FuncName = member;
+        }
+        else if(child is GenericDefinitionNode genericChild &&
+                -1 != (genericIndex = genericArgTypes.IndexOf(genericChild))
+                && newChild is GenericDefinitionNode newGeneric)
+        {
+            genericArgTypes[genericIndex] = newGeneric;
         }
         else if (child is ParameterNode parameterChild &&
                 -1 != (parameterIndex = parameterList.IndexOf(parameterChild))

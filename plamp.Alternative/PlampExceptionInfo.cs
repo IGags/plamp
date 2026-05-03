@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using plamp.Abstractions.Ast;
-using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Alternative;
 
@@ -126,7 +124,15 @@ public static class PlampExceptionInfo
         };
     }
 
-    // PRS1124 - свободный
+    public static PlampExceptionRecord EmptyGenericDefinition()
+    {
+        return new()
+        {
+            Code = "PRS1124",
+            Level = ExceptionLevel.Error,
+            Message = "Generic definition is empty"
+        };
+    }
 
     public static PlampExceptionRecord ExpectedAssignment()
     {
@@ -148,13 +154,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedVarName()
+    public static PlampExceptionRecord GenericDefinitionIsNotClosed()
     {
         return new()
         {
             Code = "PRS1127",
             Level = ExceptionLevel.Error,
-            Message = "Expected var name"
+            Message = "Generic definition is not closed"
         };
     }
 
@@ -168,7 +174,15 @@ public static class PlampExceptionInfo
         };
     }
 
-    // PRS1129 Свободный код ошибки
+    public static PlampExceptionRecord EmptyGenericArgs()
+    {
+        return new()
+        {
+            Code = "PRS1129",
+            Level = ExceptionLevel.Error,
+            Message = "Generic args for type is empty"
+        };
+    }
 
     public static PlampExceptionRecord ExpectedModuleName()
     {
@@ -259,6 +273,56 @@ public static class PlampExceptionInfo
             Message = "Expected field value"
         };
     }
+
+    public static PlampExceptionRecord GenericArgsIsNotClosed()
+    {
+        return new()
+        {
+            Code = "PRS1138",
+            Level = ExceptionLevel.Error,
+            Message = "Generic args is not closed"
+        };
+    }
+
+    public static PlampExceptionRecord TopLevelExpressionExpected()
+    {
+        return new()
+        {
+            Code = "PRS1139",
+            Level = ExceptionLevel.Error,
+            Message = "Expected fn, type, module, etc..."
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedFieldTypeQualifier()
+    {
+        return new()
+        {
+            Code = "PRS1140",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type qualifier - \":\" after field name"
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedGenericTypeArg()
+    {
+        return new()
+        {
+            Code = "PRS1141",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type that will be generic argument for this type."
+        };
+    }
+
+    public static PlampExceptionRecord ExpectedGenericTypeArgumentAlias()
+    {
+        return new()
+        {
+            Code = "PRS1142",
+            Level = ExceptionLevel.Error,
+            Message = "Expected type name that will be alias for generic type fields."
+        };
+    }
     
     #endregion
 
@@ -294,13 +358,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord DuplicateFunctionDefinition(string funcName)
+    public static PlampExceptionRecord CannotApplyArgument()
     {
         return new PlampExceptionRecord()
         {
             Code = "SEM1303",
             Level = ExceptionLevel.Error,
-            Message = "This function overload already defined."
+            Message = "Cannot apply argument to call this function."
         };
     }
 
@@ -467,15 +531,15 @@ public static class PlampExceptionInfo
     public static PlampExceptionRecord CannotDefineCoreType() =>
         new()
         {
-            Message = "Cannot define type with same name as the core type into runtime",
+            Message = "Cannot define type with same name as builtin member",
             Code = "SEM1322",
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord DuplicateTypeDefinition(string typeName) =>
+    public static PlampExceptionRecord CannotDefineCoreFunction() =>
         new()
         {
-            Message = $"Type {typeName} already declared within a module",
+            Message = "Cannot define function with same name as builtin member",
             Code = "SEM1323",
             Level = ExceptionLevel.Error
         };
@@ -496,7 +560,7 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord AmbigulousTypeName(string typeName, IEnumerable<string> modules) =>
+    public static PlampExceptionRecord AmbiguousTypeName(string typeName, IEnumerable<string> modules) =>
         new()
         {
             Message = $"The type {typeName} is defined in {string.Join(", ", modules)} modules",
@@ -505,22 +569,20 @@ public static class PlampExceptionInfo
         };
 
     public static PlampExceptionRecord FunctionIsNotFound(
-        string functionName, 
-        IEnumerable<ITypeInfo?> signature) =>
+        string functionName) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) not found.",
+            Message = $"Function {functionName} not found.",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
 
-    public static PlampExceptionRecord AmbigulousFunctionReference(
+    public static PlampExceptionRecord AmbiguousFunctionReference(
         string functionName,
-        IEnumerable<ITypeInfo?> signature,
         IEnumerable<string> modules) =>
         new()
         {
-            Message = $"Function {functionName}({string.Join(", ", signature.Select(x => x?.Name ?? "???"))}) defined in {string.Join(", ", modules)} modules",
+            Message = $"Function {functionName} defined in {string.Join(", ", modules)} modules",
             Code = "SEM1327",
             Level = ExceptionLevel.Error
         };
@@ -562,6 +624,89 @@ public static class PlampExceptionInfo
         {
             Message = "This instruction allowed in loop only",
             Code = "SEM1332",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord DuplicateGenericParameterName() =>
+        new()
+        {
+            Message = "This name is used by another generic parameter already",
+            Code = "SEM1333",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterNameSameAsDefiningType() =>
+        new()
+        {
+            Message = "Generic parameter has the same name as defining type",
+            Code = "SEM1334",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterHasSameNameAsBuiltinMember() =>
+        new()
+        {
+            Message = "Generic parameter has the same name as builtin member",
+            Code = "SEM1335",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FieldHasSameNameAsBuiltinMember() =>
+        new()
+        {
+            Message = "Field has the same name as builtin member",
+            Code = "SEM1336",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord FunctionHasDifferentArgCount(int expectedArgCt, int actualArgCt) =>
+        new()
+        {
+            Message = $"Function has {expectedArgCt} but called with {actualArgCt} arguments",
+            Code = "SEM1337", //1337 - YOOOOOO
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericFunctionParameterCannotHasManyImplementations(
+        string genericParamTypeName,
+        IEnumerable<string> implementationTypeNames) =>
+        new()
+        {
+            Message = $"Generic parameter {genericParamTypeName} cannot be {string.Join(", ", implementationTypeNames)} simultaneously",
+            Code = "SEM1338",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParameterHasNoImplementationType(
+        string genericParamTypeName) =>
+        new()
+        {
+            Message = $"Generic parameter {genericParamTypeName} has no implementation, please define function explicitly",
+            Code = "SEM1339",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericParamSameNameAsDefiningFunction() =>
+        new()
+        {
+            Message = "Genric parameter has same name as difining function",
+            Code = "SEM1340",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericTypeDefinitionHasDifferentParameterCount(int expected, int actual) =>
+        new()
+        {
+            Message = $"Generic type definition has {expected} parameter count, but created with {actual} arguments",
+            Code = "SEM1141",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord GenericFuncDefinitionHasDifferentParameterCount(int expected, int actual) =>
+        new()
+        {
+            Message = $"Generic func definition has {expected} generic parameter count, but created with {actual} arguments",
+            Code = "SEM1142",
             Level = ExceptionLevel.Error
         };
 

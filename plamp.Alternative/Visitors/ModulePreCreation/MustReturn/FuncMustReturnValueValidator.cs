@@ -8,6 +8,8 @@ namespace plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 
 public class FuncMustReturnValueValidator : BaseValidator<PreCreationContext, MustReturnValueInnerContext>
 {
+    protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
+
     protected override VisitResult PreVisitFunction(FuncNode node, MustReturnValueInnerContext context, NodeBase? parent)
     {
         if (node.ReturnType.TypeInfo is { } type && Builtins.Void.Equals(type)) return VisitResult.SkipChildren;

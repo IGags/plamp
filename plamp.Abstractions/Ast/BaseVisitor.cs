@@ -24,7 +24,6 @@ namespace plamp.Abstractions.Ast;
 /// Тип объекта, который пробрасывается переопределённые методы у классов-наследников.<br/>
 /// Нужен для переноса состояния между вызовами и хранения глобального состояния обхода AST.<br/>
 /// </typeparam>
-//TODO: Possible do with stack if will StackOverflow occurs
 public abstract class BaseVisitor<TContext>
 {
     /// <summary>
@@ -45,6 +44,45 @@ public abstract class BaseVisitor<TContext>
         /// </summary>
         SkipChildren
     }
+    
+    /// <summary>
+    /// Перечисление, которое служит 2 целям.
+    /// 1) Определить, что визитор будет обходить
+    /// 2) Исключить полный обход дерева
+    /// </summary>
+    [Flags]
+    protected enum VisitorGuard
+    {
+        /// <summary>
+        /// Обойти только объявление функции, без её тела
+        /// </summary>
+        FuncDef          = 0b00000001,
+        /// <summary>
+        /// Обойти объявления типов
+        /// </summary>
+        TypeDef          = 0b00000010,
+        /// <summary>
+        /// Обойти объявление функции и тела
+        /// </summary>
+        FuncDefWithBody  = 0b00000100 | FuncDef,
+        /// <summary>
+        /// Обойти только объявление модуля
+        /// </summary>
+        ModuleDef        = 0b00001000,
+        /// <summary>
+        /// Обойти все объявления верхнего уровня
+        /// </summary>
+        TopLevel         = ModuleDef | FuncDef | TypeDef,
+        /// <summary>
+        /// Обойти вообще всё
+        /// </summary>
+        All              = ModuleDef | FuncDef | TypeDef | FuncDefWithBody
+    }
+
+    /// <summary>
+    /// Выбранный способ обхода дерева
+    /// </summary>
+    protected virtual VisitorGuard Guard => VisitorGuard.All;
 
     /// <summary>
     /// Метод, способный посетить всех потомков конкретного узла.<br/>
@@ -112,17 +150,23 @@ public abstract class BaseVisitor<TContext>
             case RootNode rootNode:
                 return VisitCore(rootNode, context, parent, PreVisitRoot, PostVisitRoot);
             case ModuleDefinitionNode moduleDefinition:
-                return VisitCore(moduleDefinition, context, parent, PreVisitModuleDefinition, PostVisitModuleDefinition);
+                return Guard.HasFlag(VisitorGuard.ModuleDef)
+                    ? VisitCore(moduleDefinition, context, parent, PreVisitModuleDefinition, PostVisitModuleDefinition)
+                    : VisitResult.Continue;
             case ImportNode importNode:
                 return VisitCore(importNode, context, parent, PreVisitImport, PostVisitImport);
             case ImportItemNode importItem:
                 return VisitCore(importItem, context, parent, PreVisitImportItem, PostVisitImportItem);
             case BodyNode bodyNode:
-                return VisitCore(bodyNode, context, parent, PreVisitBody, PostVisitBody);
+                return Guard.HasFlag(VisitorGuard.FuncDefWithBody)
+                    ? VisitCore(bodyNode, context, parent, PreVisitBody, PostVisitBody)
+                    : VisitResult.Continue;
             case ConditionNode conditionNode:
                 return VisitCore(conditionNode, context, parent, PreVisitCondition, PostVisitCondition);
             case FuncNode defNode:
-                return VisitCore(defNode, context, parent, PreVisitFunction, PostVisitFunction);
+                return Guard.HasFlag(VisitorGuard.FuncDef) 
+                    ? VisitCore(defNode, context, parent, PreVisitFunction, PostVisitFunction) 
+                    : VisitResult.Continue;
             case WhileNode whileNode:
                 return VisitCore(whileNode, context, parent, PreVisitWhile, PostVisitWhile);
             case BreakNode breakNode:
@@ -172,7 +216,9 @@ public abstract class BaseVisitor<TContext>
             case InitFieldNode initField:
                 return VisitCore(initField, context, parent, PreVisitInitField, PostVisitInitField);
             case TypedefNode typedef:
-                return VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef);
+                return Guard.HasFlag(VisitorGuard.TypeDef) 
+                    ? VisitCore(typedef, context, parent, PreVisitTypedef, PostVisitTypedef)
+                    : VisitResult.Continue;
             case FieldDefNode fieldDef:
                 return VisitCore(fieldDef, context, parent, PreVisitFieldDef, PostVisitFieldDef);
             case TypedefNameNode typedefName:
@@ -181,6 +227,10 @@ public abstract class BaseVisitor<TContext>
                 return VisitCore(fieldName, context, parent, PreVisitFieldName, PostVisitFieldName);
             case AssignNode assign:
                 return VisitCore(assign, context, parent, PreVisitAssign, PostVisitAssign);
+            case GenericDefinitionNode genericDefinition:
+                return VisitCore(genericDefinition, context, parent, PreVisitGenericDefinition, PostVisitGenericDefinition);
+            case GenericParameterNameNode genericName:
+                return VisitCore(genericName, context, parent, PreVisitGenericParameterName, PostVisitGenericParameterName);
             case BaseBinaryNode binary:
                 return VisitBinaryExpression(binary, context, parent);
             case BaseUnaryNode unary:
@@ -1273,6 +1323,38 @@ public abstract class BaseVisitor<TContext>
     /// <param name="context">Контекст конкретного посетителя</param>
     /// <param name="parent">Родительский узел.</param>
     protected virtual VisitResult PostVisitField(FieldNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+
+    /// <summary>
+    /// Вызов перед посещением узла объявления дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел объявление дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitGenericDefinition(GenericDefinitionNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла объявления дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел объявление дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitGenericDefinition(GenericDefinitionNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов перед посещением узла имени дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел имени дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PreVisitGenericParameterName(GenericParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
+    
+    /// <summary>
+    /// Вызов после посещения узла имени дженерик параметра
+    /// </summary>
+    /// <param name="node">Узел имени дженерик параметра</param>
+    /// <param name="context">Контекст конкретного посетителя</param>
+    /// <param name="parent">Родительский узел.</param>
+    protected virtual VisitResult PostVisitGenericParameterName(GenericParameterNameNode node, TContext context, NodeBase? parent) => VisitResult.Continue;
     
     /// <summary>
     /// Базовый метод, определяющий логику обхода конкретного узла AST

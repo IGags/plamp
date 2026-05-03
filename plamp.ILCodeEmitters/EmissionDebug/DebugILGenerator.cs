@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace plamp.Alternative.EmissionDebug;
+namespace plamp.ILCodeEmitters.EmissionDebug;
 
 // ReSharper disable once InconsistentNaming
 public class DebugILGenerator : ILGenerator
