@@ -65,6 +65,13 @@ public class ArrayTypeBuilderTests
         instance.ShouldNotBe(instance.MakeArrayType());
         instance.ShouldBe(elem.MakeArrayType());
     }
+
+    [Fact]
+    public void MakeArrayFromVoid_Throws()
+    {
+        var baseType = Builtins.Void;
+        Should.Throw<InvalidOperationException>(() => baseType.MakeArrayType());
+    }
     
     private ArrayTypeBuilder CreateInstance()
     {
