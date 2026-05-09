@@ -67,10 +67,9 @@ public class ArrayTypeBuilderTests
     }
 
     [Fact]
-    public void MakeArrayFromVoid_Throws()
+    public void MakeArrayOfVoid_ThrowsIncorrectOperation()
     {
-        var baseType = Builtins.Void;
-        Should.Throw<InvalidOperationException>(() => baseType.MakeArrayType());
+        Should.Throw<InvalidOperationException>(() => Builtins.Void.MakeArrayType());
     }
     
     private ArrayTypeBuilder CreateInstance()

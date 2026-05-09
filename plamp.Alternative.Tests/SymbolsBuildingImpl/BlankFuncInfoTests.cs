@@ -9,6 +9,9 @@ namespace plamp.Alternative.Tests.SymbolsBuildingImpl;
 
 public class BlankFuncInfoTests
 {
+    /// <summary>
+    /// Проверка, что имя обычной функции форматируется определённым образом
+    /// </summary>
     [Fact]
     public void SimpleFuncName_ReturnsSameNameAsDefined()
     {
@@ -24,6 +27,9 @@ public class BlankFuncInfoTests
         info.ModuleName.ShouldBe("test");
     }
 
+    /// <summary>
+    /// Возвращаемый тип не должен отражаться при выводе имени функции
+    /// </summary>
     [Fact]
     public void FuncNonNullReturnType_TypeDoesNotAppear()
     {
@@ -39,6 +45,9 @@ public class BlankFuncInfoTests
         info.ModuleName.ShouldBe("test");
     }
 
+    /// <summary>
+    /// Аргументы при выводе имени функции должны быть форматированы определённым образом
+    /// </summary>
     [Fact]
     public void FuncWithArgs_ReturnsInParensCommaSeparated()
     {
@@ -56,6 +65,9 @@ public class BlankFuncInfoTests
         info.ModuleName.ShouldBe("test");
     }
 
+    /// <summary>
+    /// Имя дженерик функции должно быть форматировано определённым образом
+    /// </summary>
     [Fact]
     public void FuncWithGenericDefs_ReturnsParamNamesInSquareBraces()
     {
@@ -72,6 +84,9 @@ public class BlankFuncInfoTests
         info.ModuleName.ShouldBe("test");
     }
 
+    /// <summary>
+    /// Дженерик функция не может иметь 2 одноимённых дженерик параметра
+    /// </summary>
     [Fact]
     public void CreateInfoWithDuplicateGenericParams_Throws()
     {
@@ -79,6 +94,9 @@ public class BlankFuncInfoTests
             [new GenericParameterBuilder("T", "test"), new GenericParameterBuilder("T", "test")], "test"));
     }
 
+    /// <summary>
+    /// Объявление дженерик функции не может иметь параметр, который объявлен в другом модуле
+    /// </summary>
     [Fact]
     public void CreateWithGenericParamFromOtherModule_Throws()
     {
@@ -86,13 +104,19 @@ public class BlankFuncInfoTests
             [new GenericParameterBuilder("T", "test2")], "test"));
     }
 
+    /// <summary>
+    /// Не устанавливать .net представление в функцию и попробовать его получить
+    /// </summary>
     [Fact]
     public void AsFuncEmpty_Throws()
     {
         var info = new BlankFuncInfo("fff", [], Builtins.Void, "test");
-        Should.Throw<NullReferenceException>(() => info.AsFunc());
+        Should.Throw<NullReferenceException>(info.AsFunc);
     }
 
+    /// <summary>
+    /// Установить динамический билдер и попробовать выразить такую функцию в .net представление
+    /// </summary>
     [Fact]
     public void AsFuncWithBuilder_Correct()
     {
@@ -105,6 +129,9 @@ public class BlankFuncInfoTests
         res.ShouldBe(method);
     }
 
+    /// <summary>
+    /// Функция котороя не дженерик объявление должна возвращать null на имплементацию дженерика
+    /// </summary>
     [Fact]
     public void MakeGenericFuncFromNonGeneric_ReturnsNull()
     {
@@ -113,6 +140,9 @@ public class BlankFuncInfoTests
         res.ShouldBeNull();
     }
 
+    /// <summary>
+    /// Корректный сценарий создания дженерик функции из дженерик объявления
+    /// </summary>
     [Fact]
     public void MakeGenericFuncFromGenericDef_Correct()
     {
@@ -122,6 +152,9 @@ public class BlankFuncInfoTests
         genInfo.ShouldNotBe(info);
     }
 
+    /// <summary>
+    /// Эквивалентность функций определяется по имени/модулю, а не по внутренним билдерам и тд и тп
+    /// </summary>
     [Fact]
     public void EqualityDoesNotDependOnBuilder_Correct()
     {
@@ -133,5 +166,14 @@ public class BlankFuncInfoTests
         
         var info2 = new BlankFuncInfo("fff", [], Builtins.Void, "test");
         info.ShouldBe(info2);
+    }
+
+    /// <summary>
+    /// Функция с пустым именем не может существовать
+    /// </summary>
+    [Fact]
+    public void MakeFuncWithEmptyName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new BlankFuncInfo("", [], Builtins.Void, "test"));
     }
 }

@@ -8,6 +8,9 @@ namespace plamp.Alternative.Tests.SymbolsBuildingImpl;
 
 public class GenericFuncBuilderTests
 {
+    /// <summary>
+    /// Нельзя создать дженерик имплементацию не из дженерик объявления
+    /// </summary>
     [Fact]
     public void CreateBuilderBaseIsNotGenericFuncDef_Throws()
     {
@@ -16,6 +19,9 @@ public class GenericFuncBuilderTests
         Should.Throw<InvalidOperationException>(() => new GenericFuncBuilder(baseBuilder, [Builtins.Int]));
     }
 
+    /// <summary>
+    /// Тип аргумента не может быть объявлением дженерик типа
+    /// </summary>
     [Fact]
     public void CreateBuilderArgumentIsGenericDef_Throws()
     {
@@ -25,6 +31,9 @@ public class GenericFuncBuilderTests
         Should.Throw<InvalidOperationException>(() => new GenericFuncBuilder(baseBuilder, [genericTypeDef]));
     }
 
+    /// <summary>
+    /// Число аргументов должно соответствовать числу параметров дженерик функции
+    /// </summary>
     [Theory]
     [InlineData(0)]
     [InlineData(2)]
@@ -35,6 +44,9 @@ public class GenericFuncBuilderTests
         Should.Throw<InvalidOperationException>(() => new GenericFuncBuilder(baseBuilder, args.ToArray()));
     }
 
+    /// <summary>
+    /// Тип аргумента не может быть void
+    /// </summary>
     [Fact]
     public void CreateBuilderVoidAsArgument_Throws()
     {
@@ -42,6 +54,9 @@ public class GenericFuncBuilderTests
         Should.Throw<InvalidOperationException>(() => new GenericFuncBuilder(baseBuilder, [Builtins.Void]));
     }
 
+    /// <summary>
+    /// Базовая функция должна иметь определение в .net
+    /// </summary>
     [Fact]
     public void InfoWithoutFunc_Throws()
     {
@@ -50,6 +65,9 @@ public class GenericFuncBuilderTests
         Should.Throw<NullReferenceException>(() => impl.AsFunc());
     }
 
+    /// <summary>
+    /// Имя функции должно содержать имена типов аргументов
+    /// </summary>
     [Fact]
     public void NameShouldReturnsGenericArgTypesInSquareBraces_Correct()
     {
@@ -63,6 +81,9 @@ public class GenericFuncBuilderTests
         impl.DefinitionName.ShouldBe("fff");
     }
 
+    /// <summary>
+    /// Реализация функции должна возвращать объявление из которого она построена
+    /// </summary>
     [Fact]
     public void GetDefinitionReturnsBaseFunc_Correct()
     {
@@ -72,6 +93,9 @@ public class GenericFuncBuilderTests
         impl.GetGenericFuncDefinition().ShouldBe(baseBuilder);
     }
 
+    /// <summary>
+    /// Реализация функции должна возвращать корректные флаги о себе
+    /// </summary>
     [Fact]
     public void IsGenericFuncShouldBeTrueNeitherGenericFuncDef_Correct()
     {
@@ -82,6 +106,9 @@ public class GenericFuncBuilderTests
         impl.IsGenericFuncDefinition.ShouldBeFalse();
     }
 
+    /// <summary>
+    /// Реализация функции должна корректно замещать соответствующие дженерик параметры в аргументах
+    /// </summary>
     [Fact]
     public void ImplementFuncReplaceMatchingGenericParams_Correct()
     {
@@ -119,6 +146,9 @@ public class GenericFuncBuilderTests
         args[1].Type.ShouldBe(Builtins.Int);
     }
     
+    /// <summary>
+    /// Реализация функции должна корректно замещать параметры в возвращаемом типе
+    /// </summary>
     [Fact]
     public void ImplementFuncReplaceReturnType_Correct()
     {
@@ -131,6 +161,9 @@ public class GenericFuncBuilderTests
         impl.ReturnType.ShouldBe(Builtins.Any.MakeArrayType());
     }
 
+    /// <summary>
+    /// Функции должны сравниваться только по имени и модулю
+    /// </summary>
     [Fact]
     public void EqualityDoesDependsOnNameAndModuleOnly_Correct()
     {

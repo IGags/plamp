@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
+using plamp.Abstractions.Symbols;
 using plamp.Alternative.SymbolsBuildingImpl;
 using Shouldly;
 using Xunit;
@@ -13,6 +17,7 @@ namespace plamp.Alternative.Tests.SymbolsBuildingImpl;
 
 public class GenericImplFieldInfoTests
 {
+    
     /// <summary>
     /// Создать объект, тип, которому принадлежит поле не дженерик - ошибка
     /// </summary>
@@ -68,21 +73,60 @@ public class GenericImplFieldInfoTests
     }
 
     /// <summary>
-    /// Возвращает корректно поле из незавершённого типа
+    /// Возвращает корректно поле из недостроенного дженерик типа
     /// </summary>
     [Fact]
     public void AsFieldFromTypeBuilder_Correct()
     {
         var asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("afkkf"), AssemblyBuilderAccess.RunAndCollect);
         var mod = asm.DefineDynamicModule("1512155125");
-        var type = mod.DefineType("TestType", TypeAttributes.Public | TypeAttributes.AutoLayout, typeof(ValueTuple));
+        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout, typeof(ValueTuple));
         var genericParam = type.DefineGenericParameters("T").First(); 
         var fld = type.DefineField("Fld", genericParam, FieldAttributes.Public);
         
         var param = new GenericParameterBuilder("T", "test") { GenericParameterType = genericParam };
         var genericDef = new TypeBuilder("TestType", [param], "test");
-        var baseFld = new BlankFieldInfo(param, "Fld", genericDef);
+        var fldDef = new FieldDefNode(new TypeNode(new TypeNameNode("T")), new FieldNameNode("Fld"));
+        fldDef.FieldType.TypeInfo = param;
         
-        var impl = genericDef.MakeGenericType([param]);
+        genericDef.AddField(fldDef);
+        var info = genericDef.FieldBuilders.First();
+        info.Builder = fld;
+        genericDef.Builder = type;
+
+        var intType = Builtins.Int;
+        var impl = genericDef.MakeGenericType([intType]);
+        var implFld = impl!.Fields.ShouldHaveSingleItem();
+
+        var implInfo = implFld.AsField();
+        implInfo.Name.ShouldBe("Fld");
+        Should.Throw<Exception>(() => implInfo.FieldType);
+    }
+
+    /// <summary>
+    /// Корректно возвращает поле из созданного типа
+    /// </summary>
+    [Fact]
+    public void AsFieldFromTypeWithParamBuilder_Correct()
+    {
+        var asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("afkkf"), AssemblyBuilderAccess.RunAndCollect);
+        var mod = asm.DefineDynamicModule("1512155125");
+        
+        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout, typeof(ValueTuple));
+        var genericParam = type.DefineGenericParameters("T").First();
+        var ctorInfo = typeof(PlampVisibleAttribute).GetConstructor(BindingFlags.Public | BindingFlags.Instance, [])!;
+        var attrBuilder = new CustomAttributeBuilder(ctorInfo, []);
+        
+        var fld = type.DefineField("Fld", genericParam, FieldAttributes.Public);
+        fld.SetCustomAttribute(attrBuilder);
+        var runtimeType = type.CreateType();
+
+        var info = TypeInfo.FromType(runtimeType, "test");
+        var impl = info.MakeGenericType([Builtins.Int]).ShouldNotBeNull();
+
+        var fldInfo = impl.Fields.ShouldHaveSingleItem();
+        var sharpField = fldInfo.AsField();
+        sharpField.Name.ShouldBe("Fld");
+        sharpField.FieldType.ShouldBe(typeof(int));
     }
 }

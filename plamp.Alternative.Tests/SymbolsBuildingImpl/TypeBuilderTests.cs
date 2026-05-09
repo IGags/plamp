@@ -15,6 +15,9 @@ public class TypeBuilderTests
 {
     private const string ModuleName = "ttt";
     
+    /// <summary>
+    /// Простой happy path
+    /// </summary>
     [Fact]
     public void CreateSimpleType_Correct()
     {
@@ -26,6 +29,9 @@ public class TypeBuilderTests
         type.IsGenericTypeDefinition.ShouldBeFalse();
     }
 
+    /// <summary>
+    /// Корректное создание объявления дженерик типа
+    /// </summary>
     [Fact]
     public void CreateTypeWithGenericParam_Correct()
     {
@@ -37,6 +43,9 @@ public class TypeBuilderTests
         type.IsGenericTypeDefinition.ShouldBeTrue();
     }
 
+    /// <summary>
+    /// Корректное создание типа с двумя дженерик параметрами
+    /// </summary>
     [Fact]
     public void CreateTypeWithTwoParams_Correct()
     {
@@ -49,6 +58,9 @@ public class TypeBuilderTests
         type.IsGenericTypeDefinition.ShouldBeTrue();
     }
 
+    /// <summary>
+    /// Тип с двумя одноимёнными дженерик параметрами не может существовать
+    /// </summary>
     [Fact]
     public void CreateTypeWithTwoSameParams_Throws()
     {
@@ -58,15 +70,21 @@ public class TypeBuilderTests
         Should.Throw<InvalidOperationException>(() => new TypeBuilder("abc", [paramBuilder1, paramBuilder2], ModuleName));
     }
 
+    /// <summary>
+    /// Из дженерик объявления нельзя создать массив
+    /// </summary>
     [Fact]
     public void MakeArrayFromGenericDef_Throws()
     {
         var paramBuilder = new GenericParameterBuilder("T", ModuleName);
         
         var type = new TypeBuilder("abc", [paramBuilder], ModuleName);
-        Should.Throw<InvalidOperationException>(() => type.MakeArrayType());
+        Should.Throw<InvalidOperationException>(type.MakeArrayType);
     }
 
+    /// <summary>
+    /// Объявление типа не является типом массива
+    /// </summary>
     [Fact]
     public void ElementTypeReturnsNull_Correct()
     {
@@ -74,6 +92,9 @@ public class TypeBuilderTests
         type.ElementType().ShouldBeNull();
     }
 
+    /// <summary>
+    /// Дженерик объявление не имеет дженерик объявление от которого оно построено
+    /// </summary>
     [Fact]
     public void GenericDefFromGenericNull_Correct()
     {
@@ -83,6 +104,9 @@ public class TypeBuilderTests
         type.GetGenericTypeDefinition().ShouldBeNull();
     }
 
+    /// <summary>
+    /// У дженерик объявления нет дженерик аргументов
+    /// </summary>
     [Fact]
     public void GenericArguments_ShouldBeEmpty()
     {
@@ -92,6 +116,9 @@ public class TypeBuilderTests
         type.GetGenericArguments().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// У дженерик объявления есть дженерик параметры
+    /// </summary>
     [Fact]
     public void GetGenericParamsFromGeneric_ReturnsTypeCollection()
     {
@@ -106,13 +133,19 @@ public class TypeBuilderTests
         paramType.Name.ShouldBe("T");
     }
 
+    /// <summary>
+    /// Билдер типа без .net представления не может его вернуть
+    /// </summary>
     [Fact]
     public void AsTypeWithoutType_Throws()
     {
         var type = new TypeBuilder("ff", ModuleName);
-        Should.Throw<InvalidOperationException>(() => type.AsType());
+        Should.Throw<InvalidOperationException>(type.AsType);
     }
 
+    /// <summary>
+    /// Билдер типа с .net представлением нормально его возвращает
+    /// </summary>
     [Fact]
     public void AsTypeWithBuilder_ReturnsBuilder()
     {
@@ -125,6 +158,9 @@ public class TypeBuilderTests
         type.AsType().ShouldBe(typ);
     }
 
+    /// <summary>
+    /// Happy path объявления поля
+    /// </summary>
     [Fact]
     public void DefineField_Correct()
     {
@@ -140,6 +176,9 @@ public class TypeBuilderTests
         fld.Name.ShouldBe("a");
     }
 
+    /// <summary>
+    /// Поле без типа(type info) не может существовать
+    /// </summary>
     [Fact]
     public void DefineFieldWithoutType_Throws()
     {
@@ -151,6 +190,9 @@ public class TypeBuilderTests
         Should.Throw<InvalidOperationException>(() => type.AddField(fieldNode));
     }
 
+    /// <summary>
+    /// У типа не может быть 2 одноимённых поля
+    /// </summary>
     [Fact]
     public void DefineDuplicateFieldName_Throws()
     {
@@ -170,6 +212,9 @@ public class TypeBuilderTests
         Should.Throw<InvalidOperationException>(() => type.AddField(fieldNode2));
     }
 
+    /// <summary>
+    /// Типы сравниваются по имени и модул.
+    /// </summary>
     [Fact]
     public void EqualityByNameAndModule_Correct()
     {
@@ -185,6 +230,9 @@ public class TypeBuilderTests
         type1.ShouldBe(type2);
     }
 
+    /// <summary>
+    /// Типы хэшируются по имени и модулю
+    /// </summary>
     [Fact]
     public void HashByNameAndModule_Correct()
     {
@@ -200,11 +248,23 @@ public class TypeBuilderTests
         type1.GetHashCode().ShouldBe(type2.GetHashCode());
     }
 
+    /// <summary>
+    /// Попытка имплементировать дженерик тип не из дженерик объявления возвращает null
+    /// </summary>
     [Fact]
     public void MakeGenericFromNonGeneric_ReturnsNull()
     {
         var type = new TypeBuilder("f", ModuleName);
         var res = type.MakeGenericType([new TypeBuilder("123", ModuleName)]);
         res.ShouldBeNull();
+    }
+
+    /// <summary>
+    /// Невозможно создать тип без имени
+    /// </summary>
+    [Fact]
+    public void CreateTypeWithEmptyName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new TypeBuilder("", ModuleName));
     }
 }

@@ -44,7 +44,8 @@ public class GenericImplFieldInfo : IFieldInfo
 
         FieldInfo? info;
         //Если реализация типа имеет хотя бы один System.Reflection.Emit.GenericTypeParameterBuilder то информация о поле получается по-другому из-за ограничений .net
-        if (genericArgs.Any(x => x is GenericTypeParameterBuilder))
+        if (genericArgs.Any(x => x is GenericTypeParameterBuilder) 
+            || type.GetGenericTypeDefinition() is System.Reflection.Emit.TypeBuilder)
         {
             var fldInfo = _definitionField.AsField();
             info = System.Reflection.Emit.TypeBuilder.GetField(type, fldInfo);
