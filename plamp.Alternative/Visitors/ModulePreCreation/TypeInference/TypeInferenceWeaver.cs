@@ -26,7 +26,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         context.CurrentFunc = node;
         var nonDupArgs = node.ParameterList
-            .GroupBy(x => x.Name)
+            .GroupBy(x => x.Name.Value)
             .Where(x => x.Count() == 1)
             .SelectMany(x => x);
         

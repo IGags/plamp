@@ -1,4 +1,7 @@
 ﻿using System.Linq;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using AutoFixture;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
@@ -13,6 +16,26 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class FuncDefinitionInferenceTests
 {
+    [Fact]
+    public async Task EntirePipelineWithDuplicateParameterNames_ReturnsValidationErrors()
+    {
+        const string code = """
+                            module test;
+                            fn a(x, x: int) {}
+                            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        
+        CompilationPipeline.CompilationRes result = default;
+        var exception = await Record.ExceptionAsync(async () =>
+            result = await CompilationPipeline.RunEntirePipelineAsync(reader, "test.plamp"));
+        
+        exception.ShouldBeNull();
+        result.Compiled.ShouldBeNull();
+        result.Exceptions.Select(x => x.Code)
+            .ShouldAllBe(x => x == PlampExceptionInfo.DuplicateParameterName().Code);
+    }
+
     [Fact]
     public void HandleFuncWithTwoArgs_Correct()
     {
