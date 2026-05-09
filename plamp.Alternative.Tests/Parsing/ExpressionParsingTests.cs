@@ -38,6 +38,8 @@ public class ExpressionParsingTests
         yield return ["greet_you(1, 2, a)", new CallNode(null, new FuncCallNameNode("greet_you"), [new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int), new MemberNode("a")])];
         yield return ["a", new MemberNode("a")];
         yield return ["\"a\"", new LiteralNode("a", Builtins.String)];
+        yield return ["'a'", new LiteralNode('a', Builtins.Char)];
+        yield return ["'\\t'", new LiteralNode('\t', Builtins.Char)];
     }
     
     [Theory]

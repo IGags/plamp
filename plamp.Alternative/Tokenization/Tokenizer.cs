@@ -49,6 +49,7 @@ public static class Tokenizer
                 else if (char.IsLetter(line[i])) context.Tokens.Add(ParseWord(line, ref i, byteOffset, fileName));
                 else if (char.IsDigit(line[i])) context.Tokens.Add(ParseNumber(line, ref i, byteOffset, fileName, context));
                 else if (line[i] == '"') context.Tokens.Add(ParseStringLiteral(line, ref i, byteOffset, fileName, encoding, context));
+                else if (line[i] == '\'') context.Tokens.Add(ParseCharLiteral(line, ref i, byteOffset, fileName, encoding, context));
                 else if (TryParseCustom(line, ref i, byteOffset, fileName, out var result, context) && result != null)
                 {
                     context.Tokens.Add(result);
@@ -240,6 +241,71 @@ public static class Tokenizer
 
     #endregion
 
+    #region Chars
+
+    /// <summary>
+    /// Разбирает символьный литерал
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла</param>
+    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
+    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
+    /// <param name="fileName">Имя файла</param>
+    /// <param name="fileEncoding">Кодировка файла</param>
+    /// <param name="context">Контекст токенизации для накопления ошибок</param>
+    /// <returns>Токен символьного литерала</returns>
+    private static Literal ParseCharLiteral(
+        string text,
+        ref int position,
+        long byteOffset,
+        string fileName,
+        Encoding fileEncoding,
+        TokenizationContext context)
+    {
+        var start = position;
+        var valueBuilder = new StringBuilder();
+        var hasInvalidContent = false;
+        position++;
+
+        for (; position < text.Length; position++)
+        {
+            switch (text[position])
+            {
+                case '\'':
+                    position++;
+                    var closedPosition = new FilePosition(byteOffset, position - start, fileName);
+                    if (!hasInvalidContent && valueBuilder.Length != 1)
+                    {
+                        context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidCharLiteral(), closedPosition));
+                    }
+
+                    return new Literal(text[start..position], closedPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
+                case '\\':
+                    position++;
+                    if (position >= text.Length)
+                    {
+                        position = text.Length;
+                        var escapedEndPosition = new FilePosition(byteOffset, position - start, fileName);
+                        context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), escapedEndPosition));
+                        return new Literal(text[start..position], escapedEndPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
+                    }
+
+                    var exceptionCount = context.Exceptions.Count;
+                    TryParseEscapedSequence(text, ref position, byteOffset, fileName, fileEncoding, valueBuilder, context, true);
+                    hasInvalidContent = hasInvalidContent || context.Exceptions.Count != exceptionCount;
+                    break;
+                default:
+                    valueBuilder.Append(text[position]);
+                    break;
+            }
+        }
+
+        var endPosition = new FilePosition(byteOffset, position - start, fileName);
+        context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), endPosition));
+        return new Literal(text[start..position], endPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
+    }
+
+    #endregion
+
     #region Strings
 
     /// <summary>
@@ -305,6 +371,7 @@ public static class Tokenizer
     /// <param name="fileEncoding">Кодировка файла, используемая для вычисления смещений в диагностике</param>
     /// <param name="builder">Накопитель результирующего строкового значения</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
+    /// <param name="allowSingleQuote">Разрешает escape-последовательность одинарной кавычки для символьных литералов</param>
     private static void TryParseEscapedSequence(
         string text,
         ref int position,
@@ -312,7 +379,8 @@ public static class Tokenizer
         string fileName,
         Encoding fileEncoding,
         StringBuilder builder,
-        TokenizationContext context)
+        TokenizationContext context,
+        bool allowSingleQuote = false)
     {
         switch (text[position])
         {
@@ -330,6 +398,9 @@ public static class Tokenizer
                 break;
             case '"':
                 builder.Append('"');
+                break;
+            case '\'' when allowSingleQuote:
+                builder.Append('\'');
                 break;
             default:
                 context.Exceptions.Add(
