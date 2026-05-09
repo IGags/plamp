@@ -125,6 +125,41 @@ public class TokenizerTests
                    && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\"";
         })];
+        yield return ["'a'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'a'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == 'a';
+        })];
+        yield return ["'\\t'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\t'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\t';
+        })];
+        yield return ["'1'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'1'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '1';
+        })];
+        yield return ["'\\''", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\''"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\'';
+        })];
+        yield return ["'\\\\'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\\\'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\\';
+        })];
         yield return ["[", typeof(OpenSquareBracket)];
         yield return ["]", typeof(CloseSquareBracket)];
         yield return ["(", typeof(OpenParen)];
@@ -209,6 +244,12 @@ public class TokenizerTests
         yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
         yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
         yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["'", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 1, FileName))}];
+        yield return ["'a", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 2, FileName))}];
+        yield return ["'\\", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 2, FileName))}];
+        yield return ["''", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 2, FileName))}];
+        yield return ["'12'", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 4, FileName))}];
+        yield return ["'\\x'", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
