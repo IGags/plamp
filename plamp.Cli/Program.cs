@@ -46,6 +46,7 @@ public static class Program
                 var rowStart = fileText.LastIndexOf('\n', start);
                 var rowEnd = fileText.IndexOf('\n', start + 1);
                 rowStart = rowStart == -1 ? 0 : rowStart;
+                rowEnd = rowEnd == -1 ? fileText.Length : rowEnd;
                 
                 var row = fileText[rowStart..rowEnd];
                 var ptrStart = start - rowStart;
