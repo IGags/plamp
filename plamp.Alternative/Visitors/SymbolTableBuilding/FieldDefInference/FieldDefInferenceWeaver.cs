@@ -48,7 +48,7 @@ public class FieldDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fi
     }
 
     /// <summary>
-    /// Проверка валидности объявления полей сгруппированных по имени.
+    /// Проверка валидности объявления полей, сгруппированных по имени.
     /// </summary>
     /// <param name="fieldNameGroup">Группа полей в объявлении типа с одинаковым именем</param>
     /// <param name="definingType">Тип, в котором эти поля объявлены</param>

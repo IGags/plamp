@@ -6,10 +6,15 @@ using Xunit;
 
 namespace plamp.Alternative.Tests.Visitors.SymbolTableBuildingTests;
 
+/// <summary>
+/// Проверяет вывод объявлений типов в таблицу символов.
+/// </summary>
 public class TypeDefInferenceTests
 {
+    /// <summary>
+    /// Пустой модуль не даёт ошибок.
+    /// </summary>
     [Fact]
-    //Пустой модуль - нет ошибок
     public void EmptyModule_Correct()
     {
         var code = """
@@ -19,8 +24,10 @@ public class TypeDefInferenceTests
         res.Exceptions.ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Модуль с одним типом корректно добавляет тип в таблицу символов.
+    /// </summary>
     [Fact]
-    //Модуль с 1 типом - нет ошибок
     public void SingleTypeInModule_Correct()
     {
         var code = """
@@ -35,8 +42,10 @@ public class TypeDefInferenceTests
         typ.Fields.ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Тип с именем встроенного типа возвращает ошибку.
+    /// </summary>
     [Fact]
-    //Модуль с типом, имя которого совпадает с именем типа рантайма - ошибка, объявление не будет добавлено
     public void SingeTypeMatchWithRuntimeType_ReturnException()
     {
         var code = """
@@ -48,8 +57,10 @@ public class TypeDefInferenceTests
         ex.Code.ShouldBe(PlampExceptionInfo.CannotDefineCoreType().Code);
     }
 
+    /// <summary>
+    /// Два типа с разными именами корректно добавляются в таблицу символов.
+    /// </summary>
     [Fact]
-    //Модуль с 2мя типами - нет ошибок
     public void TwoTypesDifferentName_Correct()
     {
         var code = """
@@ -65,8 +76,10 @@ public class TypeDefInferenceTests
         types.Select(x => x.Name).All(names.Contains).ShouldBeTrue();
     }
 
+    /// <summary>
+    /// Два типа с одинаковым именем не добавляются в таблицу символов.
+    /// </summary>
     [Fact]
-    //Модуль с 2мя типами имеющими одинаковые имена - 2 ошибки, типы не будут добавлены
     public void TwoTypesSameName_ReturnsException()
     {
         var code = """
@@ -79,8 +92,10 @@ public class TypeDefInferenceTests
         res.SymTableBuilder.ListTypes().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Тип с одним корректным generic-параметром добавляется в таблицу символов.
+    /// </summary>
     [Fact]
-    //У типа есть 1 дженерик, имя которого не совпадает с именем типа
     public void TypeHasSingleGeneric_Correct()
     {
         var code = """
@@ -108,8 +123,10 @@ public class TypeDefInferenceTests
         param.Fields.ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Имя generic-параметра типа не должно совпадать с именем самого типа.
+    /// </summary>
     [Fact]
-    //У типа есть дженерик имя которого совпадает с именем типа.
     public void GenericParameterHasSameNameAsDefiningType_ReturnsException()
     {
         var code = """
@@ -118,15 +135,16 @@ public class TypeDefInferenceTests
                    """;
         var res = SetupAndAct(code);
         
-        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetGenericParameters().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
         
         var exception = res.Exceptions.ShouldHaveSingleItem();
         exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterNameSameAsDefiningType().Code);
     }
 
+    /// <summary>
+    /// Имя generic-параметра типа не должно совпадать с именем встроенного типа.
+    /// </summary>
     [Fact]
-    //Дженерик параметр имеет имя совпадающее с именем встроенного типа
     public void GenericParameterHasSameNameAsBuiltinType_ReturnsException()
     {
         var code = """
@@ -136,15 +154,35 @@ public class TypeDefInferenceTests
         
         var res = SetupAndAct(code);
         
-        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetGenericParameters().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
         
         var exception = res.Exceptions.ShouldHaveSingleItem();
         exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
     }
 
+    /// <summary>
+    /// Имя generic-параметра типа не должно совпадать с именем встроенной функции.
+    /// </summary>
     [Fact]
-    //Два дублирующихся по имени дженерик параметра - ошибка
+    public void GenericParameterHasSameNameAsBuiltinFunction_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   type A[strLen] {}
+                   """;
+        
+        var res = SetupAndAct(code);
+        
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
+        
+        var exception = res.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
+    }
+
+    /// <summary>
+    /// Имена generic-параметров типа не должны совпадать.
+    /// </summary>
+    [Fact]
     public void TwoDuplicateGenericParameters_ReturnsException()
     {
         var code = """
@@ -154,16 +192,16 @@ public class TypeDefInferenceTests
 
         var res = SetupAndAct(code);
         
-        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetGenericParameters().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
         
         res.Exceptions.Count.ShouldBe(2);
-        
         res.Exceptions.Select(x => x.Code).ShouldAllBe(x => x == PlampExceptionInfo.DuplicateGenericParameterName().Code);
     }
 
+    /// <summary>
+    /// Два корректных generic-параметра типа добавляются в таблицу символов.
+    /// </summary>
     [Fact]
-    //Два корректных дженерик параметра в типе
     public void TwoGenericParameters_Correct()
     {
         var code = """
@@ -193,8 +231,10 @@ public class TypeDefInferenceTests
         res.Exceptions.ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Несколько generic-параметров с именем типа возвращают ошибки.
+    /// </summary>
     [Fact]
-    //Два параметра имеют одинаковое имя с объявляющим типом
     public void TwoGenericParamsHasSameNameAsDefiningType_ReturnsException()
     {
         var code = """
@@ -203,12 +243,14 @@ public class TypeDefInferenceTests
                    """;
         
         var res = SetupAndAct(code);
-        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetGenericParameters().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
 
         res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterNameSameAsDefiningType().Code);
     }
 
+    /// <summary>
+    /// Несколько generic-параметров с именем встроенного типа возвращают ошибки.
+    /// </summary>
     [Fact]
     public void TwoGenericParametersHasSameNameAsBuiltinType_ReturnsException()
     {
@@ -218,14 +260,16 @@ public class TypeDefInferenceTests
                    """;
         
         var res = SetupAndAct(code);
-        var type = res.SymTableBuilder.ListTypes().ShouldHaveSingleItem();
-        type.GetGenericParameters().ShouldBeEmpty();
+        res.SymTableBuilder.ListTypes().ShouldBeEmpty();
         
         res.Exceptions.ShouldAllBe(x => x.Code == PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
     }
 
+    /// <summary>
+    /// Типы с одинаковым именем и разным числом generic-параметров не добавляются в таблицу символов.
+    /// </summary>
     [Fact]
-    public void TwoTypesWithSameNameAndDifferentGenericCount_ReturnsException()
+    public void TwoTypesWithSameNameAndDifferentGenericCount_ReturnsNoExceptionSymTableEmpty()
     {
         var code = """
                    module test;
@@ -243,7 +287,7 @@ public class TypeDefInferenceTests
         var weaver = new TypedefInferenceWeaver();
         var (ctx, _) = CompilationPipelineBuilder.RunSymTableVisitors(
             code,
-            [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
+            [weaver.WeaveDiffs]
         );
         return ctx;
     }

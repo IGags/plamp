@@ -1,23 +1,16 @@
-using System;
 using System.Collections.Generic;
-using AutoFixture;
-using AutoFixture.Xunit2;
-using Moq;
-using plamp.Abstractions.Ast;
+using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
-using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Definitions;
-using plamp.Abstractions.Ast.Node.Definitions.Func;
-using plamp.Abstractions.Ast.Node.Definitions.Type;
+using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Symbols.SymTable;
-using plamp.Alternative.Parsing;
 using plamp.Alternative.SymbolsBuildingImpl;
-using plamp.Alternative.Tests.Parsing;
 using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.FuncDefInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding.ModuleName;
+using plamp.Alternative.Visitors.SymbolTableBuilding.TypedefInference;
 using Shouldly;
 using Xunit;
 
@@ -25,113 +18,104 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class FuncCallTypeInferenceTests
 {
-    //Inference call not all required args
-    [Theory, AutoData]
-    public void CallVoid_ReturnsCorrect(
-        [Frozen]Mock<ITranslationTable> translationTable,
-        TypeInferenceWeaver visitor)
+    /// <summary>
+    /// Вызов void-функции без аргументов корректен
+    /// </summary>
+    [Fact]
+    public void CallVoid_ReturnsCorrect()
     {
-        var ast = new BodyNode(
-        [
-            new CallNode(null, new FuncCallNameNode("a"), [], [])
-        ]);
-        
-        var retType = new TypeNode(new TypeNameNode("void"))
-        {
-            TypeInfo = Builtins.Void
-        };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
-        var funcDict = new Dictionary<string, FuncNode>
-        {
-            ["a"] = def
-        };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder(){ModuleName = "mod"}, visitor, funcDict);
+        const string code = """
+                            module test;
+                            fn a() {}
+                            fn main() {
+                                a();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var call = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Void);
     }
 
-    [Theory, AutoData]
-    public void CallRetType_ReturnsCorrect(
-        [Frozen] Mock<ITranslationTable> translationTable,
-        TypeInferenceWeaver visitor)
+    /// <summary>
+    /// Вызов функции возвращает её тип результата
+    /// </summary>
+    [Fact]
+    public void CallRetType_ReturnsCorrect()
     {
-        var ast = new BodyNode(
-        [
-            new CallNode(null, new FuncCallNameNode("a"), [], [])
-        ]);
+        const string code = """
+                            module test;
+                            fn a() int {}
+                            fn main() {
+                                result := a();
+                            }
+                            """;
 
-        var retType = new TypeNode(new TypeNameNode("int"))
-        {
-            TypeInfo = Builtins.Int
-        };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
-        var funcDict = new Dictionary<string, FuncNode>()
-        {
-            ["a"] = def
-        };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder(){ModuleName = "mod"}, visitor, funcDict);
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
+            .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+        var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Int);
     }
 
-    [Theory, AutoData]
-    public void CallWithArgs_ReturnsCorrect([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
+    /// <summary>
+    /// Вызов функции с аргументами корректен при совпадении типов
+    /// </summary>
+    [Fact]
+    public void CallWithArgs_ReturnsCorrect()
     {
-        var ast = new BodyNode(
-        [
-            new CallNode(null, new FuncCallNameNode("a"), [new LiteralNode(1, Builtins.Int), new LiteralNode("hi", Builtins.String)], [])
-        ]);
-        var retType = new TypeNode(new TypeNameNode("void"));
-        var firstArgType = new TypeNode(new TypeNameNode("int"));
-        var secondArgType = new TypeNode(new TypeNameNode("string"));
-        retType.TypeInfo = Builtins.Void;
-        firstArgType.TypeInfo = Builtins.Int;
-        secondArgType.TypeInfo = Builtins.String;
-        
-        var def = new FuncNode(
-            retType, 
-            new FuncNameNode("a"),
-            [],
-            [
-                new ParameterNode(firstArgType, new ParameterNameNode("f")), 
-                new ParameterNode(secondArgType, new ParameterNameNode("s"))
-            ], 
-            new BodyNode([]));
-        var funcDict = new Dictionary<string, FuncNode>()
-        {
-            ["a"] = def
-        };
-        SetupMocksAndAssertCorrect(ast, translationTable, new SymTableBuilder{ ModuleName = "mod" }, visitor, funcDict);
+        const string code = """
+                            module test;
+                            fn a(f: int, s: string) {}
+                            fn main() {
+                                a(1, "hi");
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var call = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Void);
     }
 
-    [Theory, AutoData]
-    public void AssignCallVoid_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
+    /// <summary>
+    /// Результат void-функции нельзя присваивать
+    /// </summary>
+    [Fact]
+    public void AssignCallVoid_ReturnsException()
     {
-        var ast = new BodyNode(
-        [
-            new AssignNode([new MemberNode("b")], [new CallNode(null, new FuncCallNameNode("a"), [], [])])
-        ]);
-        
-        var retType = new TypeNode(new TypeNameNode("void"))
-        {
-            TypeInfo = Builtins.Void
-        };
-        var def = new FuncNode(retType, new FuncNameNode("a"), [], [], new BodyNode([]));
-        var funcDict = new Dictionary<string, FuncNode>()
-        {
-            ["a"] = def
-        };
-        
-        SetupExceptionGenerationMock(translationTable);
-        var currentModule = new SymTableBuilder();
-        var context = new PreCreationContext(translationTable.Object, [currentModule]);
-        foreach (var kvp in funcDict)
-        {
-            currentModule.DefineFunc(kvp.Value);
-        }
-        
-        var result = visitor.WeaveDiffs(ast, context);
-        result.ShouldSatisfyAllConditions(
-            x => x.Exceptions.ShouldHaveSingleItem(),
-            x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotAssignNone().Code));
+        const string code = """
+                            module test;
+                            fn a() {}
+                            fn main() {
+                                b := a();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssignNone().Code);
     }
 
+    /// <summary>
+    /// Неизвестный аргумент прерывает проверку сигнатуры вызова
+    /// </summary>
     [Fact]
     public void CallNotFullArgs_ReturnExceptionFuncFunc()
     {
@@ -151,63 +135,57 @@ public class FuncCallTypeInferenceTests
         ex.Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code);
     }
 
+    /// <summary>
+    /// Аргумент типа any принимает любое не-void значение
+    /// </summary>
     [Fact]
-    private void CallWithFunctionWithAnyTypeArgument_Correct()
+    public void CallWithFunctionWithAnyTypeArgument_Correct()
     {
-        const string code = "mock(1);";
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
-        result.ShouldBe(true);
-        expression.ShouldNotBeNull();
-        var visitor = new TypeInferenceWeaver();
-        var symbolTable = new SymTableBuilder();
-        var retType = new TypeNode(new TypeNameNode("void"))
-        {
-            TypeInfo = Builtins.Void
-        };
-        var argType = new TypeNode(new TypeNameNode("any"))
-        {
-            TypeInfo = Builtins.Any
-        };
-        
-        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [], [new(argType, new("first"))], new([])));
-        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable, Builtins.SymTable]);
+        const string code = """
+                            module test;
+                            fn mock(first: any) {}
+                            fn main() {
+                                mock(1);
+                            }
+                            """;
 
-        
-        
-        var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);
-        weaveResult.Exceptions.ShouldBeEmpty();
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>()
+            .FnInfo.ShouldNotBeNull();
     }
 
+    /// <summary>
+    /// Числовой аргумент может быть расширен до ожидаемого типа
+    /// </summary>
     [Fact]
-    private void CallWithExpandableType_Correct()
+    public void CallWithExpandableType_Correct()
     {
-        const string code = "mock(1i);";
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.TryParseStatement(context, out var expression);
-        expression.ShouldNotBeNull();
-        result.ShouldBe(true);
-        var visitor = new TypeInferenceWeaver();
-        var symbolTable = new SymTableBuilder();
-        
-        var retType = new TypeNode(new TypeNameNode("void"))
-        {
-            TypeInfo = Builtins.Void
-        };
-        var argType = new TypeNode(new TypeNameNode("long"))
-        {
-            TypeInfo = Builtins.Long
-        };
+        const string code = """
+                            module test;
+                            fn mock(first: long) {}
+                            fn main() {
+                                mock(1i);
+                            }
+                            """;
 
-        symbolTable.DefineFunc(new FuncNode(retType, new FuncNameNode("mock"), [], [new(argType, new("first"))], new ([])));
-        
-        var preCreation = new PreCreationContext(context.TranslationTable, [symbolTable]);
-        var weaveResult = visitor.WeaveDiffs(new BodyNode(expression), preCreation);
-        weaveResult.Exceptions.ShouldBeEmpty();
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>()
+            .FnInfo.ShouldNotBeNull();
     }
 
+    /// <summary>
+    /// Несовместимый аргумент функции даёт ошибку
+    /// </summary>
     [Fact]
     public void CallWithIncompatibleType_ReturnsException()
     {
@@ -232,11 +210,327 @@ public class FuncCallTypeInferenceTests
         ex.Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
     }
 
+    /// <summary>
+    /// Число аргументов вызова должно совпадать с сигнатурой функции
+    /// </summary>
+    [Fact]
+    public void CallWithDifferentArgumentCount_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn target(first: int, second: int) {}
+                            fn main() {
+                                target(1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.FunctionHasDifferentArgCount(2, 1).Code);
+    }
+
+    /// <summary>
+    /// Явных generic-аргументов должно быть столько же, сколько параметров у функции
+    /// </summary>
+    [Fact]
+    public void ExplicitGenericCallWithDifferentGenericArgumentCount_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                id[int, string](1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.GenericFuncDefinitionHasDifferentParameterCount(1, 2).Code);
+    }
+
+    /// <summary>
+    /// Ненайденный явный generic-аргумент не запускает ошибки вывода функции
+    /// </summary>
+    [Fact]
+    public void ExplicitGenericCallWithUnresolvedGenericArgument_HasNoFuncInferenceErrors()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                id[Unknown](1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        var codeShould = context.Exceptions.ShouldHaveSingleItem().Code;
+        codeShould.ShouldBe(PlampExceptionInfo.TypeIsNotFound("Unknown").Code);
+    }
+
+    /// <summary>
+    /// Явная generic-реализация должна принимать аргументы подходящих типов
+    /// </summary>
+    [Fact]
+    public void ExplicitGenericCallWithIncompatibleArgument_ReturnsCannotApplyArgument()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                id[string](1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+    }
+
+    /// <summary>
+    /// Явная generic-реализация корректно выводит функцию и тип результата
+    /// </summary>
+    [Fact]
+    public void ExplicitGenericCallCorrectScenario_ReturnsImplementedFunc()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                result := id[int](1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        var variable = assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>();
+        variable.Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+        var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Int);
+    }
+
+    /// <summary>
+    /// Неявный generic-вызов проверяет применимость аргумента к параметру
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallWithInapplicableArgument_ReturnsCannotApplyArgument()
+    {
+        const string code = """
+                            module test;
+                            fn firstArrayItem[T](items: []T) T {}
+                            fn main() {
+                                firstArrayItem(1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.Select(x => x.Code).ShouldContain(PlampExceptionInfo.CannotApplyArgument().Code);
+    }
+
+    /// <summary>
+    /// Один аргумент не может давать две реализации одного generic-параметра
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallWithManyImplementationsInOneArgument_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            type Pair[TKey, TValue];
+                            fn samePair[T](value: Pair[T, T]) {}
+                            fn main() {
+                                samePair(Pair[int, string]{});
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.Select(x => x.Code)
+            .ShouldContain(PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations("T", [Builtins.Int.Name, Builtins.String.Name]).Code);
+    }
+
+    /// <summary>
+    /// Несколько аргументов не могут давать разные реализации одного generic-параметра
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallWithManyImplementationsAcrossArguments_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn same[T](first: T, second: T) {}
+                            fn main() {
+                                same(1, "text");
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+        
+        var codes = context.Exceptions.Select(x => x.Code).ToList();
+        codes.Count().ShouldBe(2);
+        codes.ShouldContain(PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations("T", [Builtins.Int.Name, Builtins.String.Name]).Code);
+        codes.ShouldContain(PlampExceptionInfo.GenericParameterHasNoImplementationType("T").Code);
+    }
+
+    /// <summary>
+    /// Generic-параметр должен иметь тип реализации
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallWithoutImplementationType_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn make[T]() T {}
+                            fn main() {
+                                make();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.GenericParameterHasNoImplementationType("T").Code);
+    }
+
+    /// <summary>
+    /// Неявный generic-вызов корректно выводит generic-аргументы
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallCorrectScenario_ReturnsImplementedFunc()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                result := id(1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        var variable = assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>();
+        variable.Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+        var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        call.FnInfo.ShouldNotBeNull().GetGenericArguments().ShouldHaveSingleItem().ShouldBe(Builtins.Int);
+    }
+
+    /// <summary>
+    /// Не generic-функция проверяет соответствие типов аргументов
+    /// </summary>
+    [Fact]
+    public void NonGenericCallWithIncompatibleArgument_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn expectsString(value: string) {}
+                            fn main() {
+                                expectsString(1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+    }
+
+    /// <summary>
+    /// Ошибка явных generic-аргументов не мешает вывести возвращаемый тип
+    /// </summary>
+    [Fact]
+    public void ExplicitGenericCallError_AllowsFurtherTypeInference()
+    {
+        const string code = """
+                            module test;
+                            fn id[T](value: T) T {}
+                            fn main() {
+                                result := id[string](1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
+            .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.String);
+    }
+
+    /// <summary>
+    /// Ошибка в не generic-функции не мешает вывести возвращаемый тип
+    /// </summary>
+    [Fact]
+    public void NonGenericCallError_AllowsFurtherTypeInference()
+    {
+        const string code = """
+                            module test;
+                            fn expectsString(value: string) int {}
+                            fn main() {
+                                result := expectsString(1);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
+            .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+    }
+
+    /// <summary>
+    /// Ошибка в неявной generic-реализации не мешает вывести возвращаемый тип, если он построен
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallErrorWithKnownReturnType_AllowsFurtherTypeInference()
+    {
+        const string code = """
+                            module test;
+                            fn choose[T](value: T, text: string) T {}
+                            fn main() {
+                                result := choose(1, 2);
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotApplyArgument().Code);
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
+            .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+    }
+
     private (NodeBase ast, PreCreationContext context) Setup(string code)
     {
         var (ctx, ast) = CompilationPipelineBuilder.RunSymTableVisitors(code,
         [
             (ast, ctx) => new ModuleNameValidator().Validate(ast, ctx),
+            (ast, ctx) => new TypedefInferenceWeaver().WeaveDiffs(ast, ctx),
             (ast, ctx) => new FuncDefInferenceWeaver().WeaveDiffs(ast, ctx)
         ]);
 
@@ -245,31 +539,4 @@ public class FuncCallTypeInferenceTests
         return (ast, context);
     }
     
-    private void SetupExceptionGenerationMock(Mock<ITranslationTable> symbolTable)
-    {
-        var filePosition = new FilePosition();
-        symbolTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        symbolTable.Setup(x => x.SetExceptionToNode(It.IsAny<NodeBase>(), It.IsAny<PlampExceptionRecord>()))
-            .Returns<NodeBase, PlampExceptionRecord>((_, b) => new PlampException(b, default));
-    }
-    
-    private void SetupMocksAndAssertCorrect(
-        NodeBase ast, 
-        Mock<ITranslationTable> translationTable, 
-        SymTableBuilder symbolTable,
-        TypeInferenceWeaver visitor, 
-        Dictionary<string, FuncNode> funcs)
-    {
-        var filePosition = new FilePosition();
-        translationTable.Setup(x => x.TryGetSymbol(It.IsAny<NodeBase>(), out filePosition)).Returns(true);
-        var context = new PreCreationContext(translationTable.Object, [symbolTable]);
-        foreach (var kvp in funcs)
-        {
-            if (kvp.Value.ReturnType.TypeInfo == null) throw new Exception();
-            symbolTable.DefineFunc(kvp.Value);
-        }
-        
-        var result = visitor.WeaveDiffs(ast, context);
-        result.Exceptions.ShouldBeEmpty();
-    }
 }

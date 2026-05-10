@@ -486,7 +486,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
         ArgumentNullException.ThrowIfNull(fnRef);
         var fnParams = fnRef.Arguments;
-        //Если то, что нашлось - содержит другое число аргументов в объявлении.
+        //Если то, что нашлось, содержит другое число аргументов в объявлении.
         if (fnParams.Count != argTypes.Count)
         {
             var record = PlampExceptionInfo.FunctionHasDifferentArgCount(fnParams.Count, argTypes.Count);

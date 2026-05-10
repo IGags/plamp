@@ -48,13 +48,14 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
             //Валидация дубликатов имён - не ответственность этого вивера.
             if (typeList.Count != 1) continue;
             var type = typeList[0];
-            var generics = TryValidateGenericsIfExists(type, context);
+            var valid = TryValidateGenericsIfExists(type, context, out var generics);
+            if(!valid) continue;
             context.SymTableBuilder.DefineType(type, generics);
         }
 
         return VisitResult.Continue;
     }
-    
+
     /// <summary>
     /// Проверяет наличие дженерик параметров и корректность их объявления в контексте текущего типа.
     /// Под корректностью понимается
@@ -65,17 +66,21 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
     /// </summary>
     /// <param name="typeDefinition">Объект, описывающий объявление типа в контексте текущего модуля</param>
     /// <param name="context">Контекст обхода текущего модуля</param>
-    private IGenericParameterBuilder[] TryValidateGenericsIfExists(
+    /// <param name="validGenerics">Список дженерик параметров, которые прошли проверку</param>
+    private bool TryValidateGenericsIfExists(
         TypedefNode typeDefinition, 
-        TypedefInferenceVisitorContext context)
+        TypedefInferenceVisitorContext context,
+        out IGenericParameterBuilder[] validGenerics)
     {
+        validGenerics = [];
         var parameters = typeDefinition.GenericParameters;
-        if (parameters.Count == 0) return [];
+        if (parameters.Count == 0) return true;
 
         var nameGrouping = parameters.GroupBy(x => x.Name.Value);
         
         var definingTypeName = typeDefinition.Name.Value;
-        var validGenerics = new List<IGenericParameterBuilder>();
+        var validGenericsList = new List<IGenericParameterBuilder>();
+        var valid = true;
         
         foreach (var group in nameGrouping)
         {
@@ -83,7 +88,7 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
             var parameterName = groupArray[0].Name.Value;
             PlampExceptionRecord? record = null;
             
-            if (Builtins.SymTable.FindType(parameterName) != null)
+            if (Builtins.SymTable.ContainsSymbol(parameterName))
             {
                 record = PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember();
             }
@@ -98,16 +103,18 @@ public class TypedefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Typ
 
             if (record == null)
             {
-                validGenerics.Add(context.SymTableBuilder.CreateGenericParameter(groupArray[0]));
+                validGenericsList.Add(context.SymTableBuilder.CreateGenericParameter(groupArray[0]));
                 continue;
             }
             
+            valid = false;
             foreach (var parameter in groupArray)
             {
                 SetExceptionToSymbol(parameter, record, context);
             }
         }
         
-        return validGenerics.ToArray();
+        validGenerics = validGenericsList.ToArray();
+        return valid;
     }
 }

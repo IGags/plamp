@@ -7,14 +7,15 @@ using Xunit;
 
 namespace plamp.Alternative.Tests.Visitors.SymbolTableBuildingTests;
 
-
-//У функции returnType == null - должен проставить void
-//Тип возвращаемого значения неизвестен, возврат ошибки
-//Тип аргумента неизвестен, возврат ошибки
+/// <summary>
+/// Проверяет вывод сигнатур функций в таблицу символов.
+/// </summary>
 public class FuncDefInferenceTests
 {
+    /// <summary>
+    /// Функций нет в модуле - корректно.
+    /// </summary>
     [Fact]
-    //Функций нет в модуле - корректно
     public void InferenceEmptyDef_Correct()
     {
         var code = "module test;";
@@ -23,8 +24,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// В модуле одна корректная функция.
+    /// </summary>
     [Fact]
-    //В модуле одна корректная функция
     public void InferenceSingleFunction_Correct()
     {
         var code = """
@@ -40,8 +43,10 @@ public class FuncDefInferenceTests
         argument.Type.ShouldBe(Builtins.Int);
     }
 
+    /// <summary>
+    /// Две функции с одинаковой сигнатурой не добавляются в модуль без ошибки.
+    /// </summary>
     [Fact]
-    //Две одинаковых функции ничего не будет добавлено в модуль, ошибка выведена НЕ будет
     public void InferenceTwoIdenticalSignatures_ReturnsErrors()
     {
         var code = """
@@ -54,8 +59,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
     
+    /// <summary>
+    /// Две функции с одинаковым именем не добавляются в модуль без ошибки.
+    /// </summary>
     [Fact]
-    //Две одинаковых функции по имени ничего не будет добавлено в модуль, ошибка выведена НЕ будет
     public void InferenceTwoIdenticalNames_ReturnsErrors()
     {
         var code = """
@@ -68,8 +75,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Функции без возвращаемого значения проставляется void.
+    /// </summary>
     [Fact]
-    //Функция с возвращаемым значением void - визитор должен добавить тип
     public void InferenceVoidFunction_Correct()
     {
         var code = """
@@ -82,8 +91,10 @@ public class FuncDefInferenceTests
         fn.ReturnType.ShouldBe(Builtins.Void);
     }
 
+    /// <summary>
+    /// Функция с неизвестным типом результата не добавляется в таблицу символов.
+    /// </summary>
     [Fact]
-    //У функции неизвестный тип возвращаемого значения, поэтому мы не добавляем такую функцию
     public void InferenceUnknownReturnTypeFunction_DoesNotAddToSymbols()
     {
         var code = """
@@ -95,8 +106,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Функция с неизвестным типом аргумента не добавляется в таблицу символов.
+    /// </summary>
     [Fact]
-    //У функции неизвестный тип аргумента, такую функцию нельзя добавить в таблицу символов
     public void InferenceUnknownArgTypeFunction_DoesNotAddToSymbols()
     {
         var code = """
@@ -108,8 +121,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Функция с повторяющимся именем аргумента не добавляется в таблицу символов.
+    /// </summary>
     [Fact]
-    //У функции 2 аргумента с одинаковым именем, функции не будет в таблице символов
     public void InferenceDuplicateArgNameFunction_SkipAdding()
     {
         var code = """
@@ -122,8 +137,10 @@ public class FuncDefInferenceTests
         res.SymTableBuilder.ListFuncs().ShouldBeEmpty();
     }
 
+    /// <summary>
+    /// Функция с generic-параметрами корректно добавляется в таблицу символов.
+    /// </summary>
     [Fact]
-    //Фнкция с дженериком, корректно
     public void InferenceFuncWithGenericParams_Correct()
     {
         var code = """
@@ -139,8 +156,10 @@ public class FuncDefInferenceTests
         fn.GetGenericParameters().Count.ShouldBe(2);
     }
 
+    /// <summary>
+    /// Функция с повторяющимся именем generic-параметра возвращает ошибки и не добавляется.
+    /// </summary>
     [Fact]
-    //Функция с дублирующимся именем дженерика, не добавляется в таблицу, возвращает ошибки
     public void InferenceFuncWithDupGenericArgName_ReturnsExceptionSkipAdding()
     {
         var code = """
@@ -152,12 +171,52 @@ public class FuncDefInferenceTests
         res.Exceptions.All(x => x.Code == PlampExceptionInfo.DuplicateGenericParameterName().Code).ShouldBe(true);
     }
 
+    /// <summary>
+    /// Имя generic-параметра функции не должно совпадать с именем встроенного типа.
+    /// </summary>
+    [Fact]
+    public void InferenceFuncWithGenericParamSameNameAsBuiltinType_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   fn a[int]() {}
+                   """;
+
+        var res = SetupAndAct(code);
+
+        var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        fn.GetGenericParameters().ShouldBeEmpty();
+
+        var exception = res.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParameterHasSameNameAsBuiltinMember().Code);
+    }
+
+    /// <summary>
+    /// Имя generic-параметра функции не должно совпадать с именем самой функции.
+    /// </summary>
+    [Fact]
+    public void InferenceFuncWithGenericParamSameNameAsFunction_ReturnsException()
+    {
+        var code = """
+                   module test;
+                   fn a[a]() {}
+                   """;
+
+        var res = SetupAndAct(code);
+
+        var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
+        fn.GetGenericParameters().ShouldBeEmpty();
+
+        var exception = res.Exceptions.ShouldHaveSingleItem();
+        exception.Code.ShouldBe(PlampExceptionInfo.GenericParamSameNameAsDefiningFunction().Code);
+    }
+
     private SymbolTableBuildingContext SetupAndAct(string code)
     {
         var weaver = new FuncDefInferenceWeaver();
         var (ctx, _) = CompilationPipelineBuilder.RunSymTableVisitors(
                 code,
-                [(ast, ctx) => weaver.WeaveDiffs(ast, ctx)]
+                [weaver.WeaveDiffs]
             );
         return ctx;
     }

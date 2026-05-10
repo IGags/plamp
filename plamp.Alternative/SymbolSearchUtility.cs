@@ -160,8 +160,8 @@ public static class SymbolSearchUtility
             
             if (!fnArgDef.Equals(fnParamDef)) return PlampExceptionInfo.CannotApplyArgument();
             
-            var fnParamArgs = fnParamDef.GetGenericArguments();
-            var fnArgArgs = fnArgDef.GetGenericArguments();
+            var fnParamArgs = fnParameterType.GetGenericArguments();
+            var fnArgArgs = fnArgType.GetGenericArguments();
 
             if (fnParamArgs.Count != fnArgArgs.Count) return PlampExceptionInfo.CannotApplyArgument();
 
