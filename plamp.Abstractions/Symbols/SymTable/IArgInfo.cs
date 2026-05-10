@@ -5,6 +5,8 @@ namespace plamp.Abstractions.Symbols.SymTable;
 
 /// <summary>
 /// Информация об параметре функции при компиляции модуля
+/// Тип параметра должен соответствовать контракту <see cref="ITypeInfo"/>: реализации типов,
+/// созданные с явно переданным именем модуля, бросают <see cref="InvalidOperationException"/> при пустом имени модуля.
 /// </summary>
 public interface IArgInfo
 {

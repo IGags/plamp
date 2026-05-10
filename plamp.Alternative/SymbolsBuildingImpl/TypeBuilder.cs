@@ -9,7 +9,7 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
 /// <inheritdoc/>
-public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
+public class TypeBuilder : ITypeBuilderInfo
 {
     private readonly Dictionary<IFieldBuilderInfo, FieldDefNode> _fields = [];
 
@@ -19,11 +19,28 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     
     private System.Reflection.Emit.TypeBuilder? _typeBuilder;
 
+    /// <summary>
+    /// Создаёт описание обычного типа в контексте строящегося модуля.
+    /// </summary>
+    /// <param name="name">Имя типа. Не может быть пустым.</param>
+    /// <param name="moduleName">Имя модуля, которому принадлежит тип.</param>
+    /// <exception cref="InvalidOperationException">Имя типа пустое или имя модуля пустое.</exception>
+    public TypeBuilder(string name, string moduleName)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Имя типа не может быть пустым.");
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
+        DefinitionName = name;
+        ModuleName = moduleName;
+    }
+
     /// <inheritdoc/>
-    public string ModuleName => moduleName;
+    public string ModuleName { get; }
     
     /// <inheritdoc/>
-    public string DefinitionName => name;
+    public string DefinitionName { get; }
 
     /// <inheritdoc/>
     public IReadOnlyList<IGenericParameterBuilder> GenericParameterBuilders => _genericParameterBuilders;
@@ -36,12 +53,8 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     {
         get
         {
-            var defName = name;
+            var defName = DefinitionName;
             if (_genericParameterBuilders.Count == 0) return defName;
-            
-            var ixSep = defName.LastIndexOf('`');
-            ixSep = ixSep == -1 ? defName.Length : ixSep;
-            defName = defName[..ixSep];
             defName += "[" + string.Join(", ", _genericParameterBuilders.Select(x => x.Name)) + "]";
             return defName;
         }
@@ -65,6 +78,7 @@ public class TypeBuilder(string name, string moduleName) : ITypeBuilderInfo
     /// <param name="name">Имя типа</param>
     /// <param name="genericParameters">Список дженерик параметров типа, должен быть уникальным по имени. Пустой список - тип не объявление дженерика.</param>
     /// <param name="moduleName">Имя модуля, которому принадлежит тип</param>
+    /// <exception cref="InvalidOperationException">Имя типа пустое, имя модуля пустое, или список generic-параметров некорректен.</exception>
     public TypeBuilder(string name, IReadOnlyList<IGenericParameterBuilder> genericParameters, string moduleName) 
         : this(name, moduleName)
     {

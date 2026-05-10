@@ -267,4 +267,13 @@ public class TypeBuilderTests
     {
         Should.Throw<InvalidOperationException>(() => new TypeBuilder("", ModuleName));
     }
+
+    /// <summary>
+    /// Невозможно создать тип без имени модуля
+    /// </summary>
+    [Fact]
+    public void CreateTypeWithEmptyModuleName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new TypeBuilder("Type", ""));
+    }
 }

@@ -5,6 +5,11 @@ namespace plamp.Abstractions.Symbols.SymTable;
 
 /// <summary>
 /// Объект - описание поля во время компиляции.
+/// Реализации, создающие поле с явно переданным именем, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя поля пустое или состоит только из пробельных символов.
+/// Тип поля не может быть void; такие реализации должны бросать <see cref="InvalidOperationException"/>.
+/// Реализации, создающие поле с явно переданным именем модуля, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя модуля пустое или состоит только из пробельных символов.
 /// </summary>
 public interface IFieldInfo : IEquatable<IFieldInfo>
 {
@@ -18,10 +23,12 @@ public interface IFieldInfo : IEquatable<IFieldInfo>
     /// <summary>
     /// Получить информацию о типе поля
     /// </summary>
+    /// <remarks>Тип поля не должен быть void.</remarks>
     public ITypeInfo FieldType { get; }
     
     /// <summary>
     /// Имя поля
     /// </summary>
+    /// <remarks>Имя поля не должно быть пустым или состоять только из пробельных символов.</remarks>
     public string Name { get; }
 }

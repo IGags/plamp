@@ -176,4 +176,13 @@ public class BlankFuncInfoTests
     {
         Should.Throw<InvalidOperationException>(() => new BlankFuncInfo("", [], Builtins.Void, "test"));
     }
+
+    /// <summary>
+    /// Функция не может быть создана без имени модуля
+    /// </summary>
+    [Fact]
+    public void MakeFuncWithEmptyModuleName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new BlankFuncInfo("func", [], Builtins.Void, ""));
+    }
 }

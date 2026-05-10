@@ -17,6 +17,11 @@ namespace plamp.Alternative.Tests.SymbolsBuildingImpl;
 
 public class GenericImplFieldInfoTests
 {
+    private class GenericFieldHost<T>
+    {
+        [PlampVisible]
+        public T Value = default!;
+    }
     
     /// <summary>
     /// Создать объект, тип, которому принадлежит поле не дженерик - ошибка
@@ -62,13 +67,13 @@ public class GenericImplFieldInfoTests
     [Fact]
     public void AsFieldReturnsImplField_Correct()
     {
-        var genericDef = TypeInfo.FromType(typeof(List<object>).GetGenericTypeDefinition(), "test");
+        var genericDef = TypeInfo.FromType(typeof(GenericFieldHost<>), "test");
         var intType = TypeInfo.FromType(typeof(int), "test");
-        var fieldInfo = new BlankFieldInfo(intType, "Count", genericDef);
+        var fieldInfo = new BlankFieldInfo(intType, nameof(GenericFieldHost<object>.Value), genericDef);
         var impl = genericDef.MakeGenericType([Builtins.String]);
         var fieldImpl = new GenericImplFieldInfo(impl!, fieldInfo, Builtins.Int);
         var fldInfoActual = fieldImpl.AsField();
-        var fldInfoExpected = typeof(List<string>).GetField(nameof(List<object>.Count))!;
+        var fldInfoExpected = typeof(GenericFieldHost<string>).GetField(nameof(GenericFieldHost<object>.Value))!;
         fldInfoActual.ShouldBe(fldInfoExpected);
     }
 
@@ -80,7 +85,7 @@ public class GenericImplFieldInfoTests
     {
         var asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("afkkf"), AssemblyBuilderAccess.RunAndCollect);
         var mod = asm.DefineDynamicModule("1512155125");
-        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout, typeof(ValueTuple));
+        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout);
         var genericParam = type.DefineGenericParameters("T").First(); 
         var fld = type.DefineField("Fld", genericParam, FieldAttributes.Public);
         
@@ -112,7 +117,7 @@ public class GenericImplFieldInfoTests
         var asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("afkkf"), AssemblyBuilderAccess.RunAndCollect);
         var mod = asm.DefineDynamicModule("1512155125");
         
-        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout, typeof(ValueTuple));
+        var type = mod.DefineType("TestGeneric", TypeAttributes.Public | TypeAttributes.AutoLayout);
         var genericParam = type.DefineGenericParameters("T").First();
         var ctorInfo = typeof(PlampVisibleAttribute).GetConstructor(BindingFlags.Public | BindingFlags.Instance, [])!;
         var attrBuilder = new CustomAttributeBuilder(ctorInfo, []);

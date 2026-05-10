@@ -10,18 +10,35 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 /// Представление аргумента открытого дженерик типа, тоже является типом так как может служить типом полей типа-определения
 /// Не появляется в таблице символов модуля, в котором объявлен дженерик тип
 /// </summary>
-public class GenericParameterBuilder(string name, string moduleName) : IGenericParameterBuilder
+public class GenericParameterBuilder : IGenericParameterBuilder
 {
     private Type? _genericParameterType;
     private GenericTypeParameterBuilder? _parameterBuilder;
 
     /// <summary>
+    /// Создаёт представление дженерик параметра.
+    /// </summary>
+    /// <param name="name">Имя параметра внутри дженерик объявления.</param>
+    /// <param name="moduleName">Имя модуля, в котором объявлен дженерик параметр.</param>
+    /// <exception cref="InvalidOperationException">Имя параметра или имя модуля пустое.</exception>
+    public GenericParameterBuilder(string name, string moduleName)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Имя дженерик параметра не может быть пустым.");
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
+        Name = name;
+        ModuleName = moduleName;
+    }
+
+    /// <summary>
     /// Имя типа внутри дженерик объявления
     /// </summary>
-    public string Name { get; } = name;
+    public string Name { get; }
     
     /// <inheritdoc/>
-    public string ModuleName => moduleName;
+    public string ModuleName { get; }
 
     /// <inheritdoc/>
     public string DefinitionName => Name;

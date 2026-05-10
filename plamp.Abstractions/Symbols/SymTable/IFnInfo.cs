@@ -6,6 +6,8 @@ namespace plamp.Abstractions.Symbols.SymTable;
 
 /// <summary>
 /// Информация об объявлении функции в рамках модуля.
+/// Реализации, создающие функцию с явно переданным именем модуля, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя модуля пустое или состоит только из пробельных символов.
 /// </summary>
 public interface IFnInfo : IModuleMember, IEquatable<IFnInfo>
 {

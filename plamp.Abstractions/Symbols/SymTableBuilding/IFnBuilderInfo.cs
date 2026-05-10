@@ -7,6 +7,8 @@ namespace plamp.Abstractions.Symbols.SymTableBuilding;
 /// <summary>
 /// Расширение интерфейса специфичное для создающегося модуля.
 /// Описывает объявление функции, добавляя данные в контексте создания текущего модуля.
+/// Реализации, создающие функцию с явно переданным именем модуля, должны бросать <see cref="System.InvalidOperationException"/>,
+/// если имя модуля пустое или состоит только из пробельных символов.
 /// </summary>
 public interface IFnBuilderInfo : IFnInfo
 {

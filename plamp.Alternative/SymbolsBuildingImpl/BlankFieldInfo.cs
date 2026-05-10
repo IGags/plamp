@@ -7,22 +7,43 @@ using plamp.Abstractions.Symbols.SymTableBuilding;
 namespace plamp.Alternative.SymbolsBuildingImpl;
 
 /// <inheritdoc/>
-public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType) : IFieldBuilderInfo
+public class BlankFieldInfo : IFieldBuilderInfo
 {
-    private readonly ITypeInfo _definingType = definingType;
+    private readonly ITypeInfo _typeInfo;
+    private readonly string _name;
+    private readonly ITypeInfo _definingType;
     
     private FieldInfo? _field;
     
     private FieldBuilder? _fieldBuilder;
 
+    /// <summary>
+    /// Создаёт описание поля строящегося типа.
+    /// </summary>
+    /// <param name="typeInfo">Тип поля. Не может быть void.</param>
+    /// <param name="name">Имя поля. Не может быть пустым.</param>
+    /// <param name="definingType">Тип, в котором объявлено поле.</param>
+    /// <exception cref="InvalidOperationException">Имя поля пустое или тип поля void.</exception>
+    public BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingType)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Имя поля не может быть пустым.");
+        if (SymbolSearchUtility.IsVoid(typeInfo))
+            throw new InvalidOperationException("Поле не может иметь тип void.");
+
+        _typeInfo = typeInfo;
+        _name = name;
+        _definingType = definingType;
+    }
+
     /// <inheritdoc/>
     public FieldInfo AsField() => _fieldBuilder ?? _field ?? throw new NullReferenceException();
 
     /// <inheritdoc/>
-    public ITypeInfo FieldType => typeInfo;
+    public ITypeInfo FieldType => _typeInfo;
     
     /// <inheritdoc/>
-    public string Name => name;
+    public string Name => _name;
 
     /// <inheritdoc/>
     public FieldInfo? Field
@@ -70,7 +91,7 @@ public class BlankFieldInfo(ITypeInfo typeInfo, string name, ITypeInfo definingT
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        return HashCode.Combine(name, _definingType.GetHashCode(), typeInfo.GetHashCode());
+        return HashCode.Combine(_name, _definingType.GetHashCode(), _typeInfo.GetHashCode());
     }
 
     /// <summary>

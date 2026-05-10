@@ -21,11 +21,12 @@ public class GenericImplFieldInfo : IFieldInfo
     /// <param name="definitionType">Тип, в котором это поле содержится обязан быть имплементацией дженерика</param>
     /// <param name="definitionField">Поле, которое переопределяет текущий объект</param>
     /// <param name="typeOverride">Новый тип этого поля, если поле не дженерик, то тип должен сохранится от имплементации.</param>
-    /// <exception cref="InvalidOperationException">Тип объявление не реализация дженерика или тип поля - объявление дженерик типа.</exception>
+    /// <exception cref="InvalidOperationException">Тип объявление не реализация дженерика, тип поля - объявление дженерик типа или void.</exception>
     public GenericImplFieldInfo(ITypeInfo definitionType, IFieldInfo definitionField, ITypeInfo typeOverride)
     {
         if (!definitionType.IsGenericType) throw new InvalidOperationException();
         if (typeOverride.IsGenericTypeDefinition) throw new InvalidOperationException();
+        if (SymbolSearchUtility.IsVoid(typeOverride)) throw new InvalidOperationException("Поле не может иметь тип void.");
         
         _definitionField = definitionField;
         _definitionType = definitionType;

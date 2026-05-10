@@ -14,6 +14,9 @@ public class BlankFieldInfoTests
 {
     private ITypeInfo CreateTypeInfo() => TypeInfo.FromType(typeof(int), "test");
 
+    /// <summary>
+    /// До завершения поля можно менять builder
+    /// </summary>
     [Fact]
     public void IncompleteFieldModifyBuilder_Correct()
     {
@@ -26,6 +29,9 @@ public class BlankFieldInfoTests
         fld.Builder.ShouldBeSameAs(fldBuilder);
     }
 
+    /// <summary>
+    /// После завершения поле нельзя модифицировать
+    /// </summary>
     [Fact]
     public void CompleteField_BuilderAccessThrowsInvalidOperation()
     {
@@ -38,6 +44,9 @@ public class BlankFieldInfoTests
         Should.Throw<InvalidOperationException>(() => fld.Field = null);
     }
 
+    /// <summary>
+    /// Завершённость поля не влияет на равенство
+    /// </summary>
     [Fact]
     public void CompleteFieldEqualsToNotComplete_Correct()
     {
@@ -49,6 +58,9 @@ public class BlankFieldInfoTests
         fld2.ShouldBe(fld1);
     }
     
+    /// <summary>
+    /// Завершённое поле возвращает FieldInfo вместо builder
+    /// </summary>
     [Fact]
     public void CompleteFieldReturnsFieldInfoInsteadOfBuilder_Correct()
     {
@@ -63,5 +75,32 @@ public class BlankFieldInfoTests
         fld.Field = dateField;
         
         fld.AsField().ShouldBe(dateField);
+    }
+  
+    /// <summary>
+    /// Нельзя создать поле без имени
+    /// </summary>
+    [Fact]
+    public void CannotCreateFieldWithEmptyName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new BlankFieldInfo(CreateTypeInfo(), "", CreateTypeInfo()));
+    }
+
+    /// <summary>
+    /// Имя поля не может состоять из пробелов
+    /// </summary>
+    [Fact]
+    public void CannotCreateFieldWithWhiteSpaceName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new BlankFieldInfo(CreateTypeInfo(), " ", CreateTypeInfo()));
+    }
+    
+    /// <summary>
+    /// Поле не может иметь тип void
+    /// </summary>
+    [Fact]
+    public void CannotCreateFieldWithVoidType_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => new BlankFieldInfo(Builtins.Void, "field", CreateTypeInfo()));
     }
 }

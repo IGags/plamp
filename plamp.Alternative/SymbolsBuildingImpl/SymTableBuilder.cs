@@ -20,7 +20,7 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     private readonly Dictionary<IFnBuilderInfo, FuncNode> _fnNodeMapping = [];
 
     /// <inheritdoc cref="ISymTableBuilder.ModuleName" />
-    public string ModuleName { get; set; } = "";
+    public string ModuleName { get; set; } = "<default>";
 
     /// <inheritdoc />
     public ITypeBuilderInfo DefineType(TypedefNode typeNode, IGenericParameterBuilder[]? genericParams = null)

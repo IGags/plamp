@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System;
 using plamp.Alternative.SymbolsImpl;
 using Shouldly;
 using Xunit;
@@ -156,5 +157,11 @@ public class TypeInfoTests
         info.IsArrayType.ShouldBeTrue();
         
         info.AsType().ShouldBe(type);
+    }
+
+    [Fact]
+    public void MakeFromTypeWithEmptyModuleName_ThrowsInvalidOperationException()
+    {
+        Should.Throw<InvalidOperationException>(() => TypeInfo.FromType(typeof(string), ""));
     }
 }

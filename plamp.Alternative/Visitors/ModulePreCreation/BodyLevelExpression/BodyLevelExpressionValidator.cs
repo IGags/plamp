@@ -26,7 +26,7 @@ public class BodyLevelExpressionValidator : BaseValidator<PreCreationContext, Bo
             or PrefixDecrementNode
             or PrefixIncrementNode
             or PostfixDecrementNode
-            or PostfixDecrementNode
+            or PostfixIncrementNode
             or ConditionNode
             or WhileNode
             or ContinueNode

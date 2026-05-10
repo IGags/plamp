@@ -42,6 +42,9 @@ public class TypeInfo : ITypeInfo
 
     private TypeInfo(Type type, string moduleName, string? nameOverride = null)
     {
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
         if (type is { IsGenericType: true, IsGenericTypeDefinition: false }) throw new ArgumentException("Нельзя использовать дженерик тип как тип в таблице символов");
         if (type.IsArray) throw new ArgumentException("Нельзя использовать тип массива как тип в таблице символов");
         ModuleName = moduleName;
@@ -71,6 +74,7 @@ public class TypeInfo : ITypeInfo
     /// <param name="type">Тип .net на базе которого построить тип</param>
     /// <param name="moduleName">Имя модуля, к которому относится тип.</param>
     /// <param name="nameOverride">Переопределение имени. Не обязательное. Перезаписывает имя для механизмов поиска символов языка.</param>
+    /// <exception cref="InvalidOperationException">Имя модуля пустое или состоит только из пробельных символов.</exception>
     /// <returns>Возвращает готовый к использованию объект данного типа</returns>
     public static ITypeInfo FromType(Type type, string moduleName, string? nameOverride = null)
     {
@@ -105,7 +109,13 @@ public class TypeInfo : ITypeInfo
     }
     
     /// <inheritdoc/>
-    public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
+    public ITypeInfo MakeArrayType()
+    {
+        if (SymbolSearchUtility.IsVoid(this))
+            throw new InvalidOperationException("Нельзя создать массив элементов типа void.");
+
+        return new ArrayTypeBuilder(this);
+    }
 
     /// <inheritdoc/>
     public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments)

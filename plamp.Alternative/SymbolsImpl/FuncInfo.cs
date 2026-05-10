@@ -21,7 +21,8 @@ public class FuncInfo : IFnInfo
     public string DefinitionName { get; }
 
     /// <inheritdoc/>
-    public IReadOnlyList<IArgInfo> Arguments { get; }
+    public IReadOnlyList<IArgInfo> Arguments => _fnInfo.GetParameters()
+        .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, _moduleName))).ToList();
 
     /// <inheritdoc/>
     public string ModuleName => _moduleName;
@@ -42,10 +43,13 @@ public class FuncInfo : IFnInfo
     /// Создание экземпляра класса
     /// </summary>
     /// <param name="fnInfo">Информация о методе .net, который надо обернуть в этот класс, не может быть имплементацией дженерик метода</param>
-    /// <param name="moduleName"></param>
-    /// <exception cref="InvalidOperationException">Метод, по которому строится информация о функции реализация дженерик метода</exception>
+    /// <param name="moduleName">Имя модуля. Не может быть пустым.</param>
+    /// <exception cref="InvalidOperationException">Метод является реализацией generic-метода или имя модуля пустое.</exception>
     public FuncInfo(MethodInfo fnInfo, string moduleName)
     {
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
         if (fnInfo is { IsGenericMethod: true, IsGenericMethodDefinition: false })
             throw new InvalidOperationException("В таблице символов не может быть имплементации дженерик функции");
         
@@ -69,8 +73,6 @@ public class FuncInfo : IFnInfo
         DefinitionName = fnInfo.Name;
         //TODO: Некорректные модули для типов
         ReturnType = TypeInfo.FromType(fnInfo.ReturnType, _moduleName);
-        Arguments = fnInfo.GetParameters()
-            .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, _moduleName))).ToList();
     }
 
     /// <inheritdoc/>

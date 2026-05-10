@@ -78,10 +78,7 @@ public class GenericTypeBuilder : ITypeInfo
         get
         {
             var argsNames = _genericArguments.Select(x => x.Name);
-            var ixSep = _definition.DefinitionName.LastIndexOf('`');
-            ixSep = ixSep == -1 ? _definition.DefinitionName.Length : ixSep;
-            var name = _definition.DefinitionName[..ixSep];
-            return name + $"[{string.Join(", ", argsNames)}]";
+            return _definition.DefinitionName + $"[{string.Join(", ", argsNames)}]";
         }
     }
 

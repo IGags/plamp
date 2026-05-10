@@ -6,6 +6,8 @@ namespace plamp.Abstractions.Symbols.SymTable;
 /// <summary>
 /// Объект - описание типа во время компиляции.
 /// Наследник <see cref="System.Type"/> не используется так как требуется реализация огромного числа свойств.
+/// Реализации, создающие тип с явно переданным именем модуля, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя модуля пустое или состоит только из пробельных символов.
 /// </summary>
 public interface ITypeInfo : IModuleMember, IEquatable<ITypeInfo>
 {

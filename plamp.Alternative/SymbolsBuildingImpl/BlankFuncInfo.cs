@@ -11,16 +11,35 @@ namespace plamp.Alternative.SymbolsBuildingImpl;
 /// <summary>
 /// Реализация билдера информации о функции во время компиляции модуля.
 /// </summary>
-/// <param name="name">Имя функции</param>
-/// <param name="args">Список аргументов функции</param>
-/// <param name="returnType">Возвращаемый тип функции</param>
-/// <param name="moduleName">Имя модуля, в котором объявлена функции</param>
-public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo returnType, string moduleName) : IFnBuilderInfo
+public class BlankFuncInfo : IFnBuilderInfo
 {
     private readonly List<IGenericParameterBuilder> _genericParamBuilders = new();
 
+    /// <summary>
+    /// Создаёт описание функции в контексте строящегося модуля.
+    /// </summary>
+    /// <param name="name">Имя функции. Не может быть пустым.</param>
+    /// <param name="args">Список аргументов функции. Аргументы не могут иметь тип void.</param>
+    /// <param name="returnType">Возвращаемый тип функции.</param>
+    /// <param name="moduleName">Имя модуля, в котором объявлена функция.</param>
+    /// <exception cref="InvalidOperationException">Имя функции пустое, имя модуля пустое, или один из аргументов имеет тип void.</exception>
+    public BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo returnType, string moduleName)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Имя функции не может быть пустым.");
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+        if (args.Any(x => SymbolSearchUtility.IsVoid(x.Type)))
+            throw new InvalidOperationException("Аргумент функции не может иметь тип void.");
+
+        DefinitionName = name;
+        Arguments = args;
+        ReturnType = returnType;
+        ModuleName = moduleName;
+    }
+
     /// <inheritdoc/>
-    public string ModuleName => moduleName;
+    public string ModuleName { get; }
     
     /// <inheritdoc/>
     public string Name
@@ -33,19 +52,19 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
 
             var args = $"({string.Join(", ", Arguments.Select(x => x.Type.Name))})";
 
-            var fullName = name + generics + args;
+            var fullName = DefinitionName + generics + args;
             return fullName;
         }
     }
 
     /// <inheritdoc/>
-    public string DefinitionName => name;
+    public string DefinitionName { get; }
 
     /// <inheritdoc/>
-    public IReadOnlyList<IArgInfo> Arguments { get; } = args;
+    public IReadOnlyList<IArgInfo> Arguments { get; }
     
     /// <inheritdoc/>
-    public ITypeInfo ReturnType => returnType;
+    public ITypeInfo ReturnType { get; }
 
     /// <inheritdoc/>
     public bool IsGenericFuncDefinition => _genericParamBuilders.Count != 0;
@@ -67,6 +86,7 @@ public class BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo 
     /// <exception cref="InvalidOperationException">
     /// Если хотя бы один из дженерик параметров имеет тип отличный от дженерик параметра или если хотя бы один из параметров идентичен по имени модулю
     /// или если хотя бы 2 параметра имеют идентичное имя.
+    /// Также происходит, если имя модуля пустое или состоит только из пробельных символов.
     /// </exception>
     public BlankFuncInfo(
         string name,

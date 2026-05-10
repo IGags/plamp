@@ -7,6 +7,11 @@ namespace plamp.Abstractions.Symbols.SymTableBuilding;
 
 /// <summary>
 /// Объект представляющий информацию о свойствах поля типа во время компиляции модуля в котором он объявлен.
+/// Реализации, создающие поле с явно переданным именем, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя поля пустое или состоит только из пробельных символов.
+/// Тип поля не может быть void; такие реализации должны бросать <see cref="InvalidOperationException"/>.
+/// Реализации, создающие поле с явно переданным именем модуля, должны бросать <see cref="InvalidOperationException"/>,
+/// если имя модуля пустое или состоит только из пробельных символов.
 /// </summary>
 public interface IFieldBuilderInfo : IFieldInfo
 {

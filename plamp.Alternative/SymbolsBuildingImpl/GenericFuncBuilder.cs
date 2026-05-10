@@ -62,6 +62,8 @@ public class GenericFuncBuilder : IFnInfo
 
         if (genericArguments.Any(x => x.IsGenericTypeDefinition))
             throw new InvalidOperationException("Дженерик функция не может иметь объявление дженерик типа в качестве своего аргумента");
+        if (genericArguments.Any(SymbolSearchUtility.IsVoid))
+            throw new InvalidOperationException("Дженерик аргумент функции не может иметь тип void.");
 
         if (definition.GetGenericParameters().Count != genericArguments.Count)
             throw new InvalidOperationException("Число дженерик аргументов у закрытой дженерик функции должно соответствовать числу параметров у её объявления.");
