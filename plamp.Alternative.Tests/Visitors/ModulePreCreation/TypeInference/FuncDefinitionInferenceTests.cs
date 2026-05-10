@@ -14,6 +14,21 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 public class FuncDefinitionInferenceTests
 {
     [Fact]
+    public void FunctionWithDuplicateParameterNames_DoesNotThrow()
+    {
+        const string code = """
+                            fn a(x, x: int) {}
+                            """;
+        var (ast, parsingCtx) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var visitor = new TypeInferenceWeaver();
+        var preCreationContext = new PreCreationContext(parsingCtx.TranslationTable, SymbolTableInitHelper.CreateDefaultTables());
+        
+        var exception = Record.Exception(() => visitor.WeaveDiffs(ast, preCreationContext));
+        
+        exception.ShouldBeNull();
+    }
+
+    [Fact]
     public void HandleFuncWithTwoArgs_Correct()
     {
         const string code = """
