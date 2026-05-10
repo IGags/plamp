@@ -31,7 +31,7 @@ public static class PlampExceptionInfo
     public static PlampExceptionRecord CharIsNotClosed() =>
         new()
         {
-            Message = "Char literal is not closed",
+            Message = "Expected closing single quote",
             Code = "TOK1034",
             Level = ExceptionLevel.Error
         };
@@ -42,7 +42,7 @@ public static class PlampExceptionInfo
     public static PlampExceptionRecord InvalidCharLiteral() =>
         new()
         {
-            Message = "Char literal should contain exactly one character",
+            Message = "Expected exactly one character",
             Code = "TOK1035",
             Level = ExceptionLevel.Error
         };

@@ -125,6 +125,13 @@ public class TokenizerTests
                    && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\"";
         })];
+        yield return ["\"'\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "\"'\""
+                   && literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "'";
+        })];
         yield return ["'a'", typeof(Literal), new Predicate<TokenBase>(t =>
         {
             var literal = (Literal)t;
@@ -145,6 +152,13 @@ public class TokenizerTests
             return literal.GetStringRepresentation() == "'1'"
                    && literal.ActualType.Equals(Builtins.Char)
                    && (char)literal.ActualValue == '1';
+        })];
+        yield return ["'\"'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\"'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '"';
         })];
         yield return ["'\\''", typeof(Literal), new Predicate<TokenBase>(t =>
         {
@@ -250,6 +264,8 @@ public class TokenizerTests
         yield return ["''", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 2, FileName))}];
         yield return ["'12'", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 4, FileName))}];
         yield return ["'\\x'", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
+        yield return ["'\\\"'", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\\""), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
+        yield return ["\"\\'\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\'"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),

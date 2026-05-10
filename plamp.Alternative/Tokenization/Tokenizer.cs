@@ -49,7 +49,13 @@ public static class Tokenizer
                 else if (char.IsLetter(line[i])) context.Tokens.Add(ParseWord(line, ref i, byteOffset, fileName));
                 else if (char.IsDigit(line[i])) context.Tokens.Add(ParseNumber(line, ref i, byteOffset, fileName, context));
                 else if (line[i] == '"') context.Tokens.Add(ParseStringLiteral(line, ref i, byteOffset, fileName, encoding, context));
-                else if (line[i] == '\'') context.Tokens.Add(ParseCharLiteral(line, ref i, byteOffset, fileName, encoding, context));
+                else if (line[i] == '\'')
+                {
+                    if (TryParseCharLiteral(line, ref i, byteOffset, fileName, encoding, context, out var charLiteral))
+                    {
+                        context.Tokens.Add(charLiteral);
+                    }
+                }
                 else if (TryParseCustom(line, ref i, byteOffset, fileName, out var result, context) && result != null)
                 {
                     context.Tokens.Add(result);
@@ -252,56 +258,89 @@ public static class Tokenizer
     /// <param name="fileName">Имя файла</param>
     /// <param name="fileEncoding">Кодировка файла</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
-    /// <returns>Токен символьного литерала</returns>
-    private static Literal ParseCharLiteral(
+    /// <param name="literal">Токен символьного литерала, если он разобран корректно</param>
+    /// <returns><see langword="true"/>, если символьный литерал разобран корректно; иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharLiteral(
         string text,
         ref int position,
         long byteOffset,
         string fileName,
         Encoding fileEncoding,
-        TokenizationContext context)
+        TokenizationContext context,
+        [NotNullWhen(true)] out Literal? literal)
     {
+        literal = null;
+        if (position >= text.Length || text[position] != '\'') return false;
+
         var start = position;
-        var valueBuilder = new StringBuilder();
-        var hasInvalidContent = false;
-        position++;
-
-        for (; position < text.Length; position++)
+        var closingQuoteIndex = text.IndexOf('\'', start + 1);
+        if (closingQuoteIndex < 0)
         {
-            switch (text[position])
-            {
-                case '\'':
-                    position++;
-                    var closedPosition = new FilePosition(byteOffset, position - start, fileName);
-                    if (!hasInvalidContent && valueBuilder.Length != 1)
-                    {
-                        context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidCharLiteral(), closedPosition));
-                    }
-
-                    return new Literal(text[start..position], closedPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
-                case '\\':
-                    position++;
-                    if (position >= text.Length)
-                    {
-                        position = text.Length;
-                        var escapedEndPosition = new FilePosition(byteOffset, position - start, fileName);
-                        context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), escapedEndPosition));
-                        return new Literal(text[start..position], escapedEndPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
-                    }
-
-                    var exceptionCount = context.Exceptions.Count;
-                    TryParseEscapedSequence(text, ref position, byteOffset, fileName, fileEncoding, valueBuilder, context, true);
-                    hasInvalidContent = hasInvalidContent || context.Exceptions.Count != exceptionCount;
-                    break;
-                default:
-                    valueBuilder.Append(text[position]);
-                    break;
-            }
+            position = text.Length;
+            context.Exceptions.Add(new PlampException(
+                PlampExceptionInfo.CharIsNotClosed(),
+                new FilePosition(byteOffset, text.Length - start, fileName)));
+            
+            return false;
         }
 
-        var endPosition = new FilePosition(byteOffset, position - start, fileName);
-        context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), endPosition));
-        return new Literal(text[start..position], endPosition, valueBuilder.Length > 0 ? valueBuilder[0] : '\0', Builtins.Char);
+        if (closingQuoteIndex == start + 2
+            && text[start + 1] != '\\')
+        {
+            position = closingQuoteIndex + 1;
+            var filePosition = new FilePosition(byteOffset, position - start, fileName);
+            literal = new Literal(text[start..position], filePosition, text[start + 1], Builtins.Char);
+            return true;
+        }
+
+        if (closingQuoteIndex == start + 3
+            && text[start + 1] == '\\')
+        {
+            var escape = text[start + 2];
+            if (!TryParseCharEscape(escape, out var value))
+            {
+                context.Exceptions.Add(new PlampException(
+                    PlampExceptionInfo.InvalidEscapeSequence($"\\{escape}"),
+                    new FilePosition(byteOffset + fileEncoding.GetByteCount("'"), 2, fileName)));
+                
+                position = start + 3;
+                while (position < text.Length && text[position] != '\'') position++;
+                if (position < text.Length) position++;
+                return false;
+            }
+
+            position = closingQuoteIndex + 1;
+            var filePosition = new FilePosition(byteOffset, position - start, fileName);
+            literal = new Literal(text[start..position], filePosition, value, Builtins.Char);
+            return true;
+        }
+
+        position = closingQuoteIndex + 1;
+        context.Exceptions.Add(new PlampException(
+            PlampExceptionInfo.InvalidCharLiteral(),
+            new FilePosition(byteOffset, position - start, fileName)));
+        return false;
+    }
+
+    /// <summary>
+    /// Пытается преобразовать escape-последовательность в символ
+    /// </summary>
+    /// <param name="escape">Символ после обратного слеша</param>
+    /// <param name="value">Результирующий символ</param>
+    /// <returns><see langword="true"/>, если escape-последовательность поддерживается; иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharEscape(char escape, out char value)
+    {
+        value = escape switch
+        {
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            '\\' => '\\',
+            '\'' => '\'',
+            _ => default
+        };
+
+        return value != default;
     }
 
     #endregion
@@ -371,7 +410,6 @@ public static class Tokenizer
     /// <param name="fileEncoding">Кодировка файла, используемая для вычисления смещений в диагностике</param>
     /// <param name="builder">Накопитель результирующего строкового значения</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
-    /// <param name="allowSingleQuote">Разрешает escape-последовательность одинарной кавычки для символьных литералов</param>
     private static void TryParseEscapedSequence(
         string text,
         ref int position,
@@ -379,8 +417,7 @@ public static class Tokenizer
         string fileName,
         Encoding fileEncoding,
         StringBuilder builder,
-        TokenizationContext context,
-        bool allowSingleQuote = false)
+        TokenizationContext context)
     {
         switch (text[position])
         {
@@ -398,9 +435,6 @@ public static class Tokenizer
                 break;
             case '"':
                 builder.Append('"');
-                break;
-            case '\'' when allowSingleQuote:
-                builder.Append('\'');
                 break;
             default:
                 context.Exceptions.Add(
