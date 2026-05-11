@@ -307,10 +307,7 @@ public static class Tokenizer
                     PlampExceptionInfo.InvalidEscapeSequence($"\\{escape}"),
                     new FilePosition(byteOffset + fileEncoding.GetByteCount("'"), 2, fileName)));
                 
-                closingQuoteIndex = text.IndexOf('\'', start + 3);
-                position = closingQuoteIndex >= 0
-                    ? closingQuoteIndex + 1
-                    : text.Length;
+                position = closingQuoteIndex + 1;
                 return false;
             }
 
