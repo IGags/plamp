@@ -313,4 +313,36 @@ public class TokenizerTests
         result.Sequence.Current().ShouldBeOfType<Colon>();
     }
 
+    [Fact]
+    public async Task UnclosedChar_ReturnsCharAndError()
+    {
+        const string code = "'a";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        var literal = result.Sequence.Current().ShouldBeOfType<Literal>();
+        literal.ActualType.ShouldBe(Builtins.Char);
+        literal.ActualValue.ShouldBe('a');
+        result.Exceptions.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            x => x.Code.ShouldBe(PlampExceptionInfo.CharIsNotClosed().Code),
+            x => x.FilePosition.ShouldBe(new FilePosition(0, 2, FileName)));
+    }
+
+    [Fact]
+    public async Task UnclosedEscapedChar_ReturnsCharAndError()
+    {
+        const string code = "'\\t";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        var literal = result.Sequence.Current().ShouldBeOfType<Literal>();
+        literal.ActualType.ShouldBe(Builtins.Char);
+        literal.ActualValue.ShouldBe('\t');
+        result.Exceptions.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            x => x.Code.ShouldBe(PlampExceptionInfo.CharIsNotClosed().Code),
+            x => x.FilePosition.ShouldBe(new FilePosition(0, 3, FileName)));
+    }
+
 }
