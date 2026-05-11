@@ -378,9 +378,10 @@ public class FuncCallTypeInferenceTests
         context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
         
         var codes = context.Exceptions.Select(x => x.Code).ToList();
-        codes.Count().ShouldBe(2);
+        codes.Count().ShouldBe(4);
         codes.ShouldContain(PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations("T", [Builtins.Int.Name, Builtins.String.Name]).Code);
         codes.ShouldContain(PlampExceptionInfo.GenericParameterHasNoImplementationType("T").Code);
+        codes.Count(x => x == PlampExceptionInfo.CannotApplyArgument().Code).ShouldBe(2);
     }
 
     /// <summary>

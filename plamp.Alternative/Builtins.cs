@@ -169,18 +169,28 @@ internal class BuiltinSymTable : ISymTable
         };
         _types = typeDict.ToFrozenDictionary();
         
+        const string printName = "print";
+        const string printlnName = "println";
+        const string readName = "read";
+        const string readlnName = "readln";
+        const string strLenName = "strLen";
+        const string arrLenName = "arrLen";
+        const string arrConcatName = "arrConcat";
+        const string arrEqualsName = "arrEquals";
+        const string strEqualsName = "strEquals";
+        
         var funcDict = new Dictionary<string, FuncInfo>()
         {
-            ["print"] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName),
-            ["println"] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName),
-            ["read"] = new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName),
-            ["readln"] = new(typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName),
-            ["strLen"] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName),
-            ["arrLen"] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!, ModuleName),
-            ["arrConcat"] = new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!, ModuleName),
-            [StrConcatName] = new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName),
-            ["arrEquals"] = new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName),
-            ["strEquals"] = new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName),
+            [printName] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName, printName),
+            [printlnName] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName, printlnName),
+            [readName] = new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName, readName),
+            [readlnName] = new(typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName, readlnName),
+            [strLenName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName, strLenName),
+            [arrLenName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!, ModuleName, arrLenName),
+            [arrConcatName] = new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!, ModuleName, arrConcatName),
+            [StrConcatName] = new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName, StrConcatName),
+            [arrEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName, arrEqualsName),
+            [strEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName, strEqualsName),
         };
         _funcs = funcDict.ToFrozenDictionary();
     }

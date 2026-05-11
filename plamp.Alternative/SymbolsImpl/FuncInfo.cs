@@ -44,8 +44,9 @@ public class FuncInfo : IFnInfo
     /// </summary>
     /// <param name="fnInfo">Информация о методе .net, который надо обернуть в этот класс, не может быть имплементацией дженерик метода</param>
     /// <param name="moduleName">Имя модуля. Не может быть пустым.</param>
+    /// <param name="nameOverride">Переопределение имени для plamp</param>
     /// <exception cref="InvalidOperationException">Метод является реализацией generic-метода или имя модуля пустое.</exception>
-    public FuncInfo(MethodInfo fnInfo, string moduleName)
+    public FuncInfo(MethodInfo fnInfo, string moduleName, string? nameOverride = null)
     {
         if (string.IsNullOrWhiteSpace(moduleName))
             throw new InvalidOperationException("Имя модуля не может быть пустым.");
@@ -59,18 +60,20 @@ public class FuncInfo : IFnInfo
         _genericParams = fnInfo.IsGenericMethodDefinition 
             ? fnInfo.GetGenericArguments().Select(x => TypeInfo.FromType(x, _moduleName)).ToList() 
             : [];
+        
+        var name = nameOverride ?? fnInfo.Name;
 
         var args = $"({string.Join(", ", fnInfo.GetParameters().Select(x => x.ParameterType.Name))})";
         if (fnInfo.IsGenericMethodDefinition)
         {
-            Name = fnInfo.Name + $"[{string.Join(", ", fnInfo.GetGenericArguments().Select(x => x.Name))}]" + args;
+            Name = name + $"[{string.Join(", ", fnInfo.GetGenericArguments().Select(x => x.Name))}]" + args;
         }
         else
         {
-            Name = fnInfo.Name + args;
+            Name = name + args;
         }
         
-        DefinitionName = fnInfo.Name;
+        DefinitionName = name;
         //TODO: Некорректные модули для типов
         ReturnType = TypeInfo.FromType(fnInfo.ReturnType, _moduleName);
     }
