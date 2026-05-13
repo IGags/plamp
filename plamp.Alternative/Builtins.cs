@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.SymbolsImpl;
@@ -41,6 +42,9 @@ public static class Builtins
     {
         return arr?.Length ?? 0;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T[] MakeArray<T>(T item, int length) => Enumerable.Repeat(item, length).ToArray();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Concat(string arg1, string arg2) => arg1 + arg2;
@@ -178,11 +182,12 @@ internal class BuiltinSymTable : ISymTable
         const string arrConcatName = "arrConcat";
         const string arrEqualsName = "arrEquals";
         const string strEqualsName = "strEquals";
+        const string makeArrayName = "makeArray";
         
         var funcDict = new Dictionary<string, FuncInfo>()
         {
-            [printName] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName, printName),
             [printlnName] = new(typeof(Console).GetMethod(nameof(Console.WriteLine), [typeof(object)])!, ModuleName, printlnName),
+            [printName] = new(typeof(Console).GetMethod(nameof(Console.Write), [typeof(object)])!, ModuleName, printName),
             [readName] = new(typeof(Console).GetMethod(nameof(Console.Read), [])!, ModuleName, readName),
             [readlnName] = new(typeof(Console).GetMethod(nameof(Console.ReadLine), [])!, ModuleName, readlnName),
             [strLenName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(string)])!, ModuleName, strLenName),
@@ -191,6 +196,7 @@ internal class BuiltinSymTable : ISymTable
             [StrConcatName] = new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName, StrConcatName),
             [arrEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName, arrEqualsName),
             [strEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName, strEqualsName),
+            [makeArrayName] = new(typeof(Builtins).GetMethod(nameof(Builtins.MakeArray))!, ModuleName, makeArrayName)
         };
         _funcs = funcDict.ToFrozenDictionary();
     }

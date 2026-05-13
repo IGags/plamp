@@ -27,8 +27,9 @@ public class FuncInfo : IFnInfo
     /// <inheritdoc/>
     public string ModuleName => _moduleName;
 
+    //TODO: Некорректные модули для типов
     /// <inheritdoc/>
-    public ITypeInfo ReturnType { get; }
+    public ITypeInfo ReturnType => TypeInfo.FromType(_fnInfo.ReturnType, _moduleName);
 
     /// <inheritdoc/>
     public bool IsGenericFuncDefinition => _fnInfo.IsGenericMethodDefinition;
@@ -74,8 +75,6 @@ public class FuncInfo : IFnInfo
         }
         
         DefinitionName = name;
-        //TODO: Некорректные модули для типов
-        ReturnType = TypeInfo.FromType(fnInfo.ReturnType, _moduleName);
     }
 
     /// <inheritdoc/>

@@ -613,15 +613,20 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
 
         var invalid = false;
+        var orderedArgs = new List<ITypeInfo>();
         foreach (var genericParam in definitionFn.GetGenericParameters())
         {
-            if(correctGenericMapping.ContainsKey(genericParam)) continue;
+            if(correctGenericMapping.TryGetValue(genericParam, out var info))
+            {
+                orderedArgs.Add(info);
+                continue;
+            }
             var record = PlampExceptionInfo.GenericParameterHasNoImplementationType(genericParam.Name);
             SetExceptionToSymbol(node, record, context);
             invalid = true;
         }
 
-        return invalid || !correctGenericMapping.Any() ? definitionFn : definitionFn.MakeGenericFunc(correctGenericMapping.Values.ToList());
+        return invalid || !correctGenericMapping.Any() ? definitionFn : definitionFn.MakeGenericFunc(orderedArgs);
     }
 
     #endregion

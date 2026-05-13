@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Reflection.Emit;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -10,8 +11,11 @@ using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 using plamp.Alternative;
+using plamp.Alternative.SymbolsBuildingImpl;
 using plamp.CodeEmission.Tests.Infrastructure;
+using plamp.ILCodeEmitters;
 using Shouldly;
 
 namespace plamp.CodeEmission.Tests;
@@ -531,6 +535,34 @@ public class ArrayElementManipulation
     }
 
     public static int[] TestCallbackFunc() => [ 33, 34, 35 ];
+
+    private static (
+        SymTableBuilder symTable,
+        TypeNode genericType,
+        TypeNode arrayType,
+        TypeNode intType,
+        IGenericParameterBuilder genericParam) CreateGenericArrayFunctionContext()
+    {
+        var symTable = new SymTableBuilder(){ ModuleName = "test" };
+        var genericParam = symTable.CreateGenericParameter(new GenericDefinitionNode(new GenericParameterNameNode("T")));
+        var genericType = new TypeNode(new TypeNameNode("T")) { TypeInfo = genericParam };
+        var arrayType = new TypeNode(new TypeNameNode("[]T")) { TypeInfo = genericParam.MakeArrayType() };
+        var intType = new TypeNode(new TypeNameNode("int")) { TypeInfo = Builtins.Int };
+
+        return (symTable, genericType, arrayType, intType, genericParam);
+    }
+
+    private static MethodInfo EmitGlobalFunction(SymTableBuilder symTable, string moduleName, IFnBuilderInfo fnBuilder)
+    {
+        var asm = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName(Guid.NewGuid().ToString("N")),
+            AssemblyBuilderAccess.RunAndCollect);
+        var mod = asm.DefineDynamicModule(moduleName);
+
+        SymTableEmitter.EmitFunction(mod, symTable, fnBuilder);
+        mod.CreateGlobalFunctions();
+        return mod.GetMethods(BindingFlags.Public | BindingFlags.Static).ShouldHaveSingleItem();
+    }
     
     [Fact]
     public void GetArrayItemFromFuncCall_Correct()
@@ -546,6 +578,75 @@ public class ArrayElementManipulation
         var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
         var res = methodInfo!.Invoke(instance, []);
         res.ShouldBeOfType<int>().ShouldBe(34);
+    }
+
+    [Fact]
+    public void GetArrayElementWithGenericFuncParameter_ReturnsCorrect()
+    {
+        /*
+         * fn get[T](a: []T, ix: int) T { return a[ix]; }
+         */
+        const string methodName = "get";
+        var (symTable, genericType, arrType, intType, genericParam) = CreateGenericArrayFunctionContext();
+        
+        var getter = new IndexerNode(new MemberNode("a"), new MemberNode("ix"))
+        {
+            ItemType = genericParam
+        };
+        var body = new BodyNode([new ReturnNode(getter)]);
+        
+        var funcNode = new FuncNode(
+            genericType,
+            new FuncNameNode(methodName),
+            [new GenericDefinitionNode(new GenericParameterNameNode("T"))],
+            [new ParameterNode(arrType, new ParameterNameNode("a")), new ParameterNode(intType, new ParameterNameNode("ix"))],
+            body); 
+        var fnBuilder = symTable.DefineFunc(funcNode, [genericParam]);
+        var info = EmitGlobalFunction(symTable, "test", fnBuilder);
+        
+        var method = info.MakeGenericMethod(typeof(string));
+
+        var result = method.Invoke(null, [new[] { "zero", "one", "two" }, 1]);
+        result.ShouldBeOfType<string>().ShouldBe("one");
+    }
+
+    [Fact]
+    public void SetArrayElementWithGenericFuncParameter_SetsCorrect()
+    {
+        /*
+         * fn set[T](a: []T, ix: int, value: T) { a[ix] := value; }
+         */
+        const string methodName = "set";
+        var (symTable, genericType, arrType, intType, genericParam) = CreateGenericArrayFunctionContext();
+        
+        var setterTarget = new IndexerNode(new MemberNode("a"), new MemberNode("ix"))
+        {
+            ItemType = genericParam
+        };
+        var body = new BodyNode(
+        [
+            new AssignNode([setterTarget], [new MemberNode("value")])
+        ]);
+
+        var funcNode = new FuncNode(
+            new TypeNode(new TypeNameNode("void")) { TypeInfo = Builtins.Void },
+            new FuncNameNode(methodName),
+            [new GenericDefinitionNode(new GenericParameterNameNode("T"))],
+            [
+                new ParameterNode(arrType, new ParameterNameNode("a")),
+                new ParameterNode(intType, new ParameterNameNode("ix")),
+                new ParameterNode(genericType, new ParameterNameNode("value"))
+            ],
+            body);
+        var fnBuilder = symTable.DefineFunc(funcNode, [genericParam]);
+        var info = EmitGlobalFunction(symTable, "test", fnBuilder);
+        var method = info.MakeGenericMethod(typeof(DateTime));
+        var array = new[] { new DateTime(2026, 5, 10), new DateTime(2026, 5, 11) };
+        var expected = new DateTime(2026, 5, 12);
+
+        method.Invoke(null, [array, 1, expected]);
+
+        array[1].ShouldBe(expected);
     }
 
     #endregion
