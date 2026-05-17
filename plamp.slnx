@@ -3,7 +3,6 @@
     <Project Path="plamp.Abstractions.Tests/plamp.Abstractions.Tests.csproj" />
     <Project Path="plamp.Alternative.Tests\plamp.Alternative.Tests.csproj" />
     <Project Path="plamp.CodeEmission.Tests\plamp.CodeEmission.Tests.csproj" />
-    <Project Path="plamp.IntegrationTests/plamp.IntegrationTests.csproj" />
   </Folder>
   <Project Path="plamp.Abstractions\plamp.Abstractions.csproj" />
   <Project Path="plamp.Alternative\plamp.Alternative.csproj" />
