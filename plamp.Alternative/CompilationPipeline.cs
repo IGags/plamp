@@ -13,6 +13,7 @@ using plamp.Alternative.Visitors.ModulePreCreation;
 using plamp.Alternative.Visitors.ModulePreCreation.BodyLevelExpression;
 using plamp.Alternative.Visitors.ModulePreCreation.FlowControlInsideLoop;
 using plamp.Alternative.Visitors.ModulePreCreation.GenericArrayInitialization;
+using plamp.Alternative.Visitors.ModulePreCreation.GenericVariableInit;
 using plamp.Alternative.Visitors.ModulePreCreation.MustReturn;
 using plamp.Alternative.Visitors.ModulePreCreation.TypeInference;
 using plamp.Alternative.Visitors.SymbolTableBuilding;
@@ -84,6 +85,10 @@ public static class CompilationPipeline
         //Массив из дженерик параметра возможен только с нулевой длиной.
         var genericParameterArrayVisitor = new GenericArrayInitVisitor();
         genericParameterArrayVisitor.Validate(ast, context);
+        
+        //Переменная типа дженерик параметра без явной установки значения невозможна.
+        var genericParamVariableDefVisitor = new GenericVariableInitValidator();
+        genericParamVariableDefVisitor.Validate(ast, context);
         
         //Break и continue только в цикле
         var flowControlInsideLoopValidator = new FlowControlInsideLoopValidator();

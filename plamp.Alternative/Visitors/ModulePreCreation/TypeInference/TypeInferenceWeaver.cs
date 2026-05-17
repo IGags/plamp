@@ -802,6 +802,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         var type = variableDefinition.Type.TypeInfo;
 
         if (type is null) return null;
+        if (type.IsGenericTypeParameter) return null;
 
         var arrayUnderlyingType = type.ElementType();
         if (arrayUnderlyingType != null)
