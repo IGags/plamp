@@ -346,7 +346,7 @@ public class FuncCallTypeInferenceTests
     {
         const string code = """
                             module test;
-                            type Pair[TKey, TValue];
+                            data Pair[TKey, TValue];
                             fn samePair[T](value: Pair[T, T]) {}
                             fn main() {
                                 samePair(Pair[int, string]{});

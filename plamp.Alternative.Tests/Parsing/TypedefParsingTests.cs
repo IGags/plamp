@@ -174,7 +174,7 @@ public class TypedefParsingTests
     //Объявлено имя поля, но не объявлено : с типом после - ошибка
     public void ParseTypeFieldQualifierExpected_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type MyType { x }");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data MyType { x }");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -202,7 +202,7 @@ public class TypedefParsingTests
     //Тип у которого открыт, но не закрыт дженерик без аргументов
     public void ParseTypeWithNotClosedEmptyGeneric_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[;");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[;");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -216,7 +216,7 @@ public class TypedefParsingTests
     //Парсинг пустого дженерика - ошибка
     public void ParseTypeWithEmptyGeneric_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[];");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -230,7 +230,7 @@ public class TypedefParsingTests
     //Парсинг корректного типа с одним дженериком
     public void ParseTypeWithSingleGeneric_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T1] {}");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[T1] {}");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -242,7 +242,7 @@ public class TypedefParsingTests
     //Парсинг корректного типа с двумя дженериками
     public void ParseTypeWithTwoGenerics_Correct()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T1, T2];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[T1, T2];");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -256,7 +256,7 @@ public class TypedefParsingTests
     //Парсин типа с не закрытым заполненным дженериком
     public void ParseTypeWithNotClosedFilledGeneric_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen [T {}");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen [T {}");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -270,7 +270,7 @@ public class TypedefParsingTests
     //Парсинг типа, где пропущен дженерик
     public void ParseTypeWithSkippedGeneric_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T,];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[T,];");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeTrue();
         node.ShouldNotBeNull();
@@ -283,7 +283,7 @@ public class TypedefParsingTests
     //Дженерик параметр имеет формат похожий не на объявление, а на тип реализации
     public void PassIncorrectGenericParameterFormat_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[[]T];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[[]T];");
         var res = Parser.TryParseTypedef(context, out _);
         res.ShouldBeFalse();
         
@@ -302,7 +302,7 @@ public class TypedefParsingTests
     //В объявление дженерик типа передали дженерик тип, ошибка
     public void PassGenericTypeInsideGeneric_ReturnsError()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen[T[int]];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen[T[int]];");
         var res = Parser.TryParseTypedef(context, out _);
         res.ShouldBeFalse();
 
@@ -321,7 +321,7 @@ public class TypedefParsingTests
     //При парсинге типа с дженериком без открывающей скобки парсер думает, что перед ним тип без тела и не захватывет хвост выражения
     public void ParseTypeWithoutOpenGeneric_ReturnsException()
     {
-        var context = CompilationPipelineBuilder.CreateParsingContext("type Gen T];");
+        var context = CompilationPipelineBuilder.CreateParsingContext("data Gen T];");
         var res = Parser.TryParseTypedef(context, out var node);
         res.ShouldBeFalse();
         node.ShouldBeNull();

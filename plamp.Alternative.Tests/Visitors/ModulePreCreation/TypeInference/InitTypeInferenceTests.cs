@@ -57,7 +57,7 @@ public class InitTypeInferenceTests
     public void InferenceExistingType_Correct()
     {
         const string code = """
-                            type C;
+                            data C;
                             
                             fn a(){
                                 v := C{};
@@ -79,7 +79,7 @@ public class InitTypeInferenceTests
     public void InferenceGenericTypeInit_Correct()
     {
         const string code = """
-                            type D[T1, T2];
+                            data D[T1, T2];
                             
                             fn rn_11(){
                                 c := D[int, string]{};

@@ -159,7 +159,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {A: IMNOTAVALIDTYPE}
+                   data A {A: IMNOTAVALIDTYPE}
                    """;
         
         var res = SetupAndAct(code);
@@ -184,7 +184,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A {A, A: ulong}
+                   data A {A, A: ulong}
                    """;
         
         var res = SetupAndAct(code);
@@ -209,7 +209,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A { bool: int }
+                   data A { bool: int }
                    """;
         
         var res = SetupAndAct(code);
@@ -227,7 +227,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A { string, string: ushort }
+                   data A { string, string: ushort }
                    """;
 
         var res = SetupAndAct(code);
@@ -252,7 +252,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[B] { fld: B }
+                   data A[B] { fld: B }
                    """;
         
         var res = SetupAndAct(code);
@@ -275,7 +275,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[B] { B: B }
+                   data A[B] { B: B }
                    """;
 
         var res = SetupAndAct(code);
@@ -299,7 +299,7 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[T] { B: []T }
+                   data A[T] { B: []T }
                    """;
 
         var res = SetupAndAct(code);
@@ -328,8 +328,8 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type T1[G]{}
-                   type T2[T]{ fld: T1[T] }
+                   data T1[G]{}
+                   data T2[T]{ fld: T1[T] }
                    """;
         
         var res = SetupAndAct(code);
@@ -357,8 +357,8 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type T {}
-                   type G[T] { fld: T }
+                   data T {}
+                   data G[T] { fld: T }
                    """;
 
         var res = SetupAndAct(code);
@@ -382,8 +382,8 @@ public class FieldDefInferenceTests
     {
         var code = """
                    module test;
-                   type Ls[T] { inner: T }
-                   type Fin[T] { inner: Ls[Ls[Ls[T]]] }
+                   data Ls[T] { inner: T }
+                   data Fin[T] { inner: Ls[Ls[Ls[T]]] }
                    """;
         
         var res = SetupAndAct(code);

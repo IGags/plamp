@@ -66,8 +66,8 @@ public class MemberNameUniquenessVisitorTests
     {
         var code = """
                    module test;
-                   type A;
-                   type A[B];
+                   data A;
+                   data A[B];
                    """;
         
         var res = SetupAndAct(code);

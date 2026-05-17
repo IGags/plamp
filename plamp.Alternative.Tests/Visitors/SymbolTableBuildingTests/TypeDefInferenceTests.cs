@@ -100,7 +100,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[T] {}
+                   data A[T] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -131,7 +131,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[A] {}
+                   data A[A] {}
                    """;
         var res = SetupAndAct(code);
         
@@ -149,7 +149,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[char] {}
+                   data A[char] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -168,7 +168,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[strLen] {}
+                   data A[strLen] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -187,7 +187,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[B, B] {}
+                   data A[B, B] {}
                    """;
 
         var res = SetupAndAct(code);
@@ -206,7 +206,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[B, C] {}
+                   data A[B, C] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -239,7 +239,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[A, A] {}
+                   data A[A, A] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -256,7 +256,7 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A[byte, byte] {}
+                   data A[byte, byte] {}
                    """;
         
         var res = SetupAndAct(code);
@@ -273,8 +273,8 @@ public class TypeDefInferenceTests
     {
         var code = """
                    module test;
-                   type A;
-                   type A[B];
+                   data A;
+                   data A[B];
                    """;
         
         var res = SetupAndAct(code);

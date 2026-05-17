@@ -20,12 +20,12 @@ public class CircularDependencyVisitorTests
     public void TypeWithNotRecursiveFields_Correct()
     {
         const string code = """
-                            type A {
+                            data A {
                                 a: float;
                                 b: B;
                             }
                             
-                            type B {
+                            data B {
                                 a: string;
                             }
                             """;
@@ -39,7 +39,7 @@ public class CircularDependencyVisitorTests
     public void TypeWithSameTypeField_Exception()
     {
         const string code = """
-                            type A {
+                            data A {
                                 a: A;
                             }
                             """;
@@ -56,8 +56,8 @@ public class CircularDependencyVisitorTests
     public void TwoTypesHasReferenceToEachOther_CreateExceptionForBothOfThem()
     {
         const string code = """
-                            type A { b: B; }
-                            type B { a: A; }
+                            data A { b: B; }
+                            data B { a: A; }
                             """;
         var ctx = SetupAndAct(code);
 
@@ -73,7 +73,7 @@ public class CircularDependencyVisitorTests
     public void SimpleGenericType_Correct()
     {
         const string code = """
-                            type Type[T] {
+                            data Type[T] {
                                 f1: T;
                                 f2: []T;
                             }
@@ -89,11 +89,11 @@ public class CircularDependencyVisitorTests
     public void GenericHasFullyImplementedGenericField_Correct()
     {
         const string code = """
-                            type A[T1] {
+                            data A[T1] {
                                 fld: T1;
                             }
                             
-                            type B[T1] {
+                            data B[T1] {
                                 fld1: T1;
                                 fld2: A[int];
                             }
@@ -110,11 +110,11 @@ public class CircularDependencyVisitorTests
     public void GenericTypeHasGenericTypeFieldThatUsesParentGenericParameter_Correct()
     {
         const string code = """
-                            type A[T1] {
+                            data A[T1] {
                                 fld: T1;
                             }
                             
-                            type B[T1] {
+                            data B[T1] {
                                 fld1: A[T1];
                             }
                             """;
@@ -130,7 +130,7 @@ public class CircularDependencyVisitorTests
     public void GenericHasFieldWithSameType_Error()
     {
         const string code = """
-                            type Gen[T] { f: Gen[T]; }
+                            data Gen[T] { f: Gen[T]; }
                             """;
         
         var ctx = SetupAndAct(code);
@@ -146,7 +146,7 @@ public class CircularDependencyVisitorTests
     public void GenericTypeHasFieldWithSameTypeImplemented_Error()
     {
         const string code = """
-                            type A[T] { f : A[int]}
+                            data A[T] { f : A[int]}
                             """;
         
         var ctx = SetupAndAct(code);
@@ -161,8 +161,8 @@ public class CircularDependencyVisitorTests
     public void GenericTypeHasOtherGenericTypeFieldWithFirstTypeFieldUsesParam_Error()
     {
         const string code = """
-                            type A[T] { f: B[T] }
-                            type B[T] { f: A[T] }
+                            data A[T] { f: B[T] }
+                            data B[T] { f: A[T] }
                             """;
         var ctx = SetupAndAct(code);
 
@@ -177,8 +177,8 @@ public class CircularDependencyVisitorTests
     public void GenericTypeHasOtherGenericTypeFieldWithFirstTypeFieldImplementedPartially_Error()
     {
         const string code = """
-                            type Map[TK, TV] { Keys: MapList[TK]; Vals: MapList[TV] }
-                            type MapList[T] { m: Map[T, int] }
+                            data Map[TK, TV] { Keys: MapList[TK]; Vals: MapList[TV] }
+                            data MapList[T] { m: Map[T, int] }
                             """;
         
         var ctx = SetupAndAct(code);
@@ -195,7 +195,7 @@ public class CircularDependencyVisitorTests
     public void TypeHasArrayWithSameType_Error()
     {
         const string code = """
-                            type B {D: []B}
+                            data B {D: []B}
                             """;
         var ctx = SetupAndAct(code);
         var exception = ctx.Exceptions.ShouldHaveSingleItem();
@@ -209,8 +209,8 @@ public class CircularDependencyVisitorTests
     public void TypeHasOtherTypeAsArrayRecursiveField_Error()
     {
         const string code = """
-                            type A {B: B}
-                            type B {A: []A}
+                            data A {B: B}
+                            data B {A: []A}
                             """;
         var ctx = SetupAndAct(code);
         ctx.Exceptions.Count.ShouldBe(2);
@@ -224,8 +224,8 @@ public class CircularDependencyVisitorTests
     public void TypesHasArrayReferenceToEachOther_Error()
     {
         const string code = """
-                            type A {B: []B}
-                            type B {A: []A}
+                            data A {B: []B}
+                            data B {A: []A}
                             """;
         var ctx = SetupAndAct(code);
         ctx.Exceptions.Count.ShouldBe(2);
@@ -236,8 +236,8 @@ public class CircularDependencyVisitorTests
     public void TypeHasArrayAndReferenceOnOtherGenericThatHasReferenceOnFirstGeneric_Error()
     {
         const string code = """
-                            type A[T1] {B: []B[T1]}
-                            type B[T2] {A: []A[T2]}
+                            data A[T1] {B: []B[T1]}
+                            data B[T2] {A: []A[T2]}
                             """;
         var ctx = SetupAndAct(code);
         ctx.Exceptions.Count.ShouldBe(2);
