@@ -718,5 +718,22 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord CannotCreateNonEmptyArrayOfGenericParameter() =>
+        new()
+        {
+            Message =
+                "Array of generic type parameter with non zero length is not allowed. If you want to create an array of generic type parameter, use builtin function makeArray[T](item: T, length: int)",
+            Code = "SEM1144",
+            Level = ExceptionLevel.Error
+        };
+    
+    public static PlampExceptionRecord CannotCreateGenericParameterType() =>
+        new()
+        {
+            Message = "Cannot create generic parameter type directly.",
+            Code = "SEM1145",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

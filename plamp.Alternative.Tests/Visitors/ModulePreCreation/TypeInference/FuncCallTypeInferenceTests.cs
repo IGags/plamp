@@ -378,10 +378,28 @@ public class FuncCallTypeInferenceTests
         context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
         
         var codes = context.Exceptions.Select(x => x.Code).ToList();
-        codes.Count().ShouldBe(4);
+        codes.Count.ShouldBe(4);
         codes.ShouldContain(PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations("T", [Builtins.Int.Name, Builtins.String.Name]).Code);
         codes.ShouldContain(PlampExceptionInfo.GenericParameterHasNoImplementationType("T").Code);
         codes.Count(x => x == PlampExceptionInfo.CannotApplyArgument().Code).ShouldBe(2);
+    }
+
+    /// <summary>
+    /// Несколько аргументов имеет идентичный тип дженерик параметра
+    /// </summary>
+    [Fact]
+    public void ImplicitGenericCallWithSingleImplementationAcrossArguments_ReturnsCorrect()
+    {
+        const string code = """
+                            module test;
+                            fn same[T](first: T, second: T) T {}
+                            fn main() {
+                                same(1, 2);
+                            }
+                            """;
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+        context.Exceptions.ShouldBeEmpty();
     }
 
     /// <summary>

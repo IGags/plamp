@@ -540,12 +540,7 @@ public static class IlCodeEmitter
                 EmitSingleLineExpression(indexer.IndexMember, context, true);
                 break;
             case VariableDefinitionNode varDef:
-                var type = EmitVariableDefinition(varDef, context);
-                var name = varDef.Name.Value;
-                if (type is { IsValueType: true, IsPrimitive: false })
-                {
-                    EmitGetLocalVarOrArg(name, context, false);
-                }
+                EmitVariableDefinition(varDef, context);
                 break;
             case MemberNode: break;
             default: throw new Exception();
@@ -584,7 +579,6 @@ public static class IlCodeEmitter
                 {
                     throw new Exception("Тип не имеет представления внутри .net clr, код компилятора некорректный");
                 }
-                if(type is { IsPrimitive: false, IsValueType: true }) break;
                 EmitSetLocalVarOrArg(varDef.Name.Value, context);
                 break;
             default: throw new Exception();
@@ -912,7 +906,7 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     /// <exception cref="Exception">Узел переменной заполнен некорректно</exception>
     /// <exception cref="ArgumentException">Тип переменной не имеет репрезентации в .net</exception>
-    private static Type EmitVariableDefinition(VariableDefinitionNode variableDefinitionNode,
+    private static void EmitVariableDefinition(VariableDefinitionNode variableDefinitionNode,
         EmissionContext context)
     {
         if(variableDefinitionNode.Type?.TypeInfo?.AsType() is not { } type) throw new Exception();
@@ -920,7 +914,6 @@ public static class IlCodeEmitter
         if (type == null) throw new ArgumentException("Cannot emit variable definition with null type");
         var builder = context.Generator.DeclareLocal(type);
         context.LocalVarStack.Add(name.Value, builder);
-        return type;
     }
     
     /// <summary>

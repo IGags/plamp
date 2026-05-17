@@ -23,7 +23,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 {
     protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
 
-     #region TopLevel
+    #region TopLevel
 
     protected override VisitResult PreVisitFunction(FuncNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
@@ -597,18 +597,20 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
 
         var parameterGrouping = genericMapping.GroupBy(x => x.Key, x => x.Value);
 
+        var deduplicated = parameterGrouping.ToDictionary(x => x.Key, x => x.ToHashSet());
+        
         var correctGenericMapping = new Dictionary<ITypeInfo, ITypeInfo>();
-        foreach (var group in parameterGrouping)
+        foreach (var group in deduplicated)
         {
-            if (group.Count() > 1)
+            if (group.Value.Count > 1)
             {
-                var implementationNames = group.Select(x => x.Name);
+                var implementationNames = group.Value.Select(x => x.Name);
                 var record = PlampExceptionInfo.GenericFunctionParameterCannotHasManyImplementations(group.Key.Name, implementationNames);
                 SetExceptionToSymbol(node, record, context);
                 continue;
             }
 
-            var paramType = group.Single();
+            var paramType = group.Value.Single();
             correctGenericMapping.Add(group.Key, paramType);
         }
 
