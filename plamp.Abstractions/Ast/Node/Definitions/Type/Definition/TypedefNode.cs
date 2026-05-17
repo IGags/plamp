@@ -4,7 +4,7 @@ using plamp.Abstractions.Ast.Node.ComplexTypes;
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
 /// <summary>
-/// Узел ast обозначающий объявление типа. Является классом из c#
+/// Узел ast обозначающий объявление типа. Является структурой из c#
 /// </summary>
 public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields, List<GenericDefinitionNode> genericParameters) : NodeBase
 {

@@ -33,6 +33,18 @@ public class TokenizerTests
     {
         yield return [";", typeof(EndOfStatement)];
         yield return [" ", typeof(WhiteSpace), new Predicate<TokenBase>(t => ((WhiteSpace)t).Kind == WhiteSpaceKind.WhiteSpace)];
+        yield return ["\"//\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "//";
+        })];
+        yield return ["\"/*not comment*/\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "/*not comment*/";
+        })];
         yield return ["abc", typeof(Word)];
         yield return ["a1", typeof(Word)];
         yield return ["A", typeof(Word)];
@@ -113,6 +125,55 @@ public class TokenizerTests
                    && literal.ActualType.Equals(Builtins.String)
                    && (string)literal.ActualValue == "\"";
         })];
+        yield return ["\"'\"", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "\"'\""
+                   && literal.ActualType.Equals(Builtins.String)
+                   && (string)literal.ActualValue == "'";
+        })];
+        yield return ["'a'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'a'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == 'a';
+        })];
+        yield return ["'\\t'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\t'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\t';
+        })];
+        yield return ["'1'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'1'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '1';
+        })];
+        yield return ["'\"'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\"'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '"';
+        })];
+        yield return ["'\\''", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\''"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\'';
+        })];
+        yield return ["'\\\\'", typeof(Literal), new Predicate<TokenBase>(t =>
+        {
+            var literal = (Literal)t;
+            return literal.GetStringRepresentation() == "'\\\\'"
+                   && literal.ActualType.Equals(Builtins.Char)
+                   && (char)literal.ActualValue == '\\';
+        })];
         yield return ["[", typeof(OpenSquareBracket)];
         yield return ["]", typeof(CloseSquareBracket)];
         yield return ["(", typeof(OpenParen)];
@@ -144,13 +205,13 @@ public class TokenizerTests
         yield return ["if", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.If)];
         yield return ["as", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.As)];
         yield return ["module", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Module)];
-        yield return ["type", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
+        yield return ["data", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Data)];
         yield return ["else", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Else)];
         yield return ["null", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Null)];
         yield return ["return", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Return)];
         yield return ["break", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Break)];
         yield return ["continue", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Continue)];
-        yield return ["type", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Type)];
+        yield return ["data", typeof(KeywordToken), new Predicate<TokenBase>(t => ((KeywordToken)t).Keyword == Keywords.Data)];
         yield return ["1", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 1)];
         yield return ["0", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 0)];
         yield return ["1i", typeof(Literal), new Predicate<TokenBase>(t => ((Literal)t).ActualType.Equals(Builtins.Int) && (int)((Literal)t).ActualValue == 1)];
@@ -194,6 +255,17 @@ public class TokenizerTests
         yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName))}];
         yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
         yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
+        yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
+        yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["'", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 1, FileName))}];
+        yield return ["'a", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 2, FileName))}];
+        yield return ["'\\", new List<PlampException>{new(PlampExceptionInfo.CharIsNotClosed(), new FilePosition(0, 2, FileName))}];
+        yield return ["''", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 2, FileName))}];
+        yield return ["'12'", new List<PlampException>{new(PlampExceptionInfo.InvalidCharLiteral(), new FilePosition(0, 4, FileName))}];
+        yield return ["'\\x'", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
+        yield return ["'\\\"'", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\\""), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
+        yield return ["\"\\'\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\'"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
             new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
@@ -240,4 +312,37 @@ public class TokenizerTests
         result.Exceptions.ShouldBeEmpty();
         result.Sequence.Current().ShouldBeOfType<Colon>();
     }
+
+    [Fact]
+    public async Task UnclosedChar_ReturnsCharAndError()
+    {
+        const string code = "'a";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        var literal = result.Sequence.Current().ShouldBeOfType<Literal>();
+        literal.ActualType.ShouldBe(Builtins.Char);
+        literal.ActualValue.ShouldBe('a');
+        result.Exceptions.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            x => x.Code.ShouldBe(PlampExceptionInfo.CharIsNotClosed().Code),
+            x => x.FilePosition.ShouldBe(new FilePosition(0, 2, FileName)));
+    }
+
+    [Fact]
+    public async Task UnclosedEscapedChar_ReturnsCharAndError()
+    {
+        const string code = "'\\t";
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        using var reader = new StreamReader(stream, Encoding.Unicode);
+        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+
+        var literal = result.Sequence.Current().ShouldBeOfType<Literal>();
+        literal.ActualType.ShouldBe(Builtins.Char);
+        literal.ActualValue.ShouldBe('\t');
+        result.Exceptions.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
+            x => x.Code.ShouldBe(PlampExceptionInfo.CharIsNotClosed().Code),
+            x => x.FilePosition.ShouldBe(new FilePosition(0, 3, FileName)));
+    }
+
 }

@@ -26,7 +26,7 @@ public class MemberNameUniquenessVisitorTests
         var code = """
                    module test;
                    fn A() {}
-                   type B {}
+                   data B {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.ShouldBeEmpty();
@@ -38,7 +38,7 @@ public class MemberNameUniquenessVisitorTests
         var code = """
                    module test;
                    fn A() {}
-                   type A {}
+                   data A {}
                    """;
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(2);

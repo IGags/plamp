@@ -23,6 +23,28 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    /// <summary>
+    /// Char-литерал не закрыт
+    /// </summary>
+    public static PlampExceptionRecord CharIsNotClosed() =>
+        new()
+        {
+            Message = "Expected closing single quote",
+            Code = "TOK1034",
+            Level = ExceptionLevel.Error
+        };
+
+    /// <summary>
+    /// Char-литерал содержит больше 1 символа
+    /// </summary>
+    public static PlampExceptionRecord InvalidCharLiteral() =>
+        new()
+        {
+            Message = "Expected exactly one character",
+            Code = "TOK1035",
+            Level = ExceptionLevel.Error
+        };
+
 
     public static PlampExceptionRecord InvalidEscapeSequence(string sequence) =>
         new()
@@ -37,6 +59,17 @@ public static class PlampExceptionInfo
         {
             Message = "Unknown number format",
             Code = "TOK1032",
+            Level = ExceptionLevel.Error
+        };
+
+    /// <summary>
+    /// Многострочный комментарий не закрыт
+    /// </summary>
+    public static PlampExceptionRecord CommentIsNotClosed() =>
+        new()
+        {
+            Message = "Comment is not closed",
+            Code = "TOK1033",
             Level = ExceptionLevel.Error
         };
 
