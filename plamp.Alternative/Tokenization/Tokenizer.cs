@@ -49,6 +49,13 @@ public static class Tokenizer
                 else if (char.IsLetter(line[i])) context.Tokens.Add(ParseWord(line, ref i, byteOffset, fileName));
                 else if (char.IsDigit(line[i])) context.Tokens.Add(ParseNumber(line, ref i, byteOffset, fileName, context));
                 else if (line[i] == '"') context.Tokens.Add(ParseStringLiteral(line, ref i, byteOffset, fileName, encoding, context));
+                else if (line[i] == '\'')
+                {
+                    if (TryParseCharLiteral(line, ref i, byteOffset, fileName, encoding, context, out var charLiteral))
+                    {
+                        context.Tokens.Add(charLiteral);
+                    }
+                }
                 else if (TryParseCustom(line, ref i, byteOffset, fileName, out var result, context) && result != null)
                 {
                     context.Tokens.Add(result);
@@ -236,6 +243,143 @@ public static class Tokenizer
                 result = (new object(), null);
                 return false;
         }
+    }
+
+    #endregion
+
+    #region Chars
+
+    /// <summary>
+    /// Разбирает символьный литерал
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла</param>
+    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
+    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
+    /// <param name="fileName">Имя файла</param>
+    /// <param name="fileEncoding">Кодировка файла</param>
+    /// <param name="context">Контекст токенизации для накопления ошибок</param>
+    /// <param name="literal">Токен символьного литерала, если он разобран корректно</param>
+    /// <returns><see langword="true"/>, если символьный литерал разобран корректно; иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharLiteral(
+        string text,
+        ref int position,
+        long byteOffset,
+        string fileName,
+        Encoding fileEncoding,
+        TokenizationContext context,
+        [NotNullWhen(true)] out Literal? literal)
+    {
+        literal = null;
+        if (position >= text.Length || text[position] != '\'') return false;
+
+        var start = position;
+        // В случае escape символа первая одинарная кавычка после '\' является значением,
+        // поэтому закрывающую кавычку нужно искать после неё.
+        var isEscaped = start + 1 < text.Length && text[start + 1] == '\\';
+        var closingQuoteSearchStart = Math.Min(start + (isEscaped ? 3 : 1), text.Length);
+        var closingQuoteIndex = text.IndexOf('\'', closingQuoteSearchStart);
+        if (closingQuoteIndex < 0)
+        {
+            position = text.Length;
+            context.Exceptions.Add(new PlampException(
+                PlampExceptionInfo.CharIsNotClosed(),
+                new FilePosition(byteOffset, text.Length - start, fileName)));
+            return TryCreateUnclosedCharLiteral(text, start, byteOffset, fileName, out literal);
+        }
+
+        if (closingQuoteIndex == start + 2
+            && !isEscaped
+            && text[start + 1] != '\\')
+        {
+            position = closingQuoteIndex + 1;
+            var filePosition = new FilePosition(byteOffset, position - start, fileName);
+            literal = new Literal(text[start..position], filePosition, text[start + 1], Builtins.Char);
+            return true;
+        }
+
+        if (closingQuoteIndex == start + 3
+            && isEscaped)
+        {
+            var escape = text[start + 2];
+            if (!TryParseCharEscape(escape, out var value))
+            {
+                context.Exceptions.Add(new PlampException(
+                    PlampExceptionInfo.InvalidEscapeSequence($"\\{escape}"),
+                    new FilePosition(byteOffset + fileEncoding.GetByteCount("'"), 2, fileName)));
+                
+                position = closingQuoteIndex + 1;
+                return false;
+            }
+
+            position = closingQuoteIndex + 1;
+            var filePosition = new FilePosition(byteOffset, position - start, fileName);
+            literal = new Literal(text[start..position], filePosition, value, Builtins.Char);
+            return true;
+        }
+
+        position = closingQuoteIndex + 1;
+        context.Exceptions.Add(new PlampException(
+            PlampExceptionInfo.InvalidCharLiteral(),
+            new FilePosition(byteOffset, position - start, fileName)));
+        return false;
+    }
+
+    /// <summary>
+    /// Пытается преобразовать escape-последовательность в символ
+    /// </summary>
+    /// <param name="escape">Символ после обратного слеша</param>
+    /// <param name="value">Результирующий символ</param>
+    /// <returns><see langword="true"/>, если escape-последовательность поддерживается; иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharEscape(char escape, out char value)
+    {
+        value = escape switch
+        {
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            '\\' => '\\',
+            '\'' => '\'',
+            _ => default
+        };
+
+        return value != default;
+    }
+
+    /// <summary>
+    /// Пытается создать токен незакрытого char
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла</param>
+    /// <param name="start">Позиция открывающей одинарной кавычки</param>
+    /// <param name="byteOffset">Смещение начала литерала в байтах</param>
+    /// <param name="fileName">Имя файла</param>
+    /// <param name="literal">Токен символьного литерала, если значение удалось восстановить</param>
+    /// <returns><see langword="true"/>, если токен удалось создать; иначе <see langword="false"/></returns>
+    private static bool TryCreateUnclosedCharLiteral(
+        string text,
+        int start,
+        long byteOffset,
+        string fileName,
+        [NotNullWhen(true)] out Literal? literal)
+    {
+        literal = null;
+        if (start + 1 >= text.Length || text[start + 1] == '\'') return false;
+
+        char value;
+        if (text[start + 1] == '\\')
+        {
+            if (start + 2 >= text.Length || !TryParseCharEscape(text[start + 2], out value)) return false;
+        }
+        else
+        {
+            value = text[start + 1];
+        }
+
+        literal = new Literal(
+            text[start..],
+            new FilePosition(byteOffset, text.Length - start, fileName),
+            value,
+            Builtins.Char);
+        return true;
     }
 
     #endregion
