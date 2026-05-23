@@ -11,7 +11,7 @@ namespace plamp.Alternative.Tokenization;
 
 internal class TokenizationContext : IDisposable
 {
-    private record struct CharBufferEntry(char Symbol, byte ByteLen);
+    private record struct CharBufferEntry(char Symbol, int ByteLen);
     
     private long _byteOffset;
     private readonly Encoding _encoding;
@@ -23,18 +23,23 @@ internal class TokenizationContext : IDisposable
 
     private readonly Stream _fileStream;
     
-    private readonly CharBufferEntry[] _charPrefetch; // 2 KiB
+    private readonly CharBufferEntry[] _charPrefetch;
     private int _prefetchedCount;
     private int _prefetchedIndex;
     
     private readonly byte[] _readBuffer = new byte[1024]; // 1 KiB
     private int _readBufferCount;
     private int _readBufferIndex;
+
+    private readonly char[] _temporaryCharBuffer;
     
     private readonly Decoder _decoder;
 
     private bool _disposed;
     private bool _isEof;
+    private bool _needToFlush;
+    private int _currentByteLength;
+    
     private IAsyncEnumerator<char> SourceFileEnumerator { get; }
 
     public List<TokenBase> Tokens
@@ -116,9 +121,9 @@ internal class TokenizationContext : IDisposable
         Encoding encoding,
         CancellationToken ct = default)
     {
-        _fileStream = fileStream;
         if (!fileStream.CanRead) throw new ArgumentException($"{nameof(fileName)} должно быть возможно читать");
 
+        _fileStream = fileStream;
         _decoder = encoding.GetDecoder();
         _tokens = tokens;
         _exceptions = exceptions;
@@ -126,9 +131,8 @@ internal class TokenizationContext : IDisposable
         _encoding = encoding;
         SourceFileEnumerator = GetAsyncEnumerator(ct);
         _charPrefetch = new CharBufferEntry[_encoding.GetMaxCharCount(_readBuffer.Length)];
+        _temporaryCharBuffer = new char[_charPrefetch.Length];
     }
-
-    ~TokenizationContext() => Dispose();
 
     public ValueTask<bool> MoveNextAsync()
     {
@@ -142,6 +146,15 @@ internal class TokenizationContext : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             return SourceFileEnumerator.Current;
+        }
+    }
+
+    public int CurrentByteLength
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _currentByteLength;
         }
     }
 
@@ -166,11 +179,15 @@ internal class TokenizationContext : IDisposable
 
     private async Task FillPrefetchBufferAsync(CancellationToken ct = default)
     {
-        var tempBuffer = new char[_encoding.GetMaxCharCount(1024)];
-        while (_fileStream.Position < _fileStream.Length || _readBufferCount != 0)
+        while (_prefetchedCount < _charPrefetch.Length
+               && (_fileStream.Position < _fileStream.Length
+                   || _readBufferIndex < _readBufferCount
+                   || _needToFlush))
         {
-            ShiftUnreadToBeginning(_readBuffer, ref _readBufferCount, ref _readBufferIndex);
+            ShiftUnreadToBeginning(_readBuffer, ref _readBufferIndex, ref _readBufferCount);
             ShiftUnreadToBeginning(_charPrefetch, ref _prefetchedIndex, ref _prefetchedCount);
+            if (_charPrefetch.Length - _prefetchedCount < 2) return;
+
             var bytesRead = await _fileStream.ReadAsync(_readBuffer, _readBufferCount, _readBuffer.Length - _readBufferCount, ct);
             _readBufferCount += bytesRead;
             
@@ -178,20 +195,36 @@ internal class TokenizationContext : IDisposable
                 _readBuffer, 
                 _readBufferIndex, 
                 _readBufferCount - _readBufferIndex, 
-                tempBuffer, 
+                _temporaryCharBuffer, 
                 0, 
-                Math.Min(tempBuffer.Length, _charPrefetch.Length - _prefetchedCount), 
-                bytesRead == 0, 
+                Math.Min(_temporaryCharBuffer.Length, _charPrefetch.Length - _prefetchedCount), 
+                _needToFlush && bytesRead == 0, 
                 out bytesRead, 
                 out var charsRead, 
-                out _);
+                out var completed);
             
+            _needToFlush = !completed;
             _readBufferIndex += bytesRead;
-            for (var i = 0; i < charsRead; i++)
+            AddDecodedCharsToPrefetch(charsRead);
+        }
+    }
+
+    private void AddDecodedCharsToPrefetch(int charsRead)
+    {
+        for (var i = 0; i < charsRead; i++)
+        {
+            if (char.IsHighSurrogate(_temporaryCharBuffer[i])
+                && i + 1 < charsRead
+                && char.IsLowSurrogate(_temporaryCharBuffer[i + 1]))
             {
-                var charLen = _encoding.GetByteCount(tempBuffer, i, 1);
-                _charPrefetch[_prefetchedCount++] = new(tempBuffer[i], (byte)charLen);
+                var byteLen = _encoding.GetByteCount(_temporaryCharBuffer, i, 2);
+                _charPrefetch[_prefetchedCount++] = new(_temporaryCharBuffer[i], byteLen);
+                _charPrefetch[_prefetchedCount++] = new(_temporaryCharBuffer[++i], 0);
+                continue;
             }
+
+            var charLen = _encoding.GetByteCount(_temporaryCharBuffer, i, 1);
+            _charPrefetch[_prefetchedCount++] = new(_temporaryCharBuffer[i], charLen);
         }
     }
     
@@ -204,6 +237,8 @@ internal class TokenizationContext : IDisposable
         if(prefetchIx < _prefetchedCount) return _charPrefetch[prefetchIx].Symbol;
         ShiftUnreadToBeginning(_charPrefetch, ref _prefetchedIndex, ref _prefetchedCount);
         await FillPrefetchBufferAsync(ct);
+        
+        prefetchIx = _prefetchedIndex + offset - 1;
         return prefetchIx < _prefetchedCount ? _charPrefetch[prefetchIx].Symbol : null;
     }
 
@@ -226,6 +261,7 @@ internal class TokenizationContext : IDisposable
             if(next != null)
             {
                 current = next;
+                _currentByteLength = next.Value.ByteLen;
                 yield return next.Value.Symbol;
             }
             else

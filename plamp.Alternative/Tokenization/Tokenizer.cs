@@ -45,7 +45,7 @@ public static class Tokenizer
             if (await TryParseCustomAsync(context)) continue;
             if (await TryParseLineBreak(context)) continue;
             
-            var errPos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount(context.Current.ToString()), context.FileName);
+            var errPos = new FilePosition(context.ByteOffset, context.CurrentByteLength, context.FileName);
             context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnexpectedToken(context.Current.ToString()), errPos));
             await context.MoveNextAsync();
         }
@@ -315,7 +315,7 @@ public static class Tokenizer
                 context.Exceptions.Add(
                     new PlampException(
                         PlampExceptionInfo.InvalidEscapeSequence($"\\{context.Current}"),
-                        new FilePosition(escapeStartOffset, context.Encoding.GetByteCount($"\\{context.Current}"), context.FileName)));
+                        new FilePosition(escapeStartOffset, context.Encoding.GetByteCount("\\") + context.CurrentByteLength, context.FileName)));
                 return;
         }
     }
@@ -332,7 +332,7 @@ public static class Tokenizer
     private static async Task<bool> TryParseCustomAsync(TokenizationContext context)
     {
         var startOffset = context.ByteOffset;
-        var filePosition = new FilePosition(startOffset, context.Encoding.GetByteCount(context.Current.ToString()), context.FileName);
+        var filePosition = new FilePosition(startOffset, context.CurrentByteLength, context.FileName);
 
         var next = await context.PeekCharAtAsync(1);
         
@@ -469,16 +469,19 @@ public static class Tokenizer
 
         if (context.Current == '\n')
         {
-            var filePos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount("\n"), context.FileName);
+            var filePos = new FilePosition(context.ByteOffset, context.CurrentByteLength, context.FileName);
             var token = new WhiteSpace("\n", filePos, WhiteSpaceKind.LineBreak);
             await context.MoveNextAsync();
             context.Tokens.Add(token);
             return true;
         }
 
+        var startOffset = context.ByteOffset;
+        var byteLength = context.CurrentByteLength;
         await context.MoveNextAsync();
+        byteLength += context.CurrentByteLength;
         
-        var pos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount("\r\n"), context.FileName);
+        var pos = new FilePosition(startOffset, byteLength, context.FileName);
         var tok = new WhiteSpace("\r\n", pos, WhiteSpaceKind.LineBreak);
         await context.MoveNextAsync();
         context.Tokens.Add(tok);
@@ -496,7 +499,6 @@ public static class Tokenizer
         var startOffset = context.ByteOffset;
         var current = context.Current;
         var next = await context.PeekCharAtAsync(1);
-        
         
         if (next != null)
         {
@@ -537,7 +539,7 @@ public static class Tokenizer
             case '>':
             case '.':
                 var opString = current.ToString();
-                var filePosition = new FilePosition(startOffset, context.Encoding.GetByteCount(opString), context.FileName);
+                var filePosition = new FilePosition(startOffset, context.CurrentByteLength, context.FileName);
                 var @operator = new OperatorToken(opString, filePosition, opString.ToOperator());
                 context.Tokens.Add(@operator);
                 await context.MoveNextAsync();
