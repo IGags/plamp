@@ -23,8 +23,7 @@ public class TokenizerTests
     public async Task TestEmptyString(string fileName)
     {
         using var stream = new MemoryStream([]);
-        using var reader = new StreamReader(stream, Encoding.Unicode);
-        var result = await Tokenizer.TokenizeAsync(reader, fileName);
+        var result = await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, fileName);
         Assert.Single(result.Sequence);
         Assert.Equal(typeof(EndOfFile), result.Sequence.First().GetType());
     }
@@ -182,9 +181,9 @@ public class TokenizerTests
     {
         var fileName = new Fixture().Create<string>();
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
-        using var reader = new StreamReader(stream, Encoding.Unicode);
-        var result = await Tokenizer.TokenizeAsync(reader, fileName);
-        Assert.Equal(3, result.Sequence.Count());
+        stream.Seek(0, SeekOrigin.Begin);
+        var result = await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, fileName);
+        Assert.Equal(2, result.Sequence.Count());
         Assert.IsType(tokenType, result.Sequence.First());
         Assert.Empty(result.Exceptions);
         if (condition != null)
@@ -192,38 +191,38 @@ public class TokenizerTests
             Assert.True(condition(result.Sequence.First()));
         }
         Assert.Equal(0, result.Sequence.First().Position.ByteOffset);
-        Assert.Equal(code.Length, result.Sequence.First().Position.CharacterLength);
+        Assert.Equal(Encoding.Unicode.GetByteCount(code), result.Sequence.First().Position.ByteLength);
     }
 
     private const string FileName = "example.plp";
     
     public static IEnumerable<object[]> Tokenization_ReturnsError_DataProvider()
     {
-        yield return ["\"", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
-        yield return ["\"\n", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
-        yield return ["\"\r", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 1, FileName))}];
-        yield return ["\"\\x\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName))}];
-        yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName))}];
-        yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
-        yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4, FileName))}];
-        yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10, FileName))}];
-        yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
-        yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))}];
+        yield return ["\"", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["\"\n", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["\"\r", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 2 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["\"\\x\"", new List<PlampException>{new(PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["@", new List<PlampException>{new(PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["1.0i", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["1fic", new List<PlampException>{new (PlampExceptionInfo.UnknownNumberFormat(), new FilePosition(0, 4 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["/* comment", new List<PlampException>{new(PlampExceptionInfo.CommentIsNotClosed(), new FilePosition(0, 10 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["\"//", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3 * Utf16ByteCharacterByteCount, FileName))}];
+        yield return ["\"/*", new List<PlampException>{new(PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3 * Utf16ByteCharacterByteCount, FileName))}];
         yield return ["\"\\x", new List<PlampException>
         {
-            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2, FileName)),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3, FileName))
+            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount, 2 * Utf16ByteCharacterByteCount, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(0, 3 * Utf16ByteCharacterByteCount, FileName))
         }];
         yield return ["@\"", new List<PlampException>
         {
-            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName)),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, 1, FileName))
+            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1 * Utf16ByteCharacterByteCount, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, Utf16ByteCharacterByteCount, FileName))
         }];
         yield return ["@\"\\x", new List<PlampException>
         {
-            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, 1, FileName)),
-            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount * 2, 2, FileName)),
-            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, 3, FileName))
+            new (PlampExceptionInfo.UnexpectedToken("@"), new FilePosition(0, Utf16ByteCharacterByteCount, FileName)),
+            new (PlampExceptionInfo.InvalidEscapeSequence("\\x"), new FilePosition(Utf16ByteCharacterByteCount * 2, 2 * Utf16ByteCharacterByteCount, FileName)),
+            new (PlampExceptionInfo.StringIsNotClosed(), new FilePosition(Utf16ByteCharacterByteCount, 3 * Utf16ByteCharacterByteCount, FileName))
         }];
     }
     
@@ -232,8 +231,7 @@ public class TokenizerTests
     public async Task Tokenization_ReturnsError(string code, List<PlampException> expectedExceptions)
     {
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
-        using var reader = new StreamReader(stream, Encoding.Unicode);
-        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+        var result = await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, FileName);
         Assert.Equal(expectedExceptions.Count, result.Exceptions.Count);
         foreach (var exception in expectedExceptions.Zip(result.Exceptions))
         {
@@ -250,8 +248,7 @@ public class TokenizerTests
     public async Task ParseColonVariations_Correct(string sequence)
     {
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(sequence));
-        using var reader = new StreamReader(stream, Encoding.Unicode);
-        var result = await Tokenizer.TokenizeAsync(reader, FileName);
+        var result = await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, FileName);
         result.Exceptions.ShouldBeEmpty();
         result.Sequence.Current().ShouldBeOfType<Colon>();
     }

@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -21,48 +19,38 @@ public static class Tokenizer
     /// <summary>
     /// Преобразует содержимое файла в последовательность токенов
     /// </summary>
-    /// <param name="fileReader">Поток чтения исходного файла</param>
+    /// <param name="encoding">Кодировка исходного файла</param>
     /// <param name="fileName">Имя файла, используемое в позициях и диагностике</param>
-    /// <param name="token">Токен отмены</param>
+    /// <param name="fileStream">Стрим исходного файла</param>
+    /// <param name="ct">Токен отмены операции</param>
     public static async Task<TokenizationResult> TokenizeAsync(
-        StreamReader fileReader,
+        Stream fileStream,
+        Encoding encoding,
         string fileName,
-        CancellationToken token = default)
+        CancellationToken ct = default)
     {
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
-        var context = new TokenizationContext(tokenList, exceptionList);
-        var byteOffset = 0L;
-        var encoding = fileReader.CurrentEncoding;
+        using var context = new TokenizationContext(tokenList, exceptionList, fileName, fileStream, encoding);
+        await context.MoveNextAsync();
 
-        while (await fileReader.ReadLineAsync(token) is { } line)
+        while (!context.IsEof)
         {
-            for (var i = 0; i < line.Length;)
-            {
-                var prevIx = i;
-                if (TryParseSingleLineComment(line, ref i, byteOffset, fileName, out var comment)) context.Tokens.Add(comment);
-                else if (TryParseMultilineComment(ref line, fileReader, ref i, ref byteOffset, encoding, fileName, context, out comment))
-                {
-                    context.Tokens.Add(comment);
-                    continue;
-                }
-                else if (char.IsLetter(line[i])) context.Tokens.Add(ParseWord(line, ref i, byteOffset, fileName));
-                else if (char.IsDigit(line[i])) context.Tokens.Add(ParseNumber(line, ref i, byteOffset, fileName, context));
-                else if (line[i] == '"') context.Tokens.Add(ParseStringLiteral(line, ref i, byteOffset, fileName, encoding, context));
-                else if (TryParseCustom(line, ref i, byteOffset, fileName, out var result, context) && result != null)
-                {
-                    context.Tokens.Add(result);
-                }
-                
-                byteOffset += encoding.GetByteCount(line.AsSpan().Slice(prevIx, i - prevIx));
-            }
-
-
-            context.Tokens.Add(new WhiteSpace("\n", new FilePosition(byteOffset, 1, fileName), WhiteSpaceKind.LineBreak));
-            byteOffset += encoding.GetByteCount("\n");
+            if (await TryParseSingleLineCommentAsync(context)) continue;
+            if (await TryParseMultilineCommentAsync(context)) continue;
+            if (await TryParseWordAsync(context)) continue;
+            if (await TryParseOperatorAsync(context)) continue;
+            if (await TryParseNumberAsync(context)) continue;
+            if (await TryParseStringLiteralAsync(context)) continue;
+            if (await TryParseCustomAsync(context)) continue;
+            if (await TryParseLineBreak(context)) continue;
+            
+            var errPos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount(context.Current.ToString()), context.FileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnexpectedToken(context.Current.ToString()), errPos));
+            await context.MoveNextAsync();
         }
 
-        context.Tokens.Add(new EndOfFile(new FilePosition(byteOffset, 0, fileName)));
+        context.Tokens.Add(new EndOfFile(new FilePosition(fileStream.Length, 0, fileName)));
         var sequence = new TokenSequence(context.Tokens);
 
         return new TokenizationResult(sequence, context.Exceptions);
@@ -73,36 +61,36 @@ public static class Tokenizer
     /// <summary>
     /// Разбирает идентификатор или ключевое слово, начиная с текущей позиции
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после слова</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
+    /// <param name="context">Контекст токенизации</param>
     /// <returns>Токен ключевого слова или идентификатора</returns>
-    private static TokenBase ParseWord(string text, ref int position, long byteOffset, string fileName)
+    private static async Task<bool> TryParseWordAsync(TokenizationContext context)
     {
+        if (context.Current != '_' && !char.IsLetter(context.Current)) return false;
+        var startOffset = context.ByteOffset;
         var builder = new StringBuilder();
+        
         do
         {
-            if (char.IsLetterOrDigit(text[position]) || text[position] == '_')
-            {
-                builder.Append(text[position]);
-                position++;
-            }
-            else
-            {
-                break;
-            }
-        } while (position < text.Length);
+            if (char.IsLetterOrDigit(context.Current) || context.Current == '_') builder.Append(context.Current);
+            else break;
+        } while (await context.MoveNextAsync());
 
-        var filePosition = new FilePosition(byteOffset, builder.Length, fileName);
+        var byteLen = context.ByteOffset - startOffset;
+        var filePosition = new FilePosition(startOffset, byteLen, context.FileName);
         var word = builder.ToString();
 
+        TokenBase token;
         if (word.ToKeyword() != Keywords.Unknown)
         {
-            return new KeywordToken(word, filePosition, word.ToKeyword());
+            token = new KeywordToken(word, filePosition, word.ToKeyword());
+        }
+        else
+        {
+            token = new Word(word, filePosition);
         }
 
-        return new Word(word, filePosition);
+        context.Tokens.Add(token);
+        return true;
     }
 
     #endregion
@@ -112,62 +100,64 @@ public static class Tokenizer
     /// <summary>
     /// Разбирает числовой литерал
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
     /// <returns>Токен числового литерала</returns>
-    private static Literal ParseNumber(string text, ref int position, long byteOffset, string fileName, TokenizationContext context)
+    private static async Task<bool> TryParseNumberAsync(TokenizationContext context)
     {
+        if (!char.IsDigit(context.Current)) return false;
+            
         var builder = new StringBuilder();
+        var startOffset = context.ByteOffset;
         var isFractional = false;
+        
         do
         {
-            if (char.IsDigit(text[position]))
+            if (char.IsDigit(context.Current))
             {
-                builder.Append(text[position]);
-                position++;
+                builder.Append(context.Current);
             }
-            else if (!isFractional
-                     && text[position] == '.'
-                     && position + 1 < text.Length
-                     && char.IsDigit(text[position + 1]))
+            else if (!isFractional && context.Current == '.')
             {
-                isFractional = true;
-                builder.Append(text[position]);
-                position++;
+                var peek = await context.PeekCharAtAsync(1);
+                if (peek != null && char.IsDigit(peek.Value))
+                {
+                    builder.Append(context.Current);
+                    isFractional = true;
+                    continue;
+                }
+                break;
             }
             else
             {
                 break;
             }
-        } while (position < text.Length);
+        } while (await context.MoveNextAsync());
 
         var postfixBuilder = new StringBuilder();
-        while (position < text.Length)
+        do
         {
-            if (char.IsLetter(text[position]))
+            if (char.IsLetter(context.Current))
             {
-                postfixBuilder.Append(text[position]);
-                position++;
+                postfixBuilder.Append(context.Current);
             }
             else
             {
                 break;
             }
-        }
-
+        } while (await context.MoveNextAsync());
+        
         var postfix = postfixBuilder.ToString();
         var numberPart = builder.ToString();
-        var filePosition = new FilePosition(byteOffset, builder.Length + postfix.Length, fileName);
+        var filePosition = new FilePosition(startOffset, context.ByteOffset - startOffset, context.FileName);
         if (!TryParseNumberTypePostfix(numberPart, postfix, out var cort))
         {
             context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnknownNumberFormat(), filePosition));
         }
 
         var (value, type) = cort;
-        return new Literal(numberPart + postfix, filePosition, value, type!);
+        var lit = new Literal(numberPart + postfix, filePosition, value, type!);
+        context.Tokens.Add(lit);
+        return true;
     }
 
     /// <summary>
@@ -245,76 +235,66 @@ public static class Tokenizer
     /// <summary>
     /// Разбирает строковый литерал и обрабатывает escape-последовательности внутри него
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="fileEncoding">Кодировка файла</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
     /// <returns>Токен строкового литерала</returns>
-    private static Literal ParseStringLiteral(
-        string text,
-        ref int position,
-        long byteOffset,
-        string fileName,
-        Encoding fileEncoding,
-        TokenizationContext context)
+    private static async Task<bool> TryParseStringLiteralAsync(TokenizationContext context)
     {
+        if(context.Current != '"') return false;
+        
         var builder = new StringBuilder();
-        var start = position;
-        position++;
-        for (; position < text.Length; position++)
+        var startOffset = context.ByteOffset;
+        var breakCycle = false;
+        while (await context.MoveNextAsync())
         {
-            switch (text[position])
+            if(await context.IsExprEnd) break;
+            
+            switch (context.Current)
             {
                 case '"':
-                    position++;
-                    return new Literal(
+                    await context.MoveNextAsync();
+                    var lit = new Literal(
                         $"\"{builder}\"",
-                        new FilePosition(byteOffset, position - start, fileName),
+                        new FilePosition(startOffset, context.ByteOffset - startOffset, context.FileName),
                         builder.ToString(),
                         Builtins.String);
+                    context.Tokens.Add(lit);
+                    return true;
                 case '\\':
-                    position++;
-                    if (position >= text.Length)
+                    var escapeStartOffset = context.ByteOffset;
+                    if(!await context.MoveNextAsync())
                     {
-                        position = text.Length;
+                        breakCycle = true;
                         break;
                     }
-
-                    TryParseEscapedSequence(text, ref position, byteOffset, fileName, fileEncoding, builder, context);
+                    TryParseEscapedSequence(escapeStartOffset, builder, context);
                     break;
                 default:
-                    builder.Append(text[position]);
+                    builder.Append(context.Current);
                     break;
             }
+            
+            if(breakCycle) break;
         }
 
-        var endPosition = new FilePosition(byteOffset, position - start, fileName);
+        var endPosition = new FilePosition(startOffset, context.ByteOffset - startOffset, context.FileName);
         context.Exceptions.Add(new PlampException(PlampExceptionInfo.StringIsNotClosed(), endPosition));
-        return new Literal($"\"{builder}", endPosition, builder.ToString(), Builtins.String);
+        var literal = new Literal($"\"{builder}", endPosition, builder.ToString(), Builtins.String);
+        context.Tokens.Add(literal);
+        return true;
     }
 
     /// <summary>
     /// Пытается разобрать escape-последовательность внутри строкового литерала
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Позиция символа сразу после обратного слеша</param>
-    /// <param name="byteOffset">Смещение начала строкового литерала в байтах</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="fileEncoding">Кодировка файла, используемая для вычисления смещений в диагностике</param>
+    /// <param name="escapeStartOffset">Байтовое смещение с которого начинается escape-последовательность</param>
     /// <param name="builder">Накопитель результирующего строкового значения</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
     private static void TryParseEscapedSequence(
-        string text,
-        ref int position,
-        long byteOffset,
-        string fileName,
-        Encoding fileEncoding,
+        long escapeStartOffset,
         StringBuilder builder,
         TokenizationContext context)
     {
-        switch (text[position])
+        switch (context.Current)
         {
             case 'n':
                 builder.Append('\n');
@@ -334,8 +314,8 @@ public static class Tokenizer
             default:
                 context.Exceptions.Add(
                     new PlampException(
-                        PlampExceptionInfo.InvalidEscapeSequence($"\\{text[position]}"),
-                        new FilePosition(byteOffset + fileEncoding.GetByteCount(builder.ToString()) + fileEncoding.GetByteCount("\""), 2, fileName)));
+                        PlampExceptionInfo.InvalidEscapeSequence($"\\{context.Current}"),
+                        new FilePosition(escapeStartOffset, context.Encoding.GetByteCount($"\\{context.Current}"), context.FileName)));
                 return;
         }
     }
@@ -347,209 +327,182 @@ public static class Tokenizer
     /// <summary>
     /// Разбирает одиночные служебные символы, операторы, пробельные токены и комментарии
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после разобранного токена</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="result">Разобранный токен</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
     /// <returns><see langword="true"/>, если токен был распознан; иначе <see langword="false"/></returns>
-    private static bool TryParseCustom(
-        string text,
-        ref int position,
-        long byteOffset,
-        string fileName,
-        out TokenBase? result,
-        TokenizationContext context)
+    private static async Task<bool> TryParseCustomAsync(TokenizationContext context)
     {
-        result = null;
-        var filePosition = new FilePosition(byteOffset, 1, fileName);
-        char? next = position + 1 < text.Length ? text[position + 1] : null;
-        switch (text[position])
+        var startOffset = context.ByteOffset;
+        var filePosition = new FilePosition(startOffset, context.Encoding.GetByteCount(context.Current.ToString()), context.FileName);
+
+        var next = await context.PeekCharAtAsync(1);
+        
+        switch (context.Current)
         {
             case '{':
-                result = new OpenCurlyBracket(filePosition);
-                position++;
+                context.Tokens.Add(new OpenCurlyBracket(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case '}':
-                result = new CloseCurlyBracket(filePosition);
-                position++;
+                context.Tokens.Add(new CloseCurlyBracket(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case '[':
-                result = new OpenSquareBracket(filePosition);
-                position++;
+                context.Tokens.Add(new OpenSquareBracket(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case ']':
-                result = new CloseSquareBracket(filePosition);
-                position++;
+                context.Tokens.Add(new CloseSquareBracket(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case '(':
-                result = new OpenParen(filePosition);
-                position++;
+                context.Tokens.Add(new OpenParen(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case ')':
-                result = new CloseParen(filePosition);
-                position++;
+                context.Tokens.Add(new CloseParen(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case ',':
-                result = new Comma(filePosition);
-                position++;
+                context.Tokens.Add(new Comma(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case ';':
-                result = new EndOfStatement(filePosition);
-                position++;
+                context.Tokens.Add(new EndOfStatement(filePosition));
+                await context.MoveNextAsync();
                 return true;
             case ' ':
-            case '\r':
-                result = new WhiteSpace(" ", filePosition, WhiteSpaceKind.WhiteSpace);
-                position++;
+                context.Tokens.Add(new WhiteSpace(" ", filePosition, WhiteSpaceKind.WhiteSpace));
+                await context.MoveNextAsync();
                 return true;
             case '\t':
-                result = new WhiteSpace("\t", filePosition, WhiteSpaceKind.WhiteSpace);
-                position++;
+                context.Tokens.Add(new WhiteSpace("\t", filePosition, WhiteSpaceKind.WhiteSpace));
+                await context.MoveNextAsync();
                 return true;
             case ':' when next != '=':
-                result = new Colon(filePosition);
-                position++;
+                context.Tokens.Add(new Colon(filePosition));
+                await context.MoveNextAsync();
                 return true;
         }
-
-        if (TryParseOperator(text, ref position, byteOffset, fileName, out var @operator))
-        {
-            result = @operator;
-            return true;
-        }
-
-        context.Exceptions.Add(new PlampException(PlampExceptionInfo.UnexpectedToken(text[position].ToString()), filePosition));
-        position++;
         return false;
     }
 
     /// <summary>
     /// Парсинг комментария длиной в одну строку.
     /// </summary>
-    /// <param name="text">Строка, которую надо распарсить</param>
-    /// <param name="position">С какого места начинать парсить</param>
-    /// <param name="byteOffset">Глобальное смещение в файле</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="token">Результат парсинга, не null, если true</param>
+    /// <param name="context">Контекст токенизации</param>
     /// <returns>Успешность операции парсинга</returns>
-    private static bool TryParseSingleLineComment(
-        string text, 
-        ref int position,
-        long byteOffset,
-        string fileName,
-        [NotNullWhen(true)]out WhiteSpace? token)
+    private static async Task<bool> TryParseSingleLineCommentAsync(
+        TokenizationContext context)
     {
-        token = null;
-        if (text.Length <= position + 1) return false;
-        if (text[position] != '/' || text[position + 1] != '/') return false;
+        if (context.Current != '/') return false;
+        var next = await context.PeekCharAtAsync(1);
+        if (next is not '/') return false;
+        await context.MoveNextAsync();
+        var start = context.ByteOffset;
 
-        var content = text[position..];
-        var commentPos = new FilePosition(byteOffset, content.Length, fileName);
-        token = new WhiteSpace(content, commentPos, WhiteSpaceKind.SingleLineComment);
-        position += content.Length;
+        var sb = new StringBuilder("//");
+        while (await context.MoveNextAsync() && !await context.IsExprEnd)
+        {
+            sb.Append(context.Current);
+        }
+        
+        var filePosition = new FilePosition(start, context.ByteOffset - start, context.FileName);
+        var token = new WhiteSpace(sb.ToString(), filePosition, WhiteSpaceKind.SingleLineComment);
+        context.Tokens.Add(token);
         return true;
     }
 
     /// <summary>
     /// Инкапсулирует всю логику парсинга комментариев, в случае true возвращает позицию сразу после комментария, из-за этого не требует перерасчёта byteOffset после себя.
     /// </summary>
-    /// <param name="text">Текущая строка в которой происходит токенизация</param>
-    /// <param name="next">Ридер, в случае если комментарий распространяется на несколько строк этот метод сам получает продолжение</param>
-    /// <param name="position">Позиция старта</param>
-    /// <param name="byteOffset">Смещение в исходном кодовом файле</param>
-    /// <param name="encoding">Кодировка исходного файла</param>
-    /// <param name="fileName">Имя исходного файла</param>
     /// <param name="context">Контекст, в который записываются возможные ошибки</param>
-    /// <param name="token">Если результат true, то будет получен токен с комментарием.</param>
     /// <returns></returns>
-    private static bool TryParseMultilineComment(
-        ref string text,
-        StreamReader next,
-        ref int position,
-        ref long byteOffset,
-        Encoding encoding,
-        string fileName,
-        TokenizationContext context,
-        [NotNullWhen(true)]out WhiteSpace? token)
+    private static async Task<bool> TryParseMultilineCommentAsync(TokenizationContext context)
     {
-        token = null;
-        int startIx;
-        //Если не нашли в строке метку старта начиная со смещения, то комментария здесь нет. 
-        if ((startIx = text.IndexOf("/*", position, StringComparison.InvariantCulture)) != position) return false;
+        if (context.Current != '/') return false;
+        var next = await context.PeekCharAtAsync(1);
+        if(next is not '*') return false;
+        var start = context.ByteOffset;
+        await context.MoveNextAsync();
 
-        //Иначе запоминаем смещение начала комментария
-        var startOffset = byteOffset;
-        var commentBuilder = new StringBuilder();
-
-        //Пропускаем метку старта.
-        position += 2;
-        int endIx;
-        //Делаем логику в цикле, пока не найдём метку конца, каждая итерация этого цикла читает 1 новую строку
-        while ((endIx = text.IndexOf("*/", position, StringComparison.InvariantCulture)) < 0)
+        var closed = false;
+        var commentBuilder = new StringBuilder("/*");
+        while (await context.MoveNextAsync())
         {
-            //Забираем всё до конца строки так как не нашли метку конца в этой линии
-            var read = text[startIx..];
-            commentBuilder.Append(read);
-            
-            //Добавляем смещение
-            byteOffset += encoding.GetByteCount(read);
-            
-            var readRes = next.ReadLine();
-            //Логика обработки последней строки в файле
-            if (readRes == null)
+            if (context.Current == '*')
             {
-                //Ставим максимальную позицию прошлой строки, чтобы выкинуло из внешнего цикла.
-                position = text.Length;
-                //Создаём токен и ошибку о том, что комментарий надо закрыть
-                var errorPos = new FilePosition(startOffset, commentBuilder.Length, fileName);
-                token = new WhiteSpace(commentBuilder.ToString(), errorPos, WhiteSpaceKind.MultiLineComment);
-                context.Exceptions.Add(new PlampException(PlampExceptionInfo.CommentIsNotClosed(), errorPos));
-                return true;
+                next = await context.PeekCharAtAsync(1);
+                if (next is not '/')
+                {
+                    commentBuilder.Append('*');
+                    continue;
+                }
+                
+                await context.MoveNextAsync();
+                await context.MoveNextAsync();
+                closed = true;
+                commentBuilder.Append("*/");
+                break;
             }
             
-            //Иначе добавляем перенос и перерассчитываем смещение
-            commentBuilder.Append('\n');
-            byteOffset += encoding.GetByteCount("\n");
-            //Обновляем актуальную строку, с которой будем дальше работать
-            text = readRes;
-            //Ставим позицию в 0 для следующей строки
-            position = 0;
+            commentBuilder.Append(context.Current);
         }
 
-        //Если нашли метку, то находим следующий символ после неё
-        position = endIx + 2;
-        var commentPart = text[startIx..position];
-        commentBuilder.Append(commentPart);
-        //Перерассчитываем смещение и собираем готовый токен. 
-        byteOffset += encoding.GetByteCount(commentPart);
-        var commentPos = new FilePosition(startOffset, commentBuilder.Length, fileName);
-        token = new WhiteSpace(commentBuilder.ToString(), commentPos, WhiteSpaceKind.MultiLineComment);
+        var token = new WhiteSpace(commentBuilder.ToString(), new FilePosition(start, context.ByteOffset - start, context.FileName), WhiteSpaceKind.MultiLineComment);
+        if (!closed)
+        {
+            var filePos = new FilePosition(start, context.ByteOffset - start, context.FileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.CommentIsNotClosed(), filePos));
+        }
+        context.Tokens.Add(token);
+        return true;
+    }
+
+    /// <summary>
+    /// Пытается разобрать перенос строки
+    /// </summary>
+    /// <param name="context">Контекст токенизации</param>
+    /// <returns>Флаг успеха операции</returns>
+    private static async Task<bool> TryParseLineBreak(TokenizationContext context)
+    {
+        if (!await context.IsEol()) return false;
+
+        if (context.Current == '\n')
+        {
+            var filePos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount("\n"), context.FileName);
+            var token = new WhiteSpace("\n", filePos, WhiteSpaceKind.LineBreak);
+            await context.MoveNextAsync();
+            context.Tokens.Add(token);
+            return true;
+        }
+
+        await context.MoveNextAsync();
+        
+        var pos = new FilePosition(context.ByteOffset, context.Encoding.GetByteCount("\r\n"), context.FileName);
+        var tok = new WhiteSpace("\r\n", pos, WhiteSpaceKind.LineBreak);
+        await context.MoveNextAsync();
+        context.Tokens.Add(tok);
         return true;
     }
 
     /// <summary>
     /// Пытается разобрать оператор
     /// </summary>
-    /// <param name="text">Полный текст файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после оператора</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="operator">Разобранный токен оператора</param>
+    /// <param name="context">Контекст токенизации</param>
     /// <returns><see langword="true"/>, если оператор успешно распознан; иначе <see langword="false"/>.</returns>
-    private static bool TryParseOperator(
-        string text,
-        ref int position,
-        long byteOffset,
-        string fileName,
-        [NotNullWhen(true)] out TokenBase? @operator)
+    private static async Task<bool> TryParseOperatorAsync(
+        TokenizationContext context)
     {
-        if (text.Length - position >= 2)
+        var startOffset = context.ByteOffset;
+        var current = context.Current;
+        var next = await context.PeekCharAtAsync(1);
+        
+        
+        if (next != null)
         {
-            var op = text[position..(position + 2)];
-            var opPos = new FilePosition(byteOffset, 2, fileName);
-            position += 2;
+            var op = $"{current}{next}";
+            var opPos = new FilePosition(startOffset, context.Encoding.GetByteCount(op), context.FileName);
+            
             switch (op)
             {
                 case "++":
@@ -560,14 +513,15 @@ public static class Tokenizer
                 case ">=":
                 case "&&":
                 case "||":
-                    @operator = new OperatorToken(op, opPos, op.ToOperator());
+                    await context.MoveNextAsync();
+                    await context.MoveNextAsync();
+                    var @operator = new OperatorToken(op, opPos, op.ToOperator());
+                    context.Tokens.Add(@operator);
                     return true;
             }
-
-            position -= 2;
         }
 
-        switch (text[position])
+        switch (current)
         {
             case '+':
             case '-':
@@ -582,12 +536,13 @@ public static class Tokenizer
             case '<':
             case '>':
             case '.':
-                var opString = text[position].ToString();
-                @operator = new OperatorToken(opString, new FilePosition(byteOffset, 1, fileName), opString.ToOperator());
-                position++;
+                var opString = current.ToString();
+                var filePosition = new FilePosition(startOffset, context.Encoding.GetByteCount(opString), context.FileName);
+                var @operator = new OperatorToken(opString, filePosition, opString.ToOperator());
+                context.Tokens.Add(@operator);
+                await context.MoveNextAsync();
                 return true;
             default:
-                @operator = null;
                 return false;
         }
     }

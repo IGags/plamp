@@ -59,7 +59,7 @@ public class ExpressionParsingTests
         [
             "(true", new List<PlampException>
             {
-                new(PlampExceptionInfo.ExpectedCloseParen(), new FilePosition(0, 5, "any.plp"))
+                new(PlampExceptionInfo.ExpectedCloseParen(), new FilePosition(0, 5 * Utf16CharacterByteCount, "any.plp"))
             },
             true
         ];
@@ -80,7 +80,7 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.ByteLength, x.Level }).ToList();
         }
     }
 
@@ -116,7 +116,7 @@ public class ExpressionParsingTests
         [
             "a[1", new List<PlampException>
             {
-                new(PlampExceptionInfo.IndexerIsNotClosed(), new FilePosition(Utf16CharacterByteCount, 2, ""))
+                new(PlampExceptionInfo.IndexerIsNotClosed(), new FilePosition(Utf16CharacterByteCount, 2 * Utf16CharacterByteCount, ""))
             },
             true
         ];
@@ -124,7 +124,7 @@ public class ExpressionParsingTests
         [
             "a.b..", new List<PlampException>
             {
-                new(PlampExceptionInfo.ExpectedFieldName(), new FilePosition(Utf16CharacterByteCount * 4, 1, ""))
+                new(PlampExceptionInfo.ExpectedFieldName(), new FilePosition(Utf16CharacterByteCount * 4, Utf16CharacterByteCount, ""))
             },
             true
         ];
@@ -144,7 +144,7 @@ public class ExpressionParsingTests
         exceptionsActual.ShouldBeEquivalentTo(exceptionsShould);
         object ExcludeFields(List<PlampException> exceptions)
         {
-            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.CharacterLength, x.Level }).ToList();
+            return exceptions.Select(x => new { x.Code, x.FilePosition.ByteOffset, x.FilePosition.ByteLength, x.Level }).ToList();
         }
     }
 

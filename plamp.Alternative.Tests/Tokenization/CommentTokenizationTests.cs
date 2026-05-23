@@ -137,8 +137,6 @@ public class CommentTokenizationTests
     private static async Task<TokenizationResult> TokenizeAsync(string code)
     {
         using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
-        using var reader = new StreamReader(stream, Encoding.Unicode);
-
-        return await Tokenizer.TokenizeAsync(reader, FileName);
+        return await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, FileName);
     }
 }
