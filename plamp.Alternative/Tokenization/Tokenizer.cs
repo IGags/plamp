@@ -31,7 +31,7 @@ public static class Tokenizer
     {
         var tokenList = new List<TokenBase>();
         var exceptionList = new List<PlampException>();
-        using var context = new TokenizationContext(tokenList, exceptionList, fileName, fileStream, encoding);
+        using var context = new TokenizationContext(tokenList, exceptionList, fileName, fileStream, encoding, ct);
         await context.MoveNextAsync();
 
         while (!context.IsEof)

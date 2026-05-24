@@ -10,4 +10,8 @@
       <ProjectReference Include="..\plamp.ILCodeEmitters\plamp.ILCodeEmitters.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <InternalsVisibleTo Include="plamp.Alternative.Tests" />
+    </ItemGroup>
+
 </Project>
