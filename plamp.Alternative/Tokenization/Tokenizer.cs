@@ -51,6 +51,8 @@ public static class Tokenizer
         }
 
         context.Tokens.Add(new EndOfFile(new FilePosition(fileStream.Length, 0, fileName)));
+        
+        ReplaceLineBreaksToImplicitEndOfStatements(context.Tokens);
         var sequence = new TokenSequence(context.Tokens);
 
         return new TokenizationResult(sequence, context.Exceptions);
@@ -58,6 +60,31 @@ public static class Tokenizer
 
     #region Words
 
+    internal static void ReplaceLineBreaksToImplicitEndOfStatements(List<TokenBase> sequence)
+    {
+        if (sequence.Count < 2) return;
+        var prev = sequence[0];
+        for (var i = 1; i < sequence.Count; i++)
+        {
+            if (sequence[i] is WhiteSpace { Kind: WhiteSpaceKind.LineBreak } &&
+                prev
+                is Word
+                or Literal
+                or CloseParen
+                or CloseSquareBracket
+                or CloseCurlyBracket
+                or KeywordToken { Keyword: Keywords.Return or Keywords.Break or Keywords.Continue })
+            {
+                sequence[i] = new ImplicitEndOfStatement(sequence[i].Position, sequence[i].GetStringRepresentation());
+            }
+
+            if (sequence[i] is not WhiteSpace)
+            {
+                prev = sequence[i];
+            }
+        }
+    }
+    
     /// <summary>
     /// Разбирает идентификатор или ключевое слово, начиная с текущей позиции
     /// </summary>

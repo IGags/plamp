@@ -42,6 +42,7 @@ public static class Program
             var fileBytes = Encoding.UTF8.GetBytes(text);
             foreach (var ex in exList)
             {
+                Console.WriteLine(ex);
                 // var start = Encoding.UTF8.GetString(fileBytes, 0, (int)ex.FilePosition.ByteOffset).Length;
                 // var lookupStart = Math.Clamp(start, 0, Math.Max(fileText.Length - 1, 0));
                 // var rowStart = fileText.LastIndexOf('\n', lookupStart);

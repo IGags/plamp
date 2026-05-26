@@ -577,4 +577,16 @@ public static class PlampExceptionInfo
         };
 
     #endregion
+
+    #region Parsing warnings
+
+    public static PlampExceptionRecord ExplicitLineBreakIsNotNeeded()
+        => new()
+        {
+            Code = "PRS1300",
+            Level = ExceptionLevel.Warning,
+            Message = "The explicit line break is not needed, line break is enough.",
+        };
+
+    #endregion
 }
