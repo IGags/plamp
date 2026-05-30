@@ -99,7 +99,7 @@ public class FuncParsingTests
         yield return ["+", new List<string>(), false, null];
         yield return ["fn", new List<string>{PlampExceptionInfo.ExpectedFuncName().Code}, false, null];
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
-        yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code }, false, null];
+        yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets("EOF").Code }, false, null];
         yield return ["fn a(a: int,,b: int)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
     }
 

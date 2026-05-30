@@ -22,6 +22,11 @@ namespace plamp.Alternative.Parsing;
 
 public static class Parser
 {
+    /// <summary>
+    /// Ключевые слова, которые предшествуют верхнеуровневому объявлению
+    /// </summary>
+    private static readonly HashSet<Keywords> TopLevelKeywords = [Keywords.Module, Keywords.Use, Keywords.Fn, Keywords.Data]; 
+    
     public static RootNode ParseFile(ParsingContext context)
     {
         if (context.Sequence.Current() is WhiteSpace) context.Sequence.MoveNextNonWhiteSpace();
@@ -86,7 +91,7 @@ public static class Parser
                 return true;
             default:
                 AddUnexpectedTokenException(context);
-                context.Sequence.MoveNextNonWhiteSpace();
+                RecoveryToTopLevel(context);
                 return false;
         }
     }
@@ -108,6 +113,7 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
 
+        //Тут явно говорим, что если хочется тип без Body то заканчивай выражение явно ;
         if (context.Sequence.Current() is EndOfStatement)
         {
             context.Sequence.MoveNextNonWhiteSpace();
@@ -120,7 +126,8 @@ public static class Parser
         
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
-            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            var current = context.Sequence.Current();
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets(current.GetStringRepresentation());
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
@@ -136,7 +143,7 @@ public static class Parser
             if (TryParseField(context, out var fieldNode)) fields.AddRange(fieldNode);
             else break;
             first = false;
-        } while (context.Sequence.Current() is EndOfStatement);
+        } while (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement);
 
         if (context.Sequence.Current() is not CloseCurlyBracket)
         {
@@ -146,6 +153,7 @@ public static class Parser
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
+        ConsumeEndOfStatement(context);
         var name = new TypedefNameNode(typeName.GetStringRepresentation());
         context.TranslationTable.AddSymbol(name, typeName.Position);
         typedef = new TypedefNode(name, fields);
@@ -306,6 +314,7 @@ public static class Parser
             if (context.Sequence.Current() is CloseCurlyBracket)
             {
                 context.Sequence.MoveNextNonWhiteSpace();
+                ConsumeEndOfStatement(context);
                 return true;
             }
 
@@ -394,7 +403,7 @@ public static class Parser
         if (!TryParseMultilineBody(context, out var body))
         {
             var current = context.Sequence.Current();
-            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets("end of line");
             context.Exceptions.Add(new PlampException(record, current.Position));
             return false;
         }
@@ -662,6 +671,7 @@ public static class Parser
 
         body = new BodyNode(expressions);
         context.Sequence.MoveNextNonWhiteSpace();
+        ConsumeEndOfStatement(context);
         context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         return true;
     }
@@ -702,7 +712,7 @@ public static class Parser
                 if (!TryParseReturn(context, out var node)) return false;
                 expressions = [node];
                 return true;
-            case EndOfStatement:
+            case EndOfStatement or ImplicitEndOfStatement:
                 ConsumeEndOfStatement(context);
                 break;
             default:
@@ -724,7 +734,7 @@ public static class Parser
                 }
 
                 AddUnexpectedTokenException(context);
-                context.Sequence.MoveNextNonWhiteSpace();
+                RecoveryToEndOfStatement(context);
                 break;
         }
 
@@ -1307,7 +1317,7 @@ public static class Parser
         if (context.Sequence.Current() is not KeywordToken { Keyword: Keywords.Return }) return false;
         var returnToken = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
-        if (context.Sequence.Current() is EndOfStatement)
+        if (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement)
         {
             ConsumeEndOfStatement(context);
             node = new ReturnNode(null);
@@ -1447,7 +1457,8 @@ public static class Parser
 
         if (context.Sequence.Current() is not OpenCurlyBracket)
         {
-            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets();
+            var current = context.Sequence.Current();
+            var record = PlampExceptionInfo.ExpectedBodyInCurlyBrackets(current.GetStringRepresentation());
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
@@ -1461,7 +1472,7 @@ public static class Parser
             if(!TryParseFieldInit(context, out var init)) break;
             fields.Add(init);
             first = false;
-        } while (context.Sequence.Current() is EndOfStatement);
+        } while (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement);
 
         if (context.Sequence.Current() is not CloseCurlyBracket)
         {
@@ -1530,9 +1541,33 @@ public static class Parser
         context.Exceptions.Add(new PlampException(record, token.Position));
     }
 
+    private static void RecoveryToTopLevel(ParsingContext context)
+    {
+        var current = context.Sequence.Current();
+        while (current is not EndOfFile && 
+               current is not KeywordToken ||
+               (current is KeywordToken k && !TopLevelKeywords.Contains(k.Keyword)))
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            current = context.Sequence.Current();
+        }
+    }
+
+    private static void RecoveryToEndOfStatement(ParsingContext context)
+    {
+        var current = context.Sequence.Current();
+        while (current is not EndOfFile
+               && current is not EndOfStatement
+               && current is not ImplicitEndOfStatement)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            current = context.Sequence.Current();
+        }
+    }
+
     private static void ConsumeEndOfStatement(ParsingContext context)
     {
-        if (context.Sequence.Current() is EndOfStatement)
+        if (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement or EndOfFile)
         {
             context.Sequence.MoveNextNonWhiteSpace();
             return;

@@ -221,13 +221,13 @@ public static class PlampExceptionInfo
         };
     }
 
-    public static PlampExceptionRecord ExpectedBodyInCurlyBrackets()
+    public static PlampExceptionRecord ExpectedBodyInCurlyBrackets(string found)
     {
         return new ()
         {
             Code = "PRS1134",
             Level = ExceptionLevel.Error,
-            Message = "The body is expected in curly brackets."
+            Message = $"The body is expected in curly brackets, found {found}"
         };
     }
 

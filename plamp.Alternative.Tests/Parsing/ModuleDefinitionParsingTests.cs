@@ -14,6 +14,7 @@ public class ModuleDefinitionParsingTests
     public static IEnumerable<object[]> ParseModuleDefinition_Correct_DataProvider()
     {
         yield return ["module a;", new ModuleDefinitionNode("a")];
+        yield return ["module a", new ModuleDefinitionNode("a")];
     }
     
     [Theory]
@@ -33,8 +34,7 @@ public class ModuleDefinitionParsingTests
         yield return ["", null, false, new List<string>()];
         yield return ["+", null, false, new List<string>()];
         yield return ["module", null, false, new List<string>{PlampExceptionInfo.ExpectedModuleName().Code}];
-        yield return ["module aa", new ModuleDefinitionNode("aa"), true, new List<string>{PlampExceptionInfo.ExpectedEndOfStatement().Code}];
-        yield return ["module aa.", new ModuleDefinitionNode("aa"), true, new List<string>{PlampExceptionInfo.ExpectedSubmoduleName().Code, PlampExceptionInfo.ExpectedEndOfStatement().Code}];
+        yield return ["module aa.", new ModuleDefinitionNode("aa"), true, new List<string>{PlampExceptionInfo.ExpectedSubmoduleName().Code}];
         yield return ["module aa.;", new ModuleDefinitionNode("aa"), true, new List<string>{PlampExceptionInfo.ExpectedSubmoduleName().Code}];
     }
     

@@ -253,4 +253,31 @@ public class TokenizerTests
         result.Sequence.Current().ShouldBeOfType<Colon>();
     }
 
+    [Theory]
+    [InlineData("abc\nx", typeof(Word))]
+    [InlineData("1\nx", typeof(Literal))]
+    [InlineData(")\nx", typeof(CloseParen))]
+    [InlineData("]\nx", typeof(CloseSquareBracket))]
+    [InlineData("return\nx", typeof(KeywordToken))]
+    [InlineData("break\nx", typeof(KeywordToken))]
+    [InlineData("continue\nx", typeof(KeywordToken))]
+    [InlineData("}\nx", typeof(CloseCurlyBracket))]
+    public async Task Tokenization_ReplacesLineBreakWithImplicitEndOfStatement_AfterExpressionEnd(
+        string code,
+        Type previousTokenType)
+    {
+        using var stream = new MemoryStream(Encoding.Unicode.GetBytes(code));
+        var result = await Tokenizer.TokenizeAsync(stream, Encoding.Unicode, FileName);
+        var tokens = result.Sequence.ToList();
+
+        result.Exceptions.ShouldBeEmpty();
+        Assert.DoesNotContain(tokens, t => t is WhiteSpace { Kind: WhiteSpaceKind.LineBreak });
+        Assert.Equal(4, tokens.Count);
+        Assert.IsType(previousTokenType, tokens[0]);
+        tokens[1].ShouldBeOfType<ImplicitEndOfStatement>();
+        Assert.Equal("\n", tokens[1].GetStringRepresentation());
+        tokens[2].ShouldBeOfType<Word>();
+        tokens[3].ShouldBeOfType<EndOfFile>();
+    }
+
 }
