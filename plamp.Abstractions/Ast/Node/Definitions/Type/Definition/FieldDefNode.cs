@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection.Emit;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
@@ -10,8 +9,6 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 /// <param name="name">Имя объявленного поля.</param>
 public class FieldDefNode(TypeNode fieldType, FieldNameNode name) : NodeBase
 {
-    public FieldBuilder? Field { get; set; }
-    
     /// <summary>
     /// Тип поля(ей)
     /// </summary>

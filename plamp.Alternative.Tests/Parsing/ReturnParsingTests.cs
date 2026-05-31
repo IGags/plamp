@@ -17,7 +17,7 @@ public class ReturnParsingTests
     public static IEnumerable<object[]> ParseReturn_Correct_DataProvider()
     {
         yield return ["return;", new ReturnNode(null)];
-        yield return ["return fn1();", new ReturnNode(new CallNode(null, new FuncCallNameNode("fn1"), []))];
+        yield return ["return fn1();", new ReturnNode(new CallNode(null, new FuncCallNameNode("fn1"), [], []))];
         yield return ["return a;", new ReturnNode(new MemberNode("a"))];
         yield return ["return a++;", new ReturnNode(new PostfixIncrementNode(new MemberNode("a")))];
         yield return ["return a + b;", new ReturnNode(new AddNode(new MemberNode("a"), new MemberNode("b")))];

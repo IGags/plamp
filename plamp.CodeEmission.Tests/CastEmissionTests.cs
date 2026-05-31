@@ -171,7 +171,7 @@ public class CastEmissionTests
         {
             TypeInfo = Builtins.Double
         };
-        var call = new CallNode(null, new FuncCallNameNode("Example"), []);
+        var call = new CallNode(null, new FuncCallNameNode("Example"), [], []);
         var info = typeof(CastEmissionTests).GetMethod(nameof(Example), BindingFlags.Static | BindingFlags.Public)!;
         call.FnInfo = EmissionSetupHelper.MakeFuncRef(info);
         var cast = new CastNode(to, call)

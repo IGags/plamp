@@ -3,8 +3,8 @@ using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.Unary;
-using plamp.Alternative.Visitors;
 using plamp.Alternative.Visitors.ModulePreCreation;
+using plamp.Alternative.Visitors.ModulePreCreation.BodyLevelExpression;
 using Shouldly;
 using Xunit;
 

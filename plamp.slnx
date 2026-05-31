@@ -1,5 +1,6 @@
 ﻿<Solution>
   <Folder Name="/Tests/">
+    <Project Path="plamp.Abstractions.Tests/plamp.Abstractions.Tests.csproj" />
     <Project Path="plamp.Alternative.Tests\plamp.Alternative.Tests.csproj" />
     <Project Path="plamp.CodeEmission.Tests\plamp.CodeEmission.Tests.csproj" />
   </Folder>

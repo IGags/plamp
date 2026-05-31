@@ -1,5 +1,3 @@
-using AutoFixture;
-using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
 
@@ -20,11 +18,9 @@ public class FileParsingTests
                                 return fib(n - 1) + fib(n - 2);
                             }
                             """;
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.ParseFile(context);
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
         context.Exceptions.ShouldBeEmpty();
-        result.ShouldNotBeNull();
+        ast.ShouldNotBeNull();
         context.Sequence.MoveNext().ShouldBe(false);
     }
 
@@ -47,11 +43,86 @@ public class FileParsingTests
                                 return Point((x1 + x2) / 2, (y1 + y2) / 2);
                             }
                             """;
-        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
-        var result = Parser.ParseFile(context);
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
         context.Exceptions.ShouldBeEmpty();
-        result.ShouldNotBeNull();
+        ast.ShouldNotBeNull();
         context.Sequence.MoveNext().ShouldBe(false);
+    }
+
+    [Fact]
+    public void FileStartsFromWhiteSpacesAndBreaks_Correct()
+    {
+        const string code = """
+                                
+                             
+                            module test;
+                            """;
+
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        context.Exceptions.ShouldBeEmpty();
+        ast.ModuleName.ShouldNotBeNull().ModuleName.ShouldBe("test");
+    }
+
+    [Fact]
+    public void ManyIncorrectTokensBetweenTopLevel_ReturnsOnlyOneException()
+    {
+        const string code = """
+                            module test;
+                            
+                            vbbab
+                            
+                            sfkk
+                            
+                            if
+                            else
+                            while
+                            1 4 "224"
+                            
+                            fn main() {}
+                            
+                            """;
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.TopLevelExpressionExpected().Code);
+        
+        ast.ModuleName.ShouldNotBeNull().ModuleName.ShouldBe("test");
+        ast.Functions.ShouldHaveSingleItem();
+    }
+
+    [Fact]
+    public void IncorrectTokensBeforeFirstTopLevel_ReturnsSingleException()
+    {
+        const string code = """
+                            
+                            babbu
+                            '3' 5
+                            aaaaaaaa
+                            "fafa"
+                            
+                            module test;
+                            """;
+        
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.TopLevelExpressionExpected().Code);
+        ast.ModuleName.ShouldNotBeNull().ModuleName.ShouldBe("test");
+    }
+
+    [Fact]
+    public void IncorrectTokensAfterLastTopLevel_ReturnsSingleException()
+    {
+        const string code = """
+
+                            module test;
+                            
+                            africa privaetn
+                            alflf
+                            gasman
+                            """;
+        
+        var (ast, context) = CompilationPipelineBuilder.RunParsingPipeline(code);
+        var ex = context.Exceptions.ShouldHaveSingleItem();
+        ex.Code.ShouldBe(PlampExceptionInfo.TopLevelExpressionExpected().Code);
+        ast.ModuleName.ShouldNotBeNull().ModuleName.ShouldBe("test");
     }
 }

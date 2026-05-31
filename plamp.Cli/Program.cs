@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using plamp.Abstractions.Ast;
 using plamp.Alternative;
+using plamp.ILCodeEmitters;
 
 namespace plamp.Cli;
 
@@ -9,7 +12,6 @@ public static class Program
 {
     public static async Task<int> Main(params string[] args)
     {
-        var sw = Stopwatch.StartNew();
         if (args.Length != 1)
         {
             return -1;
@@ -17,19 +19,38 @@ public static class Program
 
         var filepath = Path.GetFullPath(args[0]);
         await using var file = File.OpenRead(filepath);
-        var res = await CompilationPipeline.RunEntirePipelineAsync(file, Encoding.UTF8, filepath);
+        var sw = Stopwatch.StartNew();
+        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(file, Encoding.UTF8, filepath);
+     
+        
         
         Console.WriteLine($"Compilation took {sw.Elapsed}");
         
-        if (res.Exceptions.Count > 0 || res.Compiled == null)
+        if (exceptions.Count > 0)
         {
-            await PrintResAsync(res.Exceptions);
+            PrintResAsync(exceptions);
             return -1;
         }
-        
-        var method = res.Compiled!.Modules.First().GetMethod("main");
+
         sw.Restart();
-        method!.Invoke(null, []);
+        var assemblyName = new AssemblyName(Guid.NewGuid().ToString("N"));
+        var asm = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+        var module = asm.DefineDynamicModule(assemblyName.Name!);
+        
+        SymTableEmitter.EmitModule(symTable, module);
+        
+        module.CreateGlobalFunctions();        
+        Console.WriteLine($"Emission took {sw.Elapsed}");
+        
+        var method = module.GetMethod("main");
+
+        if (method == null)
+        {
+            throw new Exception("Method main is not defined in the module");
+        }
+        
+        sw.Restart();
+        method.Invoke(null, []);
         Console.WriteLine($"Execution took {sw.Elapsed}");
         
         return 0;

@@ -258,6 +258,130 @@ public static class Tokenizer
 
     #endregion
 
+    #region Chars
+
+    /// <summary>
+    /// Разбирает символьный литерал
+    /// </summary>
+    /// <param name="text">Текущая строка исходного файла</param>
+    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
+    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
+    /// <param name="fileName">Имя файла</param>
+    /// <param name="fileEncoding">Кодировка файла</param>
+    /// <param name="context">Контекст токенизации для накопления ошибок</param>
+    /// <param name="literal">Токен символьного литерала, если он разобран корректно</param>
+    /// <returns><see langword="true"/>, если символьный литерал разобран(пусть и есть ошибки); иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharLiteral(
+        string text,
+        ref int position,
+        long byteOffset,
+        string fileName,
+        Encoding fileEncoding,
+        TokenizationContext context,
+        [NotNullWhen(true)] out Literal? literal)
+    {
+        literal = null;
+        if (position >= text.Length || text[position] != '\'') return false;
+
+        var start = position;
+        var state = CharContentParsingState.Beginning;
+
+        char? charContent = null;
+        var escaped = false;
+        var literalClosed = false;
+        for (position = start + 1; position < text.Length; position++)
+        {
+            if (state is CharContentParsingState.Beginning && text[position] == '\\') state = CharContentParsingState.EscapeConsumed;
+            else if (state != CharContentParsingState.EscapeConsumed && text[position] == '\'')
+            {
+                literalClosed = true;
+                break;
+            }
+            else if (state == CharContentParsingState.Beginning)
+            {
+                charContent = text[position];
+                state = CharContentParsingState.ContentParsed;
+            }
+            else if (state == CharContentParsingState.EscapeConsumed)
+            {
+                if (TryParseCharEscape(text[position], out var value)) charContent = value;
+                else
+                {
+                    var errOffset = byteOffset + fileEncoding.GetByteCount("'");
+                    var filePos = new FilePosition(errOffset, position - start, fileName);
+                    context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidEscapeSequence(text.Substring(position - 1, 2)), filePos));
+                }
+
+                escaped = true;
+                state = CharContentParsingState.ContentParsed;
+            }
+        }
+
+        var literalLen = !literalClosed ? position - start : ++position - start;
+        
+        if (state is CharContentParsingState.Beginning or CharContentParsingState.EscapeConsumed && !literalClosed)
+        {
+            var filePos = new FilePosition(byteOffset, literalLen, fileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), filePos));
+            return false;
+        }
+
+        if ((!escaped && literalLen == 3) || (escaped && literalLen == 4))
+        {
+            if (charContent == null) return false;
+            
+            var litPos = new FilePosition(byteOffset, literalLen, fileName);
+            literal = new Literal(text.Substring(start, literalLen), litPos, charContent, Builtins.Char);
+            return true;
+        }
+
+        var errPos = new FilePosition(byteOffset, literalLen, fileName);
+        var record = literalClosed
+            ? PlampExceptionInfo.InvalidCharLiteral()
+            : PlampExceptionInfo.CharIsNotClosed();
+        
+        context.Exceptions.Add(new PlampException(record, errPos));
+        if (charContent != null)
+        {
+            var litPos = new FilePosition(byteOffset, literalLen, fileName);
+            literal = new Literal(text.Substring(start, literalLen), litPos, charContent, Builtins.Char);
+            return true;
+        }
+
+        return false;
+    }
+    
+    private enum CharContentParsingState
+    {
+        Beginning,
+        EscapeConsumed,
+        ContentParsed
+    }
+
+    /// <summary>
+    /// Пытается преобразовать escape-последовательность в символ
+    /// </summary>
+    /// <param name="escape">Символ после обратного слеша</param>
+    /// <param name="value">Результирующий символ</param>
+    /// <returns><see langword="true"/>, если escape-последовательность поддерживается; иначе <see langword="false"/>.</returns>
+    private static bool TryParseCharEscape(char escape, out char value)
+    {
+        value = '\0';
+        value = escape switch
+        {
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            '\\' => '\\',
+            '\'' => '\'',
+            _ => '\0'
+        };
+
+        return value != '\0';
+    }
+
+    #endregion
+
     #region Strings
 
     /// <summary>

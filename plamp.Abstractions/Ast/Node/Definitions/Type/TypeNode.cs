@@ -6,13 +6,38 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Type;
 /// <summary>
 /// Узел AST обозначающий использование того или иного типа(ссылка на тип)
 /// </summary>
-/// <param name="typeName">Имя типа</param>
-public class TypeNode(TypeNameNode typeName) : NodeBase
+public class TypeNode : NodeBase
 {
+    private readonly List<TypeNode> _genericParameters = [];
+
+    /// <summary>
+    /// Узел AST обозначающий использование того или иного типа(ссылка на тип)
+    /// </summary>
+    /// <param name="typeName">Имя типа</param>
+    public TypeNode(TypeNameNode typeName)
+    {
+        TypeName = typeName;
+    }
+
+    /// <summary>
+    /// Узел AST обозначающий использование того или иного типа(ссылка на тип)
+    /// </summary>
+    /// <param name="typeName">Имя типа</param>
+    /// <param name="genericParameters">Список дженерик параметров для типа</param>
+    public TypeNode(TypeNameNode typeName, List<TypeNode> genericParameters) : this(typeName)
+    {
+        _genericParameters = genericParameters;
+    }
+
     /// <summary>
     /// Имя типа
     /// </summary>
-    public TypeNameNode TypeName { get; private set; } = typeName;
+    public TypeNameNode TypeName { get; private set; }
+
+    /// <summary>
+    /// Список дженерик параметров типа
+    /// </summary>
+    public IReadOnlyList<TypeNode> GenericParameters => _genericParameters;
 
     /// <summary>
     /// Список объявлений массива от внутреннего ко внешнему
@@ -25,11 +50,20 @@ public class TypeNode(TypeNameNode typeName) : NodeBase
     public override IEnumerable<NodeBase> Visit()
     {
         yield return TypeName;
+        foreach (var genericParameter in GenericParameters)
+        {
+            yield return genericParameter;
+        }
     }
 
     /// <inheritdoc cref="NodeBase"/>
     public override void ReplaceChild(NodeBase child, NodeBase newChild)
     {
         if (TypeName == child && newChild is TypeNameNode newMember) TypeName = newMember;
+        int ix;
+        if (child is TypeNode genericParameter && (ix = _genericParameters.IndexOf(genericParameter)) != -1 && newChild is TypeNode newGeneric)
+        {
+            _genericParameters[ix] = newGeneric;
+        }
     }
 }

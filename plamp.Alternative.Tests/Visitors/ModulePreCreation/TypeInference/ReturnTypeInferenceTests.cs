@@ -26,6 +26,7 @@ public class ReturnTypeInferenceTests
             new TypeNode(new TypeNameNode("abc")),
             new FuncNameNode("aaa"),
             [],
+            [],
             new BodyNode([new ReturnNode(null)])); 
         SetupExceptionMock(translationTable);
         var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
@@ -43,7 +44,7 @@ public class ReturnTypeInferenceTests
             TypeInfo = Builtins.Int
         };
         var ast = new FuncNode(
-            returnType, new FuncNameNode("aaa"), [],
+            returnType, new FuncNameNode("aaa"), [], [],
             new BodyNode([new ReturnNode(new LiteralNode(1, Builtins.Int))]));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
@@ -56,7 +57,7 @@ public class ReturnTypeInferenceTests
             TypeInfo = Builtins.Void
         };
         var ast = new FuncNode(
-            returnType, new FuncNameNode("aaa"), [],
+            returnType, new FuncNameNode("aaa"), [], [],
             new BodyNode([new ReturnNode(null)]));
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
@@ -71,7 +72,7 @@ public class ReturnTypeInferenceTests
             TypeInfo = Builtins.Int
         };
         var ast = new FuncNode(
-            returnType, new FuncNameNode("aaa"), [],
+            returnType, new FuncNameNode("aaa"), [], [],
             new BodyNode([new ReturnNode(new LiteralNode(1d, Builtins.Double))]));
         SetupExceptionMock(translationTable);
         var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
@@ -91,7 +92,7 @@ public class ReturnTypeInferenceTests
             TypeInfo = Builtins.Void
         };
         var ast = new FuncNode(
-            returnType, new FuncNameNode("aaa"), [],
+            returnType, new FuncNameNode("aaa"), [], [],
             new BodyNode([new ReturnNode(new LiteralNode(1, Builtins.Int))]));
         SetupExceptionMock(translationTable);
         var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());
@@ -111,7 +112,7 @@ public class ReturnTypeInferenceTests
             TypeInfo = Builtins.Int
         };
         var ast = new FuncNode(
-            returnType, new FuncNameNode("aaa"), [],
+            returnType, new FuncNameNode("aaa"), [], [],
             new BodyNode([new ReturnNode(null)]));
         SetupExceptionMock(translationTable);
         var context = new PreCreationContext(translationTable.Object, SymbolTableInitHelper.CreateDefaultTables());

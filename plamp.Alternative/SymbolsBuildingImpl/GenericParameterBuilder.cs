@@ -1,0 +1,143 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
+
+namespace plamp.Alternative.SymbolsBuildingImpl;
+
+/// <summary>
+/// Представление аргумента открытого дженерик типа, тоже является типом так как может служить типом полей типа-определения
+/// Не появляется в таблице символов модуля, в котором объявлен дженерик тип
+/// </summary>
+public class GenericParameterBuilder : IGenericParameterBuilder
+{
+    private Type? _genericParameterType;
+    private GenericTypeParameterBuilder? _parameterBuilder;
+
+    /// <summary>
+    /// Создаёт представление дженерик параметра.
+    /// </summary>
+    /// <param name="name">Имя параметра внутри дженерик объявления.</param>
+    /// <param name="moduleName">Имя модуля, в котором объявлен дженерик параметр.</param>
+    /// <exception cref="InvalidOperationException">Имя параметра или имя модуля пустое.</exception>
+    public GenericParameterBuilder(string name, string moduleName)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("Имя дженерик параметра не может быть пустым.");
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
+        Name = name;
+        ModuleName = moduleName;
+    }
+
+    /// <summary>
+    /// Имя типа внутри дженерик объявления
+    /// </summary>
+    public string Name { get; }
+    
+    /// <inheritdoc/>
+    public string ModuleName { get; }
+
+    /// <inheritdoc/>
+    public string DefinitionName => Name;
+
+    /// <inheritdoc/>
+    public Type? GenericParameterType
+    {
+        get => _genericParameterType;
+        set
+        {
+            ThrowIfComplete();
+            _parameterBuilder = null;
+            _genericParameterType = value;
+        }
+    }
+
+    /// <inheritdoc/>
+    public GenericTypeParameterBuilder? ParameterBuilder
+    {
+        get
+        {
+            ThrowIfComplete();
+            return _parameterBuilder;
+        }
+        set
+        {
+            ThrowIfComplete();
+            _parameterBuilder = value;
+        }
+    }
+
+    /// <summary>
+    /// У дженерик параметра не может быть полей
+    /// </summary>
+    public IReadOnlyList<IFieldInfo> Fields => [];
+    
+    /// <summary>
+    /// Дженерик параметр внутри объявления типа не может никогда быть массивом
+    /// </summary>
+    public bool IsArrayType => false;
+    
+    /// <summary>
+    /// Дженерик параметр не может быть закрытым дженериком
+    /// </summary>
+    public bool IsGenericType => false;
+    
+    /// <summary>
+    /// Дженерик параметр не может быть объявлением дженерик типа 
+    /// </summary>
+    public bool IsGenericTypeDefinition => false;
+    
+    /// <summary>
+    /// Прямое назначение типа - быть дженерик параметром
+    /// </summary>
+    public bool IsGenericTypeParameter => true;
+
+    /// <inheritdoc cref="ITypeInfo.AsType"/>
+    public Type AsType()
+    {
+        return _parameterBuilder ?? _genericParameterType ?? throw new InvalidOperationException("Тип .net не может быть получен так как он не скомпилирован");
+    }
+
+    /// <inheritdoc cref="ITypeInfo.MakeArrayType"/>
+    public ITypeInfo MakeArrayType() => new ArrayTypeBuilder(this);
+
+    public ITypeInfo? MakeGenericType(IReadOnlyList<ITypeInfo> genericTypeArguments) => null;
+
+    /// <inheritdoc cref="ITypeInfo.ElementType"/>
+    public ITypeInfo? ElementType() => null;
+
+    /// <inheritdoc cref="ITypeInfo.GetGenericParameters" />
+    public IReadOnlyList<ITypeInfo> GetGenericParameters() => [];
+
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
+
+    /// <inheritdoc cref="ITypeInfo.GetGenericTypeDefinition"/>
+    public ITypeInfo? GetGenericTypeDefinition() => null;
+    
+    /// <inheritdoc/>
+    public bool Equals(ITypeInfo? other)
+    {
+        if (other is not GenericParameterBuilder otherBuilder) return false;
+        return Name.Equals(otherBuilder.Name)
+               && DefinitionName.Equals(otherBuilder.DefinitionName)
+               && ModuleName.Equals(otherBuilder.ModuleName);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(GetType(), DefinitionName.GetHashCode(), ModuleName.GetHashCode(), Name.GetHashCode());
+    }
+
+    /// <summary>
+    /// Бросает исключение, если создание параметра закончено
+    /// </summary>
+    private void ThrowIfComplete()
+    {
+        if (_genericParameterType != null)
+            throw new InvalidOperationException("Создание параметра завершено, дополнительная модификация запрещена.");
+    }
+}

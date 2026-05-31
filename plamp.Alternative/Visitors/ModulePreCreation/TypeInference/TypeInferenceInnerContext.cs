@@ -22,7 +22,7 @@ public class TypeInferenceInnerContext : PreCreationContext
 
     public FuncNode? CurrentFunc { get; set; }
 
-    public Dictionary<string, ParameterNode> Arguments { get; } = [];
+    public Dictionary<string, ITypeInfo?> Arguments { get; } = [];
     
     public TypeInferenceInnerContext(PreCreationContext other) : base(other)
     {

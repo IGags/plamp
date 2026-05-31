@@ -450,7 +450,6 @@ public class VariableTypeInferenceTests
         result.Exceptions.ShouldBeEmpty();
         body.ExpressionList.Count.ShouldBe(valueShould.ExpressionList.Count);
         
-        //TODO: Метод ломается, если в типе есть поля и сравнение происходит не по ссылке. Нужно что-то придумывать. Но это проблемы меня будущего.
         body.ShouldBeEquivalentTo(valueShould);
     }
 

@@ -1,16 +1,16 @@
 using System.Collections.Generic;
-using System.Reflection.Emit;
+using plamp.Abstractions.Ast.Node.ComplexTypes;
 
 namespace plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
 
 /// <summary>
 /// Узел ast обозначающий объявление типа. Является структурой из c#
 /// </summary>
-public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields) : NodeBase
+public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields, List<GenericDefinitionNode> genericParameters) : NodeBase
 {
     public TypedefNameNode Name { get; private set; } = name;
     
-    public TypeBuilder? Type { get; set; }
+    public IReadOnlyList<GenericDefinitionNode> GenericParameters => genericParameters;
 
     public IReadOnlyList<FieldDefNode> Fields => fields;
 
@@ -32,6 +32,13 @@ public class TypedefNode(TypedefNameNode name, List<FieldDefNode> fields) : Node
         if (child is FieldDefNode field && (ix = fields.IndexOf(field)) != -1 && newChild is FieldDefNode newField)
         {
             fields[ix] = newField;
+        }
+
+        if (child is GenericDefinitionNode parameter 
+            && (ix = genericParameters.IndexOf(parameter)) != -1 
+            && newChild is GenericDefinitionNode newParameter)
+        {
+            genericParameters[ix] = newParameter;
         }
     }
 }

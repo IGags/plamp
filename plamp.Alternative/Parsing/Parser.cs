@@ -29,6 +29,8 @@ public static class Parser
     
     public static RootNode ParseFile(ParsingContext context)
     {
+        //В парсере есть конвенция, что каждый метод парсинга должен возвращать seqence которая находится на следующем токене после него
+        //Но если парсинг только начался и первый токен пробел - это может вызывать проблемы, поэтому они пропускаются явно.
         if (context.Sequence.Current() is WhiteSpace) context.Sequence.MoveNextNonWhiteSpace();
         
         var topLevelList = new List<NodeBase>();
@@ -113,13 +115,19 @@ public static class Parser
 
         context.Sequence.MoveNextNonWhiteSpace();
 
+        //Особый случай, функция обрабатывает пустой дженерик
+        if (!TryParseGenericDefinitionSequence(context, out var generics))
+        {
+            generics = [];
+        }
+
         //Тут явно говорим, что если хочется тип без Body то заканчивай выражение явно ;
         if (context.Sequence.Current() is EndOfStatement)
         {
             context.Sequence.MoveNextNonWhiteSpace();
             var defName = new TypedefNameNode(typeName.GetStringRepresentation());
             context.TranslationTable.AddSymbol(defName, typeName.Position);
-            typedef = new TypedefNode(defName, []);
+            typedef = new TypedefNode(defName, [], generics);
             context.TranslationTable.AddSymbol(typedef, typeKeyword.Position);
             return true;
         }
@@ -156,8 +164,59 @@ public static class Parser
         ConsumeEndOfStatement(context);
         var name = new TypedefNameNode(typeName.GetStringRepresentation());
         context.TranslationTable.AddSymbol(name, typeName.Position);
-        typedef = new TypedefNode(name, fields);
+        typedef = new TypedefNode(name, fields, generics);
         context.TranslationTable.AddSymbol(typedef, typeKeyword.Position);
+        return true;
+    }
+
+    private static bool TryParseGenericDefinitionSequence(ParsingContext context, out List<GenericDefinitionNode> genericDefinitions)
+    {
+        genericDefinitions = [];
+        if (context.Sequence.Current() is not OpenSquareBracket open) return false;
+        context.Sequence.MoveNextNonWhiteSpace();
+        if (context.Sequence.Current() is CloseSquareBracket)
+        {
+            var error = PlampExceptionInfo.EmptyGenericDefinition();
+            context.Sequence.MoveNextNonWhiteSpace();
+            context.Exceptions.Add(new PlampException(error, context.Sequence.MakeRangeFromPrevNonWhitespace(open)));
+            return false;
+        }
+
+        var first = true;
+        do
+        {
+            if (!first) context.Sequence.MoveNextNonWhiteSpace();
+            first = false;
+            
+            var genericFork = context.Fork();
+            if (genericFork.Sequence.Current() is not Word genericName)
+            {
+                var error = PlampExceptionInfo.ExpectedGenericTypeArgumentAlias();
+                context.Exceptions.Add(new(error, context.Sequence.CurrentPosition));
+                continue;
+            }
+            context.Merge(genericFork);
+
+            var nameNode = new GenericParameterNameNode(genericName.GetStringRepresentation());
+            context.TranslationTable.AddSymbol(nameNode, genericName.Position);
+            var genericParameter = new GenericDefinitionNode(nameNode);
+            context.TranslationTable.AddSymbol(genericParameter, genericName.Position);
+            genericDefinitions.Add(genericParameter);
+            context.Sequence.MoveNextNonWhiteSpace();
+        } while (context.Sequence.Current() is Comma);
+
+        var current = context.Sequence.Current();
+        if (current is not CloseSquareBracket)
+        {
+            if (genericDefinitions.Count == 0) return false;
+            var error = PlampExceptionInfo.GenericDefinitionIsNotClosed();
+            context.Exceptions.Add(new PlampException(error, current.Position));
+        }
+        else
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+        }
+
         return true;
     }
 
@@ -184,7 +243,7 @@ public static class Parser
 
         if (context.Sequence.Current() is not Colon)
         {
-            var record = PlampExceptionInfo.ExpectedTypeName();
+            var record = PlampExceptionInfo.ExpectedFieldTypeQualifier();
             context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
             return false;
         }
@@ -405,6 +464,12 @@ public static class Parser
             return false;
         }
 
+        //Особый случай, функция обрабатывает пустой дженерик 
+        if (!TryParseGenericDefinitionSequence(context, out var generics))
+        {
+            generics = [];
+        }
+
         if (!TryParseArgSequence(context, out var list)) return false;
         var typeFork = context.Fork();
         if (TryParseType(typeFork, out var type)) context.Merge(typeFork);
@@ -428,7 +493,7 @@ public static class Parser
             context.TranslationTable.AddSymbol(type, funcName.Position);
         }
         
-        func = new FuncNode(type, funcNameNode, list, body);
+        func = new FuncNode(type, funcNameNode, generics, list, body);
         context.TranslationTable.AddSymbol(func, fnToken.Position);
         return true;
     }
@@ -700,7 +765,6 @@ public static class Parser
                 if (!TryParseWhileLoop(context, out var loop)) return false;
                 expressions = [loop];
                 return true;
-            //TODO: To separate method.
             case KeywordToken { Keyword: Keywords.Break }:
                 var breakExpression = new BreakNode();
                 var current = context.Sequence.Current();
@@ -1019,8 +1083,7 @@ public static class Parser
 
     public static bool TryParseNud(
         ParsingContext context,
-        [NotNullWhen(true)] out NodeBase? node,
-        int rbp = 0)
+        [NotNullWhen(true)] out NodeBase? node)
     {
         var start = context.Sequence.Current();
         node = null;
@@ -1117,6 +1180,7 @@ public static class Parser
         {
             var op = (OperatorToken)prefixFork.Sequence.Current();
             prefixFork.Sequence.MoveNextNonWhiteSpace();
+            var rbp = op.GetPrecedence(true);
             if (!TryParsePrecedence(prefixFork, out var innerNode, rbp)) return false;
 
             switch (op.Operator)
@@ -1252,6 +1316,8 @@ public static class Parser
         var start = context.Sequence.Current();
         context.Sequence.MoveNextNonWhiteSpace();
 
+        _ = TryParseGenericTypeArgs(context, out var genericArgList);
+
         if (context.Sequence.Current() is not OpenParen)
         {
             var record = PlampExceptionInfo.ExpectedOpenParen();
@@ -1266,7 +1332,7 @@ public static class Parser
         {
             var funcNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
             context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
-            call = new CallNode(null, funcNameNode, argExpressions);
+            call = new CallNode(null, funcNameNode, argExpressions, genericArgList);
             context.Sequence.MoveNextNonWhiteSpace();
             context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
             return true;
@@ -1309,7 +1375,7 @@ public static class Parser
 
         var funcCallNameNode = new FuncCallNameNode(funcName.GetStringRepresentation());
         context.TranslationTable.AddSymbol(funcCallNameNode, funcName.Position);
-        call = new CallNode(null, funcCallNameNode, argExpressions);
+        call = new CallNode(null, funcCallNameNode, argExpressions, genericArgList);
         context.TranslationTable.AddSymbol(call, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         return true;
     }
@@ -1444,12 +1510,57 @@ public static class Parser
             return false;
         }
 
-
-        var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
-        type = new TypeNode(typeNameNode) { ArrayDefinitions = definitions };
         context.Sequence.MoveNextNonWhiteSpace();
+        _ = TryParseGenericTypeArgs(context, out var genericArgs);
+        
+        var typeNameNode = new TypeNameNode(typeName.GetStringRepresentation());
+        type = new TypeNode(typeNameNode, genericArgs) { ArrayDefinitions = definitions };
         context.TranslationTable.AddSymbol(type, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
         context.TranslationTable.AddSymbol(typeNameNode, typeName.Position);
+        return true;
+    }
+
+    private static bool TryParseGenericTypeArgs(ParsingContext context, out List<TypeNode> genericTypes)
+    {
+        genericTypes = [];
+        if (context.Sequence.Current() is not OpenSquareBracket openSquareBracket) return false;
+        context.Sequence.MoveNextNonWhiteSpace();
+        if (context.Sequence.Current() is CloseSquareBracket)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            var error = PlampExceptionInfo.EmptyGenericArgs();
+            context.Exceptions.Add(new PlampException(error, context.Sequence.MakeRangeFromPrevNonWhitespace(openSquareBracket)));
+            return false;
+        }
+
+        var first = true;
+        do
+        {
+            if (!first) context.Sequence.MoveNextNonWhiteSpace();
+            first = false;
+            
+            var genericArgFork = context.Fork();
+            if (!TryParseType(genericArgFork, out var genericArg))
+            {
+                var error = PlampExceptionInfo.ExpectedGenericArg();
+                context.Exceptions.Add(new PlampException(error, context.Sequence.CurrentPosition));
+                continue;
+            }
+            context.Merge(genericArgFork);
+            genericTypes.Add(genericArg);
+        } while (context.Sequence.Current() is Comma);
+
+        var current = context.Sequence.Current();
+        if (current is not CloseSquareBracket)
+        {
+            var error = PlampExceptionInfo.GenericArgsIsNotClosed();
+            context.Exceptions.Add(new PlampException(error, current.Position));
+        }
+        else
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+        }
+
         return true;
     }
 

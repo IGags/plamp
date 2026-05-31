@@ -161,6 +161,7 @@ public class MethodAlwaysReturnsValueTests
         return new FuncNode(
             CreateTypeNode(returnType),
             new FuncNameNode(name),
+            [],
             parameters.Cast<ParameterNode>().ToList(),
             body
         );
@@ -184,27 +185,27 @@ public class MethodAlwaysReturnsValueTests
 
         public bool TryGetSymbol(NodeBase symbol, out FilePosition position)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void AddSymbol(NodeBase symbol, FilePosition position)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public bool RemoveSymbol(NodeBase symbol)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public ITranslationTable Fork()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void Merge(ITranslationTable child)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

@@ -32,8 +32,8 @@ public class RootNodeTests
     [Fact]
     public void ReplaceChild_WithTypedef_ReplacesType()
     {
-        var oldType = new TypedefNode(new TypedefNameNode("Old"), []);
-        var newType = new TypedefNode(new TypedefNameNode("New"), []);
+        var oldType = new TypedefNode(new TypedefNameNode("Old"), [], []);
+        var newType = new TypedefNode(new TypedefNameNode("New"), [], []);
         var root = new RootNode([], null, [], [oldType]);
 
         root.ReplaceChild(oldType, newType);

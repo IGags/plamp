@@ -1,34 +1,115 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Alternative.SymbolsBuildingImpl;
 
 namespace plamp.Alternative.SymbolsImpl;
 
+/// <inheritdoc/>
 public class FuncInfo : IFnInfo
 {
     private readonly MethodInfo _fnInfo;
-    
+    private readonly string _moduleName;
+    private readonly List<ITypeInfo> _genericParams;
+
+    /// <inheritdoc/>
     public string Name { get; }
     
-    public IReadOnlyList<IArgInfo> Arguments { get; }
+    /// <inheritdoc/>
+    public string DefinitionName { get; }
 
-    public ITypeInfo ReturnType { get; }
+    /// <inheritdoc/>
+    public IReadOnlyList<IArgInfo> Arguments => _fnInfo.GetParameters()
+        .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, _moduleName))).ToList();
 
+    /// <inheritdoc/>
+    public string ModuleName => _moduleName;
+
+    //TODO: Некорректные модули для типов
+    /// <inheritdoc/>
+    public ITypeInfo ReturnType => TypeInfo.FromType(_fnInfo.ReturnType, _moduleName);
+
+    /// <inheritdoc/>
+    public bool IsGenericFuncDefinition => _fnInfo.IsGenericMethodDefinition;
+
+    /// <inheritdoc/>
+    public bool IsGenericFunc => _fnInfo is { IsGenericMethod: true, IsGenericMethodDefinition: false };
+
+    /// <inheritdoc/>
     public MethodInfo AsFunc() => _fnInfo;
 
-    public FuncInfo(MethodInfo fnInfo)
+    /// <summary>
+    /// Создание экземпляра класса
+    /// </summary>
+    /// <param name="fnInfo">Информация о методе .net, который надо обернуть в этот класс, не может быть имплементацией дженерик метода</param>
+    /// <param name="moduleName">Имя модуля. Не может быть пустым.</param>
+    /// <param name="nameOverride">Переопределение имени для plamp</param>
+    /// <exception cref="InvalidOperationException">Метод является реализацией generic-метода или имя модуля пустое.</exception>
+    public FuncInfo(MethodInfo fnInfo, string moduleName, string? nameOverride = null)
     {
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new InvalidOperationException("Имя модуля не может быть пустым.");
+
+        if (fnInfo is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+            throw new InvalidOperationException("В таблице символов не может быть имплементации дженерик функции");
+        
         _fnInfo = fnInfo;
-        Name = fnInfo.Name;
-        ReturnType = new TypeInfo(fnInfo.ReturnType);
-        Arguments = fnInfo.GetParameters()
-            .Select(x => new ArgInfo(x.Name!, new TypeInfo(x.ParameterType))).ToList();
+        _moduleName = moduleName;
+
+        _genericParams = fnInfo.IsGenericMethodDefinition 
+            ? fnInfo.GetGenericArguments().Select(x => TypeInfo.FromType(x, _moduleName)).ToList() 
+            : [];
+        
+        var name = nameOverride ?? fnInfo.Name;
+
+        var args = $"({string.Join(", ", fnInfo.GetParameters().Select(x => x.ParameterType.Name))})";
+        if (fnInfo.IsGenericMethodDefinition)
+        {
+            Name = name + $"[{string.Join(", ", fnInfo.GetGenericArguments().Select(x => x.Name))}]" + args;
+        }
+        else
+        {
+            Name = name + args;
+        }
+        
+        DefinitionName = name;
     }
 
+    /// <inheritdoc/>
+    public IReadOnlyList<ITypeInfo> GetGenericParameters() => _genericParams;
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ITypeInfo> GetGenericArguments() => [];
+
+    /// <inheritdoc/>
+    public IFnInfo? GetGenericFuncDefinition() => null;
+
+    /// <inheritdoc/>
+    public IFnInfo? MakeGenericFunc(IReadOnlyList<ITypeInfo> genericTypeArguments)
+    {
+        if (!_fnInfo.IsGenericMethodDefinition) return null;
+        return new GenericFuncBuilder(this, genericTypeArguments);
+    }
+
+    /// <inheritdoc/>
     public bool Equals(IFnInfo? other)
     {
         if (other is not FuncInfo fnInfo) return false;
         return fnInfo._fnInfo == _fnInfo;
     }
-}
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return _fnInfo.GetHashCode();
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        if (obj is not FuncInfo fnInfo) return false;
+        return Equals(fnInfo);
+    }
+} 
