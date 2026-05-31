@@ -1,0 +1,5 @@
+module e2e.invalid_duplicate_generic_type_parameter;
+
+data Box[T, T] {
+    value: T
+}

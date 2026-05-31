@@ -1,0 +1,3 @@
+﻿module e2e.invalid_generic_type_declaration;
+
+data Box[];

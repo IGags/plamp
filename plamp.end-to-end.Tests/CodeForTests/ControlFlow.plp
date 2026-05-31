@@ -1,0 +1,141 @@
+module e2e.control_flow;
+
+fn if_else_chain(value: int) string {
+    if (value < 0) {
+        return "negative";
+    }
+
+    if (value = 0) {
+        return "zero";
+    }
+
+    return "positive";
+}
+
+fn sum_until_limit(limit: int) int {
+    sum := 0;
+    current := 0;
+
+    while (current <= limit) {
+        sum := sum + current;
+        current := current + 1;
+    }
+
+    return sum;
+}
+
+fn factorial(value: int) int {
+    result := 1;
+    current := value;
+
+    while (current > 1) {
+        result := result * current;
+        current := current - 1;
+    }
+
+    return result;
+}
+
+fn continue_skips_even_numbers(limit: int) int {
+    count := 0;
+    current := 0;
+
+    while (current <= limit) {
+        current := current + 1;
+        if (current % 2 = 0) {
+            continue;
+        }
+
+        count := count + 1;
+    }
+
+    return count;
+}
+
+fn break_stops_loop(stopAt: int) int {
+    current := 0;
+
+    while (true) {
+        if (current = stopAt) {
+            break;
+        }
+
+        current := current + 1;
+    }
+
+    return current;
+}
+
+fn boolean_expression(first: bool, second: bool) bool {
+    return (first && !second) || (!first && second);
+}
+
+fn nested_continue_affects_nearest_loop() int {
+    outer := 0;
+    innerSum := 0;
+
+    while (outer < 3) {
+        outer := outer + 1;
+        inner := 0;
+
+        while (inner < 3) {
+            inner := inner + 1;
+            if (inner = 2) {
+                continue;
+            }
+
+            innerSum := innerSum + inner;
+        }
+    }
+
+    return innerSum;
+}
+
+fn nested_break_affects_nearest_loop() int {
+    outer := 0;
+    innerSum := 0;
+
+    while (outer < 3) {
+        outer := outer + 1;
+        inner := 0;
+
+        while (true) {
+            inner := inner + 1;
+            if (inner = 2) {
+                break;
+            }
+
+            innerSum := innerSum + inner;
+        }
+    }
+
+    return innerSum + outer;
+}
+
+fn same_variable_name_in_disjoint_if_bodies(flag: bool) int {
+    if (flag) {
+        value := 20;
+        return value + 22;
+    }
+
+    if (!flag) {
+        value := 40;
+        return value + 2;
+    }
+
+    return 0;
+}
+
+fn same_variable_name_in_inner_body_preserves_outer_value() int {
+    if (true) {
+        value := 20;
+        if (true) {
+            nested := 22;
+            value := value + nested;
+        }
+
+        return value;
+    }
+
+    return 0;
+}

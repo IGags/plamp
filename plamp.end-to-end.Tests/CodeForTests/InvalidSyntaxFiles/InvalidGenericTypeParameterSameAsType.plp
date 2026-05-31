@@ -1,0 +1,5 @@
+module e2e.invalid_generic_type_parameter_same_as_type;
+
+data Box[Box] {
+    value: Box
+}

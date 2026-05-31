@@ -1,0 +1,5 @@
+module e2e.invalid_return_without_value;
+
+fn main() int {
+    return;
+}

@@ -1,0 +1,5 @@
+module e2e.invalid_generic_parameter_builtin_name;
+
+fn identity[int](value: int) int {
+    return value;
+}

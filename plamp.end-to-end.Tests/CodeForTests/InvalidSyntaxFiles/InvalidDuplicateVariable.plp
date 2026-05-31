@@ -1,0 +1,8 @@
+module e2e.invalid_duplicate_variable;
+
+fn main() int {
+    value: int;
+    value: int;
+
+    return 42;
+}

@@ -1,0 +1,10 @@
+module e2e.invalid_chaotic_top_level;
+
+garbage
+if
+else
+while
+1 4 "224"
+
+fn main() {
+}

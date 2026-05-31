@@ -19,16 +19,16 @@ public static class Program
 
         var filepath = Path.GetFullPath(args[0]);
         await using var file = File.OpenRead(filepath);
-        using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen:true);
-     
         var sw = Stopwatch.StartNew();
-        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(reader, filepath);
+        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(file, Encoding.UTF8, filepath);
+     
+        
         
         Console.WriteLine($"Compilation took {sw.Elapsed}");
         
         if (exceptions.Count > 0)
         {
-            await PrintRes(exceptions);
+            await PrintResAsync(exceptions);
             return -1;
         }
 
@@ -39,7 +39,7 @@ public static class Program
         
         SymTableEmitter.EmitModule(symTable, module);
         
-        module.CreateGlobalFunctions();        
+        module.CreateGlobalFunctions();
         Console.WriteLine($"Emission took {sw.Elapsed}");
         
         var method = module.GetMethod("main");
@@ -55,26 +55,86 @@ public static class Program
         
         return 0;
 
-        async Task PrintRes(List<PlampException> exList)
+        async Task PrintResAsync(List<PlampException> exList)
         {
-            var fileText = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
-            var fileBytes = await File.ReadAllBytesAsync(filepath);
+            var text = await File.ReadAllTextAsync(filepath, Encoding.UTF8);
+            await using var fs = File.OpenRead(filepath);
+            var lines = text.Split('\n');
+            exList = exList.OrderBy(x => x.FilePosition).ToList();
             foreach (var ex in exList)
             {
-                var start = Encoding.UTF8.GetString(fileBytes, 0, (int)ex.FilePosition.ByteOffset).Length;
-                var lookupStart = Math.Clamp(start, 0, Math.Max(fileText.Length - 1, 0));
-                var rowStart = fileText.LastIndexOf('\n', lookupStart);
-                var rowEnd = fileText.IndexOf('\n', lookupStart + 1);
-                rowStart = rowStart == -1 ? 0 : rowStart;
-                rowEnd = rowEnd == -1 ? fileText.Length : rowEnd;
+                var rowColPos = await ToRowColLenFilePositionAsync(ex.FilePosition, fs, Encoding.UTF8);
                 
-                var row = fileText[rowStart..rowEnd];
-                var ptrStart = start - rowStart;
-                var len = Math.Min(ex.FilePosition.CharacterLength, rowEnd - ptrStart + 1) - 1;
-                len = len < 0 ? 0 : len;
-                ptrStart = ptrStart < 1 ? 0 : ptrStart - 1;
-                var str = $"{ex.Message}" + '\n' + row + '\n' + new string(' ',  ptrStart) + '^' + new string('~', len) + '\n';
-                Console.WriteLine(str);
+                Console.WriteLine($"{rowColPos.Row + 1}:{rowColPos.Col + 1}:{rowColPos.Len} {ex.Message}");
+                Console.WriteLine($"{rowColPos.Row,4} |");
+                Console.WriteLine($"{rowColPos.Row + 1,4} | {lines[rowColPos.Row]}");
+                var limit = Math.Min(rowColPos.Len, lines[rowColPos.Row].Length - rowColPos.Col);
+                var prefixLen = rowColPos.Col;
+                var prefix = prefixLen == 0 ? "" : new string(' ', (int)prefixLen);
+                var postfix = limit <= 1 ? "" : new string('~', (int)limit - 1);
+                Console.WriteLine($"{rowColPos.Row + 2,4} | " + prefix + "^" + postfix);
+                Console.WriteLine();
+            }
+        }
+    }
+    
+    private static async Task<RowColLenFilePosition> ToRowColLenFilePositionAsync(
+        FilePosition position, 
+        Stream stream, 
+        Encoding encoding)
+    {
+        if(!stream.CanSeek) throw new ArgumentException("Stream must be seekable", nameof(stream));
+        if(!stream.CanRead) throw new ArgumentException("Stream must be readable", nameof(stream));
+        stream.Seek(0, SeekOrigin.Begin);
+        var decoder = encoding.GetDecoder();
+
+        var line = 0;
+        var chr = 0;
+
+        if (stream.Length < position.ByteLength + position.ByteOffset) throw new InvalidOperationException();
+        var buffer = new byte[8192];
+        var toRead = position.ByteOffset;
+
+        while (toRead > 0)
+        {
+            var readAmt = (int)Math.Min(buffer.Length, toRead);
+            var readCt = await stream.ReadAsync(buffer, 0, readAmt);
+            toRead -= readCt;
+            if(readCt == 0 && toRead != 0) throw new EndOfStreamException();
+            var ct = encoding.GetCharCount(buffer, 0, readCt);
+            var chars = new char[ct];
+            var charCt = decoder.GetChars(buffer, 0, readCt, chars, 0);
+
+            CountChars(ref line, ref chr, charCt, chars);
+        }
+
+        var finalCharCt = decoder.GetCharCount(Array.Empty<byte>(), true);
+        if (finalCharCt > 0)
+        {
+            var chars = new char[finalCharCt];
+            decoder.GetChars(Array.Empty<byte>(), 0, 0, chars, 0, true);
+            CountChars(ref line, ref chr, finalCharCt, chars);
+        }
+
+        buffer = new byte[position.ByteLength];
+        var lenReadCt = await stream.ReadAsync(buffer, 0, buffer.Length);
+        if (lenReadCt != buffer.Length) throw new EndOfStreamException();
+        var len = encoding.GetCharCount(buffer, 0, lenReadCt);
+        return new RowColLenFilePosition(line, chr, len);
+    }
+
+    private static void CountChars(ref int line, ref int chr, int charCt, char[] chars)
+    {
+        for (int i = 0; i < charCt; i++)
+        {
+            if (chars[i] == '\n')
+            {
+                line += 1;
+                chr = 0;
+            }
+            else
+            {
+                chr += 1;
             }
         }
     }

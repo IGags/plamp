@@ -374,7 +374,8 @@ public static class IlCodeEmitter
                     || constantType == typeof(uint) 
                     || constantType == typeof(short) 
                     || constantType == typeof(ushort) 
-                    || constantType == typeof(byte)) context.Generator.Emit(OpCodes.Ldc_I4_1);
+                    || constantType == typeof(byte)
+                    || constantType == typeof(sbyte)) context.Generator.Emit(OpCodes.Ldc_I4_1);
             else if(constantType == typeof(float)) context.Generator.Emit(OpCodes.Ldc_R4, 1f);
             else if(constantType == typeof(double)) context.Generator.Emit(OpCodes.Ldc_R8, 1d);
             else throw new InvalidOperationException(exceptionMessage);
@@ -1068,8 +1069,11 @@ public static class IlCodeEmitter
             return;
         }
 
-        ParameterInfo? arg;
-        if ((arg = context.Arguments.FirstOrDefault()) == null) throw new Exception();
+        var arg = context.Arguments.FirstOrDefault(x => x.Name == name);
+        if (arg == null)
+        {
+            throw new Exception("Variable or argument does not exists. Invalid compilation. Report to language developer.");
+        }
 
         var ix = Array.IndexOf(context.Arguments, arg);
         ix = context.IsStatic ? ix : ix + 1;
@@ -1155,6 +1159,8 @@ public static class IlCodeEmitter
             var loc = context.Generator.DeclareLocal(type);
             context.Generator.Emit(OpCodes.Ldloca, loc);
             context.Generator.Emit(OpCodes.Initobj, type);
+            EmitTypeInitFieldInitializers(node, context, () => context.Generator.Emit(OpCodes.Ldloca, loc));
+
             context.Generator.Emit(OpCodes.Ldloc, loc);
         }
         else if (type.IsArray || type == typeof(string))
@@ -1166,6 +1172,32 @@ public static class IlCodeEmitter
             var ctor = node.Type.TypeInfo.AsType().GetConstructor(BindingFlags.Public | BindingFlags.Instance, []);
             if (ctor == null) throw new Exception("Тип не имеет пустого конструктора, ошибка компилятора");
             context.Generator.Emit(OpCodes.Newobj, ctor);
+            EmitTypeInitFieldInitializers(node, context, () => context.Generator.Emit(OpCodes.Dup));
+        }
+    }
+    
+    /// <summary>
+    /// Эмитит присваивания полей внутри выражения инициализации типа
+    /// </summary>
+    /// <param name="node">Узел инициализации типа с набором инициализаторов полей</param>
+    /// <param name="context">Контекст текущей IL-эмиссии</param>
+    /// <param name="emitTarget">Action, которое кладёт на стек адрес value type или reference type объект</param>
+    private static void EmitTypeInitFieldInitializers(
+        InitTypeNode node,
+        EmissionContext context,
+        Action emitTarget)
+    {
+        foreach (var initializer in node.FieldInitializers)
+        {
+            var fieldInfo = initializer.FieldInfo?.AsField();
+            if (fieldInfo == null)
+            {
+                throw new Exception("Type initializer field must has .net member representation. If you see this exception write to a compiler developer.");
+            }
+
+            emitTarget();
+            EmitSingleLineExpression(initializer.Value, context, true);
+            context.Generator.Emit(OpCodes.Stfld, fieldInfo);
         }
     }
 

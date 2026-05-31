@@ -1,0 +1,9 @@
+module e2e.invalid_mutual_type_reference;
+
+data Left {
+    right: Right
+}
+
+data Right {
+    left: Left
+}

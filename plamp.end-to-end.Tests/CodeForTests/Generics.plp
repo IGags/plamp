@@ -1,0 +1,120 @@
+﻿module e2e.generics;
+
+data Box[T] {
+    value: T
+}
+
+data Pair[TLeft, TRight] {
+    left: TLeft;
+    right: TRight
+}
+
+fn identity[T](value: T) T {
+    return value;
+}
+
+fn second[T](first, second: T) T {
+    return second;
+}
+
+fn assign_generic_int_field(value: int) int {
+    box := Box[int]{};
+    box.value := value;
+
+    return box.value;
+}
+
+fn assign_generic_string_field(value: string) string {
+    box := Box[string]{};
+    box.value := value;
+
+    return box.value;
+}
+
+fn reassign_generic_struct_value() int {
+    first := Box[int]{};
+    first.value := 20;
+
+    second := Box[int]{};
+    second.value := 22;
+
+    first := second;
+
+    return first.value + second.value - 2;
+}
+
+fn generic_identity_int(value: int) int {
+    return identity[int](value);
+}
+
+fn generic_identity_string(value: string) string {
+    return identity[string](value);
+}
+
+fn generic_identity_inferred_string(value: string) string {
+    return identity(value);
+}
+
+fn generic_second_int(first, secondValue: int) int {
+    return second[int](first, secondValue);
+}
+
+fn make_int_box(value: int) Box[int] {
+    box := Box[int]{};
+    box.value := value;
+
+    return box;
+}
+
+fn read_int_box(box: Box[int]) int {
+    return box.value;
+}
+
+fn pass_generic_struct_between_functions(value: int) int {
+    box := make_int_box(value);
+
+    return read_int_box(box);
+}
+
+fn swap_pair_int_string(pair: Pair[int, string]) Pair[string, int] {
+    swapped := Pair[string, int]{};
+    swapped.left := pair.right;
+    swapped.right := pair.left;
+
+    return swapped;
+}
+
+fn generic_argument_permutation_keeps_left_value() string {
+    pair := Pair[int, string]{};
+    pair.left := 42;
+    pair.right := "value";
+
+    swapped := swap_pair_int_string(pair);
+
+    return swapped.left;
+}
+
+fn generic_argument_permutation_keeps_right_value() int {
+    pair := Pair[int, string]{};
+    pair.left := 42;
+    pair.right := "value";
+
+    swapped := swap_pair_int_string(pair);
+
+    return swapped.right;
+}
+
+fn nested_generic_usage() int {
+    outer := Box[Box[int]]{};
+    inner := Box[int]{};
+    inner.value := 42;
+    outer.value := inner;
+
+    return outer.value.value;
+}
+
+fn pass_generic_function_result_between_functions(value: int) int {
+    box := make_int_box(identity[int](value));
+
+    return read_int_box(box);
+}

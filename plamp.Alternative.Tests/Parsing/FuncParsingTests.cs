@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
@@ -86,6 +85,42 @@ public class FuncParsingTests
         yield return
         [
             """
+            fn separated_args(a, 
+                b :int,
+                c :double,
+                d, e: string) {
+            }
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("separated_args"),
+                [],
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("b")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("double")), new ParameterNameNode("c")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("d")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("e"))
+                ],
+                new BodyNode([]))
+            
+        ];
+        yield return
+        [
+            """
+            fn 
+            a() {}
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("a"),
+                [],
+                [],
+                new BodyNode([]))
+        ];
+        yield return
+        [
+            """
             fn add[T] (ls: List[T], val: T) List[T] { return ls; }
             """,
             new FuncNode(
@@ -129,8 +164,7 @@ public class FuncParsingTests
     [MemberData(nameof(ParseFunc_Correct_DataProvider))]
     public void ParseFunc_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseFunc(context, out var func);
         result.ShouldBe(true);
         context.Exceptions.ShouldBeEmpty();
@@ -143,13 +177,26 @@ public class FuncParsingTests
         yield return ["+", new List<string>(), false, null];
         yield return ["fn", new List<string>{PlampExceptionInfo.ExpectedFuncName().Code}, false, null];
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
-        yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code }, false, null];
+        yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets("EOF").Code }, false, null];
         yield return ["fn a(a: int,,b: int)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
+        yield return
+        [
+            """
+            fn a() 
+            {}
+            """,
+            new List<string>()
+            {
+                PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
+            },
+            false,
+            null
+        ];
         yield return [
             "fn a[()", new List<string>
             {
                 PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code, 
-                PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+                PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
             }, false, null
         ];
         yield return [
@@ -177,8 +224,7 @@ public class FuncParsingTests
     [MemberData(nameof(ParseFunc_Incorrect_DataProvider))]
     public void ParseFunc_Incorrect(string code, List<string> errorCodes, bool resultShould, NodeBase? astShould)
     {
-        var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseFunc(context, out var func);
         result.ShouldBe(resultShould);
         func.ShouldBeEquivalentTo(astShould);

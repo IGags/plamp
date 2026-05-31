@@ -1,0 +1,9 @@
+module e2e.invalid_generic_argument_count;
+
+fn identity[T](value: T) T {
+    return value;
+}
+
+fn main() int {
+    return identity[int, string](42);
+}

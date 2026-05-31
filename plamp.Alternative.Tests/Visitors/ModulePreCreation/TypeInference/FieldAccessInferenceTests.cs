@@ -230,9 +230,8 @@ public class FieldAccessInferenceTests
         using var ms = new MemoryStream();
         ms.Write(Encoding.UTF8.GetBytes(ModuleDefinitionsCode));
         ms.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(ms);
 
-        var parsing = CompilationPipeline.RunParsingAsync(reader, "f.plp").Result;
+        var parsing = CompilationPipeline.RunParsingAsync(ms, Encoding.UTF8, "f.plp").Result;
         var symTable = new SymTableBuilder();
 
         var context = new SymbolTableBuildingContext(parsing.Context.TranslationTable,

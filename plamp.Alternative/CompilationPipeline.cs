@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
@@ -28,9 +29,9 @@ namespace plamp.Alternative;
 
 public static class CompilationPipeline
 {
-    public static async Task<ParsingResult> RunParsingAsync(StreamReader fileStream, string fileName)
+    public static async Task<ParsingResult> RunParsingAsync(Stream fileStream, Encoding encoding, string fileName)
     {
-        var tokenizationResult = await Tokenizer.TokenizeAsync(fileStream, fileName);
+        var tokenizationResult = await Tokenizer.TokenizeAsync(fileStream, encoding, fileName);
         var translationTable = new TranslationTable();
         var parsingContext = new ParsingContext(tokenizationResult.Sequence, tokenizationResult.Exceptions, translationTable);
         var ast = Parser.ParseFile(parsingContext);
@@ -97,9 +98,9 @@ public static class CompilationPipeline
         return new(ast);
     }
 
-    public static async Task<AstParsingRes> RunFrontendSteps(StreamReader fileStream, string fileName)
+    public static async Task<AstParsingRes> RunFrontendSteps(Stream fileStream, Encoding encoding, string fileName)
     {
-        var (ast, context) = await RunParsingAsync(fileStream, fileName);
+        var (ast, context) = await RunParsingAsync(fileStream, encoding, fileName);
         
         var dependencies = new List<ISymTable> { Builtins.SymTable };
         var symTableBuilder = new SymTableBuilder() { ModuleName = "<undefined>" };

@@ -1,0 +1,8 @@
+module e2e.invalid_assign_count_mismatch;
+
+fn main() int {
+    first, second: int;
+    first, second := 42;
+
+    return first;
+}

@@ -1,0 +1,9 @@
+﻿module e2e.invalid_type_initializer_missing_field_value;
+
+data Point {
+    x: int
+}
+
+fn main() {
+    point := Point {x: };
+}

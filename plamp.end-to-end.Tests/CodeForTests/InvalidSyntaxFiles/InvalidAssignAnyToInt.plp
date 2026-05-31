@@ -1,0 +1,10 @@
+module e2e.invalid_assign_any_to_int;
+
+fn get_value() any {
+    return 19;
+}
+
+fn main() {
+    value: int;
+    value := get_value();
+}

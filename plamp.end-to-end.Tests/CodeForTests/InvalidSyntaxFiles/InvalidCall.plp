@@ -1,0 +1,9 @@
+module e2e.invalid_call;
+
+fn expects_string(value: string) int {
+    return 1;
+}
+
+fn main() {
+    expects_string(42);
+}

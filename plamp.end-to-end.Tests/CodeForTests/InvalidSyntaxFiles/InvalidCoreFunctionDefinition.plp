@@ -1,0 +1,5 @@
+module e2e.invalid_core_function_definition;
+
+fn strLen() int {
+    return 42;
+}

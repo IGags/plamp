@@ -9,4 +9,8 @@
       <ProjectReference Include="..\plamp.Abstractions\plamp.Abstractions.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <InternalsVisibleTo Include="plamp.Alternative.Tests" />
+    </ItemGroup>
+
 </Project>

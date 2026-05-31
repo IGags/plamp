@@ -57,14 +57,14 @@ public class TokenSequence : IEnumerable<TokenBase>
             if (_tokenList[i] != to) throw new InvalidOperationException("Token not found in sequence");
             return prev;
         }
-        var characterLen = 0;
+        var byteLen = 0L;
         if (prev.CompareTo(to.Position) != 1) throw new InvalidOperationException("Cannot make range to token that after current");
         
         for (; i >= 0; i--)
         {
             var token = _tokenList[i];
-            characterLen += token.Position.CharacterLength;
-            if (token == to) return token.Position with { CharacterLength = characterLen };
+            byteLen += token.Position.ByteLength;
+            if (token == to) return token.Position with { ByteLength = byteLen };
         }
         throw new InvalidOperationException("Token not found in sequence");
     }
@@ -78,6 +78,10 @@ public class TokenSequence : IEnumerable<TokenBase>
         return true;
     }
 
+    /// <summary>
+    /// Перейти к следующему токену-не-пробелу
+    /// </summary>
+    /// <returns>true - если нашли значимый токен, иначе - false</returns>>
     public bool MoveNextNonWhiteSpace()
     {
         while(true)
