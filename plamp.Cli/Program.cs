@@ -39,7 +39,7 @@ public static class Program
         
         SymTableEmitter.EmitModule(symTable, module);
         
-        module.CreateGlobalFunctions();        
+        module.CreateGlobalFunctions();
         Console.WriteLine($"Emission took {sw.Elapsed}");
         
         var method = module.GetMethod("main");

@@ -201,6 +201,15 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             return VisitResult.Continue;
         }
 
+        if (leftType != null
+            && rightType != null
+            && leftType.Equals(Builtins.Char)
+            && rightType.Equals(Builtins.Char)
+            && node is NotEqualNode or EqualNode)
+        {
+            return VisitResult.Continue;
+        }
+
         if (   leftType  != null 
             && rightType != null 
             && SymbolSearchUtility.IsNumeric(leftType) 
@@ -251,17 +260,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
     {
         result = null;
         resultType = null;
-        if (node is not AddNode addition
-            || (leftType == null  && rightType == null)
-            || (leftType != null  && !SymbolSearchUtility.IsString(leftType))
-            || (rightType != null && !SymbolSearchUtility.IsString(rightType)))
+        if (node is not AddNode addition)
         {
             return false;
         }
+
+        var concatInfo = GetConcatInfo(leftType, rightType);
+        if (concatInfo == null) return false;
         
         result = VisitResult.Continue;
         resultType = Builtins.String;
-        var callName = new FuncCallNameNode(nameof(Builtins.StrConcat.Name));
+        var callName = new FuncCallNameNode(concatInfo.DefinitionName);
         
         if (!context.TranslationTable.TryGetSymbol(node, out var position))
         {
@@ -279,8 +288,17 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
                 return new LiteralNode(leftLiteral.Value.ToString() + rightLiteral.Value, Builtins.String);
             }
             
-            var concatCall = new CallNode(null, callName, [addition.Left, addition.Right], []) { FnInfo = Builtins.StrConcat };
+            var concatCall = new CallNode(null, callName, [addNode.Left, addNode.Right], []) { FnInfo = concatInfo };
             return concatCall;
+        }
+
+        static IFnInfo? GetConcatInfo(ITypeInfo? left, ITypeInfo? right)
+        {
+            if (left == null || right == null) return null;
+            if (SymbolSearchUtility.IsString(left) && SymbolSearchUtility.IsString(right)) return Builtins.StrConcat;
+            if (SymbolSearchUtility.IsString(left) && right.Equals(Builtins.Char)) return Builtins.StrCharConcat;
+            if (left.Equals(Builtins.Char) && SymbolSearchUtility.IsString(right)) return Builtins.CharStrConcat;
+            return null;
         }
     }
 
@@ -865,8 +883,15 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.SkipChildren;
     }
 
-    protected override VisitResult PostVisitInitType(InitTypeNode node, TypeInferenceInnerContext context, NodeBase? parent)
+    protected override VisitResult PostVisitInitType(InitTypeNode node, TypeInferenceInnerContext context,
+                                                     NodeBase? parent)
     {
+        var initializerTypes = new Dictionary<InitFieldNode, ITypeInfo?>();
+        foreach (var initializer in node.FieldInitializers.Reverse())
+        {
+            initializerTypes[initializer] = PopRequiredExpressionType(context);
+        }
+
         if (Builtins.SymTable.ModuleName.Equals(node.Type.TypeInfo?.ModuleName))
         {
             var error = PlampExceptionInfo.CannotInitBuiltinType();
@@ -874,9 +899,52 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             context.InnerExpressionTypeStack.Push(null);
             return VisitResult.SkipChildren;
         }
+
+        // инициализация полей типа
+        if (node.Type.TypeInfo is { } initializedType)
+        {
+            foreach (var initializer in node.FieldInitializers)
+            {
+                var fieldInfo = initializedType.Fields.FirstOrDefault(x => x.Name == initializer.FieldName.Value);
+                if (fieldInfo == null)
+                {
+                    var record = PlampExceptionInfo.FieldIsNotFound();
+                    SetExceptionToSymbol(initializer.FieldName, record, context);
+                    continue;
+                }
+
+                initializer.FieldInfo = fieldInfo;
+                ValidateAssignmentTypeCompatibility(
+                    initializer,
+                    initializer.Value,
+                    fieldInfo.FieldType,
+                    context,
+                    initializerTypes.GetValueOrDefault(initializer));
+            }
+        }
         
         context.InnerExpressionTypeStack.Push(node.Type.TypeInfo);
         return VisitResult.SkipChildren;
+    }
+
+    /// <summary>
+    /// Получить тип значения со стека
+    /// </summary>
+    /// <param name="context">Контекст инференса</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException">Если на стеке не оказалось значений</exception>
+    private static ITypeInfo? PopRequiredExpressionType(
+        TypeInferenceInnerContext context)
+    {
+        if (context.InnerExpressionTypeStack.Count == 0)
+        {
+            // тут выкидывается именно InvalidOperationException т.к. эта ошибка не должна возникать из-за ввода пользователя,
+            // а когда инициализатор поля не положил значение в InnerExpressionTypeStack.
+            // Т.е. ошибка разработчика.
+            throw new InvalidOperationException("Expected type, but type stack is empty.");
+        }
+
+        return context.InnerExpressionTypeStack.Pop();
     }
 
     #endregion

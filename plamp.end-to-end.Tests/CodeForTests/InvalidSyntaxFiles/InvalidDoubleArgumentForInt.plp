@@ -1,0 +1,9 @@
+module e2e.invalid_double_argument_for_int;
+
+fn accepts_int(value: int) int {
+    return value;
+}
+
+fn main() {
+    accepts_int(1.0);
+}

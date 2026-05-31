@@ -1,0 +1,9 @@
+module e2e.invalid_string_any_concat;
+
+fn get_value() any {
+    return 17;
+}
+
+fn main() string {
+    return "value:" + get_value();
+}

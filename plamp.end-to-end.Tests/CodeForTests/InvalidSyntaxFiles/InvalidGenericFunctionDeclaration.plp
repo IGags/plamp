@@ -1,0 +1,5 @@
+module e2e.invalid_generic_function_declaration;
+
+fn identity[](value: int) int {
+    return value;
+}

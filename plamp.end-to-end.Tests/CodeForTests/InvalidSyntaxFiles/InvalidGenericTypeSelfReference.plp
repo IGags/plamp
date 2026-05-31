@@ -1,0 +1,5 @@
+module e2e.invalid_generic_type_self_reference;
+
+data Box[T] {
+    value: Box[T]
+}

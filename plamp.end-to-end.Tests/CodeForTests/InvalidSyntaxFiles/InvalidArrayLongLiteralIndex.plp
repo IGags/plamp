@@ -1,0 +1,7 @@
+module e2e.invalid_array_long_literal_index;
+
+fn main() int {
+    values := [1]int;
+
+    return values[5000000000];
+}

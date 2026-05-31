@@ -1,0 +1,189 @@
+/*
+ТУТА тесты комментариев 💩
+*/
+
+// Проверяет, что однострочный комментарий перед module не мешает поиску объявления модуля
+module e2e.comments; // Комментарий после верхнеуровневых инструкции должен быть отброшен токенизатором
+
+/* Многострочный комментарий
+   не должен ломать следующую функцию */
+fn single_line_comment_after_statement() int {
+    value := 20; // Тут не должно ломаться
+    value := value + 22;
+
+    return value;
+}
+
+fn multi_line_comment_between_tokens() int {
+    value/* комментарий между именем и оператором */:=/* комментарий между оператором и значением */42;
+
+    return value;
+}
+
+fn multi_line_comment_inside_expression() int {
+    return 20 /* середина бинарного выражения */ + 22;
+}
+
+fn nested_comment_markers_stay_inside_outer_comment() int { //// комментарий в комментарии
+    /* Вложенный маркер /* остаётся текстом первого комментария,
+       а закрывает комментарий только первая корректная последовательность. */
+    return 42;
+    /**//**/
+}
+
+fn comment_markers_inside_string_are_not_comments() string { // <-- тут тест, что строка, которая выглядит как комментарий остаётся строкой
+    return "/* not comment */" + "// still text" + "?/*\"*/";
+}
+
+fn add(first, second: int) int {
+    return first + second;
+}
+
+fn comments_between_function_arguments(first, second: int) int {
+    return add(
+        first, // первый аргумент уже прочитан
+        /*
+        коммент
+        */
+        second /* второй аргумент перед закрывающей скобкой */
+    );
+}
+
+/*
+          !!! Финальный босс !!!
+*/
+
+data Point {
+    x, y: int
+}
+
+data Box[T] {
+    value: T
+}
+
+data Pair[TLeft, TRight] {
+    left: TLeft;
+    right: TRight
+}
+
+fn identity[T](value: T) T {
+    return value;
+}
+
+fn second[T](first, second: T) T {
+    return second;
+}
+
+/*fn*/fn/*name*/ cursed_abomination/*(*/(/*flag*/flag/*:*/:/*bool*/bool/*)*/)/*return*/ int/*{*/ {
+    /*badPoint*/badPoint/*:=*/:=Point/*init*/{/*x*/x/*:*/:/*bad*/999;/*y*/y/*:*/:/*bad*/999};
+    /*goodPoint*/goodPoint/*:=*/:=Point/*init*/{/*x*/x/*:*/:/*good*/20;/*y*/y/*:*/:/*good*/22};
+
+    /*badBox*/badBox/*:=*/:=Box/*[*/[/*Point*/Point/*]*/]/*init*/{
+        /*value*/value/*:*/:/*badPoint*/badPoint
+    };
+
+    /*goodBox*/goodBox/*:=*/:=Box/*[*/[/*Point*/Point/*]*/]/*init*/{
+        /*value*/value/*:*/:/*identity*/identity/*[*/[/*Point*/Point/*]*/]/*(*/(/*goodPoint*/goodPoint/*)*/)
+    };
+
+    /*boxes*/boxes/*:=*/:=/*array*/[/*size*/2/*]*/]Box/*[*/[/*Point*/Point/*]*/];
+    /*boxes*/boxes/*[*/[/*i*/0/*]*/]/*:=*/:=/*bad*/badBox;
+    /*boxes*/boxes/*[*/[/*i*/1/*]*/]/*:=*/:=/*good*/goodBox;
+
+    /*chosenBox*/chosenBox/*:=*/:=second/*[*/[/*BoxPoint*/Box/*[*/[/*Point*/Point/*]*/]/*]*/]/*(*/(
+        /*first*/boxes/*[*/[/*bad*/0/*]*/],
+        /*second*/boxes/*[*/[/*good*/1/*]*/]
+    /*)*/);
+
+    /*pair*/pair/*:=*/:=Pair/*[*/[/*left*/Point/*,*/,/*right*/int/*]*/]/*init*/{
+        /*left*/left/*:*/:/*chosen*/chosenBox/*.*/.value;
+        /*right*/right/*:*/:/*sum*/chosenBox/*.*/.value/*.*/.x/*+*/+chosenBox/*.*/.value/*.*/.y
+    };
+
+    /*pairBox*/pairBox/*:=*/:=Box/*[*/[/*Pair*/Pair/*[*/[/*Point*/Point/*,*/,/*int*/int/*]*/]/*]*/]/*init*/{
+        /*value*/value/*:*/:/*pair*/pair
+    };
+
+    /*pairBoxes*/pairBoxes/*:=*/:=/*array*/[/*size*/1/*]*/]Box/*[*/[/*Pair*/Pair/*[*/[/*Point*/Point/*,*/,/*int*/int/*]*/]/*]*/];
+    /*pairBoxes*/pairBoxes/*[*/[/*i*/0/*]*/]/*:=*/:=/*pairBox*/pairBox;
+
+    /*rows*/rows/*:=*/:=/*array*/[/*size*/1/*]*/][]/*inner*/int;
+    /*numbers*/numbers/*:=*/:=/*array*/[/*size*/3/*]*/]int;
+
+    /*numbers*/numbers/*[*/[/*i*/0/*]*/]/*:=*/:=/*x*/pairBoxes/*[*/[/*i*/0/*]*/]/*.*/.value/*.*/.left/*.*/.x;
+    /*numbers*/numbers/*[*/[/*i*/1/*]*/]/*:=*/:=/*y*/pairBoxes/*[*/[/*i*/0/*]*/]/*.*/.value/*.*/.left/*.*/.y;
+    /*numbers*/numbers/*[*/[/*i*/2/*]*/]/*:=*/:=/*sum*/pairBoxes/*[*/[/*i*/0/*]*/]/*.*/.value/*.*/.right;
+
+    /*rows*/rows/*[*/[/*i*/0/*]*/]/*:=*/:=/*numbers*/numbers;
+
+    /*if*/if/*(*/(
+        /*flag*/flag
+        /*&&*/&&
+        /*x-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/0/*]*/]/*=*/=20
+        /*&&*/&&
+        /*y-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/1/*]*/]/*=*/=22
+        /*&&*/&&
+        /*sum-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/2/*]*/]/*=*/=42
+    /*)*/)/*then*/{
+        /*return*/return/*answer*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/2/*]*/];
+    /*}*/}
+
+    /*return*/return/*fallback*/0;
+/*}*/}/*}*/
+
+/* Расшифровка метода
+fn cursed_abomination(flag: bool) int {
+    badPoint := Point {x: 999; y: 999};
+    goodPoint := Point {x: 20; y: 22};
+
+    badBox := Box[Point] {
+        value: badPoint
+    };
+
+    goodBox := Box[Point] {
+        value: identity[Point](goodPoint)
+    };
+
+    boxes := [2]Box[Point];
+    boxes[0] := badBox;
+    boxes[1] := goodBox;
+
+    chosenBox := second[Box[Point]](
+        boxes[0],
+        boxes[1]
+    );
+
+    pair := Pair[Point, int] {
+        left: chosenBox.value;
+        right: chosenBox.value.x + chosenBox.value.y
+    };
+
+    pairBox := Box[Pair[Point, int]] {
+        value: pair
+    };
+
+    pairBoxes := [1]Box[Pair[Point, int]];
+    pairBoxes[0] := pairBox;
+
+    rows := [1][]int;
+    numbers := [3]int;
+
+    numbers[0] := pairBoxes[0].value.left.x;
+    numbers[1] := pairBoxes[0].value.left.y;
+    numbers[2] := pairBoxes[0].value.right;
+
+    rows[0] := numbers;
+
+    if (
+        flag
+        && rows[0][0] = 20
+        && rows[0][1] = 22
+        && rows[0][2] = 42
+    ) {
+        return rows[0][2];
+    }
+
+    return 0;
+}
+(я же не садист)
+*/

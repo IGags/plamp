@@ -49,6 +49,18 @@ public class DebugMethodBuilder : MethodBuilder
 
     public override Type ReturnType => _inner.ReturnType;
 
+    public override bool IsGenericMethodDefinition => _inner.IsGenericMethodDefinition;
+
+    public override bool ContainsGenericParameters => _inner.ContainsGenericParameters;
+
+    public override bool IsGenericMethod => _inner.IsGenericMethod;
+
+    public override Type[] GetGenericArguments() => _inner.GetGenericArguments();
+
+    public override MethodInfo GetGenericMethodDefinition() => _inner.GetGenericMethodDefinition();
+
+    public override MethodInfo MakeGenericMethod(params Type[] typeArguments) => _inner.MakeGenericMethod(typeArguments);
+
     #endregion
     
     public DebugMethodBuilder(MethodBuilder inner)

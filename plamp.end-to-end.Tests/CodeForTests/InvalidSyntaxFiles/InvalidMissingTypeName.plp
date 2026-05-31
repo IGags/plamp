@@ -1,0 +1,3 @@
+﻿module e2e.invalid_missing_type_name;
+
+data ;

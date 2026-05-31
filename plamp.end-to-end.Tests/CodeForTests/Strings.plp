@@ -1,0 +1,35 @@
+module e2e.strings;
+
+fn concat_literals() string {
+    return "pl" + "amp";
+}
+
+fn concat_arguments(first, second: string) string {
+    return first + second;
+}
+
+fn concat_chain() string {
+    return "a" + "b" + "c" + "d";
+}
+
+fn concat_string_with_char_literal() string {
+    return "A" + 'Z';
+}
+
+fn concat_char_literal_with_string() string {
+    return 'A' + "Z";
+}
+
+fn concat_string_with_char_variable() string {
+    suffix := 'p';
+
+    return "plam" + suffix;
+}
+
+fn get_suffix_char() char {
+    return 'p';
+}
+
+fn concat_string_with_char_from_function() string {
+    return "plam" + get_suffix_char();
+}

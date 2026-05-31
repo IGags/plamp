@@ -1,0 +1,5 @@
+module e2e.invalid_builtin_type_init;
+
+fn main() {
+    value := int{};
+}

@@ -1,0 +1,9 @@
+module e2e.invalid_while_predicate_int;
+
+fn main() int {
+    while (1) {
+        return 42;
+    }
+
+    return 0;
+}

@@ -1,0 +1,9 @@
+﻿module e2e.invalid_return_if_else_one_branch;
+
+fn main() int {
+    if (true) {
+        return 1;
+    } else {
+        value := 2;
+    }
+}

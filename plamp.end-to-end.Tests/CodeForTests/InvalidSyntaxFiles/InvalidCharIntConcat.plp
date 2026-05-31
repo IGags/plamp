@@ -1,0 +1,5 @@
+module e2e.invalid_char_int_concat;
+
+fn main() string {
+    return 'v' + 17;
+}

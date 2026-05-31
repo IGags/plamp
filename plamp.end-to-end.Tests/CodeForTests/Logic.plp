@@ -1,0 +1,51 @@
+module e2e.logic;
+
+fn parenthesized_logic(first, second, third: bool) bool {
+    return (first && second) || (!first && third);
+}
+
+fn inverted_parenthesized_logic(first, second, third: bool) bool {
+    return !(first && (second || third));
+}
+
+fn logic_in_if_block(first, second, third: bool) int {
+    if ((first && second) || third) {
+        return 42;
+    }
+
+    return 0;
+}
+
+fn logic_in_while_block(limit: int) int {
+    current := 0;
+    sum := 0;
+    allow := true;
+
+    while ((current < limit) && allow) {
+        current := current + 1;
+        sum := sum + current;
+
+        if (current = 3) {
+            allow := false;
+        }
+    }
+
+    return sum;
+}
+
+fn returns_bool_type(value: int) bool {
+    return (value > 10) && (value < 20);
+}
+
+fn stores_bool_expression_in_variable(first, second: int) bool {
+    result := (first < second) && !(first = 0);
+
+    return result;
+}
+
+fn reassigns_bool_expression_variable(first, second: int) bool {
+    result := first < second;
+    result := result && (second < 50);
+
+    return result;
+}

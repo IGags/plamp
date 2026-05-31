@@ -1,0 +1,9 @@
+module e2e.invalid_generic_many_implementations;
+
+fn same[T](first, second: T) T {
+    return first;
+}
+
+fn main() int {
+    return same(42, "text");
+}

@@ -30,6 +30,16 @@ public static class Builtins
     public static ITypeInfo Void => SymTable.FindType(BuiltinSymTable.VoidName)!;
 
     public static IFnInfo StrConcat => SymTable.FindFunc(BuiltinSymTable.StrConcatName)!;
+
+    /// <summary>
+    /// Функция конкатенации строки и символа для оператора сложения
+    /// </summary>
+    public static IFnInfo StrCharConcat => SymTable.FindFunc(BuiltinSymTable.StrCharConcatName)!;
+
+    /// <summary>
+    /// Функция конкатенации символа и строки оператора сложения
+    /// </summary>
+    public static IFnInfo CharStrConcat => SymTable.FindFunc(BuiltinSymTable.CharStrConcatName)!;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Length(string? str)
@@ -48,6 +58,22 @@ public static class Builtins
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Concat(string arg1, string arg2) => arg1 + arg2;
+
+    /// <summary>
+    /// Выполняет конкатенацию строки и символа
+    /// </summary>
+    /// <param name="arg1">Левая строковая часть</param>
+    /// <param name="arg2">Правый символ</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string Concat(string arg1, char arg2) => arg1 + arg2;
+
+    /// <summary>
+    /// Выполняет конкатенацию символа и строки
+    /// </summary>
+    /// <param name="arg1">Левый символ</param>
+    /// <param name="arg2">Правая строковая часть</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string Concat(char arg1, string arg2) => arg1 + arg2;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool ArrayEquals(Array? arr1, Array? arr2)
@@ -86,7 +112,7 @@ public static class Builtins
         
         for (var i = 0; i < arr1.Length; i++)
         {
-            if (arr1.GetValue(i)!.Equals(arr2.GetValue(i))) return false;
+            if (!arr1.GetValue(i)!.Equals(arr2.GetValue(i))) return false;
         }
 
         return true;
@@ -144,6 +170,8 @@ internal class BuiltinSymTable : ISymTable
     internal const string ArrayName  = "array";
 
     internal const string StrConcatName = "strConcat";
+    internal const string StrCharConcatName = "<strCharConcat>";
+    internal const string CharStrConcatName = "<charStrConcat>";
     
     private readonly FrozenDictionary<string, ITypeInfo> _types;
     private readonly FrozenDictionary<string, FuncInfo> _funcs;
@@ -194,6 +222,8 @@ internal class BuiltinSymTable : ISymTable
             [arrLenName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Length), [typeof(Array)])!, ModuleName, arrLenName),
             [arrConcatName] = new(typeof(string).GetMethod(nameof(string.Concat), [typeof(string[])])!, ModuleName, arrConcatName),
             [StrConcatName] = new(typeof(string).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(string)])!, ModuleName, StrConcatName),
+            [StrCharConcatName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Concat), [typeof(string), typeof(char)])!, ModuleName, StrCharConcatName),
+            [CharStrConcatName] = new(typeof(Builtins).GetMethod(nameof(Builtins.Concat), [typeof(char), typeof(string)])!, ModuleName, CharStrConcatName),
             [arrEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.ArrayEquals), [typeof(Array), typeof(Array)])!, ModuleName, arrEqualsName),
             [strEqualsName] = new(typeof(Builtins).GetMethod(nameof(Builtins.StringEquals), [typeof(string), typeof(string)])!, ModuleName, strEqualsName),
             [makeArrayName] = new(typeof(Builtins).GetMethod(nameof(Builtins.MakeArray))!, ModuleName, makeArrayName)

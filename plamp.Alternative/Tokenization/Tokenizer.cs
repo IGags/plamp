@@ -617,11 +617,12 @@ public static class Tokenizer
         //Пропускаем метку старта.
         position += 2;
         int endIx;
+        var currentLineCommentStart = startIx;
         //Делаем логику в цикле, пока не найдём метку конца, каждая итерация этого цикла читает 1 новую строку
         while ((endIx = text.IndexOf("*/", position, StringComparison.InvariantCulture)) < 0)
         {
             //Забираем всё до конца строки так как не нашли метку конца в этой линии
-            var read = text[startIx..];
+            var read = text[currentLineCommentStart..];
             commentBuilder.Append(read);
             
             //Добавляем смещение
@@ -647,11 +648,12 @@ public static class Tokenizer
             text = readRes;
             //Ставим позицию в 0 для следующей строки
             position = 0;
+            currentLineCommentStart = 0;
         }
 
         //Если нашли метку, то находим следующий символ после неё
         position = endIx + 2;
-        var commentPart = text[startIx..position];
+        var commentPart = text[currentLineCommentStart..position];
         commentBuilder.Append(commentPart);
         //Перерассчитываем смещение и собираем готовый токен. 
         byteOffset += encoding.GetByteCount(commentPart);

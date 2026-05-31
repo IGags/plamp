@@ -1,0 +1,78 @@
+module e2e.increments;
+
+data Counter {
+    value: int
+}
+
+fn postfix_increment_by_indexer_in_assignment() int {
+    values := [1]int;
+    values[0] := 41;
+    before := values[0]++;
+
+    return before + values[0] - 41;
+}
+
+fn prefix_increment_by_indexer_in_assignment() int {
+    values := [1]int;
+    values[0] := 41;
+    after := ++values[0];
+
+    return after;
+}
+
+fn postfix_increment_field_in_assignment() int {
+    counter := Counter{};
+    counter.value := 41;
+    before := counter.value++;
+
+    return before + counter.value - 41;
+}
+
+fn prefix_increment_field_in_assignment() int {
+    counter := Counter{};
+    counter.value := 41;
+    after := ++counter.value;
+
+    return after;
+}
+
+fn incremented_assignment_target_then_reassign() int {
+    values := [1]int;
+    values[0] := 40;
+    values[0]++;
+    values[0] := values[0] + 1;
+
+    return values[0];
+}
+
+fn postfix_decrement_by_indexer_in_assignment() int {
+    values := [1]int;
+    values[0] := 43;
+    before := values[0]--;
+
+    return before + values[0] - 43;
+}
+
+fn prefix_decrement_by_indexer_in_assignment() int {
+    values := [1]int;
+    values[0] := 43;
+    after := --values[0];
+
+    return after;
+}
+
+fn postfix_decrement_field_in_assignment() int {
+    counter := Counter{};
+    counter.value := 43;
+    before := counter.value--;
+
+    return before + counter.value - 43;
+}
+
+fn prefix_decrement_field_in_assignment() int {
+    counter := Counter{};
+    counter.value := 43;
+    after := --counter.value;
+
+    return after;
+}

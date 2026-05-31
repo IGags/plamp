@@ -1,0 +1,5 @@
+module e2e.invalid_malformed_number;
+
+fn main() {
+    value := 1.0i;
+}

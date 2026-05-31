@@ -1,0 +1,5 @@
+module e2e.invalid_return_value_from_void;
+
+fn main() {
+    return 42;
+}

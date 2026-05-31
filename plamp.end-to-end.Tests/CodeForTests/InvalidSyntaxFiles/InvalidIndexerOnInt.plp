@@ -1,0 +1,7 @@
+module e2e.invalid_indexer_on_int;
+
+fn main() int {
+    value := 42;
+
+    return value[0];
+}

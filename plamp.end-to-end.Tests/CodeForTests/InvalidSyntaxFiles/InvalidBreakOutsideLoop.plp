@@ -1,0 +1,5 @@
+module e2e.invalid_break_outside_loop;
+
+fn main() {
+    break;
+}

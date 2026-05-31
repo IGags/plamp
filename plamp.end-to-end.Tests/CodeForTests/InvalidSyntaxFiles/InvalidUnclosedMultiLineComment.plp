@@ -1,0 +1,6 @@
+module e2e.invalid_unclosed_multi_line_comment;
+
+fn main() int {
+    /* comment
+    return 42;
+}

@@ -2,12 +2,19 @@ using System.Reflection;
 using System.Reflection.Emit;
 using plamp.Abstractions.Symbols;
 using plamp.Abstractions.Symbols.SymTableBuilding;
-using plamp.ILCodeEmitters.EmissionDebug;
 
 namespace plamp.ILCodeEmitters;
 
+/// <summary>
+/// Эмиттер таблицы символов
+/// </summary>
 public static class SymTableEmitter
 {
+    /// <summary>
+    /// Эмитит пользовательские типы и функции через переданный билдер
+    /// </summary>
+    /// <param name="builder">Таблица символов с типами и функциями модуля</param>
+    /// <param name="moduleBuilder">Билдер, в который выполняется эмиссия</param>
     public static void EmitModule(ISymTableBuilder builder, ModuleBuilder moduleBuilder)
     {
         var types = TypeDependencyHelper.OrderTypes(builder.ListTypes());
@@ -121,7 +128,16 @@ public static class SymTableEmitter
         }
     }
 
-    public static void EmitFunction(ModuleBuilder module, ISymTableBuilder symTableBuilder, IFnBuilderInfo func)
+    /// <summary>
+    /// Эмитит одну глобальную функцию в модуль
+    /// </summary>
+    /// <param name="module">Билдер, в который добавляется функция</param>
+    /// <param name="symTableBuilder">Таблица символов, связанная с AST текущего модуля</param>
+    /// <param name="func">Описание функции из таблицы символов</param>
+    public static void EmitFunction(
+        ModuleBuilder module,
+        ISymTableBuilder symTableBuilder,
+        IFnBuilderInfo func)
     {
         var methodBuilder = module.DefineGlobalMethod(
             func.DefinitionName,
@@ -148,16 +164,12 @@ public static class SymTableEmitter
         methodBuilder.SetParameters(parameterTypes);
         methodBuilder.SetReturnType(retType);
         func.MethodBuilder = methodBuilder;
-        
-        var dbg = new DebugMethodBuilder(methodBuilder);
-
         if (!symTableBuilder.TryGetDefinition(func, out var node))
         {
             throw new InvalidOperationException("Не найдено объявление функции в исходном ast, ошибка в коде компилятора.");
         }
         
-        IlCodeEmitter.EmitMethodBody(node.Body, dbg, parameters);
-        Console.WriteLine(dbg.GetIlRepresentation());
+        IlCodeEmitter.EmitMethodBody(node.Body, methodBuilder, parameters);
     }
 
     private static void SetGenericsForFunc(MethodBuilder methodBuilder, IReadOnlyList<IGenericParameterBuilder> genericParams)

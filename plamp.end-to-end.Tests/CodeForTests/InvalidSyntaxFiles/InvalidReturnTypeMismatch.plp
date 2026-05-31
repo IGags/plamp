@@ -1,0 +1,5 @@
+module e2e.invalid_return_type_mismatch;
+
+fn main() int {
+    return "text";
+}

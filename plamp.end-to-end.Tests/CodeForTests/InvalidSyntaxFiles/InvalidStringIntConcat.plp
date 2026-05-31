@@ -1,0 +1,5 @@
+module e2e.invalid_string_int_concat;
+
+fn main() string {
+    return "value:" + 17;
+}

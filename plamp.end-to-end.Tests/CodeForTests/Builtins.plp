@@ -1,0 +1,103 @@
+module e2e.builtins;
+
+fn string_length_counts_escape_as_single_character() int {
+    return strLen("ab\tc");
+}
+
+fn string_equals_same_value() bool {
+    return strEquals("pl" + "amp", "plamp");
+}
+
+fn string_equals_different_value() bool {
+    return strEquals("plamp", "other");
+}
+
+fn array_length_for_int_array() int {
+    values := [42]int;
+
+    return arrLen(values);
+}
+
+fn make_array_fills_int_values() int {
+    values := makeArray[int](21, 2);
+
+    return values[0] + values[1];
+}
+
+fn array_equals_same_int_values() bool {
+    first := [2]int;
+    second := [2]int;
+    first[0] := 20;
+    first[1] := 22;
+    second[0] := 20;
+    second[1] := 22;
+
+    return arrEquals(first, second);
+}
+
+fn array_equals_different_int_values() bool {
+    first := [2]int;
+    second := [2]int;
+    first[0] := 20;
+    first[1] := 22;
+    second[0] := 20;
+    second[1] := 21;
+
+    return arrEquals(first, second);
+}
+
+fn array_equals_different_lengths() bool {
+    first := [2]int;
+    second := [3]int;
+
+    return arrEquals(first, second);
+}
+
+fn array_equals_different_element_types() bool {
+    first := [1]int;
+    second := [1]string;
+    first[0] := 19;
+    second[0] := "19";
+
+    return arrEquals(first, second);
+}
+
+fn array_equals_same_string_values() bool {
+    first := [2]string;
+    second := [2]string;
+    first[0] := "pl";
+    first[1] := "amp";
+    second[0] := "pl";
+    second[1] := "amp";
+
+    return arrEquals(first, second);
+}
+
+fn array_equals_nested_arrays() bool {
+    first := [1][]int;
+    second := [1][]int;
+    first[0] := makeArray[int](42, 1);
+    second[0] := makeArray[int](42, 1);
+
+    return arrEquals(first, second);
+}
+
+fn return_int_as_any() any {
+    return 42;
+}
+
+fn return_string_as_any() any {
+    return "value";
+}
+
+fn array_equals_empty_arrays() any {
+    first := [0]int;
+    second := [0]int;
+    return arrEquals(first, second);
+}
+
+fn strings_equals_empty_strings() any {
+    first := "";
+    second := "";
+    return strEquals(first, second);
+}

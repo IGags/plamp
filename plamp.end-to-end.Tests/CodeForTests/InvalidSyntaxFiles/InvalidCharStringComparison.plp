@@ -1,0 +1,5 @@
+module e2e.invalid_char_string_comparison;
+
+fn main() bool {
+    return 'x' = "x";
+}

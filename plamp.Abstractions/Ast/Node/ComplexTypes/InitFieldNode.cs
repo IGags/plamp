@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using plamp.Abstractions.Ast.Node.Definitions.Type.Definition;
+using plamp.Abstractions.Symbols.SymTable;
 
 namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 
@@ -10,6 +11,11 @@ namespace plamp.Abstractions.Ast.Node.ComplexTypes;
 /// <param name="value">Выражение значения поля</param>
 public class InitFieldNode(FieldNameNode fieldName, NodeBase value) : NodeBase
 {
+    /// <summary>
+    /// Поле типа, найденное для этого инициализатора во время вывода типов
+    /// </summary>
+    public IFieldInfo? FieldInfo { get; set; }
+
     /// <summary>
     /// Имя поля типа
     /// </summary>

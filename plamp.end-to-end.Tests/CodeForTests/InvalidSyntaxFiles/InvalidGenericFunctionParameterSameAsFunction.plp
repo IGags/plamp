@@ -1,0 +1,5 @@
+module e2e.invalid_generic_function_parameter_same_as_function;
+
+fn identity[identity](value: identity) identity {
+    return value;
+}

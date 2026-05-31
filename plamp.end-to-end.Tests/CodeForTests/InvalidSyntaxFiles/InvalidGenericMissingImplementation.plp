@@ -1,0 +1,8 @@
+module e2e.invalid_generic_missing_implementation;
+
+fn make[T]() T {
+}
+
+fn main() int {
+    return make();
+}
