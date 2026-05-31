@@ -19,7 +19,8 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class ReturnTypeInferenceTests
 {
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void UnresolvedFuncReturnType_ReturnsUnexpectedType([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new FuncNode(
@@ -36,7 +37,8 @@ public class ReturnTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.TypeIsNotFound("aaa").Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void ReturnSameTypeAsFunc_ReturnNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("int"))
@@ -49,7 +51,8 @@ public class ReturnTypeInferenceTests
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
     
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void VoidFuncReturnNull_ReturnNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var returnType = new TypeNode(new TypeNameNode("void"))
@@ -62,7 +65,8 @@ public class ReturnTypeInferenceTests
         SetupMockAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void ReturnDifferentTypeFromFunc_ReturnException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
@@ -82,7 +86,8 @@ public class ReturnTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.ReturnTypeMismatch().Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void FuncVoidNodeReturnValue_ReturnException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
@@ -102,7 +107,8 @@ public class ReturnTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotReturnValue().Code));
     }
     
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void FuncHasReturnTypeNodeReturnNull_ReturnException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)

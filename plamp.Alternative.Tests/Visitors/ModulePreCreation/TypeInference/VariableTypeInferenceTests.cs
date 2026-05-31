@@ -23,7 +23,8 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class VariableTypeInferenceTests
 {
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void VariableDefinitionInference_ReturnNoExceptions([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -33,7 +34,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void NotExistVariableInference_ReturnsVariableNotExistException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new MemberNode("b");
@@ -51,7 +53,8 @@ public class VariableTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void CreateAndUseVariableDefinition_ReturnNoException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -62,7 +65,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void CreateVariableAndAssignOtherType_InvalidOperationException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var exceptionMember = new AssignNode([new MemberNode("a")], [new LiteralNode("123", Builtins.String)]);
@@ -81,7 +85,8 @@ public class VariableTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void CreateVariableBeforeAndGetFromChildScope_ReturnsNoException([Frozen]Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -96,9 +101,10 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void DefineVariableAfterDefinitionInChildScope_Correct([Frozen] Mock<ITranslationTable> translationTable,
-        TypeInferenceWeaver visitor)
+                                                                  TypeInferenceWeaver visitor)
     {
         /*
          * {
@@ -123,7 +129,8 @@ public class VariableTypeInferenceTests
         result.Exceptions.ShouldBeEmpty();
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void CreateVariableInOtherScopeStack_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -140,7 +147,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void DefineVariableExplicitly_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -150,7 +158,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void DefineVariableExplicitlyAndAssign_ReturnsNoException([Frozen] Mock<ITranslationTable> symbolTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -163,7 +172,8 @@ public class VariableTypeInferenceTests
     }
 
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void DefineVariableExplicitlyTwice_ReturnsDuplicateDefinitionException(
         [Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
@@ -181,10 +191,10 @@ public class VariableTypeInferenceTests
                 y => y.Count.ShouldBe(2),
                 y => y[0].Code.ShouldBe(PlampExceptionInfo.DuplicateVariableDefinition().Code),
                 y => y[1].Code.ShouldBe(PlampExceptionInfo.DuplicateVariableDefinition().Code))
-            );
+        );
     }
 
-    [Theory, AutoData]
+    [Theory][AutoData]
     public void DefineVariableAndAssignToOther_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -195,7 +205,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void AssignUndefined_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -210,7 +221,8 @@ public class VariableTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void AssignThemself_ReturnsException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(
@@ -225,7 +237,8 @@ public class VariableTypeInferenceTests
             x => x.Exceptions[0].Code.ShouldBe(PlampExceptionInfo.CannotFindMember().Code));
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void AssignEmptyDefinition_ReturnsNoException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
@@ -238,7 +251,8 @@ public class VariableTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void AssignThemselfAfterDefinition_ReturnsNoException([Frozen] Mock<ITranslationTable> translationTable, TypeInferenceWeaver visitor)
     {
         var ast = new BodyNode(

@@ -12,7 +12,8 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class ConditionTypeInferenceTests
 {
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void ConditionWithCorrectPredicateType_ReturnNoException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
@@ -23,7 +24,8 @@ public class ConditionTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, translationTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void ConditionWithIncorrectPredicateType_ReturnsException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
