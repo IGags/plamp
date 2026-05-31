@@ -27,7 +27,7 @@ public class ControlFlowTests
     }
 
     /// <summary>
-    /// Проверяет while-цикл с условием <= и накоплением суммы
+    /// Проверяет while-цикл с условием ?lt;= и накоплением суммы
     /// </summary>
     [Theory]
     [InlineData(0, 0)]

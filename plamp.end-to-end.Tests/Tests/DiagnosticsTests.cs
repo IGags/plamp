@@ -1,4 +1,3 @@
-using System.Linq;
 using plamp.Alternative;
 using plamp.EndToEnd.Tests.Infrastructure;
 using Shouldly;
