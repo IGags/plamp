@@ -256,6 +256,7 @@ internal class TokenizationContext : IDisposable
         CancellationToken ct = default)
     {
         if (!fileStream.CanRead) throw new ArgumentException($"{nameof(fileName)} должно быть возможно читать");
+        if (!fileStream.CanSeek) throw new ArgumentException($"По {nameof(fileName)} должно быть возможно перемещаться");
 
         _fileStream = fileStream;
         _decoder = encoding.GetDecoder();
@@ -427,9 +428,10 @@ internal class TokenizationContext : IDisposable
         {
             var next = await TryReadFromBufferedStream(ct);
             
-            //В начале файла в UTF-8 может располагаться маркер кодировки. Его следует пропускать, при этом смещение в стриме не изменяется, так как он должен иметь нулевую длину.
+            //В начале файла в UTF-8 может располагаться маркер кодировки. Его следует пропускать, он имеет нулевую длину, но при этом не нулевой размер в байтах.
             if (_byteOffset == 0 && next is { Symbol: (char)65279 } && Encoding.Equals(Encoding.UTF8))
             {
+                _byteOffset += Encoding.GetPreamble().Length;
                 continue;
             }
             

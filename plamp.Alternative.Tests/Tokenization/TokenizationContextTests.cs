@@ -21,9 +21,37 @@ public class TokenizationContextTests
     [Fact]
     public void CreateWithUnreadableStream_ThrowsArgumentException()
     {
-        using var stream = new UnreadableStream();
+        using var stream = new UnreadableStream(false, true);
 
         Assert.Throws<ArgumentException>(() => CreateContext(stream, Encoding.UTF8));
+    }
+
+    /// <summary>
+    /// Создание контекста с unseekable stream завершается ошибкой
+    /// </summary>
+    [Fact]
+    public void CreatWithUnseekableStream_ThrowsArgumentException()
+    {
+        using var stream = new UnreadableStream(true, false);
+
+        Assert.Throws<ArgumentException>(() => CreateContext(stream, Encoding.UTF8));
+    }
+
+    /// <summary>
+    /// Контекст пропускает подпись UTF-8 BOM
+    /// </summary>
+    [Fact]
+    public async Task MoveNextAsync_SkipsUtf8SignatureAndReadFirstChar()
+    {
+        var preamble = Encoding.UTF8.GetPreamble();
+        var text = $"{Encoding.UTF8.GetString(preamble)}b";
+        
+        using var context = CreateContext(text, Encoding.UTF8);
+        var result = await ReadAllAsync(context);
+        
+        Assert.Equal("b", result);
+        Assert.True(context.IsEof);
+        Assert.Equal(Encoding.UTF8.GetByteCount(text), context.ByteOffset);
     }
 
     /// <summary>
@@ -396,10 +424,10 @@ public class TokenizationContextTests
         return builder.ToString();
     }
 
-    private sealed class UnreadableStream : Stream
+    private sealed class UnreadableStream(bool canRead, bool canSeek) : Stream
     {
-        public override bool CanRead => false;
-        public override bool CanSeek => false;
+        public override bool CanRead { get; } = canRead;
+        public override bool CanSeek { get; } = canSeek;
         public override bool CanWrite => false;
         public override long Length => 0;
         public override long Position
