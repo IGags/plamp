@@ -101,8 +101,7 @@ public class InitTypeInferenceTests
     public (NodeBase, PreCreationContext) SetupAndAct(string code)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(code));
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        var parseRes = CompilationPipeline.RunParsingAsync(reader, "test.plp").Result;
+        var parseRes = CompilationPipeline.RunParsingAsync(stream, Encoding.UTF8, "test.plp").Result;
         var builder = new SymTableBuilder() { ModuleName = "test" };
         var res = CompilationPipeline.RunSymTableBuilding(parseRes.Ast,
             new SymbolTableBuildingContext(parseRes.Context.TranslationTable, [Builtins.SymTable], builder));

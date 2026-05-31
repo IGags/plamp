@@ -39,7 +39,7 @@ public class TypeInitTests
         res.ShouldBeFalse();
         node.ShouldBeNull();
         var ex = context.Exceptions.ShouldHaveSingleItem();
-        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code);
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedBodyInCurlyBrackets("+").Code);
     }
 
     [Fact]

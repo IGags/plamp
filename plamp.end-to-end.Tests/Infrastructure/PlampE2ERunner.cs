@@ -32,9 +32,7 @@ public static class PlampE2ERunner
     {
         var filePath = ResolveCodeForTestsPath(relativePath);
         await using var file = File.OpenRead(filePath);
-        using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen: true);
-
-        var (exceptions, _) = await CompilationPipeline.RunFrontendSteps(reader, filePath);
+        var (exceptions, _) = await CompilationPipeline.RunFrontendSteps(file, Encoding.UTF8, filePath);
         return exceptions;
     }
 
@@ -46,9 +44,8 @@ public static class PlampE2ERunner
     private static async Task<CompiledPlampProgram> CompileAsync(string filePath)
     {
         await using var file = File.OpenRead(filePath);
-        using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen: true);
 
-        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(reader, filePath);
+        var (exceptions, symTable) = await CompilationPipeline.RunFrontendSteps(file, Encoding.UTF8, filePath);
         if (exceptions.Count > 0)
         {
             throw new E2ECompilationException(filePath, exceptions);

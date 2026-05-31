@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
@@ -42,15 +41,23 @@ public class WhileLoopParsingTests
                 ])
             )
         ];
+        yield return
+        [
+            """
+            while(
+                a = 1){}
+            """,
+            new WhileNode(
+                new EqualNode(new MemberNode("a"), new LiteralNode(1, Builtins.Int)),
+                new BodyNode([]))
+        ];
     } 
     
     [Theory]
     [MemberData(nameof(ParseWhileLoop_Correct_DataProvider))]
     public void ParseWhileLoop_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParseWhileLoop(context, out var loop);
         context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
@@ -65,9 +72,7 @@ public class WhileLoopParsingTests
     [InlineData("while true)")]
     public void ParseWhileLoop_Incorrect(string code)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParseWhileLoop(context, out var loop);
         parsed.ShouldBe(false);
         loop.ShouldBeNull();
