@@ -290,7 +290,7 @@ public class TypedefParsingTests
         var exceptionCodes = new[]
         {
             PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code,
-            PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+            PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
         };
         
         context.Exceptions.Count.ShouldBe(2);
@@ -309,7 +309,7 @@ public class TypedefParsingTests
         var exceptionCodes = new[]
         {
             PlampExceptionInfo.GenericDefinitionIsNotClosed().Code,
-            PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+            PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
         };
         
         context.Exceptions.Count.ShouldBe(2);
@@ -327,7 +327,7 @@ public class TypedefParsingTests
         node.ShouldBeNull();
         
         var ex = context.Exceptions.ShouldHaveSingleItem();
-        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code);
+        ex.Code.ShouldBe(PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code);
     }
     
 }

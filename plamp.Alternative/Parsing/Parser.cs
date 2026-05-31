@@ -92,7 +92,9 @@ public static class Parser
                 topLevel = typ;
                 return true;
             default:
-                AddUnexpectedTokenException(context);
+                var ex = PlampExceptionInfo.TopLevelExpressionExpected();
+                var pos = context.Sequence.CurrentPosition;
+                context.Exceptions.Add(new PlampException(ex, pos));
                 RecoveryToTopLevel(context);
                 return false;
         }

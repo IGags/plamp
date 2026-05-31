@@ -28,7 +28,7 @@ public static class Program
         
         if (exceptions.Count > 0)
         {
-            PrintResAsync(exceptions);
+            await PrintResAsync(exceptions);
             return -1;
         }
 

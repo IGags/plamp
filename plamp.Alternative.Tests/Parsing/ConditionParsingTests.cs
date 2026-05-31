@@ -21,7 +21,7 @@ public class ConditionParsingTests
             new ConditionNode(
                 new LiteralNode(true, Builtins.Bool), 
                 new BodyNode([
-                    new CallNode(null, new FuncCallNameNode("fn1"), [])
+                    new CallNode(null, new FuncCallNameNode("fn1"), [], [])
                 ]), 
                 null)
         ];
@@ -52,7 +52,7 @@ public class ConditionParsingTests
                 new LiteralNode(true, Builtins.Bool),
                 new BodyNode([]),
                 new BodyNode([
-                    new CallNode(null, new FuncCallNameNode("print"), [])
+                    new CallNode(null, new FuncCallNameNode("print"), [], [])
                 ]))
         ];
         yield return

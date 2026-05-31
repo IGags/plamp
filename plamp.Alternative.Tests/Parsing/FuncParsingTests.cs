@@ -94,6 +94,7 @@ public class FuncParsingTests
             new FuncNode(
                 new TypeNode(new TypeNameNode("")),
                 new FuncNameNode("separated_args"),
+                [],
                 [
                     new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")),
                     new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("b")),
@@ -113,6 +114,7 @@ public class FuncParsingTests
             new FuncNode(
                 new TypeNode(new TypeNameNode("")),
                 new FuncNameNode("a"),
+                [],
                 [],
                 new BodyNode([]))
         ];
@@ -194,7 +196,7 @@ public class FuncParsingTests
             "fn a[()", new List<string>
             {
                 PlampExceptionInfo.ExpectedGenericTypeArgumentAlias().Code, 
-                PlampExceptionInfo.ExpectedBodyInCurlyBrackets().Code
+                PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
             }, false, null
         ];
         yield return [

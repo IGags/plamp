@@ -39,6 +39,7 @@ public static class Tokenizer
             if (await TryParseSingleLineCommentAsync(context)) continue;
             if (await TryParseMultilineCommentAsync(context)) continue;
             if (await TryParseWordAsync(context)) continue;
+            if (await TryParseCharLiteral(context)) continue;
             if (await TryParseOperatorAsync(context)) continue;
             if (await TryParseNumberAsync(context)) continue;
             if (await TryParseStringLiteralAsync(context)) continue;
@@ -129,7 +130,7 @@ public static class Tokenizer
     /// Разбирает числовой литерал
     /// </summary>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
-    /// <returns>Токен числового литерала</returns>
+    /// <returns>Успех операции разбора</returns>
     private static async Task<bool> TryParseNumberAsync(TokenizationContext context)
     {
         if (!char.IsDigit(context.Current)) return false;
@@ -263,99 +264,95 @@ public static class Tokenizer
     /// <summary>
     /// Разбирает символьный литерал
     /// </summary>
-    /// <param name="text">Текущая строка исходного файла</param>
-    /// <param name="position">Текущая позиция чтения. После вызова указывает на первый символ после литерала</param>
-    /// <param name="byteOffset">Смещение текущей позиции в байтах от начала файла</param>
-    /// <param name="fileName">Имя файла</param>
-    /// <param name="fileEncoding">Кодировка файла</param>
     /// <param name="context">Контекст токенизации для накопления ошибок</param>
-    /// <param name="literal">Токен символьного литерала, если он разобран корректно</param>
-    /// <returns><see langword="true"/>, если символьный литерал разобран(пусть и есть ошибки); иначе <see langword="false"/>.</returns>
-    private static bool TryParseCharLiteral(
-        string text,
-        ref int position,
-        long byteOffset,
-        string fileName,
-        Encoding fileEncoding,
-        TokenizationContext context,
-        [NotNullWhen(true)] out Literal? literal)
+    /// <returns>Смог ли метод начать токенизацию</returns>
+    private static async Task<bool> TryParseCharLiteral(TokenizationContext context)
     {
-        literal = null;
-        if (position >= text.Length || text[position] != '\'') return false;
-
-        var start = position;
-        var state = CharContentParsingState.Beginning;
-
-        char? charContent = null;
-        var escaped = false;
-        var literalClosed = false;
-        for (position = start + 1; position < text.Length; position++)
-        {
-            if (state is CharContentParsingState.Beginning && text[position] == '\\') state = CharContentParsingState.EscapeConsumed;
-            else if (state != CharContentParsingState.EscapeConsumed && text[position] == '\'')
-            {
-                literalClosed = true;
-                break;
-            }
-            else if (state == CharContentParsingState.Beginning)
-            {
-                charContent = text[position];
-                state = CharContentParsingState.ContentParsed;
-            }
-            else if (state == CharContentParsingState.EscapeConsumed)
-            {
-                if (TryParseCharEscape(text[position], out var value)) charContent = value;
-                else
-                {
-                    var errOffset = byteOffset + fileEncoding.GetByteCount("'");
-                    var filePos = new FilePosition(errOffset, position - start, fileName);
-                    context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidEscapeSequence(text.Substring(position - 1, 2)), filePos));
-                }
-
-                escaped = true;
-                state = CharContentParsingState.ContentParsed;
-            }
-        }
-
-        var literalLen = !literalClosed ? position - start : ++position - start;
+        if (context.Current is not '\'') return false;
+        var literalOffset = context.ByteOffset;
         
-        if (state is CharContentParsingState.Beginning or CharContentParsingState.EscapeConsumed && !literalClosed)
+        if (!await context.MoveNextAsync())
         {
-            var filePos = new FilePosition(byteOffset, literalLen, fileName);
-            context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), filePos));
-            return false;
+            SetNotClosedForChar();
+            return true;
         }
 
-        if ((!escaped && literalLen == 3) || (escaped && literalLen == 4))
+        if (context.Current == '\'')
         {
-            if (charContent == null) return false;
+            await context.MoveNextAsync();
+            var position = new FilePosition(literalOffset, context.ByteOffset - literalOffset, context.FileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidCharLiteral(), position));
+            return true;
+        }
+        
+        char content;
+        string image;
+        if (context.Current == '\\')
+        {
+            var escapeStart = context.ByteOffset;
             
-            var litPos = new FilePosition(byteOffset, literalLen, fileName);
-            literal = new Literal(text.Substring(start, literalLen), litPos, charContent, Builtins.Char);
-            return true;
-        }
+            if (!await context.MoveNextAsync())
+            {
+                SetNotClosedForChar();
+                return true;
+            }
 
-        var errPos = new FilePosition(byteOffset, literalLen, fileName);
-        var record = literalClosed
-            ? PlampExceptionInfo.InvalidCharLiteral()
-            : PlampExceptionInfo.CharIsNotClosed();
-        
-        context.Exceptions.Add(new PlampException(record, errPos));
-        if (charContent != null)
+            var escaped = context.Current;
+            if (!TryParseCharEscape(escaped, out var escape))
+            {
+                var position = new FilePosition(escapeStart, context.CurrentByteLength + context.ByteOffset - escapeStart, context.FileName);
+                context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidEscapeSequence($"\\{escaped}"), position));
+            }
+            content = escape;
+            image = $"\\{escaped}";
+        }
+        else
         {
-            var litPos = new FilePosition(byteOffset, literalLen, fileName);
-            literal = new Literal(text.Substring(start, literalLen), litPos, charContent, Builtins.Char);
+            content = context.Current;
+            image = content.ToString();
+        }
+
+        if (!await context.MoveNextAsync())
+        {
+            SetNotClosedForChar();
+            var literalPos = new FilePosition(literalOffset, context.ByteOffset - literalOffset, context.FileName);
+            context.Tokens.Add(new Literal($"'{image}'", literalPos, content, Builtins.Char));
             return true;
         }
 
-        return false;
-    }
-    
-    private enum CharContentParsingState
-    {
-        Beginning,
-        EscapeConsumed,
-        ContentParsed
+        if (context.Current == '\'')
+        {
+            await context.MoveNextAsync();
+            var literalPos = new FilePosition(literalOffset, context.ByteOffset - literalOffset, context.FileName);
+            context.Tokens.Add(new Literal($"'{image}'", literalPos, content, Builtins.Char));
+            return true;
+        }
+
+        var imageBuilder = new StringBuilder(image);
+        while (context.Current is not '\'' && !await context.IsExprEnd)
+        {
+            imageBuilder.Append(context.Current);
+            await context.MoveNextAsync();
+        }
+
+        if (context.Current == '\'')
+        {
+            await context.MoveNextAsync();
+            var literalPos = new FilePosition(literalOffset, context.ByteOffset - literalOffset, context.FileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.InvalidCharLiteral(), literalPos));
+            var literal = new Literal($"'{imageBuilder}'", literalPos, content, Builtins.Char);
+            context.Tokens.Add(literal);
+            return true;
+        }
+        
+        SetNotClosedForChar();
+        return true;
+        
+        void SetNotClosedForChar()
+        {
+            var position = new FilePosition(literalOffset, context.ByteOffset - literalOffset, context.FileName);
+            context.Exceptions.Add(new PlampException(PlampExceptionInfo.CharIsNotClosed(), position));
+        }
     }
 
     /// <summary>
