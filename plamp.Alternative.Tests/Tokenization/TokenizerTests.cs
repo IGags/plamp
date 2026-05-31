@@ -320,6 +320,11 @@ public class TokenizerTests
     [InlineData("break\nx", typeof(KeywordToken))]
     [InlineData("continue\nx", typeof(KeywordToken))]
     [InlineData("}\nx", typeof(CloseCurlyBracket))]
+    [InlineData("true\nx", typeof(KeywordToken))]
+    [InlineData("false\nx", typeof(KeywordToken))]
+    [InlineData("++\nx", typeof(OperatorToken))]
+    [InlineData("--\nx", typeof(OperatorToken))]
+    [InlineData("!\nx", typeof(OperatorToken))]
     public async Task Tokenization_ReplacesLineBreakWithImplicitEndOfStatement_AfterExpressionEnd(
         string code,
         Type previousTokenType)

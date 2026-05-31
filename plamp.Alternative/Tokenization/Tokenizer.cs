@@ -72,7 +72,7 @@ public static class Tokenizer
                     or CloseParen
                     or CloseSquareBracket
                     or CloseCurlyBracket
-                    or KeywordToken { Keyword: Keywords.Return or Keywords.Break or Keywords.Continue }
+                    or KeywordToken { Keyword: Keywords.Return or Keywords.Break or Keywords.Continue or Keywords.True or Keywords.False }
                     or OperatorToken {Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not})
             {
                 sequence[i] = new ImplicitEndOfStatement(sequence[i].Position, sequence[i].GetStringRepresentation());
