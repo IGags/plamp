@@ -19,7 +19,8 @@ public class TokenizerTests
 {
     private const int Utf16ByteCharacterByteCount = 2;
     
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public async Task TestEmptyString(string fileName)
     {
         using var stream = new MemoryStream([]);

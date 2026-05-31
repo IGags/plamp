@@ -12,7 +12,8 @@ namespace plamp.Alternative.Tests.Visitors.ModulePreCreation.TypeInference;
 
 public class LoopTypeInferenceTests
 {
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void WhileLoopWithCorrectCondition_ReturnNoException(
         [Frozen] Mock<ITranslationTable> symbolTable,
         TypeInferenceWeaver visitor)
@@ -23,7 +24,8 @@ public class LoopTypeInferenceTests
         SetupMocksAndAssertCorrect(ast, symbolTable, visitor);
     }
 
-    [Theory, AutoData]
+    [Theory]
+    [AutoData]
     public void WhileLoopWithIncorrectConditionType_ReturnsException(
         [Frozen] Mock<ITranslationTable> translationTable,
         TypeInferenceWeaver visitor)
