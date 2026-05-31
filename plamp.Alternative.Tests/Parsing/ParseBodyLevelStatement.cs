@@ -20,6 +20,8 @@ public class ParseBodyLevelStatement
         yield return ["while(true);", new List<NodeBase>{new WhileNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]))}];
         yield return ["break;", new List<NodeBase>{new BreakNode()}];
         yield return ["continue;", new List<NodeBase>{new ContinueNode()}];
+        yield return ["break", new List<NodeBase>{new BreakNode()}];
+        yield return ["continue", new List<NodeBase>{new ContinueNode()}];
         yield return ["return false;", new List<NodeBase>{new ReturnNode(new LiteralNode(false, Builtins.Bool))}];
     }
     
@@ -39,8 +41,6 @@ public class ParseBodyLevelStatement
     public static IEnumerable<object?[]> ParseBodyLevelStatement_Incorrect_DataProvider()
     {
         yield return ["return", null, false];
-        yield return ["break", new List<NodeBase> {new BreakNode()}, true];
-        yield return ["continue", new List<NodeBase> {new ContinueNode()}, true];
         yield return ["while ++", null, false];
         yield return ["if )", null, false];
         yield return ["+", null, false];
@@ -58,5 +58,11 @@ public class ParseBodyLevelStatement
         var result = Parser.TryParseStatement(context, out var statement);    
         result.ShouldBe(resultShould);
         statement.ShouldBeEquivalentTo(ast);
+    }
+
+    [Fact]
+    public void ParseBodyAfterClosedBody_Incorrect()
+    {
+        
     }
 }

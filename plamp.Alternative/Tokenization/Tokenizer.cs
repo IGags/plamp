@@ -58,9 +58,7 @@ public static class Tokenizer
         return new TokenizationResult(sequence, context.Exceptions);
     }
 
-    #region Words
-
-    internal static void ReplaceLineBreaksToImplicitEndOfStatements(List<TokenBase> sequence)
+    private static void ReplaceLineBreaksToImplicitEndOfStatements(List<TokenBase> sequence)
     {
         if (sequence.Count < 2) return;
         var prev = sequence[0];
@@ -68,12 +66,13 @@ public static class Tokenizer
         {
             if (sequence[i] is WhiteSpace { Kind: WhiteSpaceKind.LineBreak } &&
                 prev
-                is Word
-                or Literal
-                or CloseParen
-                or CloseSquareBracket
-                or CloseCurlyBracket
-                or KeywordToken { Keyword: Keywords.Return or Keywords.Break or Keywords.Continue })
+                    is Word
+                    or Literal
+                    or CloseParen
+                    or CloseSquareBracket
+                    or CloseCurlyBracket
+                    or KeywordToken { Keyword: Keywords.Return or Keywords.Break or Keywords.Continue }
+                    or OperatorToken {Operator: OperatorEnum.Increment or OperatorEnum.Decrement or OperatorEnum.Not})
             {
                 sequence[i] = new ImplicitEndOfStatement(sequence[i].Position, sequence[i].GetStringRepresentation());
             }
@@ -84,6 +83,8 @@ public static class Tokenizer
             }
         }
     }
+    
+    #region Words
     
     /// <summary>
     /// Разбирает идентификатор или ключевое слово, начиная с текущей позиции

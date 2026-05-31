@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Body;
+using plamp.Abstractions.Ast.Node.Definitions.Func;
 using plamp.Alternative.Parsing;
 using Shouldly;
 using Xunit;
@@ -13,18 +13,18 @@ public class ConditionParsingTests
 {
     public static IEnumerable<object[]> ParseCondition_Correct_DataProvider()
     {
-        // yield return ["if(true);", new ConditionNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new BodyNode([]), null)];
-        // yield return ["if(true) {}", new ConditionNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new BodyNode([]), null)];
-        // yield return 
-        // [
-        //     "if(true) fn1();", 
-        //     new ConditionNode(
-        //         new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), 
-        //         new BodyNode([
-        //             new CallNode(null, new FuncCallNameNode("fn1"), [])
-        //         ]), 
-        //         null)
-        // ];
+        yield return ["if(true);", new ConditionNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]), null)];
+        yield return ["if(true) {}", new ConditionNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]), null)];
+        yield return 
+        [
+            "if(true) fn1();", 
+            new ConditionNode(
+                new LiteralNode(true, Builtins.Bool), 
+                new BodyNode([
+                    new CallNode(null, new FuncCallNameNode("fn1"), [])
+                ]), 
+                null)
+        ];
         yield return
         [
             """
@@ -39,31 +39,41 @@ public class ConditionParsingTests
                 ]),
                 null)
         ];
-        //yield return ["if(true); else;", new ConditionNode(new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()), new BodyNode([]), new BodyNode([]))];
-        //yield return
-        //[
-        //    """
-        //    if(true){
-        //    } else {
-        //        print();
-        //    }
-        //    """,
-        //    new ConditionNode(
-        //        new LiteralNode(true, RuntimeSymbols.GetSymbolTable.MakeLogical()),
-        //        new BodyNode([]),
-        //        new BodyNode([
-        //            new CallNode(null, new FuncCallNameNode("print"), [])
-        //        ]))
-        //];
+        yield return ["if(true); else;", new ConditionNode(new LiteralNode(true, Builtins.Bool), new BodyNode([]), new BodyNode([]))];
+        yield return
+        [
+            """
+            if(true){
+            } else {
+                print();
+            }
+            """,
+            new ConditionNode(
+                new LiteralNode(true, Builtins.Bool),
+                new BodyNode([]),
+                new BodyNode([
+                    new CallNode(null, new FuncCallNameNode("print"), [])
+                ]))
+        ];
+        yield return
+        [
+            """
+            if(
+                true){
+            }
+            """,
+            new ConditionNode(
+                new LiteralNode(true, Builtins.Bool),
+                new BodyNode([]),
+                null)
+        ];
     }
     
     [Theory]
     [MemberData(nameof(ParseCondition_Correct_DataProvider))]
     public void ParseCondition_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseCondition(context, out var condition);    
         context.Exceptions.ShouldBeEmpty();
         result.ShouldBe(true);
@@ -79,11 +89,24 @@ public class ConditionParsingTests
     [InlineData("if(")]
     public void ParseCondition_Incorrect(string code)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseCondition(context, out var condition);    
         result.ShouldBe(false);
         condition.ShouldBeNull();
+    }
+
+    //TODO: После добавления обязательного тела в условия этот тест поменяется
+    [Fact]
+    public void ParseConditionLineBreakAfterPredicate_Correct()
+    {
+        const string code = """
+                            if(true)
+                            {
+                            }
+                            """;
+        
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
+        var result = Parser.TryParseCondition(context, out _);
+        result.ShouldBe(true);
     }
 }

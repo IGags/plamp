@@ -365,7 +365,16 @@ public static class Parser
         module = new ModuleDefinitionNode(moduleName);
 
         context.TranslationTable.AddSymbol(module, context.Sequence.MakeRangeFromPrevNonWhitespace(defStart));
-        ConsumeEndOfStatement(context);
+        
+        //TODO: Добавить в парсер механику синхронизации потока токенов и рекавери.
+        var consumed = ConsumeEndOfStatement(context);
+        
+        if (!consumed)
+        {
+            RecoveryToEndOfStatement(context);
+            context.Sequence.MoveNextNonWhiteSpace();
+        }
+        
         return true;
     }
 
@@ -671,7 +680,7 @@ public static class Parser
 
         body = new BodyNode(expressions);
         context.Sequence.MoveNextNonWhiteSpace();
-        ConsumeEndOfStatement(context);
+        if (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement) ConsumeEndOfStatement(context);
         context.TranslationTable.AddSymbol(body, context.Sequence.MakeRangeFromPrevNonWhitespace(open));
         return true;
     }
@@ -1565,15 +1574,16 @@ public static class Parser
         }
     }
 
-    private static void ConsumeEndOfStatement(ParsingContext context)
+    private static bool ConsumeEndOfStatement(ParsingContext context)
     {
         if (context.Sequence.Current() is EndOfStatement or ImplicitEndOfStatement or EndOfFile)
         {
             context.Sequence.MoveNextNonWhiteSpace();
-            return;
+            return true;
         }
         var record = PlampExceptionInfo.ExpectedEndOfStatement();
         context.Exceptions.Add(new PlampException(record, context.Sequence.CurrentPosition));
+        return false;
     }
 
     #endregion

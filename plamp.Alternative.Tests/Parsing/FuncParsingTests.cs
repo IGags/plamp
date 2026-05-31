@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using AutoFixture;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
@@ -18,56 +17,56 @@ public class FuncParsingTests
 {
     public static IEnumerable<object[]> ParseFunc_Correct_DataProvider()
     {
-        // yield return
-        // [
-        //     "fn a() any { return 1; }",
-        //     new FuncNode(
-        //         new TypeNode(new TypeNameNode("any")), 
-        //         new FuncNameNode("a"), [],
-        //         new BodyNode([
-        //             new ReturnNode(new LiteralNode(1, Builtins.Int))
-        //         ]))
-        // ];
-        // yield return
-        // [
-        //     "fn b(x, y: int) { return; }",
-        //     new FuncNode(
-        //         new TypeNode(new TypeNameNode("")),
-        //         new FuncNameNode("b"),
-        //         [
-        //             new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("x")),
-        //             new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("y"))
-        //         ],
-        //         new BodyNode([
-        //             new ReturnNode(null)
-        //         ]))
-        // ];
-        // yield return
-        // [
-        //     """
-        //     fn call_any(a: any) any {
-        //         return a;
-        //     }
-        //     """,
-        //     new FuncNode(
-        //         new TypeNode(new TypeNameNode("any")), 
-        //         new FuncNameNode("call_any"), 
-        //         [
-        //             new ParameterNode(new TypeNode(new TypeNameNode("any")), new ParameterNameNode("a"))
-        //         ],
-        //         new BodyNode([
-        //             new ReturnNode(new MemberNode("a"))
-        //         ]))
-        // ];
-        // yield return
-        // [
-        //     "fn min(){}",
-        //     new FuncNode(
-        //         new TypeNode(new TypeNameNode("")),
-        //         new FuncNameNode("min"),
-        //         [],
-        //         new BodyNode([]))
-        // ];
+        yield return
+        [
+            "fn a() any { return 1; }",
+            new FuncNode(
+                new TypeNode(new TypeNameNode("any")), 
+                new FuncNameNode("a"), [],
+                new BodyNode([
+                    new ReturnNode(new LiteralNode(1, Builtins.Int))
+                ]))
+        ];
+        yield return
+        [
+            "fn b(x, y: int) { return; }",
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("b"),
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("x")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("y"))
+                ],
+                new BodyNode([
+                    new ReturnNode(null)
+                ]))
+        ];
+        yield return
+        [
+            """
+            fn call_any(a: any) any {
+                return a;
+            }
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("any")), 
+                new FuncNameNode("call_any"), 
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("any")), new ParameterNameNode("a"))
+                ],
+                new BodyNode([
+                    new ReturnNode(new MemberNode("a"))
+                ]))
+        ];
+        yield return
+        [
+            "fn min(){}",
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("min"),
+                [],
+                new BodyNode([]))
+        ];
         yield return
         [
             """
@@ -79,14 +78,47 @@ public class FuncParsingTests
                 [], 
                 new BodyNode([new ReturnNode(new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(1, Builtins.Int)))]))
         ];
+        yield return
+        [
+            """
+            fn separated_args(a, 
+                b :int,
+                c :double,
+                d, e: string) {
+            }
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("separated_args"),
+                [
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("a")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("int")), new ParameterNameNode("b")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("double")), new ParameterNameNode("c")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("d")),
+                    new ParameterNode(new TypeNode(new TypeNameNode("string")), new ParameterNameNode("e"))
+                ],
+                new BodyNode([]))
+            
+        ];
+        yield return
+        [
+            """
+            fn 
+            a() {}
+            """,
+            new FuncNode(
+                new TypeNode(new TypeNameNode("")),
+                new FuncNameNode("a"),
+                [],
+                new BodyNode([]))
+        ];
     }
     
     [Theory]
     [MemberData(nameof(ParseFunc_Correct_DataProvider))]
     public void ParseFunc_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseFunc(context, out var func);
         result.ShouldBe(true);
         context.Exceptions.ShouldBeEmpty();
@@ -101,14 +133,26 @@ public class FuncParsingTests
         yield return ["fn a(", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
         yield return ["fn a()", new List<string> { PlampExceptionInfo.ExpectedBodyInCurlyBrackets("EOF").Code }, false, null];
         yield return ["fn a(a: int,,b: int)", new List<string>{PlampExceptionInfo.ExpectedArgDefinition().Code}, false, null];
+        yield return
+        [
+            """
+            fn a() 
+            {}
+            """,
+            new List<string>()
+            {
+                PlampExceptionInfo.ExpectedBodyInCurlyBrackets("").Code
+            },
+            false,
+            null
+        ];
     }
 
     [Theory]
     [MemberData(nameof(ParseFunc_Incorrect_DataProvider))]
     public void ParseFunc_Incorrect(string code, List<string> errorCodes, bool resultShould, NodeBase? astShould)
     {
-        var fixture = new Fixture { Customizations = { new ParserContextCustomization(code) } };
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var result = Parser.TryParseFunc(context, out var func);
         result.ShouldBe(resultShould);
         func.ShouldBeEquivalentTo(astShould);

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using AutoFixture;
 using plamp.Abstractions.Ast;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Binary;
@@ -44,9 +43,7 @@ public class ExpressionParsingTests
     [MemberData(nameof(ParseSimpleNud_DataProvider))]
     public void ParseSimpleNud_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParseNud(context, out var node);
         context.Exceptions.ShouldBeEmpty();
         parsed.ShouldBe(true);
@@ -70,9 +67,7 @@ public class ExpressionParsingTests
     [MemberData(nameof(ParseIncorrectNud_DataProvider))]
     public void ParseSimpleNud_Incorrect(string code, List<PlampException> exception, bool expectedResult)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParseNud(context, out _);
         parsed.ShouldBe(expectedResult);
         var exceptionsShould = ExcludeFields(exception);
@@ -102,9 +97,7 @@ public class ExpressionParsingTests
     [MemberData(nameof(ParseExpressionWithPostfix_Correct_DataProvider))]
     public void ParseExpressionWithPostfix_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
@@ -134,9 +127,7 @@ public class ExpressionParsingTests
     [MemberData(nameof(ParseExpressionWithPostfix_Incorrect_DataProvider))]
     public void ParseExpressionWithPostfix_Incorrect(string code, List<PlampException> exception, bool expectedResult)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out _);
         parsed.ShouldBe(expectedResult);
         var exceptionsShould = ExcludeFields(exception);
@@ -162,15 +153,16 @@ public class ExpressionParsingTests
         yield return ["1 >= 2", new GreaterOrEqualNode(new LiteralNode(1, Builtins.Int), new LiteralNode(2, Builtins.Int))];
         yield return ["x || y", new OrNode(new MemberNode("x"), new MemberNode("y"))];
         yield return ["a && b", new AndNode(new MemberNode("a"), new MemberNode("b"))];
+        yield return ["a +\n b", new AddNode(new MemberNode("a"), new MemberNode("b"))];
+        yield return ["a *\n b", new MulNode(new MemberNode("a"), new MemberNode("b"))];
+        yield return ["a *\n ++b", new MulNode(new MemberNode("a"), new PrefixIncrementNode(new MemberNode("b")))];
     }
     
     [Theory]
     [MemberData(nameof(ParseBinaryExpression_Correct_DataProvider))]
     public void ParseBinaryExpression_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
@@ -181,9 +173,7 @@ public class ExpressionParsingTests
     {
         const string code = "a + ";
         var ast = new MemberNode("a");
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
@@ -194,9 +184,7 @@ public class ExpressionParsingTests
     {
         const string code = "a++.b";
         var ast = new PostfixIncrementNode(new MemberNode("a"));
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
@@ -218,9 +206,7 @@ public class ExpressionParsingTests
     [MemberData(nameof(CheckPrecedence_Correct_DataProvider))]
     public void CheckPrecedence_Correct(string code, NodeBase ast)
     {
-        var fixture = new Fixture();
-        fixture.Customizations.Add(new ParserContextCustomization(code));
-        var context = fixture.Create<ParsingContext>();
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
         var parsed = Parser.TryParsePrecedence(context, out var node);
         parsed.ShouldBe(true);
         node.ShouldBeEquivalentTo(ast);
