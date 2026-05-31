@@ -1,0 +1,48 @@
+﻿module e2e.complex_arrays;
+
+data Point {
+    x, y: int
+}
+
+data Box[T] {
+    value: T
+}
+
+fn make_box(value: int) Box[int] {
+    return Box[int] {value: value};
+}
+
+fn read_box(box: Box[int]) int {
+    return box.value;
+}
+
+fn stores_structs_in_array() int {
+    values := [2]Point;
+    values[0] := Point {x: 20; y: 1};
+    values[1] := Point {x: 2; y: 20};
+
+    return values[0].x + values[1].y + values[1].x;
+}
+
+fn mutates_struct_field_inside_array() int {
+    values := [1]Point;
+    values[0] := Point {x: 20; y: 1};
+    values[0].y := 22;
+
+    return values[0].x + values[0].y;
+}
+
+fn stores_generic_structs_in_array() int {
+    values := [2]Box[int];
+    values[0] := Box[int] {value: 20};
+    values[1] := Box[int] {value: 22};
+
+    return values[0].value + values[1].value;
+}
+
+fn passes_array_item_between_functions() int {
+    values := [1]Box[int];
+    values[0] := make_box(42);
+
+    return read_box(values[0]);
+}

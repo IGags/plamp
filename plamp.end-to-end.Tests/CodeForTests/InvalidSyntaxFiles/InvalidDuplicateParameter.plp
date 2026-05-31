@@ -1,0 +1,5 @@
+module e2e.invalid_duplicate_parameter;
+
+fn main(value, value: int) int {
+    return value;
+}

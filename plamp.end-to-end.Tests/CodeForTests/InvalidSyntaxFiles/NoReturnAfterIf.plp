@@ -1,0 +1,7 @@
+﻿module e2e.invalid_return_if_without_else;
+
+fn main() int {
+    if (true) {
+        return 1;
+    }
+}

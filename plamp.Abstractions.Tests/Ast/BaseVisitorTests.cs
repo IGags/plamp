@@ -12,7 +12,7 @@ namespace plamp.Abstractions.Tests.Ast;
 
 public class BaseVisitorTests
 {
-    class UniversalContext() : BaseVisitorContext(null!, null!)
+    private class UniversalContext() : BaseVisitorContext(null!, null!)
     {
         public int ModuleNameVisitCt { get; set; }
 
@@ -23,7 +23,7 @@ public class BaseVisitorTests
         public int BodyVisitCt { get; set; }
     }
 
-    class GuardVisitor : BaseVisitor<UniversalContext>
+    private class GuardVisitor : BaseVisitor<UniversalContext>
     {
         protected override VisitResult PreVisitModuleDefinition(ModuleDefinitionNode definition, UniversalContext context, NodeBase? parent)
         {
@@ -83,7 +83,7 @@ public class BaseVisitorTests
         ctx.TypeDefVisitCt.ShouldBe(1);
     }
 
-    class TopLevelVisitor : GuardVisitor
+    private class TopLevelVisitor : GuardVisitor
     {
         protected override VisitorGuard Guard => VisitorGuard.TopLevel;
     }
@@ -102,7 +102,7 @@ public class BaseVisitorTests
         ctx.TypeDefVisitCt.ShouldBe(1);
     }
 
-    class FuncDefVisitor : GuardVisitor
+    private class FuncDefVisitor : GuardVisitor
     {
         protected override VisitorGuard Guard => VisitorGuard.FuncDef;
     }
@@ -121,7 +121,7 @@ public class BaseVisitorTests
         ctx.TypeDefVisitCt.ShouldBe(0);
     }
 
-    class TypeDefVisitor : GuardVisitor
+    private class TypeDefVisitor : GuardVisitor
     {
         protected override VisitorGuard Guard => VisitorGuard.TypeDef;
     }
@@ -139,8 +139,8 @@ public class BaseVisitorTests
         ctx.FuncDefVisitCt.ShouldBe(0);
         ctx.TypeDefVisitCt.ShouldBe(1);
     }
-    
-    class FnWithBodyVisitor : GuardVisitor
+
+    private class FnWithBodyVisitor : GuardVisitor
     {
         protected override VisitorGuard Guard => VisitorGuard.FuncDefWithBody;
     }
@@ -159,7 +159,7 @@ public class BaseVisitorTests
         ctx.TypeDefVisitCt.ShouldBe(0);
     }
 
-    class ModuleDefVisitor : GuardVisitor
+    private class ModuleDefVisitor : GuardVisitor
     {
         protected override VisitorGuard Guard => VisitorGuard.ModuleDef;
     }

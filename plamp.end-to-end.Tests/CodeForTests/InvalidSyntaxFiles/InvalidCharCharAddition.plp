@@ -1,0 +1,5 @@
+module e2e.invalid_char_char_addition;
+
+fn main() char {
+    return 'a' + 'b';
+}

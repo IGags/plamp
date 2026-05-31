@@ -1,0 +1,5 @@
+module e2e.invalid_comment_then_string_tail;
+
+fn main() string {
+    return "/* not comment */" + "// still text" + /*"*/"?/*"*/";
+}

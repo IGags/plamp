@@ -155,7 +155,7 @@ public class DebugILGenerator : ILGenerator
         var code = opcode.ToString() ?? throw new InvalidOperationException();
         var infoStr = GetMethodInfoStringDesc(meth);
         _code.AppendLine($"{code} {infoStr}");
-        _inner.Emit(opcode, meth);
+        _inner.Emit(opcode, UnwrapMethodInfo(meth));
     }
 
     public override void Emit(OpCode opcode, float arg)
@@ -189,7 +189,7 @@ public class DebugILGenerator : ILGenerator
         var opt = optionalParameterTypes == null ? string.Empty : string.Join(' ', optionalParameterTypes.Select(x => x.Name));
         var infoString = GetMethodInfoStringDesc(methodInfo);
         _code.AppendLine($"{code} {infoString}{(opt == string.Empty ? opt : " " + opt)}");
-        _inner.EmitCall(opcode, methodInfo, optionalParameterTypes);
+        _inner.EmitCall(opcode, UnwrapMethodInfo(methodInfo), optionalParameterTypes);
     }
 
     public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
@@ -250,11 +250,19 @@ public class DebugILGenerator : ILGenerator
 
     private string GetMethodInfoStringDesc(MethodInfo meth)
     {
+        meth = UnwrapMethodInfo(meth);
         if (meth is MethodBuilder || meth.IsGenericMethod)
         {
             return $"{meth.ReturnType} {meth.Name} DYNAMIC BUILDER METHOD";
         }
         return $"{meth.ReturnType} {meth.DeclaringType}::{meth.Name}({string.Join(", ", meth.GetParameters().Select(x => x.ParameterType.Name))})";
+    }
+
+    private static MethodInfo UnwrapMethodInfo(MethodInfo method)
+    {
+        return method is DebugMethodBuilder debugMethodBuilder
+            ? debugMethodBuilder.GetInner()
+            : method;
     }
 
     private string GetCtorInfoStringDesc(ConstructorInfo ctor)

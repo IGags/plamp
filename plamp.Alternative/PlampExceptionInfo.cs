@@ -300,7 +300,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1137",
+            Code = "PRS1138",
             Level = ExceptionLevel.Error,
             Message = "Expected field value"
         };
@@ -310,7 +310,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1138",
+            Code = "PRS1139",
             Level = ExceptionLevel.Error,
             Message = "Generic args is not closed"
         };
@@ -320,7 +320,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1139",
+            Code = "PRS1140",
             Level = ExceptionLevel.Error,
             Message = "Expected fn, type, module, etc..."
         };
@@ -330,7 +330,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1140",
+            Code = "PRS1141",
             Level = ExceptionLevel.Error,
             Message = "Expected type qualifier - \":\" after field name"
         };
@@ -340,7 +340,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1141",
+            Code = "PRS1142",
             Level = ExceptionLevel.Error,
             Message = "Expected type that will be generic argument."
         };
@@ -350,7 +350,7 @@ public static class PlampExceptionInfo
     {
         return new()
         {
-            Code = "PRS1142",
+            Code = "PRS1143",
             Level = ExceptionLevel.Error,
             Message = "Expected type name that will be name for generic argument."
         };

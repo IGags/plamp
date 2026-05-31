@@ -1,0 +1,7 @@
+﻿module e2e.invalid_return_while_only;
+
+fn main() int {
+    while (true) {
+        return 1;
+    }
+}

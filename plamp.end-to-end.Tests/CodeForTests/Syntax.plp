@@ -1,0 +1,158 @@
+﻿module e2e.syntax;
+
+data Point {
+    x, y: int
+}
+
+data Empty;
+
+data EmptyBody {
+}
+
+data GroupedFields {
+    first, second, third: int
+}
+
+data Label {
+    text: string;
+    order: int
+}
+
+data Box[T] {
+    value: T
+}
+
+data Pair[TLeft, TRight] {
+    left: TLeft;
+    right: TRight
+}
+
+fn accept_empty_struct(value: Empty) int {
+    return 42;
+}
+
+fn constant_function() int {
+    return 42;
+}
+
+fn get_twenty() int {
+    return 20;
+}
+
+fn add_two(value: int) int {
+    return value + 2;
+}
+
+fn function_with_many_arguments(first, second, third: int) int {
+    return first + second + third;
+}
+
+fn grouped_field_types_and_multi_assignment() int {
+    grouped := GroupedFields{};
+    grouped.first, grouped.second, grouped.third := 10, 20, 12;
+
+    return grouped.first + grouped.second + grouped.third;
+}
+
+fn swaps_variables_with_multi_assignment() int {
+    first := 22;
+    second := 20;
+    first, second := second, first;
+
+    return first + second;
+}
+
+fn assigns_fields_and_indexers_with_multi_assignment() int {
+    point := Point{};
+    values := [2]int;
+    point.x, values[1] := 20, 22;
+
+    return point.x + values[1];
+}
+
+fn grouped_assignment_of_empty_structs() int {
+    first := Empty{};
+    second := Empty{};
+    first, second := second, first;
+
+    return accept_empty_struct(first);
+}
+
+fn structure_field_roundtrip() int {
+    point := Point{};
+    point.x := 20;
+    point.y := 22;
+
+    return point.x + point.y;
+}
+
+fn structure_variable_copy_keeps_original_value() int {
+    first := Point{};
+    first.x := 11;
+
+    second := first;
+    second.x := 31;
+
+    return first.x + second.x;
+}
+
+fn default_init_empty_struct_without_initializer() int {
+    empty: Empty;
+
+    return accept_empty_struct(empty);
+}
+
+fn use_empty_struct_array_roundtrip() int {
+    values := [2]Empty;
+    values[0] := Empty{};
+    values[1] := values[0];
+
+    return accept_empty_struct(values[1]);
+}
+
+fn create_point() Point {
+    return Point {x: 20; y: 22};
+}
+
+fn return_new_object_without_variable() int {
+    return create_point().x + create_point().y;
+}
+
+fn initializes_int_fields() int {
+    point := Point {x: 20; y: 22};
+
+    return point.x + point.y;
+}
+
+fn initializes_fields_from_function_calls() int {
+    point := Point {x: get_twenty(); y: add_two(20)};
+
+    return point.x + point.y;
+}
+
+fn initializes_string_and_int_fields() string {
+    label := Label {text: "value"; order: 42};
+
+    return label.text;
+}
+
+fn initializes_generic_struct_field() int {
+    box := Box[int] {value: 42};
+
+    return box.value;
+}
+
+fn initializes_generic_pair_and_returns_string_field() string {
+    pair := Pair[int, string] {left: 42; right: "value"};
+
+    return pair.right;
+}
+
+
+fn if_else_returns_on_all_paths(predicate: bool) int {
+    if (predicate) {
+        return 1;
+    } else {
+        return 2;
+    }
+}

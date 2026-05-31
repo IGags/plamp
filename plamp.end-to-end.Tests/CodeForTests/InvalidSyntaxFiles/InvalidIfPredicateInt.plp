@@ -1,0 +1,9 @@
+module e2e.invalid_if_predicate_int;
+
+fn main() int {
+    if (1) {
+        return 42;
+    }
+
+    return 0;
+}

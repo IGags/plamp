@@ -1,0 +1,155 @@
+module e2e.math_operators;
+
+data SmallNumbers {
+    left, right: short;
+    byteValue: byte;
+    unsignedShort: ushort;
+    signedByte: sbyte
+}
+
+fn add(first, second: int) int {
+    return first + second;
+}
+
+fn subtract(first, second: int) int {
+    return first - second;
+}
+
+fn multiply(first, second: int) int {
+    return first * second;
+}
+
+fn divide(first, second: int) int {
+    return first / second;
+}
+
+fn modulo(first, second: int) int {
+    return first % second;
+}
+
+fn add_float(first, second: float) float {
+    return first + second;
+}
+
+fn subtract_float(first, second: float) float {
+    return first - second;
+}
+
+fn multiply_float(first, second: float) float {
+    return first * second;
+}
+
+fn divide_float(first, second: float) float {
+    return first / second;
+}
+
+fn add_double(first, second: double) double {
+    return first + second;
+}
+
+fn subtract_double(first, second: double) double {
+    return first - second;
+}
+
+fn multiply_double(first, second: double) double {
+    return first * second;
+}
+
+fn divide_double(first, second: double) double {
+    return first / second;
+}
+
+fn add_byte_values(first, second: byte) int {
+    return first + second;
+}
+
+fn increment_byte_variable(value: byte) int {
+    value++;
+
+    return value;
+}
+
+fn add_short_values(first, second: short) int {
+    return first + second;
+}
+
+fn increment_short_field(value: short) int {
+    numbers := SmallNumbers{};
+    numbers.left := value;
+    numbers.left++;
+
+    return numbers.left;
+}
+
+fn grouped_small_number_fields_and_assignment(first, second: short) int {
+    numbers := SmallNumbers{};
+    numbers.left, numbers.right, numbers.byteValue := first, second, 1b;
+
+    return numbers.left + numbers.right + numbers.byteValue;
+}
+
+fn add_uint_values(first, second: uint) uint {
+    return first + second;
+}
+
+fn add_ulong_values(first, second: ulong) ulong {
+    return first + second;
+}
+
+fn increment_ushort_field(value: ushort) int {
+    numbers := SmallNumbers{};
+    numbers.unsignedShort := value;
+    numbers.unsignedShort++;
+
+    return numbers.unsignedShort;
+}
+
+fn decrement_sbyte_field(value: sbyte) int {
+    numbers := SmallNumbers{};
+    numbers.signedByte := value;
+    numbers.signedByte--;
+
+    return numbers.signedByte;
+}
+
+fn pass_int_literals_to_float_parameter() float {
+    return add_float(20, 22);
+}
+
+fn pass_int_variables_to_float_parameter() float {
+    first := 20;
+    second := 22;
+
+    return add_float(first, second);
+}
+
+fn pass_int_literals_to_double_parameter() double {
+    return add_double(20, 22);
+}
+
+fn pass_int_variables_to_double_parameter() double {
+    first := 20;
+    second := 22;
+
+    return add_double(first, second);
+}
+
+fn expression_priority(value: int) int {
+    return value + 2 * 3 - 4 / 2;
+}
+
+fn parenthesized_expression_priority(value: int) int {
+    return (value + 2) * (3 - 1);
+}
+
+fn nested_parenthesized_expression_priority(value: int) int {
+    return ((value + 8) / (3 + 1)) * (6 + (2 - 1));
+}
+
+fn parenthesized_float_expression(value: float) float {
+    return (value + 1.5f) * (4.0f - 1.0f);
+}
+
+fn parenthesized_double_expression(value: double) double {
+    return (value + 1.5d) / (2.0d + 1.0d);
+}

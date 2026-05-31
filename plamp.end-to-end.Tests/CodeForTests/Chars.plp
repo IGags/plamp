@@ -1,0 +1,76 @@
+module e2e.chars;
+
+data CharBox {
+    value: char
+}
+
+data Box[T] {
+    value: T
+}
+
+fn return_plain_char_literal() char {
+    return 'a';
+}
+
+fn return_tab_escape_char_literal() char {
+    return '\t';
+}
+
+fn return_new_line_escape_char_literal() char {
+    return '\n';
+}
+
+fn return_quote_escape_char_literal() char {
+    return '\'';
+}
+
+fn return_backslash_escape_char_literal() char {
+    return '\\';
+}
+
+fn identity_char(value: char) char {
+    return value;
+}
+
+fn pass_char_between_functions(value: char) char {
+    return identity_char(value);
+}
+
+fn assign_char_to_struct_field() char {
+    box := CharBox{};
+    box.value := 'z';
+
+    return box.value;
+}
+
+fn assign_char_to_generic_field() char {
+    box := Box[char]{value: 'q'};
+
+    return box.value;
+}
+
+fn char_array_roundtrip() char {
+    values := [2]char;
+    values[0] := 'x';
+    values[1] := 'y';
+
+    return values[1];
+}
+
+fn compare_equal_chars() bool {
+    return 'a' = 'a';
+}
+
+fn compare_different_chars() bool {
+    return 'a' != 'b';
+}
+
+fn return_char_as_any() any {
+    return 'k';
+}
+
+fn default_char_value() char {
+    value: char;
+
+    return value;
+}

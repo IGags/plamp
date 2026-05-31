@@ -1,0 +1,168 @@
+﻿module e2e.absurd_scenarios;
+
+data Empty;
+
+data EmptyBody {
+}
+
+data EmptyGeneric[T];
+
+data NumberBox {
+    value: int
+}
+
+fn empty_function() {
+}
+
+fn empty_function_with_arguments(first: int, second: string) {
+}
+
+fn empty_generic_function[T]() {
+}
+
+fn empty_generic_function_with_argument[T](value: T) {
+}
+
+fn identity[T](value: T) T {
+    return value;
+}
+
+fn noisy_result() int {
+    return 999;
+}
+
+fn add(first, second: int) int {
+    return first + second;
+}
+
+fn accept_empty_struct(value: Empty) int {
+    return 123;
+}
+
+fn accept_empty_generic_struct(value: EmptyGeneric[int]) int {
+    return 123;
+}
+
+fn call_empty_functions(value: int) int {
+    empty_function();
+    empty_function_with_arguments(value, "ignored");
+    empty_generic_function[int]();
+    empty_generic_function_with_argument[int](value);
+
+    return 123;
+}
+
+fn use_empty_structs() int {
+    withoutBody := Empty{};
+    withEmptyBody := EmptyBody{};
+
+    first := Empty{};
+    second := Empty{};
+    second := first;
+
+    return accept_empty_struct(second);
+}
+
+fn use_empty_generic_structs() int {
+    marker := EmptyGeneric[int]{};
+
+    first := EmptyGeneric[string]{};
+    second := EmptyGeneric[string]{};
+    second := first;
+
+    return accept_empty_generic_struct(marker);
+}
+
+fn pass_empty_struct_through_generic_identity() int {
+    empty := identity[Empty](Empty{});
+
+    return accept_empty_struct(empty);
+}
+
+fn call_empty_generic_function_with_empty_struct_argument() int {
+    empty := Empty{};
+    empty_generic_function_with_argument[Empty](empty);
+
+    return 123;
+}
+
+fn ignored_argument_call_chain(value: int) int {
+    empty_function_with_arguments(value, "ignored");
+    empty_generic_function_with_argument[int](value);
+
+    return 123;
+}
+
+fn ignore_non_void_call_result() int {
+    noisy_result();
+
+    return 123;
+}
+
+fn self_assignment_storm() int {
+    value := 123;
+    value := value;
+    value, value := value, value;
+
+    return value;
+}
+
+fn cancel_everything_back_to_start() int {
+    value := 123;
+    value++;
+    value--;
+    value := value + 100 - 100;
+    value := value * 3 / 3;
+
+    return value;
+}
+
+fn mutate_value_then_undo_through_field_and_array() int {
+    box := NumberBox{};
+    values := [1]int;
+
+    box.value := 123;
+    values[0] := box.value;
+    box.value := 999;
+    box.value := values[0];
+
+    return box.value;
+}
+
+fn loop_that_wants_to_run_but_breaks_immediately() int {
+    value := 123;
+
+    while (value = 123) {
+        value := 999;
+        value := 123;
+        break;
+        value := 0;
+    }
+
+    return value;
+}
+
+fn tautology_driven_branching() int {
+    value := 123;
+
+    if ((value = 123) && !(value != 123)) {
+        value := value;
+    } else {
+        value := 0;
+    }
+
+    return value;
+}
+
+fn nested_generic_identity_lasagna() int {
+    return identity[int](identity[int](identity[int](add(100, 23))));
+}
+
+fn intentionally_overwritten_arguments(first, second: int) int {
+    first := second;
+    second := first;
+    first := 123;
+    second := 999;
+
+    return first;
+}

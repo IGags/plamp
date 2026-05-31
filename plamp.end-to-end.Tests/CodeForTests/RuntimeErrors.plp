@@ -1,0 +1,41 @@
+module e2e.runtime_errors;
+
+fn divide_by_zero() int {
+    zero := 0;
+
+    return 42 / zero;
+}
+
+fn read_array_out_of_range() int {
+    values := [1]int;
+
+    return values[1];
+}
+
+fn write_array_out_of_range() int {
+    values := [1]int;
+    values[2] := 42;
+
+    return values[0];
+}
+
+fn read_array_negative_index() int {
+    values := [1]int;
+    index := 0 - 1;
+
+    return values[index];
+}
+
+fn read_array_negative_literal_index() int {
+    values := [1]int;
+
+    return values[-1];
+}
+
+fn write_array_negative_index() int {
+    values := [1]int;
+    index := 0 - 1;
+    values[index] := 42;
+
+    return values[0];
+}

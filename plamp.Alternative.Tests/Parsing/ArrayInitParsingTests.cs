@@ -44,6 +44,34 @@ public class ArrayInitParsingTests
     }
 
     [Fact]
+    public void ParseGenericArrayInit_Correct()
+    {
+        const string code = "[2]Box[int]";
+        var nodeShould = new InitArrayNode(
+            new TypeNode(
+                new TypeNameNode("Box"),
+                [new TypeNode(new TypeNameNode("int"))]),
+            new LiteralNode(2, Builtins.Int));
+        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+        var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
+        result.ShouldBe(true);
+        arrayInit.ShouldBeEquivalentTo(nodeShould);
+    }
+
+    [Fact]
+    public void ParseGenericArrayInitWithComments_Correct()
+    {
+        const string code = "[/*size*/2/*]*/]Box/*[*/[/*value*/int/*]*/]";
+        var fixture = new Fixture() { Customizations = { new ParserContextCustomization(code) } };
+        var context = fixture.Create<ParsingContext>();
+        var result = Parser.TryParseArrayInitialization(context, out var arrayInit);
+        result.ShouldBe(true);
+        arrayInit.ShouldNotBeNull();
+        context.Exceptions.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void ParseArrayInitWithoutLength_Incorrect()
     {
         const string code = "[]uint";

@@ -1,0 +1,5 @@
+module e2e.invalid_unclosed_char;
+
+fn main() char {
+    return 'a;
+}

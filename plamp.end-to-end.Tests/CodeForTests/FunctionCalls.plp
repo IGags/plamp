@@ -1,0 +1,121 @@
+﻿module e2e.function_calls;
+
+data Counter {
+    value: int
+}
+
+fn return_constant() int {
+    return 42;
+}
+
+fn call_function_without_arguments() int {
+    return return_constant();
+}
+
+fn add(first, second: int) int {
+    return first + second;
+}
+
+fn pass_int_arguments_to_function(first, second: int) int {
+    return add(first, second);
+}
+
+fn pass_result_to_next_function(value: int) int {
+    doubled := add(value, value);
+
+    return add(doubled, 2);
+}
+
+fn double_value(value: int) int {
+    return add(value, value);
+}
+
+fn increment_value(value: int) int {
+    return add(value, 1);
+}
+
+fn call_function_result_inside_argument(value: int) int {
+    return add(double_value(value), increment_value(5));
+}
+
+fn overwrite_int(value: int) {
+    value := 100;
+}
+
+fn pass_int_by_value_does_not_mutate_original() int {
+    value := 37;
+
+    overwrite_int(value);
+
+    return value;
+}
+
+fn echo_string(value: string) string {
+    return value;
+}
+
+fn set_second_item(values: []int) {
+    values[1] := 42;
+}
+
+fn pass_array_reference_to_function() int {
+    values := [3]int;
+    values[0] := 10;
+    values[1] := 20;
+    values[2] := 30;
+
+    set_second_item(values);
+
+    return values[1];
+}
+
+fn read_counter(counter: Counter) int {
+    return counter.value;
+}
+
+fn pass_structure_value_to_function() int {
+    counter := Counter{};
+    counter.value := 42;
+
+    return read_counter(counter);
+}
+
+fn overwrite_counter(counter: Counter) {
+    counter.value := 100;
+}
+
+fn pass_structure_by_value_does_not_mutate_original() int {
+    counter := Counter{};
+    counter.value := 42;
+
+    overwrite_counter(counter);
+
+    return counter.value;
+}
+
+fn call_chain(value: int) int {
+    first := add(value, 1);
+    second := add(first, 1);
+
+    return add(second, 1);
+}
+
+fn recursive_sum_to_zero(value: int) int {
+    if (value = 0) {
+        return 0;
+    }
+
+    return value + recursive_sum_to_zero(value - 1);
+}
+
+fn recursive_multiply(first, second: int) int {
+    if (second = 0) {
+        return 0;
+    }
+
+    return first + recursive_multiply(first, second - 1);
+}
+
+fn recursive_result_inside_argument(value: int) int {
+    return add(recursive_sum_to_zero(value), recursive_multiply(3, 4));
+}

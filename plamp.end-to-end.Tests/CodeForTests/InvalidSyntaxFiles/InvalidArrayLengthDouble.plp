@@ -1,0 +1,5 @@
+module e2e.invalid_array_length_double;
+
+fn main() {
+    values := [1.0]int;
+}

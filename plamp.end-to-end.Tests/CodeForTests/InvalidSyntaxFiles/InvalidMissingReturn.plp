@@ -1,0 +1,4 @@
+module e2e.invalid_missing_return;
+
+fn main() int {
+}

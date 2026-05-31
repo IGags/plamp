@@ -1,0 +1,5 @@
+﻿module e2e.invalid_structure_field;
+
+data Broken {
+    value
+}

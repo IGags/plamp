@@ -90,6 +90,57 @@ public class CommentParsingTests
     }
 
     /// <summary>
+    /// Проверяет, что комментарии вокруг вложенного generic типа не мешают парсеру отличать закрывающие скобки внутреннего и внешнего generic-списков
+    /// </summary>
+    [Fact]
+    public void ParseFile_WithCommentsAroundNestedGenericTypeWithSeveralArguments_SkipsComments()
+    {
+        const string code = """
+                            data Box[T] {
+                                value: T
+                            }
+
+                            data Pair[TLeft, TRight] {
+                                left: TLeft;
+                                right: TRight
+                            }
+
+                            fn foo() {
+                                pairBox := Box/*[*/[/*Pair*/Pair/*[*/[/*left*/int/*,*/,/*right*/string/*]*/]/*]*/]/*init*/{};
+                            }
+                            """;
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
+
+        var result = Parser.ParseFile(context);
+
+        context.Exceptions.ShouldBeEmpty();
+        result.Functions.Count.ShouldBe(1);
+    }
+
+    /// <summary>
+    /// Проверяет, что комментарии внутри инициализации массива generic-типа не мешают парсеру разобрать тип элемента после размера массива
+    /// </summary>
+    [Fact]
+    public void ParseFile_WithCommentsInsideGenericArrayInitialization_SkipsComments()
+    {
+        const string code = """
+                            data Box[T] {
+                                value: T
+                            }
+
+                            fn foo() {
+                                boxes := /*array*/[/*size*/2/*]*/]Box/*[*/[/*value*/int/*]*/];
+                            }
+                            """;
+        var context = CompilationPipelineBuilder.CreateParsingContext(code);
+
+        var result = Parser.ParseFile(context);
+
+        context.Exceptions.ShouldBeEmpty();
+        result.Functions.Count.ShouldBe(1);
+    }
+
+    /// <summary>
     /// Файл, состоящий только из комментариев, должен разбираться без ошибок
     /// </summary>
     [Fact]

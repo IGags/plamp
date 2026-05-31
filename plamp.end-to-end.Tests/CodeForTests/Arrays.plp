@@ -1,0 +1,76 @@
+module e2e.arrays;
+
+fn get_array_element_by_literal_index() int {
+    values := [3]int;
+    values[0] := 10;
+    values[1] := 20;
+    values[2] := 12;
+
+    return values[1] + values[2] + values[0];
+}
+
+fn set_array_element_by_expression_index() int {
+    values := [4]int;
+    values[1 + 1] := 42;
+
+    return values[2];
+}
+
+fn get_array_element_by_variable_index(index: int) int {
+    values := [3]int;
+    values[0] := 11;
+    values[1] := 42;
+    values[2] := 99;
+
+    return values[index];
+}
+
+fn nested_array_index_as_indexer() int {
+    values := [3]int;
+    values[0] := 2;
+    values[1] := 999;
+    values[2] := 42;
+
+    return values[values[0]];
+}
+
+fn array_item_increment_roundtrip() int {
+    values := [2]int;
+    values[0] := 41;
+    values[0]++;
+
+    return values[0];
+}
+
+fn array_of_arrays_roundtrip() int {
+    rows := [2][]int;
+    rows[0] := [2]int;
+    rows[1] := [2]int;
+
+    rows[0][0] := 10;
+    rows[0][1] := 11;
+    rows[1][0] := 20;
+    rows[1][1] := 1;
+
+    return rows[0][1] + rows[1][0] + rows[1][1] + rows[0][0];
+}
+
+fn array_of_arrays_inner_reassignment() int {
+    rows := [1][]int;
+    first := [1]int;
+    second := [1]int;
+    first[0] := 999;
+    second[0] := 42;
+
+    rows[0] := first;
+    rows[0] := second;
+
+    return rows[0][0];
+}
+
+fn byte_indexer_is_accepted() int {
+    values := [3]int;
+    values[1b] := 42;
+
+    return values[1b];
+}

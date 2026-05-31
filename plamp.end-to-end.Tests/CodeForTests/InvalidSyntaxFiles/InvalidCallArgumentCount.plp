@@ -1,0 +1,9 @@
+module e2e.invalid_call_argument_count;
+
+fn add(first, second: int) int {
+    return first + second;
+}
+
+fn main() int {
+    return add(42);
+}

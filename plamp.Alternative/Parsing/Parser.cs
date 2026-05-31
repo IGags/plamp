@@ -29,9 +29,10 @@ public static class Parser
     
     public static RootNode ParseFile(ParsingContext context)
     {
-        //В парсере есть конвенция, что каждый метод парсинга должен возвращать seqence которая находится на следующем токене после него
-        //Но если парсинг только начался и первый токен пробел - это может вызывать проблемы, поэтому они пропускаются явно.
-        if (context.Sequence.Current() is WhiteSpace) context.Sequence.MoveNextNonWhiteSpace();
+        // В парсере есть конвенция: метод завершает работу на следующем значимом токене после разобранной конструкции.
+        // Для корня файла нужно отдельно пропустить начальные пробелы и комментарии, потому что до них конструкции еще нет
+        if(context.Sequence.Current().GetType() == typeof(WhiteSpace))
+            context.Sequence.MoveNextNonWhiteSpace();
         
         var topLevelList = new List<NodeBase>();
         while (context.Sequence.Current() is not EndOfFile)
@@ -1004,7 +1005,10 @@ public static class Parser
         [NotNullWhen(true)] out InitArrayNode? arrayDefinition)
     {
         arrayDefinition = null;
-        if (context.Sequence.Current() is not OpenSquareBracket start) return false;
+
+        if (context.Sequence.Current() is not OpenSquareBracket start)
+            return false;
+
         context.Sequence.MoveNextNonWhiteSpace();
 
         var lengthFork = context.Fork();
@@ -1026,11 +1030,19 @@ public static class Parser
         }
 
         context.Sequence.MoveNextNonWhiteSpace();
-        if (!TryParseType(context, out var type)) return false;
+
+        if (!TryParseType(context, out var type))
+            return false;
+
         arrayDefinition = new InitArrayNode(type, dimension);
+
         if (!context.TranslationTable.TryGetSymbol(type, out _))
             throw new InvalidOperationException("Parser code is incorrect");
-        context.TranslationTable.AddSymbol(arrayDefinition, context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+
+        context.TranslationTable.AddSymbol(
+            arrayDefinition,
+            context.Sequence.MakeRangeFromPrevNonWhitespace(start));
+
         return true;
     }
 

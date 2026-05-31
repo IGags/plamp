@@ -78,6 +78,10 @@ public class TokenSequence : IEnumerable<TokenBase>
         return true;
     }
 
+    /// <summary>
+    /// Перейти к следующему токену-не-пробелу
+    /// </summary>
+    /// <returns>true - если нашли значимый токен, иначе - false</returns>>
     public bool MoveNextNonWhiteSpace()
     {
         while(true)

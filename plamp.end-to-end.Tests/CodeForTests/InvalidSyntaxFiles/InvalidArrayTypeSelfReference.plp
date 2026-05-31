@@ -1,0 +1,5 @@
+module e2e.invalid_array_type_self_reference;
+
+data Node {
+    children: []Node
+}

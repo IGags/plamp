@@ -426,6 +426,13 @@ internal class TokenizationContext : IDisposable
         do
         {
             var next = await TryReadFromBufferedStream(ct);
+            
+            //В начале файла в UTF-8 может располагаться маркер кодировки. Его следует пропускать, при этом смещение в стриме не изменяется, так как он должен иметь нулевую длину.
+            if (_byteOffset == 0 && next is { Symbol: (char)65279 } && Encoding.Equals(Encoding.UTF8))
+            {
+                continue;
+            }
+            
             _byteOffset += current?.ByteLen ?? 0;
             
             if(next != null)
