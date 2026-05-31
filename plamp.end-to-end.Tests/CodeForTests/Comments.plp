@@ -45,8 +45,7 @@ fn comments_between_function_arguments(first, second: int) int {
         /*
         коммент
         */
-        second /* второй аргумент перед закрывающей скобкой */
-    );
+        second /* второй аргумент перед закрывающей скобкой */);
 }
 
 /*
@@ -92,8 +91,7 @@ fn second[T](first, second: T) T {
 
     /*chosenBox*/chosenBox/*:=*/:=second/*[*/[/*BoxPoint*/Box/*[*/[/*Point*/Point/*]*/]/*]*/]/*(*/(
         /*first*/boxes/*[*/[/*bad*/0/*]*/],
-        /*second*/boxes/*[*/[/*good*/1/*]*/]
-    /*)*/);
+        /*second*/boxes/*[*/[/*good*/1/*]*/]/*)*/);
 
     /*pair*/pair/*:=*/:=Pair/*[*/[/*left*/Point/*,*/,/*right*/int/*]*/]/*init*/{
         /*left*/left/*:*/:/*chosen*/chosenBox/*.*/.value;
@@ -117,14 +115,10 @@ fn second[T](first, second: T) T {
     /*rows*/rows/*[*/[/*i*/0/*]*/]/*:=*/:=/*numbers*/numbers;
 
     /*if*/if/*(*/(
-        /*flag*/flag
-        /*&&*/&&
-        /*x-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/0/*]*/]/*=*/=20
-        /*&&*/&&
-        /*y-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/1/*]*/]/*=*/=22
-        /*&&*/&&
-        /*sum-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/2/*]*/]/*=*/=42
-    /*)*/)/*then*/{
+        /*flag*/flag /*&&*/&&
+        /*x-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/0/*]*/]/*=*/=20 /*&&*/&&
+        /*y-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/1/*]*/]/*=*/=22 /*&&*/&&
+        /*sum-ok*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/2/*]*/]/*=*/=42/*)*/)/*then*/{
         /*return*/return/*answer*/rows/*[*/[/*outer*/0/*]*/]/*[*/[/*inner*/2/*]*/];
     /*}*/}
 
@@ -150,8 +144,7 @@ fn cursed_abomination(flag: bool) int {
 
     chosenBox := second[Box[Point]](
         boxes[0],
-        boxes[1]
-    );
+        boxes[1]);
 
     pair := Pair[Point, int] {
         left: chosenBox.value;
@@ -175,11 +168,10 @@ fn cursed_abomination(flag: bool) int {
     rows[0] := numbers;
 
     if (
-        flag
-        && rows[0][0] = 20
-        && rows[0][1] = 22
-        && rows[0][2] = 42
-    ) {
+        flag &&
+        rows[0][0] = 20 &&
+        rows[0][1] = 22 &&
+        rows[0][2] = 42) {
         return rows[0][2];
     }
 

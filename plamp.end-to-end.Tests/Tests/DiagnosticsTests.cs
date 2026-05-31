@@ -56,7 +56,7 @@ public class SyntaxDiagnosticsTests
         { InvalidFile("InvalidAssignCountMismatch.plp"), PlampExceptionInfo.AssignSourceAndTargetCountMismatch().Code },
         { InvalidFile("InvalidCallArgumentCount.plp"), PlampExceptionInfo.FunctionHasDifferentArgCount(2, 1).Code },
         { InvalidFile("InvalidUnclosedMultiLineComment.plp"), PlampExceptionInfo.CommentIsNotClosed().Code },
-        { InvalidFile("InvalidUnclosedChar.plp"), PlampExceptionInfo.ExpectedEndOfStatement().Code },
+        { InvalidFile("InvalidUnclosedChar.plp"), PlampExceptionInfo.CharIsNotClosed().Code },
         { InvalidFile("InvalidEmptyChar.plp"), PlampExceptionInfo.InvalidCharLiteral().Code },
         { InvalidFile("InvalidLongChar.plp"), PlampExceptionInfo.InvalidCharLiteral().Code },
         { InvalidFile("InvalidCharEscape.plp"), PlampExceptionInfo.InvalidEscapeSequence("\\x").Code },
