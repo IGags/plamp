@@ -767,5 +767,29 @@ public static class PlampExceptionInfo
             Level = ExceptionLevel.Error
         };
 
+    public static PlampExceptionRecord ReturnValueCountMismatch(int expected, int actual) =>
+        new()
+        {
+            Message = $"Function must return {expected} values, but return statement has {actual} values",
+            Code = "SEM1146",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotUseMultiResultCallAsExpression() =>
+        new()
+        {
+            Message = "Function returning multiple values can be used only as the single source of assignment",
+            Code = "SEM1147",
+            Level = ExceptionLevel.Error
+        };
+
+    public static PlampExceptionRecord CannotMixMultiResultCallInAssignment() =>
+        new()
+        {
+            Message = "Function returning multiple values cannot be mixed with other assignment sources",
+            Code = "SEM1148",
+            Level = ExceptionLevel.Error
+        };
+
     #endregion
 }

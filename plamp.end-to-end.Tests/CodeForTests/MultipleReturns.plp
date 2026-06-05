@@ -1,0 +1,211 @@
+module e2e.multiple_returns
+
+fn pair(number: int) int, string {
+    return number, "result"
+}
+
+fn read_first_result() int {
+    number, text := pair(17)
+    return number
+}
+
+fn read_second_result() string {
+    number, text := pair(17)
+    return text
+}
+
+fn nine_results() int, int, int, int, int, int, int, int, int {
+    return 1, 2, 3, 4, 5, 6, 7, 8, 9
+}
+
+fn read_ninth_result() int {
+    first, second, third, fourth, fifth, sixth, seventh, eighth, ninth := nine_results()
+    return ninth
+}
+
+fn generic_pair[T](first, second: T) T, T {
+    return first, second
+}
+
+fn read_generic_results() int {
+    first, second := generic_pair[int](13, 29)
+    return first + second
+}
+
+fn read_inferred_generic_results() string {
+    first, second := generic_pair("left", "right")
+    return first + second
+}
+
+fn branch_pair(positive: bool) int, string {
+    if (positive) {
+        return 19, "positive"
+    }
+
+    return -7, "negative"
+}
+
+fn read_branch_pair(positive: bool) string {
+    number, text := branch_pair(positive)
+    return text
+}
+
+data ResultHolder {
+    number: int
+    text: string
+}
+
+fn assign_results_to_fields_and_indexer() int {
+    holder := ResultHolder{}
+    values := [2]int
+    holder.number, holder.text := pair(23)
+    values[1], holder.text := pair(37)
+    return holder.number + values[1]
+}
+
+fn reference_results() []int, ResultHolder {
+    values := [2]int
+    values[1] := 41
+    holder := ResultHolder{}
+    holder.number := 43
+    holder.text := "reference"
+    return values, holder
+}
+
+fn read_reference_results() int {
+    values, holder := reference_results()
+    return values[1] + holder.number
+}
+
+fn reversed_reference_results() ResultHolder, []int {
+    holder := ResultHolder{}
+    holder.number := 47
+    holder.text := "out structure"
+    values := [1]int
+    values[0] := 53
+    return holder, values
+}
+
+fn read_reversed_reference_results() int {
+    holder, values := reversed_reference_results()
+    return holder.number + values[0]
+}
+
+fn mutate_and_read(values: []int, next: int) int {
+    values[0] := next
+    return values[0]
+}
+
+fn ordered_results(values: []int) int, int, int {
+    return mutate_and_read(values, 3), mutate_and_read(values, 5), values[0]
+}
+
+fn verify_return_expression_order() int {
+    values := [1]int
+    first, second, observed := ordered_results(values)
+    return first * 100 + second * 10 + observed
+}
+
+fn use_multiple_calls() int {
+    firstNumber, firstText := pair(11)
+    secondNumber, secondText := pair(17)
+    return firstNumber + secondNumber
+}
+
+fn implicit_numeric_results() long, float, double {
+    return 89, 97, 101
+}
+
+fn read_implicitly_cast_long() long {
+    longValue, floatValue, doubleValue := implicit_numeric_results()
+    return longValue
+}
+
+fn read_implicitly_cast_float() float {
+    longValue, floatValue, doubleValue := implicit_numeric_results()
+    return floatValue
+}
+
+fn read_implicitly_cast_double() double {
+    longValue, floatValue, doubleValue := implicit_numeric_results()
+    return doubleValue
+}
+
+fn integer_results() int, int, int {
+    return 103, 107, 109
+}
+
+fn assign_integer_results_to_wider_types() double {
+    longValue := 0l
+    floatValue := 0f
+    doubleValue := 0d
+    longValue, floatValue, doubleValue := integer_results()
+    return longValue + floatValue + doubleValue
+}
+
+fn return_number() int {
+    return 127
+}
+
+fn return_literal_and_call() int, int {
+    return 113, return_number()
+}
+
+fn read_literal_and_call_results() int {
+    first, second := return_literal_and_call()
+    return first + second
+}
+
+fn forward_pair() int, string {
+    return pair(131)
+}
+
+fn read_forwarded_pair() string {
+    number, text := forward_pair()
+    return text
+}
+
+fn add_one(value: int) int {
+    return value + 1
+}
+
+fn return_multiple_calls() int, int, int {
+    return add_one(136), add_one(138), add_one(148)
+}
+
+fn read_multiple_calls() int {
+    first, second, third := return_multiple_calls()
+    return first + second + third
+}
+
+fn recursive_pair(value: int) int, int {
+    if (value <= 0) {
+        return 0, 1
+    }
+
+    previous, count := recursive_pair(value - 1)
+    return previous + value, count + 1
+}
+
+fn read_recursive_pair() int {
+    sum, count := recursive_pair(5)
+    return sum * 10 + count
+}
+
+fn forward_reference_results() []int, ResultHolder {
+    return reference_results()
+}
+
+fn read_forwarded_reference_results() int {
+    values, holder := forward_reference_results()
+    return values[1] + holder.number
+}
+
+fn return_literal_and_pair() int, int, string {
+    return 113, pair(123)
+}
+
+fn read_literal_and_pair_results() int{
+    number1, number2, text := return_literal_and_pair()
+    return number1 + number2
+}

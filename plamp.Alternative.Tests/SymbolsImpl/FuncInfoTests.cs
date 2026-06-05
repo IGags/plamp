@@ -91,8 +91,9 @@ public class FuncInfoTests
         var method = typeof(FuncHost).GetMethod(nameof(FuncHost.Sum))!;
         var info = new FuncInfo(method, ModuleName);
 
-        info.ReturnType.ModuleName.ShouldBe(ModuleName);
-        info.ReturnType.AsType().ShouldBe(typeof(int));
+        var returnType = info.ReturnTypes.ShouldHaveSingleItem();
+        returnType.ModuleName.ShouldBe(ModuleName);
+        returnType.AsType().ShouldBe(typeof(int));
     }
 
     /// <summary>
@@ -204,7 +205,7 @@ public class FuncInfoTests
         impl.IsGenericFuncDefinition.ShouldBeFalse();
         impl.GetGenericFuncDefinition().ShouldBe(info);
         impl.GetGenericArguments().ShouldHaveSingleItem().ShouldBe(Builtins.Int);
-        impl.ReturnType.ShouldBe(Builtins.Int);
+        impl.ReturnTypes.ShouldHaveSingleItem().ShouldBe(Builtins.Int);
         impl.Arguments.ShouldHaveSingleItem().Type.ShouldBe(Builtins.Int);
         impl.AsFunc().ShouldBe(method.MakeGenericMethod(typeof(int)));
     }

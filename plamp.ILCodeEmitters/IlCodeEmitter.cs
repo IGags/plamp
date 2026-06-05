@@ -10,6 +10,7 @@ using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Ast.Node.Unary;
 using plamp.Abstractions.Symbols.SymTable;
+using plamp.Abstractions.Symbols.SymTableBuilding;
 
 namespace plamp.ILCodeEmitters;
 
@@ -29,10 +30,15 @@ public static class IlCodeEmitter
     /// <param name="body">Ast тела функции, которую надо перевести в IL</param>
     /// <param name="builder">Билдер метода в который будет происходить эмиссия</param>
     /// <param name="parameters">Список информации о параметрах метода(нельзя получить из билдера)</param>
-    public static void EmitMethodBody(BodyNode body, MethodBuilder builder, ParameterInfo[] parameters)
+    /// <param name="returnTypes">Возвращаемые типы</param>
+    public static void EmitMethodBody(
+        BodyNode body,
+        MethodBuilder builder,
+        ParameterInfo[] parameters,
+        IReadOnlyList<Type>? returnTypes = null)
     {
         var generator = builder.GetILGenerator();
-        EmitIlCore(body, generator, parameters, builder.IsStatic);
+        EmitIlCore(body, generator, parameters, builder.IsStatic, returnTypes ?? []);
     }
 
     /// <summary>
@@ -42,11 +48,24 @@ public static class IlCodeEmitter
     /// <param name="generator">Генератор IL инструкций</param>
     /// <param name="parameters">Список информации о параметрах метода</param>
     /// <param name="isStatic">Статическая ли функция, для которой создаются инструкции</param>
-    private static void EmitIlCore(BodyNode body, ILGenerator generator, ParameterInfo[] parameters, bool isStatic)
+    /// /// <param name="returnTypes">Возвращаемые типы</param>
+    private static void EmitIlCore(
+        BodyNode body,
+        ILGenerator generator,
+        ParameterInfo[] parameters,
+        bool isStatic,
+        IReadOnlyList<Type> returnTypes)
     {
         var varStack = new LocalVarStack();
         var returnLabel = generator.DefineLabel();
-        var emissionContext = new EmissionContext(varStack, parameters, generator, [], isStatic, returnLabel);
+        var emissionContext = new EmissionContext(
+            varStack,
+            parameters,
+            generator,
+            [],
+            isStatic,
+            returnTypes,
+            returnLabel);
         EmitExpression(body, emissionContext);
         generator.MarkLabel(returnLabel);
         generator.Emit(OpCodes.Ret);
@@ -130,9 +149,43 @@ public static class IlCodeEmitter
     /// <param name="context">Основная модель, которая хранит состояние текущей трансляции дерева разбора в il.</param>
     private static void EmitReturn(ReturnNode returnNode, EmissionContext context)
     {
-        //ReturnValue может быть null и это легально, значит функция void
-        if(returnNode.ReturnValue != null) EmitSingleLineExpression(returnNode.ReturnValue, context, true);
+        var returnLocals = new List<LocalBuilder>();
+        foreach (var returnValue in returnNode.ReturnValues)
+        {
+            if (returnValue is CallNode { FnInfo.ReturnTypes.Count: > 1 } multiResultCall)
+            {
+                returnLocals.AddRange(EmitCallToResultLocals(multiResultCall, context));
+                continue;
+            }
+
+            var local = context.Generator.DeclareLocal(GetExpressionClrType(returnValue, context));
+            EmitSingleLineExpression(returnValue, context, true);
+            context.Generator.Emit(OpCodes.Stloc, local);
+            returnLocals.Add(local);
+        }
+
+        for (var i = 0; i < context.ReturnTypes.Count; i++)
+        {
+            EmitGetOutReturnArgument(i, context);
+            context.Generator.Emit(OpCodes.Ldloc, returnLocals[i]);
+            context.Generator.Emit(OpCodes.Stobj, context.ReturnTypes[i].GetElementType()!);
+        }
+
+        if (returnLocals.Count > 0)
+        {
+            context.Generator.Emit(OpCodes.Ldloc, returnLocals[^1]);
+        }
         context.Generator.Emit(OpCodes.Br, context.FnReturnLabel);
+    }
+
+    /// <summary>
+    /// Загружает аргумент, используемый как out-параметр результата функции
+    /// </summary>
+    private static void EmitGetOutReturnArgument(int outReturnIndex, EmissionContext context)
+    {
+        var argumentIndex = context.Arguments.Length + outReturnIndex;
+        if (!context.IsStatic) argumentIndex++;
+        context.Generator.Emit(OpCodes.Ldarg, argumentIndex);
     }
     
     #region Looping
@@ -518,6 +571,14 @@ public static class IlCodeEmitter
     /// <exception cref="Exception">В цель присвоения нельзя присвоить значение.</exception>
     private static void EmitAssign(AssignNode assignNode, EmissionContext context)
     {
+        if (assignNode.Sources.Count == 1
+            && assignNode.Sources[0] is CallNode callNode
+            && callNode.FnInfo?.ReturnTypes.Count > 1)
+        {
+            EmitMultiResultAssignment(assignNode, callNode, context);
+            return;
+        }
+
         foreach (var (target, source) in assignNode.Targets.Zip(assignNode.Sources))
         {
             LoadAssignTarget(target, context);
@@ -528,6 +589,36 @@ public static class IlCodeEmitter
         foreach (var target in assignNode.Targets.Reverse())
         {
             SetAssignTarget(target, context);
+        }
+    }
+
+    /// <summary>
+    /// Сохраняет результаты вызова во временные переменные и присваивает их соответствующим целям
+    /// </summary>
+    private static void EmitMultiResultAssignment(AssignNode assignNode, CallNode callNode, EmissionContext context)
+    {
+        var resultLocals = EmitCallToResultLocals(callNode, context);
+        if (resultLocals.Count != assignNode.Targets.Count)
+        {
+            throw new InvalidOperationException(
+                $"Cannot emit multi-result assignment: call produced {resultLocals.Count} results, " +
+                $"but assignment contains {assignNode.Targets.Count} targets.");
+        }
+
+        for (var i = 0; i < assignNode.Targets.Count; i++)
+        {
+            var target = assignNode.Targets[i];
+            var assignmentTarget = target is CastNode cast ? cast.Inner : target;
+            LoadAssignTarget(assignmentTarget, context);
+            context.Generator.Emit(OpCodes.Ldloc, resultLocals[i]);
+            if (target is CastNode targetCast)
+            {
+                EmitTypeConversion(
+                    targetCast.FromType?.AsType() ?? throw new Exception("Assignment target cast has no source type."),
+                    GetTypeFromNode(targetCast.ToType) ?? throw new Exception("Assignment target cast has no target type."),
+                    context);
+            }
+            SetAssignTarget(assignmentTarget, context);
         }
     }
 
@@ -811,6 +902,15 @@ public static class IlCodeEmitter
         var fromType = node.FromType?.AsType();
 
         if (fromType == null) throw new ArgumentException("From type cannot be null semantics exception");
+        EmitTypeConversion(fromType, toType, context);
+    }
+
+    /// <summary>
+    /// Генерирует преобразование уже загруженного на стек значения к целевому CLR типу
+    /// </summary>
+    private static void EmitTypeConversion(Type fromType, Type toType, EmissionContext context)
+    {
+        if (fromType == toType) return;
         if(fromType.IsAssignableTo(toType) && !fromType.IsValueType) return;
 
         if (fromType.IsGenericTypeParameter && toType == typeof(object)) EmitBox(fromType, context);
@@ -927,7 +1027,158 @@ public static class IlCodeEmitter
     private static void EmitCall(CallNode callNode, EmissionContext context, bool popResult)
     {
         if(callNode.FnInfo == null) throw new Exception();
+
+        var methodInfo = callNode.FnInfo.AsFunc();
+        if ((callNode.FnInfo.ReturnTypes.Count > 1 && IsGeneratedPlampFunction(callNode.FnInfo))
+            || HasOutParameters(methodInfo))
+        {
+            var resultLocals = EmitCallToResultLocals(callNode, context);
+            if (!popResult && resultLocals.Count == 1)
+            {
+                context.Generator.Emit(OpCodes.Ldloc, resultLocals[0]);
+            }
+            else if (!popResult)
+            {
+                throw new InvalidOperationException("A multi-result function cannot be used as a single expression.");
+            }
+
+            return;
+        }
+
+        EmitCallReceiver(callNode, context);
+        foreach (var arg in callNode.Args)
+        {
+            EmitSingleLineExpression(arg, context, true);
+        }
+        var returnType = EmitMethodCall(methodInfo, context);
         
+        if (returnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
+    }
+
+    /// <summary>
+    /// Проверяет, содержит ли сигнатура CLR-метода out параметры
+    /// </summary>
+    private static bool HasOutParameters(MethodInfo methodInfo)
+    {
+        try
+        {
+            return methodInfo.GetParameters().Any(x => x.IsOut);
+        }
+        catch (NotSupportedException)
+        {
+            return false; // TODO: затычка пока в языке не появятся собственные out параметры
+        }
+    }
+
+    /// <summary>
+    /// Вызывает функцию и сохраняет каждый результат в отдельной локальной переменной
+    /// </summary>
+    private static IReadOnlyList<LocalBuilder> EmitCallToResultLocals(CallNode callNode, EmissionContext context)
+    {
+        if (callNode.FnInfo == null) throw new Exception();
+        return IsGeneratedPlampFunction(callNode.FnInfo)
+            ? EmitGeneratedCallToResultLocals(callNode, context)
+            : EmitRuntimeCallToResultLocals(callNode, context);
+    }
+
+    /// <summary>
+    /// Вызывает сгенерированную функцию с завершающими out параметрами результата
+    /// </summary>
+    /// <remarks>
+    /// Создаёт локальные переменные для результатов и передаёт их адреса в out параметры
+    /// </remarks>
+    private static IReadOnlyList<LocalBuilder> EmitGeneratedCallToResultLocals(
+        CallNode callNode,
+        EmissionContext context)
+    {
+        if (callNode.FnInfo == null) throw new Exception();
+        var resultLocals = callNode.FnInfo.ReturnTypes
+            .Select(x => context.Generator.DeclareLocal(x.AsType()))
+            .ToList();
+
+        EmitCallReceiver(callNode, context);
+        foreach (var arg in callNode.Args)
+        {
+            EmitSingleLineExpression(arg, context, true);
+        }
+
+        foreach (var outResultLocal in resultLocals.Take(resultLocals.Count - 1))
+        {
+            context.Generator.Emit(OpCodes.Ldloca, outResultLocal);
+        }
+
+        var clrReturnType = EmitMethodCall(callNode.FnInfo.AsFunc(), context);
+        if (clrReturnType == typeof(void))
+        {
+            throw new InvalidOperationException("A multi-result plamp function must return its last result through CLR return.");
+        }
+
+        context.Generator.Emit(OpCodes.Stloc, resultLocals[^1]);
+        return resultLocals;
+    }
+
+    /// <summary>
+    /// Вызывает метод, явно объявляющий out параметры
+    /// </summary>
+    private static IReadOnlyList<LocalBuilder> EmitRuntimeCallToResultLocals(
+        CallNode callNode,
+        EmissionContext context)
+    {
+        if (callNode.FnInfo == null) throw new Exception();
+        var methodInfo = callNode.FnInfo.AsFunc();
+        var outLocals = methodInfo.GetParameters()
+            .Where(x => x.IsOut)
+            .Select(x => context.Generator.DeclareLocal(x.ParameterType.GetElementType()!))
+            .ToList();
+
+        EmitCallArguments(callNode, context, methodInfo, outLocals);
+        var clrReturnType = EmitMethodCall(methodInfo, context);
+        var resultLocals = new List<LocalBuilder>(outLocals);
+
+        if (clrReturnType != typeof(void))
+        {
+            var returnLocal = context.Generator.DeclareLocal(clrReturnType);
+            context.Generator.Emit(OpCodes.Stloc, returnLocal);
+            resultLocals.Add(returnLocal);
+        }
+
+        return resultLocals;
+    }
+
+    /// <summary>
+    /// Определяет, принадлежит ли функция генерируемому модулю
+    /// </summary>
+    private static bool IsGeneratedPlampFunction(IFnInfo fnInfo) =>
+        fnInfo is IFnBuilderInfo || fnInfo.GetGenericFuncDefinition() is IFnBuilderInfo;
+
+    private static void EmitCallArguments(
+        CallNode callNode,
+        EmissionContext context,
+        MethodInfo methodInfo,
+        IReadOnlyList<LocalBuilder>? outLocals)
+    {
+        EmitCallReceiver(callNode, context);
+
+        var inputArgIndex = 0;
+        var outArgIndex = 0;
+        foreach (var parameter in methodInfo.GetParameters())
+        {
+            if (parameter.IsOut)
+            {
+                if (outLocals == null) throw new Exception("Out locals are required for out parameter call.");
+                context.Generator.Emit(OpCodes.Ldloca, outLocals[outArgIndex++]);
+                continue;
+            }
+
+            EmitSingleLineExpression(callNode.Args[inputArgIndex++], context, true);
+        }
+    }
+
+    /// <summary>
+    /// Помещает в стек экземпляр, на котором должен быть вызван метод.
+    /// </summary>
+    private static void EmitCallReceiver(CallNode callNode, EmissionContext context)
+    {
         switch (callNode.From)
         {
             case MemberNode memberNode:
@@ -939,14 +1190,6 @@ public static class IlCodeEmitter
             case null: break;
             default: throw new Exception();
         }
-        
-        foreach (var arg in callNode.Args)
-        {
-            EmitSingleLineExpression(arg, context, true);
-        }
-        var returnType = EmitMethodCall(callNode.FnInfo, context);
-        
-        if (returnType != typeof(void) && popResult) context.Generator.Emit(OpCodes.Pop);
     }
 
     #endregion
@@ -961,6 +1204,40 @@ public static class IlCodeEmitter
     private static Type? GetTypeFromNode(NodeBase node) => node is not TypeNode typeNode ? null : typeNode.TypeInfo?.AsType();
 
     /// <summary>
+    /// Возвращает CLR-тип результата выражения.
+    /// </summary>
+    private static Type GetExpressionClrType(NodeBase node, EmissionContext context)
+    {
+        return node switch
+        {
+            LiteralNode literalNode => literalNode.Type.AsType(),
+            CastNode { ToType: TypeNode toType } => toType.TypeInfo?.AsType() ?? throw new Exception(),
+            CallNode callNode => ReturnTypeHelper.GetClrReturnType(callNode.FnInfo?.ReturnTypes ?? throw new Exception()),
+            MemberNode memberNode => GetTypeOfLocalMember(memberNode, context),
+            FieldAccessNode fieldAccessNode => fieldAccessNode.Field.FieldInfo?.FieldType.AsType() ?? throw new Exception(),
+            IndexerNode indexerNode => indexerNode.ItemType?.AsType() ?? throw new Exception(),
+            InitArrayNode initArrayNode => initArrayNode.ArrayItemType.TypeInfo?.AsType().MakeArrayType() ?? throw new Exception(),
+            InitTypeNode initTypeNode => initTypeNode.Type.TypeInfo?.AsType() ?? throw new Exception(),
+            BaseUnaryNode unaryNode => GetExpressionClrType(unaryNode.Inner, context),
+            BaseBinaryNode binaryNode => GetBinaryExpressionClrType(binaryNode, context),
+            _ => throw new Exception("Cannot get expression type. If you see this exception write to compiler developer.")
+        };
+    }
+
+    /// <summary>
+    /// Возвращает CLR-тип результата бинарного выражения.
+    /// </summary>
+    private static Type GetBinaryExpressionClrType(BaseBinaryNode binaryNode, EmissionContext context)
+    {
+        if (binaryNode is EqualNode or NotEqualNode or LessNode or LessOrEqualNode or GreaterNode or GreaterOrEqualNode or AndNode or OrNode)
+        {
+            return typeof(bool);
+        }
+
+        return GetExpressionClrType(binaryNode.Left, context);
+    }
+
+    /// <summary>
     /// Выбор и генерация инструкции вызова метода по метаинформации о нём
     /// </summary>
     /// <param name="fnRef">Метоинформация о методе</param>
@@ -969,6 +1246,11 @@ public static class IlCodeEmitter
     private static Type EmitMethodCall(IFnInfo fnRef, EmissionContext context)
     {
         var methodInfo = fnRef.AsFunc();
+        return EmitMethodCall(methodInfo, context);
+    }
+
+    private static Type EmitMethodCall(MethodInfo methodInfo, EmissionContext context)
+    {
         if (methodInfo == null) throw new Exception();
         var opcode = methodInfo.IsStatic ? OpCodes.Call : OpCodes.Callvirt;
         context.Generator.Emit(opcode, methodInfo);
@@ -1052,7 +1334,7 @@ public static class IlCodeEmitter
         }
         
         ParameterInfo? arg;
-        return (arg = context.Arguments.FirstOrDefault()) == null ? throw new Exception() : arg.ParameterType;
+        return (arg = context.Arguments.FirstOrDefault(x => x.Name == name)) == null ? throw new Exception() : arg.ParameterType;
     }
     
     /// <summary>

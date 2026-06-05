@@ -475,7 +475,17 @@ public static class Parser
 
         if (!TryParseArgSequence(context, out var list)) return false;
         var typeFork = context.Fork();
-        if (TryParseType(typeFork, out var type)) context.Merge(typeFork);
+        var returnTypes = new List<TypeNode>();
+        if (TryParseReturnTypeSequence(typeFork, out var parsedReturnTypes))
+        {
+            context.Merge(typeFork);
+            returnTypes = parsedReturnTypes;
+        }
+        else if (parsedReturnTypes != null)
+        {
+            context.Merge(typeFork);
+            return false;
+        }
 
         if (!TryParseMultilineBody(context, out var body))
         {
@@ -488,16 +498,33 @@ public static class Parser
         var funcNameNode = new FuncNameNode(name);
         context.TranslationTable.AddSymbol(funcNameNode, funcName.Position);
 
-        if (type == null)
-        {
-            var voidName = new TypeNameNode(Builtins.Void.Name);
-            context.TranslationTable.AddSymbol(voidName, funcName.Position);
-            type = new TypeNode(voidName);
-            context.TranslationTable.AddSymbol(type, funcName.Position);
-        }
-        
-        func = new FuncNode(type, funcNameNode, generics, list, body);
+        func = new FuncNode(returnTypes, funcNameNode, generics, list, body);
         context.TranslationTable.AddSymbol(func, fnToken.Position);
+        return true;
+    }
+
+    /// <summary>
+    /// Пытается разобрать последовательность возвращаемых типов функции
+    /// </summary>
+    private static bool TryParseReturnTypeSequence(
+        ParsingContext context,
+        [NotNullWhen(true)] out List<TypeNode>? returnTypes)
+    {
+        returnTypes = null;
+        if (!TryParseType(context, out var returnType)) return false;
+
+        returnTypes = [returnType];
+        while (context.Sequence.Current() is Comma)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            if (!TryParseType(context, out returnType))
+            {
+                return false;
+            }
+
+            returnTypes.Add(returnType);
+        }
+
         return true;
     }
 
@@ -1414,16 +1441,31 @@ public static class Parser
             return true;
         }
 
-        if (!TryParsePrecedence(context, out var expr))
+        if (!TryParsePrecedence(context, out var returnValue))
         {
-            var record = PlampExceptionInfo.ExpectedExpression();
-            var current = context.Sequence.Current();
-            context.Exceptions.Add(new PlampException(record, current.Position));
+            context.Exceptions.Add(new PlampException(
+                PlampExceptionInfo.ExpectedExpression(),
+                context.Sequence.CurrentPosition));
             return false;
         }
 
+        var returnValues = new List<NodeBase> { returnValue };
+        while (context.Sequence.Current() is Comma)
+        {
+            context.Sequence.MoveNextNonWhiteSpace();
+            if (!TryParsePrecedence(context, out returnValue))
+            {
+                context.Exceptions.Add(new PlampException(
+                    PlampExceptionInfo.ExpectedExpression(),
+                    context.Sequence.CurrentPosition));
+                return false;
+            }
+
+            returnValues.Add(returnValue);
+        }
+
         ConsumeEndOfStatement(context);
-        node = new ReturnNode(expr);
+        node = new ReturnNode(returnValues.ToArray());
         context.TranslationTable.AddSymbol(node, returnToken.Position);
         return true;
     }

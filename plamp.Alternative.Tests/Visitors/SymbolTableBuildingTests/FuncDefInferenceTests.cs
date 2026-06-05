@@ -88,7 +88,7 @@ public class FuncDefInferenceTests
         var res = SetupAndAct(code);
         res.Exceptions.Count.ShouldBe(0);
         var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
-        fn.ReturnType.ShouldBe(Builtins.Void);
+        fn.ReturnTypes.ShouldBeEmpty();
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public class FuncDefInferenceTests
         res.Exceptions.ShouldBeEmpty();
         var fn = res.SymTableBuilder.ListFuncs().ShouldHaveSingleItem();
         
-        fn.ReturnType.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("V");
+        fn.ReturnTypes.ShouldHaveSingleItem().ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("V");
         fn.Arguments.ShouldHaveSingleItem().Type.ShouldBeAssignableTo<IGenericParameterBuilder>().Name.ShouldBe("T");
         fn.GetGenericParameters().Count.ShouldBe(2);
     }

@@ -5,9 +5,12 @@ using plamp.Abstractions.Ast.Node.Binary;
 using plamp.Abstractions.Ast.Node.Body;
 using plamp.Abstractions.Ast.Node.ComplexTypes;
 using plamp.Abstractions.Ast.Node.ControlFlow;
+using plamp.Abstractions.Ast.Node.Definitions;
 using plamp.Abstractions.Ast.Node.Definitions.Func;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Alternative;
+using plamp.Alternative.SymbolsImpl;
 using plamp.CodeEmission.Tests.Infrastructure;
 using plamp.ILCodeEmitters;
 using plamp.ILCodeEmitters.EmissionDebug;
@@ -82,6 +85,32 @@ public class MethodCallTests
         StaticCallbackClass.Reset();
         methodInfo!.Invoke(instance, []);
         Assert.True(StaticCallbackClass.CallbackResult);
+    }
+
+    [Fact]
+    public void EmitOutParameterBeforeReturnInMultiResultAssignment()
+    {
+        var outType = typeof(int).MakeByRefType();
+        var method = new FuncInfo(typeof(int).GetMethod(nameof(int.TryParse), [typeof(string), outType])!, "test", "tryParseInt");
+        var value = new VariableDefinitionNode(
+            new TypeNode(new TypeNameNode(Builtins.Int.Name)) { TypeInfo = Builtins.Int },
+            new VariableNameNode("value"));
+        var success = new VariableDefinitionNode(
+            new TypeNode(new TypeNameNode(Builtins.Bool.Name)) { TypeInfo = Builtins.Bool },
+            new VariableNameNode("success"));
+        var call = new CallNode(null, new FuncCallNameNode("tryParseInt"), [new LiteralNode("123", Builtins.String)], [])
+        {
+            FnInfo = method
+        };
+        var body = new BodyNode(
+        [
+            new AssignNode([value, success], [call]),
+            new ReturnNode(new MemberNode("value"))
+        ]);
+
+        var (instance, methodInfo) = EmissionSetupHelper.CreateInstanceWithMethod([], body, typeof(int));
+
+        methodInfo!.Invoke(instance, []).ShouldBe(123);
     }
 
     public class CallbackClassWithArg

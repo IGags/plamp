@@ -37,7 +37,7 @@ public class GenericFuncBuilder : IFnInfo
     public IReadOnlyList<IArgInfo> Arguments { get; }
     
     /// <inheritdoc/>
-    public ITypeInfo ReturnType { get; }
+    public IReadOnlyList<ITypeInfo> ReturnTypes { get; }
 
     /// <inheritdoc/>
     public bool IsGenericFuncDefinition => false;
@@ -76,7 +76,9 @@ public class GenericFuncBuilder : IFnInfo
             .ToDictionary(x => x.First, x => x.Second);
 
         Arguments = ImplementArgTypes(definition.Arguments, typeMapping);
-        ReturnType = GenericImplementationHelper.ImplementType(definition.ReturnType, typeMapping);
+        ReturnTypes = definition.ReturnTypes
+            .Select(x => GenericImplementationHelper.ImplementType(x, typeMapping))
+            .ToList();
     }
 
     private IReadOnlyList<IArgInfo> ImplementArgTypes(

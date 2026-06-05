@@ -93,7 +93,8 @@ public class EmissionSetupHelper
         public IReadOnlyList<IArgInfo> Arguments { get; } =
             parameters.Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, ModuleNameInner))).ToList();
 
-        public ITypeInfo ReturnType { get; } = TypeInfo.FromType(returnType, ModuleNameInner);
+        public IReadOnlyList<ITypeInfo> ReturnTypes { get; } =
+            returnType == typeof(void) ? [] : [TypeInfo.FromType(returnType, ModuleNameInner)];
         
         public bool IsGenericFuncDefinition => _builder.IsGenericMethodDefinition;
 

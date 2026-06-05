@@ -3,6 +3,7 @@ using System.Linq;
 using plamp.Abstractions.Ast.Node;
 using plamp.Abstractions.Ast.Node.Assign;
 using plamp.Abstractions.Ast.Node.Definitions;
+using plamp.Abstractions.Ast.Node.Definitions.Type;
 using plamp.Abstractions.Ast.Node.Definitions.Variable;
 using plamp.Abstractions.Symbols.SymTable;
 using plamp.Alternative.SymbolsBuildingImpl;
@@ -39,7 +40,7 @@ public class FuncCallTypeInferenceTests
         var root = ast.ShouldBeOfType<RootNode>();
         var main = root.Functions.Single(x => x.FuncName.Value == "main");
         var call = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
-        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Void);
+        call.FnInfo.ShouldNotBeNull().ReturnTypes.ShouldBeEmpty();
     }
 
     /// <summary>
@@ -66,7 +67,7 @@ public class FuncCallTypeInferenceTests
         assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
             .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
         var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
-        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Int);
+        call.FnInfo.ShouldNotBeNull().ReturnTypes.ShouldHaveSingleItem().ShouldBe(Builtins.Int);
     }
 
     /// <summary>
@@ -90,7 +91,7 @@ public class FuncCallTypeInferenceTests
         var root = ast.ShouldBeOfType<RootNode>();
         var main = root.Functions.Single(x => x.FuncName.Value == "main");
         var call = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
-        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Void);
+        call.FnInfo.ShouldNotBeNull().ReturnTypes.ShouldBeEmpty();
     }
 
     /// <summary>
@@ -315,7 +316,7 @@ public class FuncCallTypeInferenceTests
         var variable = assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>();
         variable.Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
         var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
-        call.FnInfo.ShouldNotBeNull().ReturnType.ShouldBe(Builtins.Int);
+        call.FnInfo.ShouldNotBeNull().ReturnTypes.ShouldHaveSingleItem().ShouldBe(Builtins.Int);
     }
 
     /// <summary>
@@ -542,6 +543,167 @@ public class FuncCallTypeInferenceTests
         var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
         assign.Targets.ShouldHaveSingleItem().ShouldBeOfType<VariableDefinitionNode>()
             .Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+    }
+
+    /// <summary>
+    /// Вызов функции с несколькими результатами раскрывается в цели присваивания.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallAsSingleAssignmentSource_InfersTargets()
+    {
+        const string code = """
+                            module test;
+                            fn many() int, string {
+                                return 11, "2444";
+                            }
+                            fn main() {
+                                a, b := many();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        assign.Targets[0].ShouldBeOfType<VariableDefinitionNode>().Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.Int);
+        assign.Targets[1].ShouldBeOfType<VariableDefinitionNode>().Type.ShouldNotBeNull().TypeInfo.ShouldBe(Builtins.String);
+    }
+
+    /// <summary>
+    /// Результаты много-результатной функции можно присвоить ранее объявленным переменным совместимых типов.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallAssignedToImplicitlyConvertibleTargets_ReturnsNoException()
+    {
+        const string code = """
+                            module test;
+                            fn many() int, int, int {
+                                return 11, 13, 17;
+                            }
+                            fn main() {
+                                longValue := 0l;
+                                floatValue := 0f;
+                                doubleValue := 0d;
+                                longValue, floatValue, doubleValue := many();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldBeEmpty();
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.Last().ShouldBeOfType<AssignNode>();
+        assign.Targets.Select(x => x.ShouldBeOfType<CastNode>().FromType).ShouldBe(
+            [Builtins.Int, Builtins.Int, Builtins.Int]);
+        assign.Targets
+            .Select(x => x.ShouldBeOfType<CastNode>().ToType.ShouldBeOfType<TypeNode>().TypeInfo)
+            .ShouldBe([Builtins.Long, Builtins.Float, Builtins.Double]);
+    }
+
+    /// <summary>
+    /// Результат много-результатной функции нельзя присвоить цели с несовместимым типом.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallAssignedToIncompatibleTarget_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn many() double, int {
+                                return 19d, 23;
+                            }
+                            fn main() {
+                                intValue := 0;
+                                second := 0;
+                                intValue, second := many();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotAssign().Code);
+    }
+
+    /// <summary>
+    /// Много-результатный вызов нельзя представить одним CastNode, потому что он перестаёт быть непосредственным источником присваивания.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallWrappedInCast_ReturnsExpressionUsageException()
+    {
+        const string code = """
+                            module test;
+                            fn many() int, int {
+                                return 29, 31;
+                            }
+                            fn main() {
+                                first, second := many();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        var root = ast.ShouldBeOfType<RootNode>();
+        var main = root.Functions.Single(x => x.FuncName.Value == "main");
+        var assign = main.Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<AssignNode>();
+        var call = assign.Sources.ShouldHaveSingleItem().ShouldBeOfType<CallNode>();
+        var type = new TypeNode(new TypeNameNode(Builtins.Long.Name)) { TypeInfo = Builtins.Long };
+        assign.ReplaceChild(call, new CastNode(type, call) { FromType = Builtins.Int });
+
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.Select(x => x.Code).ShouldBe(
+        [
+            PlampExceptionInfo.CannotUseMultiResultCallAsExpression().Code,
+            PlampExceptionInfo.AssignSourceAndTargetCountMismatch().Code
+        ]);
+    }
+
+    /// <summary>
+    /// Функцию с несколькими результатами нельзя смешивать с другими источниками присваивания.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallMixedWithOtherAssignmentSource_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn many() int, string {
+                                return 11, "2444";
+                            }
+                            fn main() {
+                                a, b, c := many(), 44;
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.CannotMixMultiResultCallInAssignment().Code);
+    }
+
+    /// <summary>
+    /// Функцию с несколькими результатами нельзя использовать как обычное выражение.
+    /// </summary>
+    [Fact]
+    public void MultiResultCallAsExpression_ReturnsException()
+    {
+        const string code = """
+                            module test;
+                            fn many() int, string {
+                                return 11, "2444";
+                            }
+                            fn main() {
+                                value := many();
+                            }
+                            """;
+
+        var (ast, context) = Setup(code);
+        context = new TypeInferenceWeaver().WeaveDiffs(ast, context);
+
+        context.Exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.AssignSourceAndTargetCountMismatch().Code);
     }
 
     private (NodeBase ast, PreCreationContext context) Setup(string code)

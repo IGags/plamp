@@ -1,0 +1,5 @@
+module e2e.invalid_multi_return_value_count
+
+fn pair() int, string {
+    return 59
+}

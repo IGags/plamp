@@ -8,27 +8,48 @@ namespace plamp.Abstractions.Ast.Node.Definitions.Func;
 /// <summary>
 /// Узел AST обозначающий объявление функции.
 /// </summary>
-/// <param name="returnType">Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void</param>
+/// <param name="returnTypes">Список типов возвращаемых значений. Пустой список означает void функцию</param>
 /// <param name="funcName">Узел, обозначающий имя объявления функции.</param>
 /// <param name="parameterList">Список объявлений параметров функции</param>
 /// <param name="genericArgTypes">Список дженерик аргументов, которые используются в функции как тип параметров или возвращаемый тип</param>
 /// <param name="body">Блок тела функции</param>
 public class FuncNode(
-    TypeNode returnType, 
+    List<TypeNode> returnTypes,
     FuncNameNode funcName, 
     List<GenericDefinitionNode> genericArgTypes,
     List<ParameterNode> parameterList, 
     BodyNode body) : NodeBase
 {
     /// <summary>
+    /// Узел AST обозначающий объявление функции.
+    /// </summary>
+    /// <param name="returnType">Тип возвращаемого значения</param>
+    /// <param name="funcName">Узел, обозначающий имя объявления функции</param>
+    /// <param name="genericArgTypes">Список дженерик аргументов функции</param>
+    /// <param name="parameterList">Список объявлений параметров функции</param>
+    /// <param name="body">Блок тела функции</param>
+    public FuncNode(
+        TypeNode returnType,
+        FuncNameNode funcName,
+        List<GenericDefinitionNode> genericArgTypes,
+        List<ParameterNode> parameterList,
+        BodyNode body) : this(IsVoid(returnType) ? [] : [returnType],
+                              funcName,
+                              genericArgTypes,
+                              parameterList,
+                              body)
+    {
+    }
+
+    /// <summary>
     /// Список дженерик аргументов, которые используются в функции как тип параметров или возвращаемый тип
     /// </summary>
     public IReadOnlyList<GenericDefinitionNode> GenericArgTypes => genericArgTypes; 
     
     /// <summary>
-    /// Обозначение типа возвращаемого значения. Может быть null, тогда считается, что функция возвращает void
+    /// Список типов возвращаемых значений. Пустой список означает void функцию
     /// </summary>
-    public TypeNode ReturnType { get; private set; } = returnType;
+    public IReadOnlyList<TypeNode> ReturnTypes => returnTypes;
     
     /// <summary>
     /// Узел, обозначающий имя объявления функции.
@@ -57,7 +78,10 @@ public class FuncNode(
         {
             yield return parameter;
         }
-        yield return ReturnType;
+        foreach (var returnType in ReturnTypes)
+        {
+            yield return returnType;
+        }
 
         yield return Body;
     }
@@ -67,9 +91,11 @@ public class FuncNode(
     {
         int parameterIndex;
         int genericIndex;
-        if (ReturnType == child && newChild is TypeNode returnType)
+        if (child is TypeNode returnTypeChild
+            && newChild is TypeNode newReturnType
+            && -1 != (parameterIndex = returnTypes.IndexOf(returnTypeChild)))
         {
-            ReturnType = returnType;
+            returnTypes[parameterIndex] = newReturnType;
         }
         else if (FuncName == child && newChild is FuncNameNode member)
         {
@@ -92,4 +118,7 @@ public class FuncNode(
             Body = newBody;
         }
     }
+
+    private static bool IsVoid(TypeNode returnType) =>
+        returnType.TypeInfo != null ? returnType.TypeInfo.Name == string.Empty : returnType.TypeName.Name == string.Empty;
 }

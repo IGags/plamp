@@ -11,12 +11,15 @@ namespace plamp.ILCodeEmitters;
 /// <param name="Generator">Генератор il кода.</param>
 /// <param name="Labels">Словарь меток перехода к il инструкциям(необходимо для циклов и условий)</param>
 /// <param name="IsStatic">Является ли текущий метод статическим</param>
+/// <param name="ReturnTypes">Возвращаемые типы</param>
+/// <param name="FnReturnLabel">Общая метка выхода из функции</param>
 internal record EmissionContext(
     LocalVarStack LocalVarStack,
     ParameterInfo[] Arguments,
     ILGenerator Generator,
     Dictionary<string, Label> Labels,
     bool IsStatic,
+    IReadOnlyList<Type> ReturnTypes,
     Label FnReturnLabel)
 {
     /// <summary>

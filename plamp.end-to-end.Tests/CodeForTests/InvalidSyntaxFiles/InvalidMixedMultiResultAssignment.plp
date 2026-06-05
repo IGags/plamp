@@ -1,0 +1,9 @@
+module e2e.invalid_mixed_multi_result_assignment
+
+fn pair() int, string {
+    return 11, "value"
+}
+
+fn invalid_assignment() {
+    first, second, third := pair(), 44
+}

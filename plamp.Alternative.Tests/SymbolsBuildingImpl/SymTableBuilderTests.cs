@@ -148,7 +148,7 @@ public class SymTableBuilderTests
         funcInfo.DefinitionName.ShouldBe("sum");
         funcInfo.Name.ShouldBe("sum(int, int)");
         funcInfo.ModuleName.ShouldBe("testModule");
-        funcInfo.ReturnType.ShouldBe(Builtins.Int);
+        funcInfo.ReturnTypes.ShouldHaveSingleItem().ShouldBe(Builtins.Int);
         funcInfo.Arguments.Count.ShouldBe(2);
         funcInfo.Arguments[0].Name.ShouldBe("left");
         funcInfo.Arguments[0].Type.ShouldBe(Builtins.Int);

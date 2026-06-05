@@ -22,6 +22,7 @@ public class FuncInfo : IFnInfo
 
     /// <inheritdoc/>
     public IReadOnlyList<IArgInfo> Arguments => _fnInfo.GetParameters()
+        .Where(x => !x.IsOut)
         .Select(x => new ArgInfo(x.Name!, TypeInfo.FromType(x.ParameterType, _moduleName))).ToList();
 
     /// <inheritdoc/>
@@ -29,7 +30,23 @@ public class FuncInfo : IFnInfo
 
     //TODO: Некорректные модули для типов
     /// <inheritdoc/>
-    public ITypeInfo ReturnType => TypeInfo.FromType(_fnInfo.ReturnType, _moduleName);
+    public IReadOnlyList<ITypeInfo> ReturnTypes
+    {
+        get
+        {
+            var outTypes = _fnInfo.GetParameters()
+                .Where(x => x.IsOut)
+                .Select(x => TypeInfo.FromType(x.ParameterType.GetElementType()!, _moduleName))
+                .ToList();
+
+            if (_fnInfo.ReturnType != typeof(void))
+            {
+                outTypes.Add(TypeInfo.FromType(_fnInfo.ReturnType, _moduleName));
+            }
+
+            return outTypes;
+        }
+    }
 
     /// <inheritdoc/>
     public bool IsGenericFuncDefinition => _fnInfo.IsGenericMethodDefinition;

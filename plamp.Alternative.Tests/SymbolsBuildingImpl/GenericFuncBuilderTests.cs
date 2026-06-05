@@ -158,7 +158,7 @@ public class GenericFuncBuilderTests
         impl.ShouldNotBeNull();
         impl.GetGenericParameters().ShouldBeEmpty();
         impl.GetGenericArguments().ShouldHaveSingleItem().ShouldBe(Builtins.Any.MakeArrayType());
-        impl.ReturnType.ShouldBe(Builtins.Any.MakeArrayType());
+        impl.ReturnTypes.ShouldHaveSingleItem().ShouldBe(Builtins.Any.MakeArrayType());
     }
 
     /// <summary>

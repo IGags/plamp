@@ -1,0 +1,9 @@
+module e2e.invalid_ignored_multi_result_call
+
+fn pair() int, string {
+    return 53, "ignored"
+}
+
+fn invalid_call() {
+    pair()
+}
