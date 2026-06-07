@@ -27,9 +27,9 @@ public interface IFnInfo : IModuleMember, IEquatable<IFnInfo>
     public IReadOnlyList<IArgInfo> Arguments { get; }
     
     /// <summary>
-    /// Возвращаемый тип функции
+    /// Возвращаемые типы функции
     /// </summary>
-    public ITypeInfo ReturnType { get; }
+    public IReadOnlyList<ITypeInfo> ReturnTypes { get; }
     
     /// <summary>
     /// Является ли данная функция дженерик-объявлением

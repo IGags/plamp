@@ -509,13 +509,13 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
             var record = PlampExceptionInfo.FunctionHasDifferentArgCount(fnParams.Count, argTypes.Count);
             SetExceptionToSymbol(node, record, context);
             
-            if (fnRef.ReturnType.IsGenericType || fnRef.ReturnType.IsGenericTypeParameter)
+            if (fnRef.ReturnTypes.Any(x => x.IsGenericType || x.IsGenericTypeParameter))
             {
                 context.InnerExpressionTypeStack.Push(null);
             }
             else
             {
-                context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
+                context.InnerExpressionTypeStack.Push(GetExpressionReturnType(node, fnRef, context, parent));
             }
             
             return VisitResult.SkipChildren;
@@ -555,7 +555,7 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
         if(argTypes.Any(x => x == null))
         {
-            context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
+            context.InnerExpressionTypeStack.Push(GetExpressionReturnType(node, fnRef, context, parent));
             return VisitResult.Continue;
         }
         
@@ -568,8 +568,31 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
         
         node.FnInfo = fnRef;
-        context.InnerExpressionTypeStack.Push(fnRef.ReturnType);
+        context.InnerExpressionTypeStack.Push(GetExpressionReturnType(node, fnRef, context, parent));
         return VisitResult.Continue;
+    }
+
+    /// <summary>
+    /// Определяет тип вызова как выражения
+    /// </summary>
+    private ITypeInfo? GetExpressionReturnType(
+        CallNode node,
+        IFnInfo fnRef,
+        TypeInferenceInnerContext context,
+        NodeBase? parent)
+    {
+        if (fnRef.ReturnTypes.Count == 0) return Builtins.Void;
+        if (fnRef.ReturnTypes.Count == 1) return fnRef.ReturnTypes[0];
+
+        var assignmentSource = parent is AssignNode assign && assign.Sources.Contains(node);
+        var forwardedReturn = parent is ReturnNode returnNode
+            && returnNode.ReturnValues.Contains(node);
+        if (!assignmentSource && !forwardedReturn)
+        {
+            SetExceptionToSymbol(node, PlampExceptionInfo.CannotUseMultiResultCallAsExpression(), context);
+        }
+
+        return null;
     }
 
     private IFnInfo? InferenceExplicitGenericFuncCall(
@@ -719,6 +742,23 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         
         if(childrenCount != types.Count) throw new Exception("Incorrect visitor code.");
 
+        var multiResultCalls = node.Sources
+            .OfType<CallNode>()
+            .Where(x => x.FnInfo?.ReturnTypes.Count > 1)
+            .ToList();
+
+        if (multiResultCalls.Count != 0 && node.Sources.Count != 1)
+        {
+            SetExceptionToSymbol(node, PlampExceptionInfo.CannotMixMultiResultCallInAssignment(), context);
+            return VisitResult.Continue;
+        }
+
+        if (multiResultCalls.Count == 1)
+        {
+            ValidateMultiResultAssignment(node, types, multiResultCalls[0], context);
+            return VisitResult.Continue;
+        }
+
         if (childrenCount % 2 != 0)
         {
             var record = PlampExceptionInfo.AssignSourceAndTargetCountMismatch();
@@ -769,6 +809,99 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         }
         
         return VisitResult.Continue;
+    }
+
+    /// <summary>
+    /// Проверяет количество и типы целей присваивания для множественного возврата
+    /// </summary>
+    private void ValidateMultiResultAssignment(
+        AssignNode node,
+        IReadOnlyList<ITypeInfo?> visitedTypes,
+        CallNode callNode,
+        TypeInferenceInnerContext context)
+    {
+        var returnTypes = callNode.FnInfo?.ReturnTypes;
+        if (returnTypes == null) return;
+
+        if (node.Targets.Count != returnTypes.Count)
+        {
+            SetExceptionToSymbol(node, PlampExceptionInfo.AssignSourceAndTargetCountMismatch(), context);
+            return;
+        }
+
+        for (var i = 0; i < node.Targets.Count; i++)
+        {
+            ValidateMultiResultAssignmentTarget(node, visitedTypes[i], returnTypes[i], node.Targets[i], context);
+        }
+    }
+
+    /// <summary>
+    /// Проверяет отдельную цель присваивания результата множественного возврата
+    /// </summary>
+    private void ValidateMultiResultAssignmentTarget(
+        AssignNode assignNode,
+        ITypeInfo? targetType,
+        ITypeInfo? sourceType,
+        NodeBase targetNode,
+        TypeInferenceInnerContext context)
+    {
+        switch (targetNode)
+        {
+            case VariableDefinitionNode:
+            case IndexerNode:
+            case FieldAccessNode:
+                ValidateMultiResultAssignmentTypeCompatibility(assignNode, targetNode, targetType, sourceType, context);
+                return;
+            case MemberNode leftMember:
+                if (context.Arguments.TryGetValue(leftMember.MemberName, out var argType))
+                {
+                    ValidateMultiResultAssignmentTypeCompatibility(assignNode, targetNode, argType, sourceType, context);
+                    return;
+                }
+                if (!context.TryGetVariable(leftMember.MemberName, out var variable))
+                {
+                    CreateVariableDefinitionFromMember(leftMember, context, sourceType);
+                    return;
+                }
+
+                ValidateMultiResultAssignmentTypeCompatibility(assignNode, targetNode, variable.Type?.TypeInfo, sourceType, context);
+                return;
+            default: throw new Exception("Parser exception, invalid ast");
+        }
+    }
+
+    /// <summary>
+    /// Проверяет совместимость результата с целью и добавляет неявное преобразование если требуется
+    /// </summary>
+    private void ValidateMultiResultAssignmentTypeCompatibility(
+        AssignNode assignNode,
+        NodeBase assignmentTarget,
+        ITypeInfo? targetType,
+        ITypeInfo? sourceType,
+        TypeInferenceInnerContext context)
+    {
+        if (targetType == null || sourceType == null || sourceType.Equals(targetType)) return;
+        if (TryExpandMultiResultAssignmentTarget(assignmentTarget, sourceType, targetType, context)) return;
+        SetExceptionToSymbol(assignNode, PlampExceptionInfo.CannotAssign(), context);
+    }
+
+    /// <summary>
+    /// Оборачивает цель присваивания в узел неявного каста, если типы совместимы
+    /// </summary>
+    private bool TryExpandMultiResultAssignmentTarget(
+        NodeBase assignmentTarget,
+        ITypeInfo sourceType,
+        ITypeInfo targetType,
+        TypeInferenceInnerContext context)
+    {
+        if (!SymbolSearchUtility.ImplicitlyConvertable(sourceType, targetType)) return false;
+        if (!SymbolSearchUtility.NeedToCast(sourceType, targetType)) return true;
+
+        var targetTypeNode = new TypeNode(new TypeNameNode(targetType.Name)) { TypeInfo = targetType };
+        context.TranslationTable.AddSymbol(targetTypeNode, default);
+        var cast = new CastNode(targetTypeNode, assignmentTarget) { FromType = sourceType };
+        Replace(assignmentTarget, _ => cast, context);
+        return true;
     }
     
     private void ValidateAssignmentTypeCompatibility(
@@ -1032,31 +1165,54 @@ public class TypeInferenceWeaver : BaseWeaver<PreCreationContext, TypeInferenceI
         return VisitResult.SkipChildren;
     }
     
+    /// <summary>
+    /// Проверяет количество и типы возвращаемых выражений после их посещения
+    /// </summary>
     protected override VisitResult PostVisitReturn(ReturnNode node, TypeInferenceInnerContext context, NodeBase? parent)
     {
-        ITypeInfo? returnType = null;
-        var functionReturnType = context.CurrentFunc?.ReturnType.TypeInfo;
-        if (node.ReturnValue != null)
+        var actualTypes = new List<ITypeInfo?>();
+        for (var i = 0; i < node.ReturnValues.Count; i++)
         {
-            returnType = context.InnerExpressionTypeStack.Pop();
+            actualTypes.Add(context.InnerExpressionTypeStack.Pop());
         }
+        actualTypes.Reverse();
         
-        if (context.CurrentFunc?.ReturnType.TypeInfo == null) return VisitResult.SkipChildren;
+        if (context.CurrentFunc == null) return VisitResult.SkipChildren;
+        var expectedTypes = context.CurrentFunc.ReturnTypes.Select(x => x.TypeInfo).ToList();
+        if (expectedTypes.Any(x => x == null)) return VisitResult.SkipChildren;
+
+        var expandedActualTypes = new List<ITypeInfo?>();
+        for (var i = 0; i < node.ReturnValues.Count; i++)
+        {
+            if (node.ReturnValues[i] is CallNode { FnInfo.ReturnTypes.Count: > 1 } multiResultCall)
+            {
+                expandedActualTypes.AddRange(multiResultCall.FnInfo.ReturnTypes.Cast<ITypeInfo?>());
+            }
+            else
+            {
+                expandedActualTypes.Add(actualTypes[i]);
+            }
+        }
+        actualTypes = expandedActualTypes;
         
-        if (!Builtins.Void.Equals(context.CurrentFunc.ReturnType.TypeInfo) && node.ReturnValue is null)
+        if (expectedTypes.Count != actualTypes.Count)
         {
-            var record = PlampExceptionInfo.ReturnValueIsMissing();
+            var record = actualTypes.Count == 0
+                ? PlampExceptionInfo.ReturnValueIsMissing()
+                : expectedTypes.Count == 0
+                    ? PlampExceptionInfo.CannotReturnValue()
+                    : PlampExceptionInfo.ReturnValueCountMismatch(expectedTypes.Count, actualTypes.Count);
             SetExceptionToSymbol(node, record, context);
+            return VisitResult.SkipChildren;
         }
-        else if (Builtins.Void.Equals(context.CurrentFunc.ReturnType.TypeInfo) && node.ReturnValue is not null)
+
+        for (var i = 0; i < expectedTypes.Count; i++)
         {
-            var record = PlampExceptionInfo.CannotReturnValue();
-            SetExceptionToSymbol(node, record, context);
-        }
-        else if (functionReturnType is not null && !Builtins.Void.Equals(functionReturnType) && returnType is not null)
-        {
-            if (returnType.Equals(functionReturnType)) return VisitResult.SkipChildren;
-            if (TryExpandType(node.ReturnValue!, returnType, functionReturnType, context)) return VisitResult.SkipChildren;
+            var expectedType = expectedTypes[i];
+            var actualType = actualTypes[i];
+            if (expectedType is null || actualType is null || actualType.Equals(expectedType)) continue;
+            if (node.ReturnValues.Count == actualTypes.Count
+                && TryExpandType(node.ReturnValues[i], actualType, expectedType, context)) continue;
             
             var record = PlampExceptionInfo.ReturnTypeMismatch();
             SetExceptionToSymbol(node, record, context);

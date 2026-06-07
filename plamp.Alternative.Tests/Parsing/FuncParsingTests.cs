@@ -19,6 +19,38 @@ public class FuncParsingTests
     {
         yield return
         [
+            "fn many() int, string { return 11, \"2444\"; }",
+            new FuncNode(
+                [
+                    new TypeNode(new TypeNameNode("int")),
+                    new TypeNode(new TypeNameNode("string"))
+                ],
+                new FuncNameNode("many"), [], [],
+                new BodyNode([
+                    new ReturnNode(
+                        new LiteralNode(11, Builtins.Int),
+                        new LiteralNode("2444", Builtins.String))
+                ]))
+        ];
+        yield return
+        [
+            "fn many_arrays() []int, [][]string { return [1]int, [2][]string; }",
+            new FuncNode(
+                [
+                    new TypeNode(new TypeNameNode("int")) { ArrayDefinitions = [new()] },
+                    new TypeNode(new TypeNameNode("string")) { ArrayDefinitions = [new(), new()] }
+                ],
+                new FuncNameNode("many_arrays"), [], [],
+                new BodyNode([
+                    new ReturnNode(
+                        new InitArrayNode(new TypeNode(new TypeNameNode("int")), new LiteralNode(1, Builtins.Int)),
+                        new InitArrayNode(
+                            new TypeNode(new TypeNameNode("string")) { ArrayDefinitions = [new()] },
+                            new LiteralNode(2, Builtins.Int)))
+                ]))
+        ];
+        yield return
+        [
             "fn a() any { return 1; }",
             new FuncNode(
                 new TypeNode(new TypeNameNode("any")), 
@@ -218,6 +250,8 @@ public class FuncParsingTests
             )
         ];
         yield return ["fn a]() {}", new List<string> { PlampExceptionInfo.ExpectedOpenParen().Code }, false, null];
+        yield return ["fn a() int, {}", new List<string> { PlampExceptionInfo.ExpectedTypeName().Code }, false, null];
+        yield return ["fn a() int,, string {}", new List<string> { PlampExceptionInfo.ExpectedTypeName().Code }, false, null];
     }
 
     [Theory]

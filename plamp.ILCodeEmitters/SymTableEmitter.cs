@@ -153,9 +153,11 @@ public static class SymTableEmitter
         }
         
         var parameters = func.Arguments.Select(x => x.AsInfo()).ToArray();
-        var parameterTypes = parameters.Select(x => x.ParameterType).ToArray(); 
-        
-        var retType = func.ReturnType.AsType();
+        var outReturnParameterTypes = ReturnTypeHelper.GetOutReturnParameterTypes(func.ReturnTypes);
+        var parameterTypes = parameters.Select(x => x.ParameterType)
+            .Concat(outReturnParameterTypes)
+            .ToArray();
+        var retType = ReturnTypeHelper.GetClrReturnType(func.ReturnTypes);
         if (retType == null)
         {
             throw new InvalidOperationException("Возвращаемый тип не может быть null на этой стадии, исходный код написан неверно");
@@ -163,13 +165,20 @@ public static class SymTableEmitter
         
         methodBuilder.SetParameters(parameterTypes);
         methodBuilder.SetReturnType(retType);
+        for (var i = 0; i < outReturnParameterTypes.Count; i++)
+        {
+            methodBuilder.DefineParameter(
+                parameters.Length + i + 1,
+                ParameterAttributes.Out,
+                $"<return_{i}>");
+        }
         func.MethodBuilder = methodBuilder;
         if (!symTableBuilder.TryGetDefinition(func, out var node))
         {
             throw new InvalidOperationException("Не найдено объявление функции в исходном ast, ошибка в коде компилятора.");
         }
         
-        IlCodeEmitter.EmitMethodBody(node.Body, methodBuilder, parameters);
+        IlCodeEmitter.EmitMethodBody(node.Body, methodBuilder, parameters, outReturnParameterTypes);
     }
 
     private static void SetGenericsForFunc(MethodBuilder methodBuilder, IReadOnlyList<IGenericParameterBuilder> genericParams)

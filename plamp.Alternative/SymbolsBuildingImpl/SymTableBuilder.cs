@@ -45,16 +45,17 @@ public class SymTableBuilder : ISymTableBuilder, ISymTable
     {
         generics ??= [];
         
-        var retType = fnNode.ReturnType.TypeInfo;
-        if (retType == null) throw new InvalidOperationException();
+        var retTypes = fnNode.ReturnTypes.Select(x => x.TypeInfo).ToList();
+        if (retTypes.Any(x => x == null)) throw new InvalidOperationException();
         if (fnNode.ParameterList.Any(x => x.Type.TypeInfo == null)) throw new InvalidOperationException();
         if (_funcs.ContainsKey(fnNode.FuncName.Value) || _types.ContainsKey(fnNode.FuncName.Value)) throw new InvalidOperationException();
 
         var args = fnNode.ParameterList.Select(x => new BlankArgInfo(x.Name.Value, x.Type.TypeInfo!));
+        var notNullReturnTypes = retTypes.OfType<ITypeInfo>().ToList();
         
         var func = generics.Length == 0 
-            ? new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), retType, ModuleName)
-            : new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), retType, generics, ModuleName);
+            ? new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), notNullReturnTypes, ModuleName)
+            : new BlankFuncInfo(fnNode.FuncName.Value, args.ToList(), notNullReturnTypes, generics, ModuleName);
         _funcs.Add(fnNode.FuncName.Value, func);
         _fnNodeMapping.Add(func, fnNode);
         

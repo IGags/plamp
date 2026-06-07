@@ -22,6 +22,7 @@ public class ReturnParsingTests
         yield return ["return a++;", new ReturnNode(new PostfixIncrementNode(new MemberNode("a")))];
         yield return ["return a + b;", new ReturnNode(new AddNode(new MemberNode("a"), new MemberNode("b")))];
         yield return ["return !a;", new ReturnNode(new NotNode(new MemberNode("a")))];
+        yield return ["return a, b;", new ReturnNode(new MemberNode("a"), new MemberNode("b"))];
         yield return ["return\n", new ReturnNode(null)];
         yield return ["return 1", new ReturnNode(new LiteralNode(1, Builtins.Int))];
     } 
@@ -44,6 +45,8 @@ public class ReturnParsingTests
         yield return ["1", new List<string>(), null, false];
         yield return ["return", new List<string>{PlampExceptionInfo.ExpectedExpression().Code}, null, false];
         yield return ["return +", new List<string> { PlampExceptionInfo.ExpectedExpression().Code }, null, false];
+        yield return ["return 1,", new List<string> { PlampExceptionInfo.ExpectedExpression().Code }, null, false];
+        yield return ["return 1,, 2", new List<string> { PlampExceptionInfo.ExpectedExpression().Code }, null, false];
     } 
     
     [Theory]

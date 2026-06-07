@@ -124,8 +124,8 @@ public class FuncDefInferenceWeaver : BaseWeaver<SymbolTableBuildingContext, Fun
         
         var argTypes = args.Select(x => new KeyValuePair<string, ITypeInfo?>(x.Name.Value, x.Type.TypeInfo)).ToList();
         
-        var returnType = node.ReturnType.TypeInfo;
-        if (returnType == null || argTypes.Any(x => x.Value == null)) return;
+        var returnTypes = node.ReturnTypes.Select(x => x.TypeInfo).ToList();
+        if (returnTypes.Any(x => x == null) || argTypes.Any(x => x.Value == null)) return;
         _ = context.SymTableBuilder.DefineFunc(node, context.CurrentFuncGenerics.ToArray());
     }
 

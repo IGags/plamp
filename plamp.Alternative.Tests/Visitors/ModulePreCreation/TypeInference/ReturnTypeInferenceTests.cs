@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Moq;
@@ -142,11 +145,85 @@ public class ReturnTypeInferenceTests
         expression
             .ShouldBeOfType<FuncNode>()
             .Body.ExpressionList.ShouldHaveSingleItem().ShouldBeOfType<ReturnNode>()
-            .ReturnValue.ShouldBeOfType<CastNode>()
+            .ReturnValues.ShouldHaveSingleItem().ShouldBeOfType<CastNode>()
             .ShouldSatisfyAllConditions(
                 x => x.FromType.ShouldBe(Builtins.Int),
                 x => x.ToType.ShouldBeOfType<TypeNode>().TypeInfo.ShouldBe(Builtins.Long));
         weaveResult.Exceptions.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Проверяет несовместимость типов при пробросе множественного результата.
+    /// </summary>
+    [Fact]
+    public async Task ForwardMultipleResultWithIncompatibleType_ReturnsException()
+    {
+        var exceptions = await RunFrontendAsync(
+            """
+            module tests
+            fn source() int, string { return 17, "text"; }
+            fn target() int, int { return source(); }
+            """);
+
+        exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.ReturnTypeMismatch().Code);
+    }
+
+    /// <summary>
+    /// Проверяет несовпадение количества значений при пробросе множественного результата.
+    /// </summary>
+    [Fact]
+    public async Task ForwardMultipleResultWithDifferentArity_ReturnsException()
+    {
+        var exceptions = await RunFrontendAsync(
+            """
+            module tests
+            fn source() int, string { return 19, "text"; }
+            fn target() int, string, bool { return source(); }
+            """);
+
+        exceptions.ShouldHaveSingleItem().Code.ShouldBe(PlampExceptionInfo.ReturnValueCountMismatch(3, 2).Code);
+    }
+
+    /// <summary>
+    /// Проверяет проброс множественного результата generic-функции.
+    /// </summary>
+    [Fact]
+    public async Task ForwardGenericMultipleResult_ReturnsNoException()
+    {
+        var exceptions = await RunFrontendAsync(
+            """
+            module tests
+            fn source[T](value: T) T, T { return value, value; }
+            fn target(value: string) string, string { return source(value); }
+            """);
+
+        exceptions.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Проверяет разворачивание множественного вызова среди других выражений return.
+    /// </summary>
+    [Fact]
+    public async Task ReturnMultipleResultCallAlongsideExpression_ReturnsNoException()
+    {
+        var exceptions = await RunFrontendAsync(
+            """
+            module tests
+            fn source() int, string { return 23, "text"; }
+            fn target() int, int, string { return 17, source(); }
+            """);
+
+        exceptions.ShouldBeEmpty();
+    }
+
+    private static async Task<IReadOnlyList<PlampException>> RunFrontendAsync(string code)
+    {
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(code));
+        var (exceptions, _) = await CompilationPipeline.RunFrontendSteps(
+            stream,
+            System.Text.Encoding.UTF8,
+            "return-type-inference.plp");
+        return exceptions;
     }
 
     private void SetupExceptionMock(Mock<ITranslationTable> translationTable)

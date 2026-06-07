@@ -24,6 +24,19 @@ public class BlankFuncInfo : IFnBuilderInfo
     /// <param name="moduleName">Имя модуля, в котором объявлена функция.</param>
     /// <exception cref="InvalidOperationException">Имя функции пустое, имя модуля пустое, или один из аргументов имеет тип void.</exception>
     public BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, ITypeInfo returnType, string moduleName)
+        : this(name, args, SymbolSearchUtility.IsVoid(returnType) ? [] : [returnType], moduleName)
+    {
+    }
+
+    /// <summary>
+    /// Создаёт описание функции в контексте строящегося модуля.
+    /// </summary>
+    /// <param name="name">Имя функции. Не может быть пустым.</param>
+    /// <param name="args">Список аргументов функции. Аргументы не могут иметь тип void.</param>
+    /// <param name="returnTypes">Возвращаемые типы функции.</param>
+    /// <param name="moduleName">Имя модуля, в котором объявлена функция.</param>
+    /// <exception cref="InvalidOperationException">Имя функции пустое, имя модуля пустое, или один из аргументов имеет тип void.</exception>
+    public BlankFuncInfo(string name, IReadOnlyList<IArgInfo> args, IReadOnlyList<ITypeInfo> returnTypes, string moduleName)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new InvalidOperationException("Имя функции не может быть пустым.");
@@ -34,7 +47,7 @@ public class BlankFuncInfo : IFnBuilderInfo
 
         DefinitionName = name;
         Arguments = args;
-        ReturnType = returnType;
+        ReturnTypes = returnTypes;
         ModuleName = moduleName;
     }
 
@@ -64,7 +77,7 @@ public class BlankFuncInfo : IFnBuilderInfo
     public IReadOnlyList<IArgInfo> Arguments { get; }
     
     /// <inheritdoc/>
-    public ITypeInfo ReturnType { get; }
+    public IReadOnlyList<ITypeInfo> ReturnTypes { get; }
 
     /// <inheritdoc/>
     public bool IsGenericFuncDefinition => _genericParamBuilders.Count != 0;
@@ -93,7 +106,29 @@ public class BlankFuncInfo : IFnBuilderInfo
         IReadOnlyList<IArgInfo> args,
         ITypeInfo returnType,
         IReadOnlyList<IGenericParameterBuilder> genericBuilders,
-        string moduleName) : this(name, args, returnType, moduleName)
+        string moduleName) : this(name, args, SymbolSearchUtility.IsVoid(returnType) ? [] : [returnType], genericBuilders, moduleName)
+    {
+    }
+
+    /// <summary>
+    /// Реализация билдера информации о функции во время компиляции модуля.
+    /// </summary>
+    /// <param name="name">Имя функции</param>
+    /// <param name="args">Список аргументов функции</param>
+    /// <param name="returnTypes">Возвращаемые типы функции</param>
+    /// <param name="genericBuilders">Список информации об объявлениях дженерик параметров функции</param>
+    /// <param name="moduleName">Имя модуля, в котором объявлена функции</param>
+    /// <exception cref="InvalidOperationException">
+    /// Если хотя бы один из дженерик параметров имеет тип отличный от дженерик параметра или если хотя бы один из параметров идентичен по имени модулю
+    /// или если хотя бы 2 параметра имеют идентичное имя.
+    /// Также происходит, если имя модуля пустое или состоит только из пробельных символов.
+    /// </exception>
+    public BlankFuncInfo(
+        string name,
+        IReadOnlyList<IArgInfo> args,
+        IReadOnlyList<ITypeInfo> returnTypes,
+        IReadOnlyList<IGenericParameterBuilder> genericBuilders,
+        string moduleName) : this(name, args, returnTypes, moduleName)
     {
         foreach (var genericBuilder in genericBuilders)
         {
